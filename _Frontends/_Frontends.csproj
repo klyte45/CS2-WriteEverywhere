@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+   <PropertyGroup>
+   	<TargetFramework>net480</TargetFramework>
+     <DeployBaseFolder>$(K45_CS2_ALLROOT)\_appdataMods\$(SolutionName)\UI</DeployBaseFolder>
+     <SourceBaseFolder>$(SolutionDir)UI</SourceBaseFolder>
+   </PropertyGroup>
+	<ItemGroup>
+		<Frontend Include="main"/>
+    <Images Include="$(SourceBaseFolder)\images\**\*.*"/>
+	</ItemGroup>
+  <Target Name="CleanUI" BeforeTargets="BeforeBuild">
+    <RemoveDir Directories="$(DeployBaseFolder)" />
+    <Copy SourceFiles="@(Images)" DestinationFolder="$(DeployBaseFolder)\images" ContinueOnError="false"/>
+  </Target>
+  <Target Name="PostBuild" AfterTargets="AfterBuild" Inputs="@(Frontend)" Outputs="$(SolutionDir)" >
+		<PropertyGroup>
+			<AppMainRoot>$(SourceBaseFolder)\@(Frontend)</AppMainRoot>
+		</PropertyGroup>
+		<ItemGroup>
+			<SourceFeMain Include="$(AppMainRoot)\dist\**\*.*"/>
+		</ItemGroup>
+		<Exec WorkingDirectory="$(AppMainRoot)" Command="npm run build:webpack" ContinueOnError="false"/>
+		<Copy SourceFiles="@(SourceFeMain)" DestinationFolder="$(DeployBaseFolder)" ContinueOnError="false"/>
+	</Target>  
+</Project> 

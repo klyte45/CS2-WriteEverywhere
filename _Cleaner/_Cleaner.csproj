@@ -1,15 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" /> 
    <PropertyGroup>
    	<TargetFramework>net480</TargetFramework>
    </PropertyGroup>
-  <Target Name="PostBuild" AfterTargets="AfterBuild">
+  <Target Name="PostBuild" AfterTargets="AfterBuild" >
 		<ItemGroup>
 			<DeployDir Include="$(K45_CS2_ALLROOT)\_appdataMods\$(SolutionName)" />
 		</ItemGroup>
 		<Message Text="Cleaning deploy dir @(DeployDir)" Importance="high" />
-		<RemoveDir Directories="@(DeployDir)" />
+		<RemoveDir Directories="@(DeployDir)" ContinueOnError="false" />
 	</Target>
   
-</Project>
+</Project> 

@@ -18,7 +18,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BelzontWE.Commons", "Belzon
 		{52018D6E-6430-4C36-AB19-0E6C5E21DDD1} = {52018D6E-6430-4C36-AB19-0E6C5E21DDD1}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_Cleaner", "_placeholder\_Cleaner.csproj", "{52018D6E-6430-4C36-AB19-0E6C5E21DDD1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_Cleaner", "_Cleaner\_Cleaner.csproj", "{52018D6E-6430-4C36-AB19-0E6C5E21DDD1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "z_WE_EUIS", "z_WE_EUIS\z_WE_EUIS.csproj", "{721000B2-FADC-4F9F-9200-726C7357EE5E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_Frontends", "_Frontends\_Frontends.csproj", "{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{52018D6E-6430-4C36-AB19-0E6C5E21DDD1} = {52018D6E-6430-4C36-AB19-0E6C5E21DDD1}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -60,6 +67,22 @@ Global
 		{52018D6E-6430-4C36-AB19-0E6C5E21DDD1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{52018D6E-6430-4C36-AB19-0E6C5E21DDD1}.Steam|Any CPU.ActiveCfg = Debug|Any CPU
 		{52018D6E-6430-4C36-AB19-0E6C5E21DDD1}.Steam|Any CPU.Build.0 = Debug|Any CPU
+		{721000B2-FADC-4F9F-9200-726C7357EE5E}.Debug|Any CPU.ActiveCfg = Steam|Any CPU
+		{721000B2-FADC-4F9F-9200-726C7357EE5E}.Debug|Any CPU.Build.0 = Steam|Any CPU
+		{721000B2-FADC-4F9F-9200-726C7357EE5E}.Editor|Any CPU.ActiveCfg = Editor|Any CPU
+		{721000B2-FADC-4F9F-9200-726C7357EE5E}.Editor|Any CPU.Build.0 = Editor|Any CPU
+		{721000B2-FADC-4F9F-9200-726C7357EE5E}.Release|Any CPU.ActiveCfg = Steam|Any CPU
+		{721000B2-FADC-4F9F-9200-726C7357EE5E}.Release|Any CPU.Build.0 = Steam|Any CPU
+		{721000B2-FADC-4F9F-9200-726C7357EE5E}.Steam|Any CPU.ActiveCfg = Steam|Any CPU
+		{721000B2-FADC-4F9F-9200-726C7357EE5E}.Steam|Any CPU.Build.0 = Steam|Any CPU
+		{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}.Editor|Any CPU.ActiveCfg = Debug|Any CPU
+		{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}.Editor|Any CPU.Build.0 = Debug|Any CPU
+		{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}.Steam|Any CPU.ActiveCfg = Debug|Any CPU
+		{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}.Steam|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
