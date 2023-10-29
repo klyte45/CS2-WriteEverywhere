@@ -1,7 +1,7 @@
 ﻿using System;
-using static WriteEverywhere.Font.Common;
+using static BelzontWE.Font.Common;
 
-namespace WriteEverywhere.Font
+namespace BelzontWE.Font
 {
 	public struct Bitmap
 	{
@@ -268,7 +268,9 @@ namespace WriteEverywhere.Font
 				scanline = new float[129];
 			scanline2 = w;
 			y = off_y;
-			e[n].y0 = (float)(off_y + h) + 1;
+			var x = e[n];
+			x.y0 = (float)(off_y + h) + 1;
+			e[n] = x;
 			while (j < h)
 			{
 				var scan_y_top = y + 0.0f;

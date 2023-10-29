@@ -1,8 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
-using static WriteEverywhere.Font.PackContext;
+using static BelzontWE.Font.PackContext;
 
-namespace WriteEverywhere.Font
+namespace BelzontWE.Font
 {
 #if !STBSHARP_INTERNAL
 	public
@@ -115,7 +115,7 @@ namespace WriteEverywhere.Font
 			public byte padding;
 		}
 
-		public class stbtt__edge
+		public struct stbtt__edge
 		{
 			public int invert;
 			public float x0;

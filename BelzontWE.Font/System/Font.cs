@@ -1,6 +1,6 @@
-﻿using WriteEverywhere.Font;
+﻿using BelzontWE.Font;
 
-namespace WriteEverywhere.Font
+namespace BelzontWE.Font
 {
     public unsafe struct Font
     {

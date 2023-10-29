@@ -29,8 +29,8 @@
 			$(AssemblySearchPaths);
 			$(ManagedDLLPathSteam);
 		</AssemblySearchPaths>
-<LangVersion>9.0</LangVersion>
-<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<LangVersion>9.0</LangVersion>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -178,13 +178,16 @@
 		<Exec Condition="Exists('$(ModPostProcessorPath)')" Command="&quot;$(ModPostProcessorPath)&quot; &quot;$(TargetPath)&quot; -p &quot;$(ProjectPath)&quot; -r &quot;$(UnityModProjectPath)&quot; -t Windows -t macOS -t Linux -b $(Configuration) -d -v"></Exec>
 
 		<ItemGroup>
-			<FilesToCopy Include="$(OutDir)\**\*.*" />
-			<DeployDir Include="$(DataPath)\Mods\WorkInProgress\$(SolutionName)" />
+			<FilesToCopy Include="$(OutDir)\**\*.*" Exclude="*.pdb" />
+			<DeployDir Include="$(K45_CS2_ALLROOT)\_appdataMods\$(SolutionName)" />
 		</ItemGroup>
 		<Message Text="Copy output to deploy dir @(DeployDir)" Importance="high" />
-		<RemoveDir Directories="@(DeployDir)" />
 		<Copy SourceFiles="@(FilesToCopy)" DestinationFolder="@(DeployDir)" />
 	</Target>
+	<ItemGroup>
+	  <ProjectReference Include="..\BelzontWE.Commons\BelzontWE.Commons.csproj" />
+	  <ProjectReference Include="..\BelzontWE.Font\BelzontWE.Font.csproj" />
+	</ItemGroup>
 	<ItemGroup>
 		<Reference Update="System">
 			<Private>false</Private>

@@ -1,7 +1,7 @@
 ﻿using System;
-using static WriteEverywhere.Font.Common;
+using static BelzontWE.Font.Common;
 
-namespace WriteEverywhere.Font
+namespace BelzontWE.Font
 {
 	public struct FontInfo
 	{

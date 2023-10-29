@@ -1,0 +1,3 @@
+[submodule "BelzontWE.Commons/BelzontCommons"]
+	path = BelzontWE.Commons/BelzontCommons
+	url = ../BelzontCommons

@@ -1,6 +1,7 @@
 ﻿using System;
+using Unity.Collections;
 
-namespace WriteEverywhere.Font
+namespace BelzontWE.Font
 {
 	public class PackContext
 	{
@@ -67,7 +68,7 @@ namespace WriteEverywhere.Font
 			public int y;
 		}
 
-		public class stbtt_packedchar
+		public struct stbtt_packedchar
 		{
 			public ushort x0;
 			public ushort x1;
@@ -80,15 +81,21 @@ namespace WriteEverywhere.Font
 			public float yoff2;
 		}
 
-		public class stbtt_pack_range
+		public struct stbtt_pack_range : IDisposable
 		{
-			public int[] array_of_unicode_codepoints;
-			public stbtt_packedchar[] chardata_for_range;
+			public NativeArray<int> array_of_unicode_codepoints;
+			public NativeArray<stbtt_packedchar> chardata_for_range;
 			public int first_unicode_codepoint_in_range;
 			public float font_size;
 			public byte h_oversample;
 			public int num_chars;
 			public byte v_oversample;
+
+			public void Dispose()
+			{
+				array_of_unicode_codepoints.Dispose();
+				chardata_for_range.Dispose();
+			}
 		}
 
 		public int stbtt_PackBegin(byte[] pixels, int pw, int ph, int stride_in_bytes, int padding)
@@ -133,9 +140,11 @@ namespace WriteEverywhere.Font
 			for (i = 0; i < num_ranges; ++i)
 			{
 				var fh = ranges[i].font_size;
-				var scale = fh > 0 ? info.stbtt_ScaleForPixelHeight( fh) : info.stbtt_ScaleForMappingEmToPixels( -fh);
-				ranges[i].h_oversample = (byte)this.h_oversample;
-				ranges[i].v_oversample = (byte)this.v_oversample;
+				var scale = fh > 0 ? info.stbtt_ScaleForPixelHeight(fh) : info.stbtt_ScaleForMappingEmToPixels(-fh);
+				var x = ranges[i];
+				x.h_oversample = (byte)this.h_oversample;
+				x.v_oversample = (byte)this.v_oversample;
+				ranges[i] = x;
 				for (j = 0; j < ranges[i].num_chars; ++j)
 				{
 					var x0 = 0;
@@ -145,14 +154,14 @@ namespace WriteEverywhere.Font
 					var codepoint = ranges[i].array_of_unicode_codepoints == null
 						? ranges[i].first_unicode_codepoint_in_range + j
 						: ranges[i].array_of_unicode_codepoints[j];
-					var glyph = info.stbtt_FindGlyphIndex( codepoint);
+					var glyph = info.stbtt_FindGlyphIndex(codepoint);
 					if (glyph == 0 && (this.skip_missing != 0 || missing_glyph_added != 0))
 					{
 						rects[k].w = rects[k].h = 0;
 					}
 					else
 					{
-						info.stbtt_GetGlyphBitmapBoxSubpixel( glyph, scale * this.h_oversample, scale * this.v_oversample,
+						info.stbtt_GetGlyphBitmapBoxSubpixel(glyph, scale * this.h_oversample, scale * this.v_oversample,
 							0, 0, ref x0, ref y0, ref x1, ref y1);
 						rects[k].w = (int)(x1 - x0 + this.padding + this.h_oversample - 1);
 						rects[k].h = (int)(y1 - y0 + this.padding + this.v_oversample - 1);
@@ -181,7 +190,7 @@ namespace WriteEverywhere.Font
 			for (i = 0; i < num_ranges; ++i)
 			{
 				var fh = ranges[i].font_size;
-				var scale = fh > 0 ? info.stbtt_ScaleForPixelHeight( fh) : info.stbtt_ScaleForMappingEmToPixels( -fh);
+				var scale = fh > 0 ? info.stbtt_ScaleForPixelHeight(fh) : info.stbtt_ScaleForMappingEmToPixels(-fh);
 				float recip_h = 0;
 				float recip_v = 0;
 				float sub_x = 0;
@@ -207,16 +216,16 @@ namespace WriteEverywhere.Font
 						var codepoint = ranges[i].array_of_unicode_codepoints == null
 							? ranges[i].first_unicode_codepoint_in_range + j
 							: ranges[i].array_of_unicode_codepoints[j];
-						var glyph = info.stbtt_FindGlyphIndex( codepoint);
+						var glyph = info.stbtt_FindGlyphIndex(codepoint);
 						var pad = this.padding;
 						r.x += pad;
 						r.y += pad;
 						r.w -= pad;
 						r.h -= pad;
-						info.stbtt_GetGlyphHMetrics( glyph, ref advance, ref lsb);
-						info.stbtt_GetGlyphBitmapBox( glyph, scale * this.h_oversample, scale * this.v_oversample, ref x0,
+						info.stbtt_GetGlyphHMetrics(glyph, ref advance, ref lsb);
+						info.stbtt_GetGlyphBitmapBox(glyph, scale * this.h_oversample, scale * this.v_oversample, ref x0,
 							ref y0, ref x1, ref y1);
-						info.stbtt_MakeGlyphBitmapSubpixel( this.pixels + r.x + r.y * this.stride_in_bytes,
+						info.stbtt_MakeGlyphBitmapSubpixel(this.pixels + r.x + r.y * this.stride_in_bytes,
 							(int)(r.w - this.h_oversample + 1), (int)(r.h - this.v_oversample + 1), this.stride_in_bytes,
 							scale * this.h_oversample, scale * this.v_oversample, 0, 0, glyph);
 						if (this.h_oversample > 1)
@@ -243,7 +252,9 @@ namespace WriteEverywhere.Font
 					}
 					else if (r.was_packed != 0 && r.w == 0 && r.h == 0 && missing_glyph >= 0)
 					{
-						ranges[i].chardata_for_range[j] = ranges[i].chardata_for_range[missing_glyph];
+						var y = ranges[i];
+						y.chardata_for_range[j] = ranges[i].chardata_for_range[missing_glyph];
+						ranges[i] = y;
 					}
 					else
 					{
@@ -274,9 +285,17 @@ namespace WriteEverywhere.Font
 			var return_value = 1;
 			stbrp_rect[] rects;
 			for (i = 0; i < num_ranges; ++i)
+			{
 				for (j = 0; j < ranges[i].num_chars; ++j)
-					ranges[i].chardata_for_range[j].x0 = ranges[i].chardata_for_range[j].y0 =
-						ranges[i].chardata_for_range[j].x1 = ranges[i].chardata_for_range[j].y1 = 0;
+				{
+					var x = ranges[i].chardata_for_range[j];
+					x.x0 = x.y0 = x.x1 = x.y1 = 0;
+					var y = ranges[i];
+					y.chardata_for_range[j] = x;
+					ranges[i] = y;
+				}
+			}
+
 			n = 0;
 			for (i = 0; i < num_ranges; ++i)
 				n += ranges[i].num_chars;
@@ -285,7 +304,7 @@ namespace WriteEverywhere.Font
 				rects[i] = new stbrp_rect();
 			if (rects == null)
 				return 0;
-			info.stbtt_InitFont( fontdata, Common.stbtt_GetFontOffsetForIndex(fontdata, font_index));
+			info.stbtt_InitFont(fontdata, Common.stbtt_GetFontOffsetForIndex(fontdata, font_index));
 			n = stbtt_PackFontRangesGatherRects(info, ranges, num_ranges, rects);
 			stbtt_PackFontRangesPackRects(rects, n);
 			return_value = stbtt_PackFontRangesRenderIntoRects(info, ranges, num_ranges, rects);
@@ -297,9 +316,9 @@ namespace WriteEverywhere.Font
 		{
 			var range = new stbtt_pack_range();
 			range.first_unicode_codepoint_in_range = first_unicode_codepoint_in_range;
-			range.array_of_unicode_codepoints = null;
+			range.array_of_unicode_codepoints = default;
 			range.num_chars = num_chars_in_range;
-			range.chardata_for_range = chardata_for_range;
+			range.chardata_for_range = new NativeArray<stbtt_packedchar>(chardata_for_range, Allocator.Persistent);
 			range.font_size = font_size;
 
 			var ranges = new FakePtr<stbtt_pack_range>(range);

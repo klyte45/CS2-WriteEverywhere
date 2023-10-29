@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace WriteEverywhere.Font
+namespace BelzontWE.Font
 {
 	[StructLayout(LayoutKind.Sequential)]
 	public struct FontAtlasNode

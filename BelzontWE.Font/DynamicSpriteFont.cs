@@ -3,13 +3,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using Unity.Burst;
 using UnityEngine;
-using WriteEverywhere.Font.Utility;
+using BelzontWE.Font.Utility;
 
-namespace WriteEverywhere.Font
+namespace BelzontWE.Font
 {
-    public class DynamicSpriteFont : GameSystemBase
+    public class DynamicSpriteFont
     {
         internal struct TextureEnumerator : IEnumerable<Texture2D>
         {
@@ -95,7 +94,7 @@ namespace WriteEverywhere.Font
 
         public Vector2 MeasureString(string text)
         {
-            var bounds = new WriteEverywhere.Font.Bounds();
+            var bounds = new BelzontWE.Font.Bounds();
             _fontSystem.TextBounds(0, 0, text, 1, ref bounds);
 
             return new Vector2(bounds.maxX, bounds.maxY);
@@ -105,7 +104,7 @@ namespace WriteEverywhere.Font
 
         public Rect GetTextBounds(Vector2 position, string text, float scale)
         {
-            var bounds = new WriteEverywhere.Font.Bounds();
+            var bounds = new BelzontWE.Font.Bounds();
             _fontSystem.TextBounds(position.x, position.y, text, 1, ref bounds);
 
             return new Rect((int)bounds.minX, (int)bounds.minY, (int)(bounds.maxX - bounds.minX) * scale, (int)(bounds.maxY - bounds.minY) * scale);
@@ -121,8 +120,9 @@ namespace WriteEverywhere.Font
 
         public long GetCacheSize() => _fontSystem.GetCacheSize();
 
-        protected override void OnUpdate()
+        public void RunJobs()
         {
+            _fontSystem.RunJobs();
         }
 
     }

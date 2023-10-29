@@ -2,14 +2,15 @@ using Colossal.IO.AssetDatabase.Internal;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Unity.Collections;
-using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
-using WriteEverywhere.Font.Utility;
+using BelzontWE.Font.Utility;
+using Unity.Burst;
 
-namespace WriteEverywhere.Font
+namespace BelzontWE.Font
 {
     public enum UIHorizontalAlignment
     {
@@ -140,7 +141,6 @@ namespace WriteEverywhere.Font
             FontHeight = 100;
             Color = Color.white;
             Spacing = 0;
-            m_lastCoroutineStep = 0;
         }
 
         public void AddFontMem(byte[] fontData, float qualityMultiplier)
@@ -174,13 +174,13 @@ namespace WriteEverywhere.Font
             if (!m_textCache.ContainsKey(str))
             {
                 m_textCache[str] = default;
-                referenceGO.StartCoroutine(WriteTextureCoroutine(x, y, str, scale, alignment));
+                itemsQueue.Enqueue(new StringRenderingQueueItem() { x = x, y = y, text = str, scale = scale, alignment = alignment });
             }
         }
         public BasicRenderInformation DrawText(float x, float y, string str, Vector3 scale, UIHorizontalAlignment alignment = UIHorizontalAlignment.Center)
         {
             BasicRenderInformation bri;
-            if (string.IsNullOrEmpty(str))
+            if (string.IsNullOrWhiteSpace(str))
             {
                 if (!m_textCache.TryGetValue("", out bri))
                 {
@@ -199,30 +199,10 @@ namespace WriteEverywhere.Font
             else
             {
                 m_textCache[str] = default;
-                referenceGO.StartCoroutine(WriteTextureCoroutine(x, y, str, scale, alignment));
+                itemsQueue.Enqueue(new StringRenderingQueueItem() { x = x, y = y, text = str, scale = scale, alignment = alignment });
                 return default;
             }
         }
-
-        private static uint m_lastCoroutineStep = 0;
-        private static int m_coroutineCounter = 0;
-
-        private bool CheckCoroutineCount()
-        {
-            //if (m_lastCoroutineStep != SimulationManager.instance.m_currentTickIndex)
-            //{
-            //    m_lastCoroutineStep = SimulationManager.instance.m_currentTickIndex;
-            //    m_coroutineCounter = 0;
-            //}
-            //if (m_coroutineCounter > MaxCoroutines)
-            //{
-            //    return false;
-            //}
-            m_coroutineCounter++;
-            return true;
-        }
-
-        private bool lockCalculations;
 
         private static void AddTriangleIndices(IList<Vector3> verts, IList<int> triangles)
         {
@@ -241,7 +221,6 @@ namespace WriteEverywhere.Font
                 1,
                 2
         };
-        private Entity m_entity;
 
         public float TextBounds(float x, float y, string str, float charSpacingFactor, ref Bounds bounds)
         {
@@ -616,14 +595,19 @@ namespace WriteEverywhere.Font
             }
         }
 
-        private void PrepareJob(ref StringRenderingJob job)
+
+
+
+        private void PrepareJob(ref StringRenderingJob job, StringRenderingQueueItem item)
         {
             job.data = data;
             job.CurrentAtlasSize = new Vector3(_currentAtlas.Width, _currentAtlas.Height);
+            job.input = item;
         }
 
-        private void x(ref StringRenderingJob jobResult, string originalText)
+        private void PostJob(StringRenderingJob jobResult)
         {
+            var originalText = jobResult.input.text.ToString();
             if (jobResult.CurrentAtlasSize.x != _currentAtlas.Width)
             {
                 m_textCache.Remove(originalText);
@@ -655,6 +639,50 @@ namespace WriteEverywhere.Font
             _glyphs.Dispose();
         }
 
+        public unsafe struct StringRenderingQueueItem
+        {
+            public float x;
+            public float y;
+            public FixedString512Bytes text;
+            public Vector3 scale; 
+            public UIHorizontalAlignment alignment;
+        }
+
+        private Queue<StringRenderingQueueItem> itemsQueue = new Queue<StringRenderingQueueItem>();
+        private Dictionary<StringRenderingJob, JobHandle> runningJobs = new();
+
+        private static IEnumerable Enumerate(IEnumerator enumerator)
+        {
+            while (enumerator.MoveNext())
+            {
+                yield return enumerator.Current;
+            };
+        }
+        public void RunJobs()
+        {
+            List<StringRenderingQueueItem> itemsStarted = itemsQueue.ToList();
+            itemsQueue.Clear();
+            var glyphs = GetGlyphsCollection(FontHeight);
+            var charsToRender = itemsStarted.SelectMany(x => Enumerate(StringInfo.GetTextElementEnumerator(x.text.ToString())).Cast<string>()).GroupBy(x => x).Select(x => x.Key);
+            while (charsToRender.Any(x => GetGlyph(glyphs, char.ConvertToUtf32(x, 0), out bool hasReseted).Index >= 0 && hasReseted))
+            {
+                Console.WriteLine("Reset texture!");
+            }
+            foreach (var item in itemsStarted)
+            {
+                var job = new StringRenderingJob();
+                PrepareJob(ref job, item);
+                runningJobs[job] = (job.Schedule());
+            }
+            foreach (var jobRan in runningJobs)
+            {
+                if (jobRan.Value.IsCompleted)
+                {
+                    PostJob(jobRan.Key);
+                }
+            }
+        }
+
         private unsafe struct StringRenderingJob : IJob
         {
             public int Size => sizeof(StringRenderingJob);
@@ -664,20 +692,21 @@ namespace WriteEverywhere.Font
             internal FontSystemData data;
             public NativeHashMap<int, FontGlyph> glyphs;
             public Vector3 CurrentAtlasSize;
+            public StringRenderingQueueItem input;
 
             public void Execute()
             {
-                throw new NotImplementedException();
+                WriteTextureCoroutine(input.x, input.y, input.text, input.scale, input.alignment);
             }
 
-            private void WriteTextureCoroutine(float x, float y, string strOr, Vector3 scale, UIHorizontalAlignment alignment)
+            private void WriteTextureCoroutine(float x, float y, FixedString512Bytes strOr, Vector3 scale, UIHorizontalAlignment alignment)
             {
                 result = new BasicRenderInformationJob
                 {
                     m_YAxisOverflows = new RangeVector { min = float.MaxValue, max = float.MinValue },
                 };
 
-                var str = ToFilteredString(strOr);
+                var str = ToFilteredString(strOr.ConvertToString());
                 if (string.IsNullOrEmpty(str))
                 {
                     return;

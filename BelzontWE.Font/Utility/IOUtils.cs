@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace WriteEverywhere.Font.Utility
+namespace BelzontWE.Font.Utility
 {
     internal static class IOUtils
     {

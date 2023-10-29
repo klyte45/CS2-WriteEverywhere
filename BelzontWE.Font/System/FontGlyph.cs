@@ -1,7 +1,7 @@
 ﻿using Unity.Collections;
 using UnityEngine;
 
-namespace WriteEverywhere.Font
+namespace BelzontWE.Font
 {
     public struct FontGlyph
     {

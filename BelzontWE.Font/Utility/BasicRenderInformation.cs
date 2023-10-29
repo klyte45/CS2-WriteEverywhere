@@ -3,7 +3,7 @@ using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 
-namespace WriteEverywhere.Font.Utility
+namespace BelzontWE.Font.Utility
 {
     public class BasicRenderInformation 
     {

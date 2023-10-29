@@ -1,14 +1,14 @@
 ﻿using System;
 using Unity.Collections;
 
-namespace WriteEverywhere.Font
+namespace BelzontWE.Font
 {
 #if !STBSHARP_INTERNAL
 	public
 #else
 	internal
 #endif
-	struct FakePtr<T> where T : struct
+	struct FakePtr<T> : IDisposable where T : unmanaged
 	{
 		public static readonly FakePtr<T> Null = new FakePtr<T>(null);
 
@@ -45,26 +45,26 @@ namespace WriteEverywhere.Font
 			_array = ptr._array;
 		}
 
-        public FakePtr(T[] data, int offset)
-        {
-            Offset = offset;
-            _array = new(data, Allocator.Persistent);
-        }
+		public FakePtr(T[] data, int offset)
+		{
+			Offset = offset;
+			_array = new(data, Allocator.Persistent);
+		}
 
-        public FakePtr(NativeArray<T> data, int offset)
-        {
-            Offset = offset;
-            _array = data;
-        }
+		public FakePtr(NativeArray<T> data, int offset)
+		{
+			Offset = offset;
+			_array = data;
+		}
 
-        public FakePtr(T[] data) : this(data, 0)
-        {
-        }
-        public FakePtr(NativeArray<T> data) : this(data, 0)
-        {
-        }
+		public FakePtr(T[] data) : this(data, 0)
+		{
+		}
+		public FakePtr(NativeArray<T> data) : this(data, 0)
+		{
+		}
 
-        public FakePtr(T value)
+		public FakePtr(T value)
 		{
 			Offset = 0;
 			_array = new(1, Allocator.Persistent);
@@ -163,6 +163,11 @@ namespace WriteEverywhere.Font
 		public static void memcpy(FakePtr<T> a, T[] b, int count)
 		{
 			for (long i = 0; i < count; ++i) a[i] = b[i];
+		}
+
+		public void Dispose()
+		{
+			_array.Dispose();
 		}
 	}
 }

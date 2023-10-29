@@ -1,4 +1,4 @@
-﻿namespace WriteEverywhere.Font
+﻿namespace BelzontWE.Font
 {
 	public struct Buf
 	{

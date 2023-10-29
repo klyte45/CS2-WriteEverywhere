@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using UnityEngine;
 
-namespace WriteEverywhere.Font
+namespace BelzontWE.Font
 {
     public class FontAtlas
     {

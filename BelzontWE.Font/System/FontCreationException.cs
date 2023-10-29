@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace WriteEverywhere.Font
+namespace BelzontWE.Font
 {
     [Serializable]
     public class FontCreationException : Exception
