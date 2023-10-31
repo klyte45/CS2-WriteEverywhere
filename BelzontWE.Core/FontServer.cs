@@ -5,12 +5,40 @@ using Colossal.IO.AssetDatabase.Internal;
 using Game;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 namespace BelzontWE
 {
     public partial class FontServer : GameSystemBase
     {
+        public static string FOLDER_PATH => WriteEverywhereCS2Mod.ModSettingsRootFolder;
+        #region Fonts
+        public const string DEFAULT_FONT_KEY = "/DEFAULT/";
+        public const string FONTS_FILES_FOLDER = "Fonts";
+        public static int DefaultTextureSizeFont => 1024;//512 << WriteEverywhereCS2Mod.StartTextureSizeFont;
+        public static string FontFilesPath { get; } = FOLDER_PATH + Path.DirectorySeparatorChar + FONTS_FILES_FOLDER;
+
+        public event Action OnFontsLoadedChanged;
+
+        public void ReloadFontsFromPath()
+        {
+            ResetCollection();
+            //RegisterFont(DEFAULT_FONT_KEY, KResourceLoader.LoadResourceDataMod("UI.DefaultFont.SourceSansPro-Regular.ttf"), DefaultTextureSizeFont);
+            KFileUtils.EnsureFolderCreation(FontFilesPath);
+            if (WriteEverywhereCS2Mod.DebugMode) LogUtils.DoLog($"Searching font files @ {FontFilesPath}");
+            foreach (string fontFile in Directory.GetFiles(FontFilesPath, "*.ttf"))
+            {
+                RegisterFont(Path.GetFileNameWithoutExtension(fontFile), File.ReadAllBytes(fontFile), DefaultTextureSizeFont);
+
+                if (WriteEverywhereCS2Mod.DebugMode) LogUtils.DoLog($"Font loaded: {Path.GetFileName(fontFile)}");
+            }
+            OnFontsLoadedChanged?.Invoke();
+        }
+        #endregion
+
+
+
         private Dictionary<string, DynamicSpriteFont> m_fontRegistered = new Dictionary<string, DynamicSpriteFont>();
 
         internal long GetAllFontsCacheSize()

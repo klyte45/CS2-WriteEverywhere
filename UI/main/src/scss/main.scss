@@ -1,0 +1,369 @@
+:root {
+    background-color: rgba(0, 0, 0, 0.288);
+    color: white;
+}
+
+h1 {
+    color: white;
+    font-size: 60rem;
+    margin-top: 5rem;
+    margin-bottom: 5rem;
+
+    +h3 {
+        margin-top: -5rem;
+        padding-left: 10rem;
+        font-weight: 100;
+    }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    display: inline;
+}
+
+a {
+    padding: 5rem;
+    background-color: var(--accentColorDark);
+    color: var(--accentColorLighter);
+    border-radius: 3rem;
+    margin-top: -5rem;
+
+    &:hover {
+        background-color: var(--accentColorNormal);
+        color: var(--accentColorLightest);
+    }
+}
+
+button {
+    background-color: green;
+}
+
+div.tableTopRow {
+    display: flex;
+
+    div {
+        display: block;
+        flex: 1 0;
+        border: 1rem solid white;
+        text-align: center;
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+        font-weight: bold;
+        border-bottom-width: 3rem;
+    }
+}
+
+div.tableRegularRow {
+    display: flex;
+
+    >div {
+        display: block;
+        flex: 1 0;
+        border: 1rem solid white;
+        text-align: center;
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+        font-weight: 200;
+        border-top: 0;
+        position: relative;
+    }
+
+    .tlmIconParent {
+        transform: scale3d(0.500000, 0.500000, 1.000000);
+        position: absolute;
+        left: 0.000000rem;
+        top: 0.000000rem;
+        margin-top: -10.000000rem;
+    }
+}
+
+.asFlex {
+    display: flex;
+}
+
+.w05 {
+    width: 5%;
+}
+
+.w01 {
+    width: 1%;
+}
+
+.w10 {
+    width: 10%;
+}
+
+.w15 {
+    width: 15%;
+}
+
+.w16 {
+    width: 16.6666666666666666666666666666666666666666666666666666666666666666666666%;
+}
+
+.w20 {
+    width: 20%;
+}
+
+.w25 {
+    width: 25%;
+}
+
+.w30 {
+    width: 30%;
+}
+
+.w33 {
+    width: 33.33333333333333333333333333333333333333333333333333333333333333333333333%;
+}
+
+.w40 {
+    width: 40%;
+}
+
+.w45 {
+    width: 45%;
+}
+
+.w50 {
+    width: 50%;
+}
+
+.w60 {
+    width: 60%;
+}
+
+.w66 {
+    width: 66.666666666666666666666666666666666666666666666666666%;
+}
+
+.w70 {
+    width: 70%;
+}
+
+.w75 {
+    width: 75%;
+}
+
+.w80 {
+    width: 80%;
+}
+
+.w83 {
+    width: 83.3333333333333333333333333333333333333333333333%;
+}
+
+.w90 {
+    width: 90%;
+}
+
+
+:root section {
+    background-color: var(--menuPanel1);
+    padding: 3rem;
+    border: 2rem solid;
+    border-left-color: var(--menuBorderColor1);
+    border-right-color: var(--menuBorderColor1);
+    border-top-color: var(--menuBorderColor1);
+    border-bottom-color: var(--menuBorderColor1);
+
+    .sectionColumnContainer {
+        display: flex;
+
+        section {
+            border-left-style: solid;
+            border-right-style: solid;
+            border-left-width: 1rem;
+            border-right-width: 1rem;
+            border-left-color: var(--menuBorderColor1);
+            border-right-color: var(--menuBorderColor1);
+
+            .valueConainerDD {
+                display: flex;
+
+                label {
+                    padding-top: 4.000000rem;
+                    padding-left: 8.000000rem;
+                    padding-right: 8.000000rem;
+                    padding-bottom: 4.000000rem;
+                    width: 50%;
+                    font-size: var(--fontSizeL);
+                }
+
+                div.react-select-container {
+                    width: 50%;
+                    padding-top: 4.000000rem;
+                    padding-left: 8.000000rem;
+                    padding-right: 8.000000rem;
+                    padding-bottom: 4.000000rem;
+                }
+
+            }
+        }
+
+        h3 {
+            text-align: center;
+        }
+    }
+}
+
+button,
+a {
+    transition-property: background-color, color;
+    transition-duration: 0.5s;
+}
+
+button,
+%basicBtn {
+    padding: 10rem 10rem;
+    border-style: solid;
+    border-top-width: var(--stroke2);
+    border-left-width: var(--stroke2);
+    border-bottom-width: var(--stroke2);
+    border-right-width: var(--stroke2);
+    border-color: rgba(0, 0, 0, 0);
+    border-radius: 4rem;
+    color: rgba(0, 0, 0, .7);
+    font-size: var(--fontSizeM);
+    font-weight: bold;
+    text-transform: uppercase;
+    transition-property: background-color, color;
+    transition-duration: 0.5s;
+
+    &:focus {
+        border-color: #fff;
+        box-shadow: 0 0 20rem rgba(0, 0, 0, .5);
+    }
+}
+
+.positiveBtn {
+    @extend %basicBtn;
+    background-color: var(--dialogButtonYesColor);
+
+    &:hover {
+        background-color: var(--dialogButtonYesColor-hover);
+    }
+
+    &:active {
+        background-color: var(--dialogButtonYesColor-active);
+    }
+
+    &:focus {
+        background-color: var(--dialogButtonYesColor-focused)
+    }
+}
+
+.negativeBtn {
+    @extend %basicBtn;
+    background-color: var(--dialogButtonNoColor);
+
+    &:hover {
+        background-color: var(--dialogButtonNoColor-hover);
+    }
+
+    &:active {
+        background-color: var(--dialogButtonNoColor-active);
+    }
+
+    &:focus {
+        background-color: var(--dialogButtonNoColor-focused);
+    }
+}
+
+.darkestBtn {
+    @extend %basicBtn;
+    background-color: var(--accentColorDarker);
+    color: var(--menuText1Normal);
+
+    &:hover {
+        background-color: var(--accentColorDarker-hover);
+        color: var(--menuText1Disabled);
+    }
+
+    &:active {
+        background-color: var(--accentColorDarker-pressed);
+        color: var(--menuText1Disabled);
+    }
+
+    &:focus {
+        background-color: var(--accentColorDarker-pressed);
+        color: var(--menuText1Disabled);
+    }
+}
+
+.darkBtn {
+    @extend %basicBtn;
+    background-color: var(--accentColorDark);
+
+    &:hover {
+        background-color: var(--accentColorDark-hover);
+    }
+
+    &:active {
+        background-color: var(--accentColorDark-pressed);
+    }
+
+    &:focus {
+        background-color: var(--accentColorDark-focused)
+    }
+}
+
+.normalBtn {
+    @extend %basicBtn;
+    background-color: var(--accentColorNormal);
+
+    &:hover {
+        background-color: var(--accentColorNormal-hover);
+    }
+
+    &:active {
+        background-color: var(--accentColorNormal-pressed);
+    }
+
+    &:focus {
+        background-color: var(--accentColorLighter)
+    }
+}
+
+.neutralBtn {
+    @extend %basicBtn;
+    background-color: #1e83aa;
+
+    &:hover {
+        background-color: #26a4d5;
+    }
+
+    &:active {
+        background-color: #64c0e4;
+    }
+
+    &:focus {
+        background-color: #00c2ff
+    }
+}
+
+.fullDivider {
+    margin-top: 5.000000rem;
+    margin-bottom: 5.000000rem;
+    width: 100.000000%;
+    height: 0.000000rem;
+    border-top-style: solid;
+    border-left-style: solid;
+    border-right-style: solid;
+    border-bottom-style: solid;
+    border-top-width: 3.000000rem;
+    border-left-width: 3.000000rem;
+    border-right-width: 3.000000rem;
+    border-bottom-width: 3.000000rem;
+    color: var(--dividerColor);
+}
+
+@import './cs2-form-style.scss';
+
+input {
+    @extend %cs2-form-style
+}

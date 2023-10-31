@@ -29,7 +29,7 @@
 			$(AssemblySearchPaths);
 			$(ManagedDLLPathSteam);
 		</AssemblySearchPaths>
-		<LangVersion>9.0</LangVersion>
+		<LangVersion>10.0</LangVersion>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
@@ -173,10 +173,11 @@
 		<RemoveDir Directories="$(OutDir)" />
 	</Target>
 	<Target Name="PostBuild" AfterTargets="AfterBuild">
-		<Message Condition="Exists('$(ModPostProcessorPath)')" Text="Run post processor: $(ModPostProcessorPath) $(TargetPath) $(ProjectPath) $(UnityModProjectPath)" Importance="high" />
-		<Message Condition="!Exists('$(ModPostProcessorPath)')" Text="Post processor was not found, please check the path: $(ModPostProcessorPath)" Importance="high" />
-		<Exec Condition="Exists('$(ModPostProcessorPath)')" Command="&quot;$(ModPostProcessorPath)&quot; &quot;$(TargetPath)&quot; -p &quot;$(ProjectPath)&quot; -r &quot;$(UnityModProjectPath)&quot; -t Windows -t macOS -t Linux -b $(Configuration) -d -v"></Exec>
-
+    <!--
+        <Message Condition="Exists('$(ModPostProcessorPath)')" Text="Run post processor: $(ModPostProcessorPath) $(TargetPath) $(ProjectPath) $(UnityModProjectPath)" Importance="high" />
+		    <Message Condition="!Exists('$(ModPostProcessorPath)')" Text="Post processor was not found, please check the path: $(ModPostProcessorPath)" Importance="high" />
+		    <Exec Condition="Exists('$(ModPostProcessorPath)')" Command="&quot;$(ModPostProcessorPath)&quot; &quot;$(TargetPath)&quot; -p &quot;$(ProjectPath)&quot; -r &quot;$(UnityModProjectPath)&quot; -t Windows -t macOS -t Linux -b $(Configuration) -d -v"></Exec>
+    -->
 		<ItemGroup>
 			<FilesToCopy Include="$(OutDir)\**\*.*" Exclude="*.pdb" />
 			<DeployDir Include="$(K45_CS2_ALLROOT)\_appdataMods\$(SolutionName)" />

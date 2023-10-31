@@ -48,7 +48,7 @@ namespace BelzontWE.Font
 		public FakePtr(T[] data, int offset)
 		{
 			Offset = offset;
-			_array = new(data, Allocator.Persistent);
+			_array = new(data ?? new T[0], Allocator.Persistent);
 		}
 
 		public FakePtr(NativeArray<T> data, int offset)

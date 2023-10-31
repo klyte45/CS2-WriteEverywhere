@@ -1,3 +1,4 @@
+using BelzontWE.Font.Utility;
 using Colossal.IO.AssetDatabase.Internal;
 using System;
 using System.Collections;
@@ -7,8 +8,6 @@ using System.Linq;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
-using BelzontWE.Font.Utility;
-using Unity.Burst;
 
 namespace BelzontWE.Font
 {
@@ -74,9 +73,12 @@ namespace BelzontWE.Font
             set
             {
                 _fontHeight = value;
-                foreach (Font f in data.fonts)
+                if (data.fonts.IsCreated)
                 {
-                    f.RecalculateBasedOnHeight(_fontHeight);
+                    foreach (Font f in data.fonts)
+                    {
+                        f.RecalculateBasedOnHeight(_fontHeight);
+                    }
                 }
             }
         }
@@ -147,6 +149,10 @@ namespace BelzontWE.Font
         {
             var font = Font.FromMemory(fontData);
             font.RecalculateBasedOnHeight(FontHeight);
+            if (!data.fonts.IsCreated)
+            {
+                data.fonts = new NativeList<Font>(1, Allocator.Persistent);
+            }
             data.fonts.Add(font);
             this.qualityMultiplier = qualityMultiplier;
             metricsCalculated = false;
@@ -484,6 +490,10 @@ namespace BelzontWE.Font
         }
         private NativeHashMap<int, FontGlyph> GetGlyphsCollection(int size)
         {
+            if (!_glyphs.IsCreated)
+            {
+                _glyphs = new NativeHashMap<int, NativeHashMap<int, FontGlyph>>(1, Allocator.Persistent);
+            }
             if (_glyphs.TryGetValue(size, out var result))
             {
                 return result;
@@ -644,7 +654,7 @@ namespace BelzontWE.Font
             public float x;
             public float y;
             public FixedString512Bytes text;
-            public Vector3 scale; 
+            public Vector3 scale;
             public UIHorizontalAlignment alignment;
         }
 
