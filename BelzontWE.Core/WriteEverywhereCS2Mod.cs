@@ -2,6 +2,7 @@
 //#define VERBOSE 
 using Belzont.Interfaces;
 using Belzont.Utils;
+using BelzontWE.Font.Utility;
 using Game;
 using Game.Common;
 using Game.Input;
@@ -16,6 +17,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace BelzontWE
 {
@@ -181,6 +183,8 @@ namespace BelzontWE
         {
             eventCaller("test.enableTestTool", EnableTestTool);
             eventCaller("test.reloadFonts", ReloadFonts);
+            eventCaller("test.listFonts", ListFonts);
+            eventCaller("test.requestTextMesh", RequestTextMesh);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller)
@@ -195,7 +199,7 @@ namespace BelzontWE
         {
             m_WETestTool = World.GetExistingSystemManaged<WETestTool>();
             m_FontServer = World.GetOrCreateSystemManaged<FontServer>();
-            m_FontServer.OnFontsLoadedChanged += () => SendToFrontend("test.fontsChanged->", new object[] { m_FontServer.GetAllFonts()?.Select(x => x?.ToString())?.ToArray() });
+            m_FontServer.OnFontsLoadedChanged += () => SendToFrontend("test.fontsChanged->", new object[] { ListFonts() });
             base.OnCreate();
         }
         public override void Update() { }
@@ -216,5 +220,11 @@ namespace BelzontWE
             m_FontServer.ReloadFontsFromPath();
         }
 
+        private string[] ListFonts() => m_FontServer.GetAllFonts()?.ToArray();
+
+        private BasicRenderInformation RequestTextMesh(string text, string fontName)
+        {
+            return m_FontServer[fontName]?.DrawString(text, Vector2.one);
+        }
     }
 }

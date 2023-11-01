@@ -1,5 +1,6 @@
+using Belzont.Interfaces;
+using Belzont.Utils;
 using BelzontWE.Font.Utility;
-using Colossal.IO.AssetDatabase.Internal;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -87,6 +88,7 @@ namespace BelzontWE.Font
         public readonly int Blur;
         public float Spacing;
         public bool UseKernings = true;
+        private readonly string Name;
 
         public long LastUpdateAtlas { get; private set; }
 
@@ -112,8 +114,9 @@ namespace BelzontWE.Font
         public event Action CurrentAtlasFull;
         public Func<Shader> defaultShaderGetter;
 
-        public FontSystem(int width, int height, Func<Shader> defaultShaderGetter, int blur = 0)
+        public FontSystem(string name, int width, int height, Func<Shader> defaultShaderGetter, int blur = 0)
         {
+            Name = name;
             if (width <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(width));
@@ -499,7 +502,7 @@ namespace BelzontWE.Font
                 return result;
             }
 
-            result = new();
+            result = new(0, Allocator.Persistent);
             _glyphs[size] = result;
             return result;
         }
@@ -610,14 +613,19 @@ namespace BelzontWE.Font
 
         private void PrepareJob(ref StringRenderingJob job, StringRenderingQueueItem item)
         {
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] PrepareJob for {item.text}");
             job.data = data;
             job.CurrentAtlasSize = new Vector3(_currentAtlas.Width, _currentAtlas.Height);
             job.input = item;
+            job.glyphs = GetGlyphsCollection(FontHeight);
+            job.debug = BasicIMod.DebugMode;
         }
 
         private void PostJob(StringRenderingJob jobResult)
         {
+
             var originalText = jobResult.input.text.ToString();
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] Post job for {originalText} ");
             if (jobResult.CurrentAtlasSize.x != _currentAtlas.Width)
             {
                 m_textCache.Remove(originalText);
@@ -632,7 +640,7 @@ namespace BelzontWE.Font
             result.m_baselineOffset = BaselineOffset;
             result.m_sizeMetersUnscaled = result.m_mesh.bounds.size;
             result.m_refText = originalText;
-            if (m_textCache.TryGetValue(originalText, out BasicRenderInformationJob currentVal) && currentVal.m_sizeMetersUnscaled.sqrMagnitude == 0)
+            if (m_textCache.TryGetValue(originalText, out var currentVal) && currentVal == null)
             {
                 m_textCache[originalText] = result;
             }
@@ -676,19 +684,22 @@ namespace BelzontWE.Font
             var charsToRender = itemsStarted.SelectMany(x => Enumerate(StringInfo.GetTextElementEnumerator(x.text.ToString())).Cast<string>()).GroupBy(x => x).Select(x => x.Key);
             while (charsToRender.Any(x => GetGlyph(glyphs, char.ConvertToUtf32(x, 0), out bool hasReseted).Index >= 0 && hasReseted))
             {
-                Console.WriteLine("Reset texture!");
+                LogUtils.DoInfoLog($"[FontSystem: {Name}] Reset texture! (Now {CurrentAtlas.Texture.width})");
             }
             foreach (var item in itemsStarted)
             {
                 var job = new StringRenderingJob();
                 PrepareJob(ref job, item);
-                runningJobs[job] = (job.Schedule());
+                runningJobs[job] = job.Schedule();
             }
-            foreach (var jobRan in runningJobs)
+            if (runningJobs.Count == 0) return;
+            var originalList = runningJobs.ToArray();
+            foreach (var jobRan in originalList)
             {
                 if (jobRan.Value.IsCompleted)
                 {
                     PostJob(jobRan.Key);
+                    runningJobs.Remove(jobRan.Key);
                 }
             }
         }
@@ -703,9 +714,11 @@ namespace BelzontWE.Font
             public NativeHashMap<int, FontGlyph> glyphs;
             public Vector3 CurrentAtlasSize;
             public StringRenderingQueueItem input;
+            public bool debug;
 
             public void Execute()
             {
+                if (debug) LogUtils.DoLog($"Rendering text {input.text} ");
                 WriteTextureCoroutine(input.x, input.y, input.text, input.scale, input.alignment);
             }
 

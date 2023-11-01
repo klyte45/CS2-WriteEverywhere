@@ -1,10 +1,9 @@
-using Game;
+using BelzontWE.Font.Utility;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using BelzontWE.Font.Utility;
 
 namespace BelzontWE.Font
 {
@@ -74,7 +73,7 @@ namespace BelzontWE.Font
 
         private DynamicSpriteFont(byte[] ttf, string name, int defaultTargetHeight, int textureWidth, int textureHeight, float qualityMultiplier, Func<Shader> defaultShaderGetter, int blur)
         {
-            _fontSystem = new FontSystem(textureWidth, textureHeight, defaultShaderGetter, blur)
+            _fontSystem = new FontSystem(name, textureWidth, textureHeight, defaultShaderGetter, blur)
             {
                 FontHeight = defaultTargetHeight
             };

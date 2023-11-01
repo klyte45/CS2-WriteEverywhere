@@ -41,7 +41,10 @@
 		</ItemGroup>
 		<Message Text="Copy output to deploy dir @(DeployDir)" Importance="high" />	
 	<Copy SourceFiles="@(FilesToCopy)" DestinationFolder="@(DeployDir)" />
-	</Target>
+	</Target>  
+  <ItemGroup>
+    <ProjectReference Include="..\BelzontWE.Commons\BelzontWE.Commons.csproj" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>$(K45_CS2_ALLROOT)\_commonDeps\0Harmony.dll</HintPath>

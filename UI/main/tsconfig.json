@@ -1,8 +1,27 @@
 {
   "extends": "ts-config-single-spa",
   "compilerOptions": {
+    "baseUrl": "./",
     "jsx": "react-jsx",
-    "declarationDir": "dist"
+    "declarationDir": "dist",
+    "target": "ES2015",
+    "paths": {
+      "#components/*": [
+        "src/components/*"
+      ],
+      "#enum/*": [
+        "src/enum/*"
+      ],
+      "#service/*": [
+        "src/service/*"
+      ],
+      "#utility/*": [
+        "src/utility/*"
+      ],
+      "#styles/*": [
+        "src/styles/*"
+      ],
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["src/**/*.test*"]
