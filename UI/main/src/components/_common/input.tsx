@@ -2,7 +2,8 @@ import { ColorUtils } from "#utility/ColorUtils";
 import { CSSProperties, Component, KeyboardEvent } from "react";
 
 interface InputProps {
-    title: string;
+    title: string | JSX.Element;
+    subtitle?: string | JSX.Element;
     getValue: () => string;
     onValueChanged: (newVal: string) => string | Promise<string>;
     isValid?: (newVal: string) => boolean
@@ -28,7 +29,7 @@ export class Input extends Component<InputProps, {}> {
             <>
                 <div className="cs2-fieldStyle cs2-fieldStyle2">
                     <div className="cs2-form-item-label cs2-form-item-label2">
-                        {this.props.title}
+                        {this.props.title}<br />{this.props.subtitle}
                     </div>
                     <SimpleInput {...this.props} />
                 </div>

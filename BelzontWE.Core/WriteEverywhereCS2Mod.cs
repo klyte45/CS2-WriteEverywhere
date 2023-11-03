@@ -2,6 +2,7 @@
 //#define VERBOSE 
 using Belzont.Interfaces;
 using Belzont.Utils;
+using BelzontWE.Font;
 using Game;
 using Game.Common;
 using Game.Input;
@@ -15,11 +16,15 @@ using Game.UI.Tooltip;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
+using Graphics = UnityEngine.Graphics;
 
 namespace BelzontWE
 {
@@ -199,10 +204,115 @@ namespace BelzontWE
             eventCaller("test.reloadFonts", ReloadFonts);
             eventCaller("test.listFonts", ListFonts);
             eventCaller("test.requestTextMesh", RequestTextMesh);
-            eventCaller("test.listShaderDatails", ListShaders);
+            eventCaller("test.listShaderDatails", ListShadersDetails);
+            eventCaller("test.listShader", ListShaders);
+            eventCaller("test.setShader", SetShader);
+            eventCaller("test.getShader", GetShader);
+            eventCaller("test.listCurrentMaterialSettings", ListCurrentMaterialSettings);
+            eventCaller("test.setCurrentMaterialSettings", SetCurrentMaterialSettings);
         }
 
-        private Dictionary<string, Dictionary<string, string>> ListShaders()
+        public class PropertyDescriptor
+        {
+            public string Name { get; set; }
+            public int Idx { get; set; }
+            public int Id { get; set; }
+            public string Description { get; set; }
+            public string Type { get; set; }
+            public string Value { get; set; }
+        }
+
+        private List<PropertyDescriptor> ListCurrentMaterialSettings(string fontName)
+        {
+            Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+            if (m_FontServer[fontName] is DynamicSpriteFont df)
+            {
+                var mat = df.MainAtlas.Material;
+                var propertyCount = mat.shader.GetPropertyCount();
+                var listResult = new List<PropertyDescriptor>();
+                for (int i = 0; i < propertyCount; i++)
+                {
+                    int nameID = mat.shader.GetPropertyNameId(i);
+                    var name = mat.shader.GetPropertyName(i);
+                    ShaderPropertyType shaderPropertyType = mat.shader.GetPropertyType(i);
+                    listResult.Add(new()
+                    {
+                        Idx = i,
+                        Name = name,
+                        Id = nameID,
+                        Description = mat.shader.GetPropertyDescription(i),
+                        Type = shaderPropertyType.ToString(),
+                        Value = shaderPropertyType switch
+                        {
+                            ShaderPropertyType.Color => mat.GetColor(name).ToRGBA(),
+                            ShaderPropertyType.Vector => mat.GetVector(name).ToString()[1..^1].Trim(),
+                            ShaderPropertyType.Float or ShaderPropertyType.Range => mat.GetFloat(name).ToString(),
+                            ShaderPropertyType.Texture => mat.GetTexture(name) is Texture2D t2d ? Convert.ToBase64String(ImageConversion.EncodeToPNG(t2d)) : null,
+                            ShaderPropertyType.Int => mat.GetInt(name).ToString(),
+                            _ => null
+                        }
+                    });
+                }
+                return listResult;
+            }
+            return null;
+        }
+
+        private string SetCurrentMaterialSettings(string fontName, int propertyIdx, string value)
+        {
+
+            Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+            if (m_FontServer[fontName] is DynamicSpriteFont df)
+            {
+                var mat = df.MainAtlas.Material;
+                var nameID = mat.shader.GetPropertyNameId(propertyIdx);
+                ShaderPropertyType shaderPropertyType = mat.shader.GetPropertyType(propertyIdx);
+                switch (shaderPropertyType)
+                {
+                    case ShaderPropertyType.Color:
+                        try
+                        {
+                            mat.SetColor(nameID, ColorExtensions.FromRGBA(value));
+                        }
+                        catch { }
+                        break;
+                    case ShaderPropertyType.Vector:
+                        var targVal = value.Split(",").Select(x => x.Trim()).ToArray();
+                        if (targVal.Length > 1 && targVal.All(x => float.TryParse(x, out _)))
+                        {
+                            Vector4 vect4 = new Vector4(float.Parse(targVal[0]), float.Parse(targVal[1]), float.Parse(targVal.ElementAtOrDefault(2) ?? "0"), float.Parse(targVal.ElementAtOrDefault(3) ?? "0"));
+                            mat.SetVector(nameID, vect4);
+                        }
+                        break;
+                    case ShaderPropertyType.Range:
+                    case ShaderPropertyType.Float:
+                        if (float.TryParse(value, out var valFloat))
+                        {
+                            mat.SetFloat(nameID, valFloat);
+                        }
+                        break;
+                    case ShaderPropertyType.Int:
+                        if (float.TryParse(value, out var valInt))
+                        {
+                            mat.SetFloat(nameID, valInt);
+                        }
+                        break;
+                }
+                HDMaterial.ValidateMaterial(mat);
+                return shaderPropertyType switch
+                {
+                    ShaderPropertyType.Color => mat.GetColor(nameID).ToRGBA(),
+                    ShaderPropertyType.Vector => mat.GetVector(nameID).ToString()[1..^1].Trim(),
+                    ShaderPropertyType.Float or ShaderPropertyType.Range => mat.GetFloat(nameID).ToString(),
+                    ShaderPropertyType.Texture => mat.GetTexture(nameID) is Texture2D t2d ? Convert.ToBase64String(ImageConversion.EncodeToPNG(t2d)) : null,
+                    ShaderPropertyType.Int => mat.GetInt(nameID).ToString(),
+                    _ => null
+                };
+            }
+            return null;
+        }
+
+        private Dictionary<string, Dictionary<string, string>> ListShadersDetails()
         {
             var allShaders = Resources.FindObjectsOfTypeAll<Shader>();
             var result = new Dictionary<string, Dictionary<string, string>>();
@@ -216,6 +326,19 @@ namespace BelzontWE
                 }
             }
             return result;
+        }
+        private List<string> ListShaders()
+        {
+            return Resources.FindObjectsOfTypeAll<Shader>().Select(x => x.name).ToList();
+        }
+
+        private void SetShader(string shaderName)
+        {
+            m_FontServer.SetDefaultShader(shaderName);
+        }
+        private string GetShader()
+        {
+         return  m_FontServer.GetDefaultShader();
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller)

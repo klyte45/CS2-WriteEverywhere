@@ -28,6 +28,7 @@ namespace BelzontWE.Font
 
         private readonly FontSystem _fontSystem;
 
+        public FontAtlas MainAtlas => _fontSystem.CurrentAtlas;
         public long LastUpdate => _fontSystem.LastUpdateAtlas;
 
         public IEnumerable<Texture2D> Textures => new TextureEnumerator(_fontSystem);

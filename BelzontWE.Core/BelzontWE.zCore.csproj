@@ -44,6 +44,10 @@
     <Reference Include="0Harmony">
       <HintPath>$(K45_CS2_ALLROOT)\_commonDeps\0Harmony.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule.dll">
+      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.ImageConversionModule.dll.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="cohtml.Net">
       <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\cohtml.Net.dll</HintPath>
       <Private>False</Private>

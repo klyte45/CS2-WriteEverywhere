@@ -4,6 +4,10 @@ import { Component } from "react";
 import { Cs2FormLine } from "./components/_common/Cs2FormLine";
 import Cs2Select from "./components/_common/cs2-select";
 import { Input, SimpleInput } from "#components/_common/input";
+import "#styles/react-tabs.scss";
+import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
+import { BaseTab } from "#components/BaseTab";
+import { ShaderEditTab } from "#components/ShaderEditTab";
 
 
 export type Entity = {
@@ -12,14 +16,8 @@ export type Entity = {
   Version: number;
 };
 
-type State = {
-  currentEntity: Entity,
-  fontsLoaded: { name: string }[],
-  selectedFont?: { name: string },
-  textToRender?: string
-}
 
-export default class Root extends Component<{}, State> {
+export default class Root extends Component<{}> {
 
   constructor(props) {
     super(props)
@@ -45,29 +43,15 @@ export default class Root extends Component<{}, State> {
 
   render() {
     return <ErrorBoundary>
-      <h1>ON!</h1>
-      <button onClick={() => location.reload()} className="normalBtn">REFRESH PAGE</button>
-      <button onClick={() => engine.call("k45::we.test.enableTestTool")} className="normalBtn">Enable tool! !@!@</button>
-      <pre>{JSON.stringify(this.state?.currentEntity, null, 2)}</pre>
-      <button onClick={() => engine.call("k45::we.test.reloadFonts")} className="positiveBtn">Reload Fonts</button>
-      <Cs2FormLine title="Select Font">
-        <Cs2Select
-          options={this.state?.fontsLoaded}
-          getOptionLabel={(x) => x.name}
-          getOptionValue={(x) => x.name}
-          onChange={(x) => this.setState({ selectedFont: x })}
-          value={this.state?.selectedFont}
-        />
-      </Cs2FormLine>
-      <Cs2FormLine title="Text to render">
-        <SimpleInput onValueChanged={(y) => {
-          this.setState({ textToRender: y });
-          return y;
-        }} maxLength={512} getValue={() => this.state?.textToRender} />
-      </Cs2FormLine>
-      <button className="negativeBtn" onClick={() => engine.call("k45::we.test.requestTextMesh", this.state?.textToRender, this.state?.selectedFont?.name).then(console.log)}>Generate text...</button>
-      <button className="positiveBtn" onClick={() => engine.call("k45::we.test.listShaderDatails").then(console.log)}>List shaders</button>
-
+      <Tabs defaultIndex={1}>
+        <TabList>
+          <Tab>Start</Tab>
+          <Tab>ShaderEditor</Tab>
+        </TabList>
+        <TabPanel><BaseTab /></TabPanel>
+        <TabPanel><ShaderEditTab /></TabPanel>
+      </Tabs>
+     
     </ErrorBoundary>;
   }
 }
@@ -93,3 +77,7 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
+
+
+
+

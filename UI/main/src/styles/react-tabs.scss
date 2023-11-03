@@ -1,0 +1,61 @@
+.react-tabs {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    &__tab-list {
+        border-bottom-width: 3rem;
+        border-bottom-style: solid;
+        border-bottom-color: var(--sectionBorderColor);
+        margin: 0 0 10rem;
+        padding: 0;
+        display: flex;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 35rem;
+    }
+
+    &__tab {
+        display: flex;
+        border: 1rem solid transparent;
+        border-bottom: none;
+        bottom: -1rem;
+        position: relative;
+        padding: 6rem 12rem;
+        cursor: pointer;
+
+        &--selected {
+            background-color: var(--textColorHighlight);
+            color:  var(--normalTextColorDark);
+            border-radius: 5rem 5rem 0 0;
+            font-weight: 800;
+        }
+
+        &--disabled {
+            color: gray;
+            cursor: default;
+        }
+
+
+    }
+
+    &__tab-panel {
+        display: none;
+        padding-left: 5rem;
+        padding-right: 5rem;
+        position: absolute;
+        bottom: 0;
+        top: 40rem;
+        left: 0;
+        right: 0;
+        overflow: scroll;
+
+        &--selected {
+            display: block;
+        }
+    }
+}

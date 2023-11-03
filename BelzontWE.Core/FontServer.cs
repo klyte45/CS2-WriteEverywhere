@@ -110,8 +110,19 @@ namespace BelzontWE
             }
             return true;
         }
+        private const string defaultShaderName = "BH/SG_DefaultShader";
 
-        private static Shader GetDefaultFontShader() => Shader.Find("HDRP/Lit");
+        internal void SetDefaultShader(string shaderName)
+        {
+            if (Shader.Find(shaderName))
+            {
+                //defaultShaderName = shaderName;
+                ReloadFontsFromPath();
+            }
+        }
+        internal string GetDefaultShader() => defaultShaderName;
+
+        private static Shader GetDefaultFontShader() => Shader.Find(defaultShaderName);
 
         public void ClearFonts() => m_fontRegistered.Clear();
 
