@@ -2,10 +2,8 @@
 
 namespace BelzontWE.Font
 {
-    public unsafe struct Font
+    public class Font
     {
-        public static int Size => sizeof(Font);
-
         private float AscentBase, DescentBase, LineHeightBase, FontHeight;
 
         public float Ascent { get; private set; }
@@ -13,7 +11,7 @@ namespace BelzontWE.Font
         public float LineHeight { get; private set; }
         public float Scale { get; private set; }
 
-        public FontInfo _font;
+        public FontInfo _font = new FontInfo();
 
         public void Recalculate(float size)
         {

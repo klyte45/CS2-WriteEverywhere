@@ -1,5 +1,4 @@
 ﻿using System;
-using Unity.Collections;
 
 namespace BelzontWE.Font
 {
@@ -7,12 +6,12 @@ namespace BelzontWE.Font
 	public
 #else
 	internal
-#endif
-	struct FakePtr<T> : IDisposable where T : unmanaged
+# endif
+	struct FakePtr<T> where T : new()
 	{
 		public static readonly FakePtr<T> Null = new FakePtr<T>(null);
 
-		private NativeArray<T> _array;
+		private readonly T[] _array;
 
 		public int Offset;
 
@@ -27,9 +26,9 @@ namespace BelzontWE.Font
 
 		public T this[long index]
 		{
-			get => _array[(int)(Offset + index)];
+			get => _array[Offset + index];
 
-			set => _array[(int)(Offset + index)] = value;
+			set => _array[Offset + index] = value;
 		}
 
 		public T Value
@@ -48,29 +47,24 @@ namespace BelzontWE.Font
 		public FakePtr(T[] data, int offset)
 		{
 			Offset = offset;
-			_array = new(data ?? new T[0], Allocator.Persistent);
-		}
-
-		public FakePtr(NativeArray<T> data, int offset)
-		{
-			Offset = offset;
 			_array = data;
 		}
 
 		public FakePtr(T[] data) : this(data, 0)
 		{
 		}
-		public FakePtr(NativeArray<T> data) : this(data, 0)
-		{
-		}
 
 		public FakePtr(T value)
 		{
 			Offset = 0;
-			_array = new(1, Allocator.Persistent);
+			_array = new T[1];
 			_array[0] = value;
 		}
 
+		public void Clear(int count)
+		{
+			Array.Clear(_array, Offset, count);
+		}
 
 		public T GetAndIncrease()
 		{
@@ -93,7 +87,7 @@ namespace BelzontWE.Font
 
 		public static FakePtr<T> operator +(FakePtr<T> p, int offset)
 		{
-			return new FakePtr<T>(p._array) { Offset = p.Offset + offset };
+			return new FakePtr<T>(p._array) {Offset = p.Offset + offset};
 		}
 
 		public static FakePtr<T> operator -(FakePtr<T> p, int offset)
@@ -103,22 +97,22 @@ namespace BelzontWE.Font
 
 		public static FakePtr<T> operator +(FakePtr<T> p, uint offset)
 		{
-			return p + (int)offset;
+			return p + (int) offset;
 		}
 
 		public static FakePtr<T> operator -(FakePtr<T> p, uint offset)
 		{
-			return p - (int)offset;
+			return p - (int) offset;
 		}
 
 		public static FakePtr<T> operator +(FakePtr<T> p, long offset)
 		{
-			return p + (int)offset;
+			return p + (int) offset;
 		}
 
 		public static FakePtr<T> operator -(FakePtr<T> p, long offset)
 		{
-			return p - (int)offset;
+			return p - (int) offset;
 		}
 
 		public static FakePtr<T> operator ++(FakePtr<T> p)
@@ -137,7 +131,7 @@ namespace BelzontWE.Font
 
 		public static FakePtr<T> CreateWithSize(long size)
 		{
-			return CreateWithSize((int)size);
+			return CreateWithSize((int) size);
 		}
 
 		public static FakePtr<T> Create()
@@ -163,11 +157,6 @@ namespace BelzontWE.Font
 		public static void memcpy(FakePtr<T> a, T[] b, int count)
 		{
 			for (long i = 0; i < count; ++i) a[i] = b[i];
-		}
-
-		public void Dispose()
-		{
-			_array.Dispose();
 		}
 	}
 }

@@ -2,7 +2,7 @@
 
 namespace BelzontWE.Font
 {
-	public struct CharStringContext
+	public class CharStringContext
 	{
 		public int bounds;
 		public float first_x;

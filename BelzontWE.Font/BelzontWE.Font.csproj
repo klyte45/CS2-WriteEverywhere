@@ -33,6 +33,12 @@
 <LangVersion>9.0</LangVersion>
 <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Steam|AnyCPU'">
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Editor|AnyCPU'">
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>  
   <Target Name="PostBuild" AfterTargets="AfterBuild">
 	<ItemGroup>
@@ -67,6 +73,14 @@
     </Reference>
     <Reference Include="Colossal.IO.AssetDatabase">
       <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.IO.AssetDatabase.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule.dll">
+      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.ImageConversionModule.dll.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.HighDefinition.Runtime">
+      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Unity.RenderPipelines.HighDefinition.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.Localization">

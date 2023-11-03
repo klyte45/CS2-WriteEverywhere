@@ -3,17 +3,17 @@ using static BelzontWE.Font.Common;
 
 namespace BelzontWE.Font
 {
-	public struct FontInfo
+	public class FontInfo
 	{
-		public Buf cff;
-		public Buf charstrings;
+		public Buf cff = null;
+		public Buf charstrings = null;
 		public FakePtr<byte> data;
-		public Buf fdselect;
-		public Buf fontdicts;
+		public Buf fdselect = null;
+		public Buf fontdicts = null;
 		public int fontstart;
 		public int glyf;
 		public int gpos;
-		public Buf gsubrs;
+		public Buf gsubrs = null;
 		public int head;
 		public int hhea;
 		public int hmtx;
@@ -22,14 +22,15 @@ namespace BelzontWE.Font
 		public int kern;
 		public int loca;
 		public int numGlyphs;
-		public Buf subrs;
+		public Buf subrs = null;
 		public int svg;
 
 		public int stbtt__get_svg()
 		{
+			uint t = 0;
 			if (this.svg < 0)
 			{
-				uint t = stbtt__find_table(this.data, (uint)this.fontstart, "SVG ");
+				t = stbtt__find_table(this.data, (uint)this.fontstart, "SVG ");
 				if (t != 0)
 				{
 					var offset = ttULONG(this.data + t + 2);
@@ -46,11 +47,15 @@ namespace BelzontWE.Font
 
 		public int stbtt_InitFont_internal(byte[] data, int fontstart)
 		{
-			var ptr = new FakePtr<byte>(data, 0);
+			uint cmap = 0;
+			uint t = 0;
+			var i = 0;
+			var numTables = 0;
+			var ptr = new FakePtr<byte>(data);
 			this.data = ptr;
 			this.fontstart = fontstart;
 			this.cff = new Buf(FakePtr<byte>.Null, 0);
-			uint cmap = stbtt__find_table(ptr, (uint)fontstart, "cmap");
+			cmap = stbtt__find_table(ptr, (uint)fontstart, "cmap");
 			this.loca = (int)stbtt__find_table(ptr, (uint)fontstart, "loca");
 			this.head = (int)stbtt__find_table(ptr, (uint)fontstart, "head");
 			this.glyf = (int)stbtt__find_table(ptr, (uint)fontstart, "glyf");
@@ -67,27 +72,31 @@ namespace BelzontWE.Font
 			}
 			else
 			{
-				uint cff = stbtt__find_table(ptr, (uint)fontstart, "CFF ");
+				Buf b = null;
+				Buf topdict = null;
+				Buf topdictidx = null;
+				var cstype = (uint)2;
+				var charstrings = (uint)0;
+				var fdarrayoff = (uint)0;
+				var fdselectoff = (uint)0;
+				uint cff = 0;
+				cff = stbtt__find_table(ptr, (uint)fontstart, "CFF ");
 				if (cff == 0)
 					return 0;
 				this.fontdicts = new Buf(FakePtr<byte>.Null, 0);
 				this.fdselect = new Buf(FakePtr<byte>.Null, 0);
 				this.cff = new Buf(new FakePtr<byte>(ptr, (int)cff), 512 * 1024 * 1024);
-				Buf b = this.cff;
+				b = this.cff;
 				b.stbtt__buf_skip(2);
 				b.stbtt__buf_seek(b.stbtt__buf_get8());
 				b.stbtt__cff_get_index();
-				Buf topdictidx = b.stbtt__cff_get_index();
-				Buf topdict = topdictidx.stbtt__cff_index_get(0);
+				topdictidx = b.stbtt__cff_get_index();
+				topdict = topdictidx.stbtt__cff_index_get(0);
 				b.stbtt__cff_get_index();
 				this.gsubrs = b.stbtt__cff_get_index();
-				uint charstrings;
 				topdict.stbtt__dict_get_ints(17, out charstrings);
-				uint cstype;
 				topdict.stbtt__dict_get_ints(0x100 | 6, out cstype);
-				uint fdarrayoff;
 				topdict.stbtt__dict_get_ints(0x100 | 36, out fdarrayoff);
-				uint fdselectoff;
 				topdict.stbtt__dict_get_ints(0x100 | 37, out fdselectoff);
 				this.subrs = Buf.stbtt__get_subrs(b, topdict);
 
@@ -108,15 +117,14 @@ namespace BelzontWE.Font
 				this.charstrings = b.stbtt__cff_get_index();
 			}
 
-			uint t = stbtt__find_table(ptr, (uint)fontstart, "maxp");
+			t = stbtt__find_table(ptr, (uint)fontstart, "maxp");
 			if (t != 0)
 				this.numGlyphs = ttUSHORT(ptr + t + 4);
 			else
 				this.numGlyphs = 0xffff;
 			this.svg = -1;
-			int numTables = ttUSHORT(ptr + cmap + 2);
+			numTables = ttUSHORT(ptr + cmap + 2);
 			this.index_map = 0;
-			int i;
 			for (i = 0; i < numTables; ++i)
 			{
 				var encoding_record = (uint)(cmap + 4 + 8 * i);
@@ -153,7 +161,7 @@ namespace BelzontWE.Font
 			{
 				var bytes = (int)ttUSHORT(data + index_map + 2);
 				if (unicode_codepoint < bytes - 6)
-					return data[(int)index_map + 6 + unicode_codepoint];
+					return data[index_map + 6 + unicode_codepoint];
 				return 0;
 			}
 
@@ -184,8 +192,9 @@ namespace BelzontWE.Font
 				search -= 2;
 				while (entrySelector != 0)
 				{
+					ushort end = 0;
 					searchRange >>= 1;
-					ushort end = ttUSHORT(data + search + searchRange * 2);
+					end = ttUSHORT(data + search + searchRange * 2);
 					if (unicode_codepoint > end)
 						search += (uint)(searchRange * 2);
 					--entrySelector;
@@ -193,11 +202,13 @@ namespace BelzontWE.Font
 
 				search += 2;
 				{
+					ushort offset = 0;
+					ushort start = 0;
 					var item = (ushort)((search - endCount) >> 1);
-					ushort start = ttUSHORT(data + index_map + 14 + segcount * 2 + 2 + 2 * item);
+					start = ttUSHORT(data + index_map + 14 + segcount * 2 + 2 + 2 * item);
 					if (unicode_codepoint < start)
 						return 0;
-					ushort offset = ttUSHORT(data + index_map + 14 + segcount * 6 + 2 + 2 * item);
+					offset = ttUSHORT(data + index_map + 14 + segcount * 6 + 2 + 2 * item);
 					if (offset == 0)
 						return (ushort)(unicode_codepoint +
 										 ttSHORT(data + index_map + 14 + segcount * 4 + 2 + 2 * item));
@@ -209,8 +220,10 @@ namespace BelzontWE.Font
 			if (format == 12 || format == 13)
 			{
 				var ngroups = ttULONG(data + index_map + 12);
-				int low = 0;
-				int high = (int)ngroups;
+				var low = 0;
+				var high = 0;
+				low = 0;
+				high = (int)ngroups;
 				while (low < high)
 				{
 					var mid = low + ((high - low) >> 1);
@@ -246,12 +259,12 @@ namespace BelzontWE.Font
 
 		public int stbtt__GetGlyfOffset(int glyph_index)
 		{
+			var g1 = 0;
+			var g2 = 0;
 			if (glyph_index >= this.numGlyphs)
 				return -1;
 			if (this.indexToLocFormat >= 2)
 				return -1;
-			int g1;
-			int g2;
 			if (this.indexToLocFormat == 0)
 			{
 				g1 = this.glyf + ttUSHORT(this.data + this.loca + glyph_index * 2) * 2;
@@ -295,18 +308,22 @@ namespace BelzontWE.Font
 
 		public int stbtt_IsGlyphEmpty(int glyph_index)
 		{
+			short numberOfContours = 0;
+			var g = 0;
+
 			int x0 = 0, y0 = 0, x1 = 0, y1 = 0;
 			if (this.cff.size != 0)
 				return stbtt__GetGlyphInfoT2(glyph_index, ref x0, ref y0, ref x1, ref y1) == 0 ? 1 : 0;
-			int g = stbtt__GetGlyfOffset(glyph_index);
+			g = stbtt__GetGlyfOffset(glyph_index);
 			if (g < 0)
 				return 1;
-			short numberOfContours = ttSHORT(data + g);
+			numberOfContours = ttSHORT(this.data + g);
 			return numberOfContours == 0 ? 1 : 0;
 		}
 
 		public int stbtt__GetGlyphShapeTT(int glyph_index, out stbtt_vertex[] pvertices)
 		{
+			short numberOfContours = 0;
 			FakePtr<byte> endPtsOfContours;
 			var data = this.data;
 			stbtt_vertex[] vertices = null;
@@ -315,24 +332,38 @@ namespace BelzontWE.Font
 			pvertices = null;
 			if (g < 0)
 				return 0;
-			short numberOfContours = ttSHORT(data + g);
+			numberOfContours = ttSHORT(data + g);
 			if (numberOfContours > 0)
 			{
 				var flags = (byte)0;
+				byte flagcount = 0;
+				var ins = 0;
+				var i = 0;
 				var j = 0;
+				var m = 0;
+				var n = 0;
+				var next_move = 0;
 				var was_off = 0;
+				var off = 0;
 				var start_off = 0;
+				var x = 0;
+				var y = 0;
+				var cx = 0;
+				var cy = 0;
+				var sx = 0;
+				var sy = 0;
+				var scx = 0;
+				var scy = 0;
 				FakePtr<byte> points;
 				endPtsOfContours = data + g + 10;
-				int ins = ttUSHORT(data + g + 10 + numberOfContours * 2);
+				ins = ttUSHORT(data + g + 10 + numberOfContours * 2);
 				points = data + g + 10 + numberOfContours * 2 + 2 + ins;
-				int n = 1 + ttUSHORT(endPtsOfContours + numberOfContours * 2 - 2);
-				int m = n + 2 * numberOfContours;
+				n = 1 + ttUSHORT(endPtsOfContours + numberOfContours * 2 - 2);
+				m = n + 2 * numberOfContours;
 				vertices = new stbtt_vertex[m];
-				int next_move = 0;
-				byte flagcount = 0;
-				int off = m - n;
-				int i;
+				next_move = 0;
+				flagcount = 0;
+				off = m - n;
 				for (i = 0; i < n; ++i)
 				{
 					if (flagcount == 0)
@@ -349,7 +380,7 @@ namespace BelzontWE.Font
 					vertices[off + i].type = flags;
 				}
 
-				int x = 0;
+				x = 0;
 				for (i = 0; i < n; ++i)
 				{
 					flags = vertices[off + i].type;
@@ -370,7 +401,7 @@ namespace BelzontWE.Font
 					vertices[off + i].x = (short)x;
 				}
 
-				int y = 0;
+				y = 0;
 				for (i = 0; i < n; ++i)
 				{
 					flags = vertices[off + i].type;
@@ -392,12 +423,7 @@ namespace BelzontWE.Font
 				}
 
 				num_vertices = 0;
-				int cx;
-				int cy;
-				int sy;
-				int scx;
-				int scy;
-				int sx = sy = cx = cy = scx = scy = 0;
+				sx = sy = cx = cy = scx = scy = 0;
 				for (i = 0; i < n; ++i)
 				{
 					flags = vertices[off + i].type;
@@ -468,6 +494,10 @@ namespace BelzontWE.Font
 				vertices = null;
 				while (more != 0)
 				{
+					ushort flags = 0;
+					ushort gidx = 0;
+					var comp_num_verts = 0;
+					var i = 0;
 					stbtt_vertex[] comp_verts;
 					stbtt_vertex[] tmp;
 					var mtx = new float[6];
@@ -477,9 +507,11 @@ namespace BelzontWE.Font
 					mtx[3] = 1;
 					mtx[4] = 0;
 					mtx[5] = 0;
-					ushort flags = (ushort)ttSHORT(comp);
+					float m = 0;
+					float n = 0;
+					flags = (ushort)ttSHORT(comp);
 					comp += 2;
-					ushort gidx = (ushort)ttSHORT(comp);
+					gidx = (ushort)ttSHORT(comp);
 					comp += 2;
 					if ((flags & 2) != 0)
 					{
@@ -525,16 +557,17 @@ namespace BelzontWE.Font
 						comp += 2;
 					}
 
-					float m = (float)Math.Sqrt(mtx[0] * mtx[0] + mtx[1] * mtx[1]);
-					float n = (float)Math.Sqrt(mtx[2] * mtx[2] + mtx[3] * mtx[3]);
-					int comp_num_verts = stbtt_GetGlyphShape(gidx, out comp_verts);
+					m = (float)Math.Sqrt(mtx[0] * mtx[0] + mtx[1] * mtx[1]);
+					n = (float)Math.Sqrt(mtx[2] * mtx[2] + mtx[3] * mtx[3]);
+					comp_num_verts = stbtt_GetGlyphShape(gidx, out comp_verts);
 					if (comp_num_verts > 0)
 					{
-						int i;
 						for (i = 0; i < comp_num_verts; ++i)
 						{
-							short x = comp_verts[i].x;
-							short y = comp_verts[i].y;
+							short x = 0;
+							short y = 0;
+							x = comp_verts[i].x;
+							y = comp_verts[i].y;
 							comp_verts[i].x = (short)(m * (mtx[0] * x + mtx[2] * y + mtx[4]));
 							comp_verts[i].y = (short)(n * (mtx[1] * x + mtx[3] * y + mtx[5]));
 							x = comp_verts[i].cx;
@@ -563,9 +596,15 @@ namespace BelzontWE.Font
 		public Buf stbtt__cid_get_glyph_subrs(int glyph_index)
 		{
 			var fdselect = this.fdselect;
+			var nranges = 0;
+			var start = 0;
+			var end = 0;
+			var v = 0;
+			var fmt = 0;
 			var fdselector = -1;
+			var i = 0;
 			fdselect.stbtt__buf_seek(0);
-			int fmt = fdselect.stbtt__buf_get8();
+			fmt = fdselect.stbtt__buf_get8();
 			if (fmt == 0)
 			{
 				fdselect.stbtt__buf_skip(glyph_index);
@@ -573,13 +612,12 @@ namespace BelzontWE.Font
 			}
 			else if (fmt == 3)
 			{
-				int nranges = (int)fdselect.stbtt__buf_get(2);
-				int start = (int)fdselect.stbtt__buf_get(2);
-				int i;
+				nranges = (int)fdselect.stbtt__buf_get(2);
+				start = (int)fdselect.stbtt__buf_get(2);
 				for (i = 0; i < nranges; i++)
 				{
-					int v = fdselect.stbtt__buf_get8();
-					int end = (int)fdselect.stbtt__buf_get(2);
+					v = fdselect.stbtt__buf_get8();
+					end = (int)fdselect.stbtt__buf_get(2);
 					if (glyph_index >= start && glyph_index < end)
 					{
 						fdselector = v;
@@ -601,21 +639,24 @@ namespace BelzontWE.Font
 			var maskbits = 0;
 			var subr_stack_height = 0;
 			var sp = 0;
+			var v = 0;
+			var i = 0;
+			var b0 = 0;
 			var has_subrs = 0;
+			var clear_stack = 0;
 			var s = new float[48];
 			var subr_stack = new Buf[10];
-			int i;
 			for (i = 0; i < subr_stack.Length; ++i)
-				subr_stack[i] = default;
+				subr_stack[i] = null;
 
 			var subrs = this.subrs;
+			float f = 0;
 			var b = this.charstrings.stbtt__cff_index_get(glyph_index);
 			while (b.cursor < b.size)
 			{
 				i = 0;
-				int clear_stack = 1;
-				int b0 = b.stbtt__buf_get8();
-				float f;
+				clear_stack = 1;
+				b0 = b.stbtt__buf_get8();
 				switch (b0)
 				{
 					case 0x13:
@@ -760,7 +801,7 @@ namespace BelzontWE.Font
 
 						if (sp < 1)
 							return 0;
-						int v = (int)s[--sp];
+						v = (int)s[--sp];
 						if (subr_stack_height >= 10)
 							return 0;
 						subr_stack[subr_stack_height++] = b;
@@ -780,96 +821,98 @@ namespace BelzontWE.Font
 						c.stbtt__csctx_close_shape();
 						return 1;
 					case 0x0C:
+					{
+						float dx1 = 0;
+						float dx2 = 0;
+						float dx3 = 0;
+						float dx4 = 0;
+						float dx5 = 0;
+						float dx6 = 0;
+						float dy1 = 0;
+						float dy2 = 0;
+						float dy3 = 0;
+						float dy4 = 0;
+						float dy5 = 0;
+						float dy6 = 0;
+						float dx = 0;
+						float dy = 0;
+						var b1 = (int)b.stbtt__buf_get8();
+						switch (b1)
 						{
-							var b1 = (int)b.stbtt__buf_get8();
-							float dx1;
-							float dx2;
-							float dx3;
-							float dx4;
-							float dx5;
-							float dx6;
-							float dy1;
-							float dy2;
-							float dy3;
-							float dy4;
-							float dy5;
-							float dy6;
-							switch (b1)
-							{
-								case 0x22:
-									if (sp < 7)
-										return 0;
-									dx1 = s[0];
-									dx2 = s[1];
-									dy2 = s[2];
-									dx3 = s[3];
-									dx4 = s[4];
-									dx5 = s[5];
-									dx6 = s[6];
-									c.stbtt__csctx_rccurve_to(dx1, 0, dx2, dy2, dx3, 0);
-									c.stbtt__csctx_rccurve_to(dx4, 0, dx5, -dy2, dx6, 0);
-									break;
-								case 0x23:
-									if (sp < 13)
-										return 0;
-									dx1 = s[0];
-									dy1 = s[1];
-									dx2 = s[2];
-									dy2 = s[3];
-									dx3 = s[4];
-									dy3 = s[5];
-									dx4 = s[6];
-									dy4 = s[7];
-									dx5 = s[8];
-									dy5 = s[9];
-									dx6 = s[10];
-									dy6 = s[11];
-									c.stbtt__csctx_rccurve_to(dx1, dy1, dx2, dy2, dx3, dy3);
-									c.stbtt__csctx_rccurve_to(dx4, dy4, dx5, dy5, dx6, dy6);
-									break;
-								case 0x24:
-									if (sp < 9)
-										return 0;
-									dx1 = s[0];
-									dy1 = s[1];
-									dx2 = s[2];
-									dy2 = s[3];
-									dx3 = s[4];
-									dx4 = s[5];
-									dx5 = s[6];
-									dy5 = s[7];
-									dx6 = s[8];
-									c.stbtt__csctx_rccurve_to(dx1, dy1, dx2, dy2, dx3, 0);
-									c.stbtt__csctx_rccurve_to(dx4, 0, dx5, dy5, dx6, -(dy1 + dy2 + dy5));
-									break;
-								case 0x25:
-									if (sp < 11)
-										return 0;
-									dx1 = s[0];
-									dy1 = s[1];
-									dx2 = s[2];
-									dy2 = s[3];
-									dx3 = s[4];
-									dy3 = s[5];
-									dx4 = s[6];
-									dy4 = s[7];
-									dx5 = s[8];
-									dy5 = s[9];
-									dx6 = dy6 = s[10];
-									float dx = dx1 + dx2 + dx3 + dx4 + dx5;
-									float dy = dy1 + dy2 + dy3 + dy4 + dy5;
-									if (Math.Abs((double)dx) > Math.Abs((double)dy))
-										dy6 = -dy;
-									else
-										dx6 = -dx;
-									c.stbtt__csctx_rccurve_to(dx1, dy1, dx2, dy2, dx3, dy3);
-									c.stbtt__csctx_rccurve_to(dx4, dy4, dx5, dy5, dx6, dy6);
-									break;
-								default:
+							case 0x22:
+								if (sp < 7)
 									return 0;
-							}
+								dx1 = s[0];
+								dx2 = s[1];
+								dy2 = s[2];
+								dx3 = s[3];
+								dx4 = s[4];
+								dx5 = s[5];
+								dx6 = s[6];
+								c.stbtt__csctx_rccurve_to(dx1, 0, dx2, dy2, dx3, 0);
+								c.stbtt__csctx_rccurve_to(dx4, 0, dx5, -dy2, dx6, 0);
+								break;
+							case 0x23:
+								if (sp < 13)
+									return 0;
+								dx1 = s[0];
+								dy1 = s[1];
+								dx2 = s[2];
+								dy2 = s[3];
+								dx3 = s[4];
+								dy3 = s[5];
+								dx4 = s[6];
+								dy4 = s[7];
+								dx5 = s[8];
+								dy5 = s[9];
+								dx6 = s[10];
+								dy6 = s[11];
+								c.stbtt__csctx_rccurve_to(dx1, dy1, dx2, dy2, dx3, dy3);
+								c.stbtt__csctx_rccurve_to(dx4, dy4, dx5, dy5, dx6, dy6);
+								break;
+							case 0x24:
+								if (sp < 9)
+									return 0;
+								dx1 = s[0];
+								dy1 = s[1];
+								dx2 = s[2];
+								dy2 = s[3];
+								dx3 = s[4];
+								dx4 = s[5];
+								dx5 = s[6];
+								dy5 = s[7];
+								dx6 = s[8];
+								c.stbtt__csctx_rccurve_to(dx1, dy1, dx2, dy2, dx3, 0);
+								c.stbtt__csctx_rccurve_to(dx4, 0, dx5, dy5, dx6, -(dy1 + dy2 + dy5));
+								break;
+							case 0x25:
+								if (sp < 11)
+									return 0;
+								dx1 = s[0];
+								dy1 = s[1];
+								dx2 = s[2];
+								dy2 = s[3];
+								dx3 = s[4];
+								dy3 = s[5];
+								dx4 = s[6];
+								dy4 = s[7];
+								dx5 = s[8];
+								dy5 = s[9];
+								dx6 = dy6 = s[10];
+								dx = dx1 + dx2 + dx3 + dx4 + dx5;
+								dy = dy1 + dy2 + dy3 + dy4 + dy5;
+								if (Math.Abs((double)dx) > Math.Abs((double)dy))
+									dy6 = -dy;
+								else
+									dx6 = -dx;
+								c.stbtt__csctx_rccurve_to(dx1, dy1, dx2, dy2, dx3, dy3);
+								c.stbtt__csctx_rccurve_to(dx4, dy4, dx5, dy5, dx6, dy6);
+								break;
+							default:
+								return 0;
 						}
-						break;
+					}
+					break;
 					default:
 						if (b0 != 255 && b0 != 28 && (b0 < 32 || b0 > 254))
 							return 0;
@@ -966,16 +1009,17 @@ namespace BelzontWE.Font
 		public int stbtt_GetKerningTable(stbtt_kerningentry[] table, int table_length)
 		{
 			var data = this.data + this.kern;
+			var k = 0;
+			var length = 0;
 			if (this.kern == 0)
 				return 0;
 			if (ttUSHORT(data + 2) < 1)
 				return 0;
 			if (ttUSHORT(data + 8) != 1)
 				return 0;
-			int length = ttUSHORT(data + 10);
+			length = ttUSHORT(data + 10);
 			if (table_length < length)
 				length = table_length;
-			int k;
 			for (k = 0; k < length; k++)
 			{
 				table[k].glyph1 = ttUSHORT(data + 18 + k * 6);
@@ -989,19 +1033,24 @@ namespace BelzontWE.Font
 		public int stbtt__GetGlyphKernInfoAdvance(int glyph1, int glyph2)
 		{
 			var data = this.data + this.kern;
+			uint needle = 0;
+			uint straw = 0;
+			var l = 0;
+			var r = 0;
+			var m = 0;
 			if (this.kern == 0)
 				return 0;
 			if (ttUSHORT(data + 2) < 1)
 				return 0;
 			if (ttUSHORT(data + 8) != 1)
 				return 0;
-			int l = 0;
-			int r = ttUSHORT(data + 10) - 1;
-			uint needle = (uint)(glyph1 << 16 | glyph2);
+			l = 0;
+			r = ttUSHORT(data + 10) - 1;
+			needle = (uint)((glyph1 << 16) | glyph2);
 			while (l <= r)
 			{
-				int m = (l + r) >> 1;
-				uint straw = ttULONG(data + 18 + m * 6);
+				m = (l + r) >> 1;
+				straw = ttULONG(data + 18 + m * 6);
 				if (needle < straw)
 					r = m - 1;
 				else if (needle > straw)
@@ -1015,8 +1064,11 @@ namespace BelzontWE.Font
 
 		public int stbtt__GetGlyphGPOSInfoAdvance(int glyph1, int glyph2)
 		{
+			ushort lookupListOffset = 0;
 			FakePtr<byte> lookupList;
+			ushort lookupCount = 0;
 			FakePtr<byte> data;
+			var i = 0;
 			if (this.gpos == 0)
 				return 0;
 			data = this.data + this.gpos;
@@ -1024,10 +1076,9 @@ namespace BelzontWE.Font
 				return 0;
 			if (ttUSHORT(data + 2) != 0)
 				return 0;
-			ushort lookupListOffset = ttUSHORT(data + 8);
+			lookupListOffset = ttUSHORT(data + 8);
 			lookupList = data + lookupListOffset;
-			ushort lookupCount = ttUSHORT(lookupList);
-			int i;
+			lookupCount = ttUSHORT(lookupList);
 			for (i = 0; i < lookupCount; ++i)
 			{
 				var lookupOffset = ttUSHORT(lookupList + 2 + 2 * i);
@@ -1038,88 +1089,94 @@ namespace BelzontWE.Font
 				switch (lookupType)
 				{
 					case 2:
+					{
+						var sti = 0;
+						for (sti = 0; sti < subTableCount; sti++)
 						{
-							int sti;
-							for (sti = 0; sti < subTableCount; sti++)
+							var subtableOffset = ttUSHORT(subTableOffsets + 2 * sti);
+							var table = lookupTable + subtableOffset;
+							var posFormat = ttUSHORT(table);
+							var coverageOffset = ttUSHORT(table + 2);
+							var coverageIndex = stbtt__GetCoverageIndex(table + coverageOffset, glyph1);
+							if (coverageIndex == -1)
+								continue;
+							switch (posFormat)
 							{
-								var subtableOffset = ttUSHORT(subTableOffsets + 2 * sti);
-								var table = lookupTable + subtableOffset;
-								var posFormat = ttUSHORT(table);
-								var coverageOffset = ttUSHORT(table + 2);
-								var coverageIndex = stbtt__GetCoverageIndex(table + coverageOffset, glyph1);
-								if (coverageIndex == -1)
-									continue;
-								switch (posFormat)
+								case 1:
 								{
-									case 1:
+									var l = 0;
+									var r = 0;
+									var m = 0;
+									var straw = 0;
+									var needle = 0;
+									var valueFormat1 = ttUSHORT(table + 4);
+									var valueFormat2 = ttUSHORT(table + 6);
+									var valueRecordPairSizeInBytes = 2;
+									var pairSetCount = ttUSHORT(table + 8);
+									var pairPosOffset = ttUSHORT(table + 10 + 2 * coverageIndex);
+									var pairValueTable = table + pairPosOffset;
+									var pairValueCount = ttUSHORT(pairValueTable);
+									var pairValueArray = pairValueTable + 2;
+									if (valueFormat1 != 4)
+										return 0;
+									if (valueFormat2 != 0)
+										return 0;
+									needle = glyph2;
+									r = pairValueCount - 1;
+									l = 0;
+									while (l <= r)
+									{
+										ushort secondGlyph = 0;
+										FakePtr<byte> pairValue;
+										m = (l + r) >> 1;
+										pairValue = pairValueArray + (2 + valueRecordPairSizeInBytes) * m;
+										secondGlyph = ttUSHORT(pairValue);
+										straw = secondGlyph;
+										if (needle < straw)
 										{
-											var valueFormat1 = ttUSHORT(table + 4);
-											var valueFormat2 = ttUSHORT(table + 6);
-											var valueRecordPairSizeInBytes = 2;
-											var pairSetCount = ttUSHORT(table + 8);
-											var pairPosOffset = ttUSHORT(table + 10 + 2 * coverageIndex);
-											var pairValueTable = table + pairPosOffset;
-											var pairValueCount = ttUSHORT(pairValueTable);
-											var pairValueArray = pairValueTable + 2;
-											if (valueFormat1 != 4)
-												return 0;
-											if (valueFormat2 != 0)
-												return 0;
-											int needle = glyph2;
-											int r = pairValueCount - 1;
-											int l = 0;
-											while (l <= r)
-											{
-												FakePtr<byte> pairValue;
-												int m = (l + r) >> 1;
-												pairValue = pairValueArray + (2 + valueRecordPairSizeInBytes) * m;
-												ushort secondGlyph = ttUSHORT(pairValue);
-												int straw = secondGlyph;
-												if (needle < straw)
-												{
-													r = m - 1;
-												}
-												else if (needle > straw)
-												{
-													l = m + 1;
-												}
-												else
-												{
-													var xAdvance = ttSHORT(pairValue + 2);
-													return xAdvance;
-												}
-											}
+											r = m - 1;
 										}
-										break;
-									case 2:
+										else if (needle > straw)
 										{
-											var valueFormat1 = ttUSHORT(table + 4);
-											var valueFormat2 = ttUSHORT(table + 6);
-											var classDef1Offset = ttUSHORT(table + 8);
-											var classDef2Offset = ttUSHORT(table + 10);
-											var glyph1class = stbtt__GetGlyphClass(table + classDef1Offset, glyph1);
-											var glyph2class = stbtt__GetGlyphClass(table + classDef2Offset, glyph2);
-											var class1Count = ttUSHORT(table + 12);
-											var class2Count = ttUSHORT(table + 14);
-											if (valueFormat1 != 4)
-												return 0;
-											if (valueFormat2 != 0)
-												return 0;
-											if (glyph1class >= 0 && glyph1class < class1Count && glyph2class >= 0 &&
-												glyph2class < class2Count)
-											{
-												var class1Records = table + 16;
-												var class2Records = class1Records + 2 * glyph1class * class2Count;
-												var xAdvance = ttSHORT(class2Records + 2 * glyph2class);
-												return xAdvance;
-											}
+											l = m + 1;
 										}
-										break;
+										else
+										{
+											var xAdvance = ttSHORT(pairValue + 2);
+											return xAdvance;
+										}
+									}
 								}
+								break;
+								case 2:
+								{
+									var valueFormat1 = ttUSHORT(table + 4);
+									var valueFormat2 = ttUSHORT(table + 6);
+									var classDef1Offset = ttUSHORT(table + 8);
+									var classDef2Offset = ttUSHORT(table + 10);
+									var glyph1class = stbtt__GetGlyphClass(table + classDef1Offset, glyph1);
+									var glyph2class = stbtt__GetGlyphClass(table + classDef2Offset, glyph2);
+									var class1Count = ttUSHORT(table + 12);
+									var class2Count = ttUSHORT(table + 14);
+									if (valueFormat1 != 4)
+										return 0;
+									if (valueFormat2 != 0)
+										return 0;
+									if (glyph1class >= 0 && glyph1class < class1Count && glyph2class >= 0 &&
+										glyph2class < class2Count)
+									{
+										var class1Records = table + 16;
+										var class2Records = class1Records + 2 * glyph1class * class2Count;
+										var xAdvance = ttSHORT(class2Records + 2 * glyph2class);
+										return xAdvance;
+									}
+								}
+								break;
 							}
-
-							break;
 						}
+
+						break;
+					}
 				}
 			}
 
@@ -1190,11 +1247,11 @@ namespace BelzontWE.Font
 
 		public FakePtr<byte> stbtt_FindSVGDoc(int gl)
 		{
+			var i = 0;
 			var data = this.data;
 			var svg_doc_list = data + stbtt__get_svg();
 			var numEntries = (int)ttUSHORT(svg_doc_list);
 			var svg_docs = svg_doc_list + 2;
-			int i;
 			for (i = 0; i < numEntries; i++)
 			{
 				var svg_doc = svg_docs + 12 * i;
@@ -1399,6 +1456,9 @@ namespace BelzontWE.Font
 			var iy0 = 0;
 			var ix1 = 0;
 			var iy1 = 0;
+			var w = 0;
+			var h = 0;
+			byte[] data = null;
 			if (scale == 0)
 				return null;
 			stbtt_GetGlyphBitmapBoxSubpixel(glyph, scale, scale, 0.0f, 0.0f, ref ix0, ref iy0, ref ix1, ref iy1);
@@ -1408,22 +1468,23 @@ namespace BelzontWE.Font
 			iy0 -= padding;
 			ix1 += padding;
 			iy1 += padding;
-			int w = ix1 - ix0;
-			int h = iy1 - iy0;
+			w = ix1 - ix0;
+			h = iy1 - iy0;
 			width = w;
 			height = h;
 			xoff = ix0;
 			yoff = iy0;
 			scale_y = -scale_y;
-			byte[] data;
 			{
+				var x = 0;
+				var y = 0;
+				var i = 0;
+				var j = 0;
 				float[] precompute;
 				stbtt_vertex[] verts;
 				var num_verts = stbtt_GetGlyphShape(glyph, out verts);
 				data = new byte[w * h];
 				precompute = new float[num_verts];
-				int i;
-				int j;
 				for (i = 0, j = num_verts - 1; i < num_verts; j = i++)
 					if (verts[i].type == STBTT_vline)
 					{
@@ -1455,11 +1516,10 @@ namespace BelzontWE.Font
 						precompute[i] = 0.0f;
 					}
 
-				int x;
-				int y;
 				for (y = iy0; y < iy1; ++y)
 					for (x = ix0; x < ix1; ++x)
 					{
+						float val = 0;
 						var min_dist = 999999.0f;
 						var sx = x + 0.5f;
 						var sy = y + 0.5f;
@@ -1511,6 +1571,10 @@ namespace BelzontWE.Font
 									var mx = x0 - sx;
 									var my = y0 - sy;
 									var res = new float[3];
+									float px = 0;
+									float py = 0;
+									float t = 0;
+									float it = 0;
 									var a_inv = precompute[i];
 									if (a_inv == 0.0)
 									{
@@ -1546,10 +1610,6 @@ namespace BelzontWE.Font
 										num = stbtt__solve_cubic(b, c, d, res);
 									}
 
-									float px;
-									float py;
-									float t;
-									float it;
 									if (num >= 1 && res[0] >= 0.0f && res[0] <= 1.0f)
 									{
 										t = res[0];
@@ -1588,7 +1648,7 @@ namespace BelzontWE.Font
 
 						if (winding == 0)
 							min_dist = -min_dist;
-						float val = onedge_value + pixel_dist_scale * min_dist;
+						val = onedge_value + pixel_dist_scale * min_dist;
 						if (val < 0)
 							val = 0;
 						else if (val > 255)
@@ -1610,14 +1670,16 @@ namespace BelzontWE.Font
 		public FakePtr<byte> stbtt_GetFontNameString(FontInfo font, ref int length, int platformID,
 			int encodingID, int languageID, int nameID)
 		{
+			var i = 0;
+			var count = 0;
+			var stringOffset = 0;
 			var fc = font.data;
 			var offset = (uint)font.fontstart;
 			var nm = stbtt__find_table(fc, offset, "name");
 			if (nm == 0)
 				return FakePtr<byte>.Null;
-			int count = ttUSHORT(fc + nm + 2);
-			int stringOffset = (int)(nm + ttUSHORT(fc + nm + 4));
-			int i;
+			count = ttUSHORT(fc + nm + 2);
+			stringOffset = (int)(nm + ttUSHORT(fc + nm + 4));
 			for (i = 0; i < count; ++i)
 			{
 				var loc = (uint)(nm + 6 + 12 * i);

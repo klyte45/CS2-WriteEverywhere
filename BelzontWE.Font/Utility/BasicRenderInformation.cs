@@ -1,51 +1,51 @@
-﻿using System;
+﻿using Belzont.Utils;
+using System;
+using System.Xml.Serialization;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
+using Material = UnityEngine.Material;
+using Mesh = UnityEngine.Mesh;
 
 namespace BelzontWE.Font.Utility
 {
-    public class BasicRenderInformation 
+    public class BasicRenderInformation
     {
-        public void Fill(BasicRenderInformationJob bri, Material targetAtlas)
+        public void Fill(BasicRenderInformationJob brij, Material targetAtlas)
         {
-            m_sizeMetersUnscaled = bri.m_sizeMetersUnscaled;
-            m_materialGeneratedTick = bri.m_materialGeneratedTick;
-            m_YAxisOverflows = bri.m_YAxisOverflows;
-            m_fontBaseLimits = bri.m_fontBaseLimits;
-            m_refY = bri.m_refY;
+            m_YAxisOverflows = brij.m_YAxisOverflows;
+            m_fontBaseLimits = brij.m_fontBaseLimits;
             m_generatedMaterial = targetAtlas;
-            m_baselineOffset = bri.m_baselineOffset;
-            m_borders = bri.m_borders;
-            m_pixelDensityMeters = bri.m_pixelDensityMeters;
-            m_lineOffset = bri.m_lineOffset;
-            m_expandXIfAlone = bri.m_expandXIfAlone;
-            m_offsetScaleX = bri.m_offsetScaleX;
+            m_pixelDensityMeters = 1000f;
             m_mesh = new Mesh
             {
-                colors32 = bri.colors.ToArray(),
-                triangles = bri.triangles.ToArray(),
-                uv = bri.uv1.ToArray(),
-                vertices = bri.vertices.ToArray()
+                vertices = brij.vertices.ToArray(),
+                triangles = brij.triangles.ToArray(),
+                colors32 = brij.colors.ToArray(),
+                uv = brij.uv1.ToArray(),
             };
             m_mesh.RecalculateBounds();
             m_mesh.RecalculateNormals();
             m_mesh.RecalculateTangents();
-
+            m_sizeMetersUnscaled = m_mesh.bounds.size;
+            LogUtils.DoLog($"MESH: {m_mesh} {m_mesh.vertices.Length} {m_mesh.triangles.Length} {m_sizeMetersUnscaled}m");
+            brij.Dispose();
         }
-
+        [XmlIgnore]
         public Mesh m_mesh;
+        public int MeshSize { get => m_mesh.vertices.Length; set { } }
         public Vector2 m_sizeMetersUnscaled;
         public long m_materialGeneratedTick;
+        [XmlIgnore]
         public Material m_generatedMaterial;
         public RangeVector m_YAxisOverflows;
         public RangeVector m_fontBaseLimits;
         public float m_refY = 1f;
         public string m_refText;
         public float m_baselineOffset = 0;
-        public Vector4 m_borders;
+        public Vector4 m_borders = default;
         public float m_pixelDensityMeters;
-        public float m_lineOffset;
+        public float m_lineOffset = .5f;
         public bool m_expandXIfAlone;
         public float m_offsetScaleX = 1f;
 
@@ -81,33 +81,21 @@ namespace BelzontWE.Font.Utility
 
     public unsafe struct BasicRenderInformationJob : IComponentData, IDisposable
     {
-        public Vector2 m_sizeMetersUnscaled;
-        public Bounds m_bounds;
         public NativeArray<Color32> colors;
         public NativeArray<Vector3> vertices;
         public NativeArray<int> triangles;
         public NativeArray<Vector2> uv1;
-        public long m_materialGeneratedTick;
-        public Entity m_refFont;
         public RangeVector m_YAxisOverflows;
         public RangeVector m_fontBaseLimits;
-        public float m_refY;
-        public float m_baselineOffset;
-        public Vector4 m_borders;
-        public float m_pixelDensityMeters;
-        public float m_lineOffset;
-        public bool m_expandXIfAlone;
-        public float m_offsetScaleX;
 
         public void Dispose()
         {
+            LogUtils.DoInfoLog("DISPOSING BRIJ");
             colors.Dispose();
             vertices.Dispose();
             triangles.Dispose();
             uv1.Dispose();
         }
-
-        public override string ToString() => $"BRI [m={m_bounds};sz={m_sizeMetersUnscaled}]";
 
         internal long GetSize() => GetMeshSize();
 

@@ -85,7 +85,7 @@ namespace BelzontWE.Font
         public BasicRenderInformation DrawString(string text, Vector2 pos) => DrawString(text, pos, Vector2.one);
 
         public BasicRenderInformation DrawString(string text, Vector2 pos, Vector2 scale) => _fontSystem.DrawText(pos.x, pos.y, text, scale);
-        public void EnsureText(MonoBehaviour referenceGO, string text, Vector2 pos, Vector2 scale) => _fontSystem.EnsureText(pos.x, pos.y, text, scale);
+        public void EnsureText(string text, Vector2 pos, Vector2 scale) => _fontSystem.EnsureText(pos.x, pos.y, text, scale);
 
         public void AddTtf(byte[] ttf, float qualityMultiplier) => _fontSystem.AddFontMem(ttf, qualityMultiplier);
 

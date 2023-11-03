@@ -115,7 +115,7 @@ namespace BelzontWE.Font
 			public byte padding;
 		}
 
-		public struct stbtt__edge
+		public class stbtt__edge
 		{
 			public int invert;
 			public float x0;

@@ -2,12 +2,12 @@
 //#define VERBOSE 
 using Belzont.Interfaces;
 using Belzont.Utils;
-using BelzontWE.Font.Utility;
 using Game;
 using Game.Common;
 using Game.Input;
 using Game.Modding;
 using Game.Prefabs;
+using Game.Rendering;
 using Game.Tools;
 using Game.UI.Localization;
 using Game.UI.Menu;
@@ -15,8 +15,10 @@ using Game.UI.Tooltip;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace BelzontWE
@@ -36,9 +38,9 @@ namespace BelzontWE
         public override void DoOnCreateWorld(UpdateSystem updateSystem)
         {
             updateSystem.UpdateBefore<FontServer>(SystemUpdatePhase.Rendering);
-
             updateSystem.UpdateAt<WETestTool>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<WETestTooltip>(SystemUpdatePhase.UITooltip);
+            updateSystem.UpdateAfter<WERendererSystem>(SystemUpdatePhase.Rendering);
         }
 
         public override void OnDispose()
@@ -55,7 +57,14 @@ namespace BelzontWE
         }
     }
 
-    public struct WECustomComponent : IComponentData { }
+    public struct WECustomComponent : IComponentData
+    {
+        public FixedString512Bytes fontName;
+        public FixedString512Bytes text;
+        public Vector3 offsetPosition;
+        public Quaternion offsetRotation;
+        public Vector3 scale;
+    }
 
     public partial class WETestTool : ToolBaseSystem
     {
@@ -178,6 +187,11 @@ namespace BelzontWE
         private Action<string, object[]> eventCaller;
         private WETestTool m_WETestTool;
         private FontServer m_FontServer;
+        private EndFrameBarrier m_EndFrameBarrier;
+
+        private Entity targetEntity;
+        private string targetString;
+        private string targetFont;
 
         public void SetupCallBinder(Action<string, Delegate> eventCaller)
         {
@@ -185,6 +199,23 @@ namespace BelzontWE
             eventCaller("test.reloadFonts", ReloadFonts);
             eventCaller("test.listFonts", ListFonts);
             eventCaller("test.requestTextMesh", RequestTextMesh);
+            eventCaller("test.listShaderDatails", ListShaders);
+        }
+
+        private Dictionary<string, Dictionary<string, string>> ListShaders()
+        {
+            var allShaders = Resources.FindObjectsOfTypeAll<Shader>();
+            var result = new Dictionary<string, Dictionary<string, string>>();
+            foreach (var shader in allShaders)
+            {
+                result[shader.name] = new Dictionary<string, string>();
+                var count = shader.GetPropertyCount();
+                for (int i = 0; i < count; i++)
+                {
+                    result[shader.name][shader.GetPropertyName(i)] = shader.GetPropertyType(i).ToString();
+                }
+            }
+            return result;
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller)
@@ -199,10 +230,15 @@ namespace BelzontWE
         {
             m_WETestTool = World.GetExistingSystemManaged<WETestTool>();
             m_FontServer = World.GetOrCreateSystemManaged<FontServer>();
+            m_EndFrameBarrier = World.GetExistingSystemManaged<EndFrameBarrier>();
             m_FontServer.OnFontsLoadedChanged += () => SendToFrontend("test.fontsChanged->", new object[] { ListFonts() });
             base.OnCreate();
         }
-        public override void Update() { }
+        public override void Update()
+        {
+
+
+        }
 
         private void SendToFrontend(string eventName, params object[] args) => eventCaller?.Invoke(eventName, args);
 
@@ -211,6 +247,9 @@ namespace BelzontWE
             m_WETestTool.SetCallbackAndEnable((e) =>
             {
                 SendToFrontend("test.enableTestTool->", e);
+                var prevEntity = targetEntity;
+                targetEntity = e;
+                UpdateDataAtEntity(prevEntity);
                 return false;
             });
         }
@@ -220,11 +259,105 @@ namespace BelzontWE
             m_FontServer.ReloadFontsFromPath();
         }
 
+        private void UpdateDataAtEntity(Entity previousEntity)
+        {
+            if (targetEntity != Entity.Null && targetString != null && targetFont != null)
+            {
+                var buff = m_EndFrameBarrier.CreateCommandBuffer();
+                if (previousEntity != Entity.Null && EntityManager.HasComponent<WECustomComponent>(previousEntity))
+                {
+                    buff.RemoveComponent<WECustomComponent>(previousEntity);
+                }
+                if (EntityManager.HasComponent<WECustomComponent>(targetEntity))
+                {
+                    var currentComponent = EntityManager.GetComponentData<WECustomComponent>(targetEntity);
+                    currentComponent.fontName = targetFont;
+                    currentComponent.text = targetString;
+                    buff.SetComponent(targetEntity, currentComponent);
+                }
+                else
+                {
+                    var newComponent = new WECustomComponent
+                    {
+                        fontName = targetFont,
+                        text = targetString,
+                        offsetPosition = Vector3.up * 2,
+                        scale = Vector3.one * 4
+                    };
+                    buff.AddComponent(targetEntity, newComponent);
+                }
+            }
+        }
+
         private string[] ListFonts() => m_FontServer.GetAllFonts()?.ToArray();
 
-        private BasicRenderInformation RequestTextMesh(string text, string fontName)
+        private string RequestTextMesh(string text, string fontName)
         {
-            return m_FontServer[fontName]?.DrawString(text, Vector2.one);
+            targetFont = fontName;
+            targetString = text;
+            UpdateDataAtEntity(Entity.Null);
+            var result = m_FontServer[fontName]?.DrawString(text, Vector2.one);
+            if (result is null) return null;
+
+            return XmlUtils.DefaultXmlSerialize(result);
         }
     }
+
+    public partial class WERendererSystem : SystemBase
+    {
+        private FontServer m_FontServer;
+        private EntityQuery m_renderQueueEntities;
+
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+
+            m_FontServer = World.GetOrCreateSystemManaged<FontServer>();
+            m_renderQueueEntities = GetEntityQuery(new EntityQueryDesc[]
+{
+                new EntityQueryDesc
+                {
+                    All = new ComponentType[]
+                    {
+                        ComponentType.ReadOnly<CullingInfo>(),
+                        ComponentType.ReadOnly<InterpolatedTransform>(),
+                        ComponentType.ReadOnly<WECustomComponent>(),
+                    },
+                    None = new ComponentType[]
+                    {
+                        ComponentType.ReadOnly<Temp>(),
+                        ComponentType.ReadOnly<Deleted>(),
+                    }
+                }
+});
+        }
+        protected override void OnUpdate()
+        {
+            if (!m_renderQueueEntities.IsEmptyIgnoreFilter)
+            {
+                NativeArray<Entity> entities = m_renderQueueEntities.ToEntityArray(Allocator.TempJob);
+                for (var i = 0; i < entities.Length; i++)
+                {
+                    var entity = entities[i];
+                    var cullInfo = EntityManager.GetComponentData<CullingInfo>(entity);
+                    var transform = EntityManager.GetComponentData<InterpolatedTransform>(entity);
+                    var weCustomData = EntityManager.GetComponentData<WECustomComponent>(entity);
+
+                    var mesh = m_FontServer[weCustomData.fontName.ToString()].DrawString(weCustomData.text.ToString(), default);
+                    if (mesh == null)
+                    {
+                        LogUtils.DoLog("MESH IS NULL !!!!");
+                        continue;
+                    }
+
+                    float3 float2 = transform.m_Position + math.rotate(transform.m_Rotation, weCustomData.offsetPosition);
+                    quaternion quaternion = math.mul(transform.m_Rotation, weCustomData.offsetRotation * Quaternion.Euler(0, 180, 0));
+                    Graphics.DrawMesh(mesh.m_mesh, Matrix4x4.TRS(float2, quaternion, weCustomData.scale * mesh.m_offsetScaleX / mesh.m_pixelDensityMeters), mesh.m_generatedMaterial, 0);
+                }
+                entities.Dispose();
+            }
+        }
+
+    }
+
 }

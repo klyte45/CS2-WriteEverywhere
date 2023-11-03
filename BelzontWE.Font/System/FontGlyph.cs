@@ -1,39 +1,36 @@
-﻿using Unity.Collections;
+﻿using System;
+using System.Runtime.InteropServices;
+using Unity.Collections;
 using UnityEngine;
 
 namespace BelzontWE.Font
 {
-    public struct FontGlyph
+    public unsafe struct FontGlyph : IDisposable
     {
         public unsafe static int Size => sizeof(FontGlyph);
 
         public static readonly FontGlyph Null = new FontGlyph();
 
         private readonly NativeHashMap<int, int> _kernings;
-        public Font Font;
+        private GCHandle fontAddr;
+        public Font Font
+        {
+            get => (fontAddr.IsAllocated) ? (Font)fontAddr.Target : default;
+            set
+            {
+                if (fontAddr.IsAllocated) fontAddr.Free();
+                fontAddr = GCHandle.Alloc(value);
+            }
+        }
         public int Codepoint;
         public int Index;
         public int Height;
         public int Blur;
-        public Rect Bounds
-        {
-            set
-            {
-                x = value.x;
-                xMax = value.xMax;
-                xMin = value.xMin;
-                y = value.y;
-                yMax = value.yMax;
-                yMin = value.yMin;
-                width = value.width;
-                height = value.height;
-            }
-        }
-
-        public float xMin;
-        public float yMin;
-        public float xMax;
-        public float yMax;
+  
+        public float xMin => x;
+        public float yMin => y;
+        public float xMax => x + width;
+        public float yMax => y + height;
         public float x;
         public float y;
         public float width;
@@ -61,5 +58,10 @@ namespace BelzontWE.Font
         }
 
         public static int PadFromBlur(int blur) => blur + 2;
+
+        public void Dispose()
+        {
+            if (fontAddr.IsAllocated) fontAddr.Free();
+        }
     }
 }

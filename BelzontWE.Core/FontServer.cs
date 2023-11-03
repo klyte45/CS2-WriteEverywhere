@@ -111,7 +111,7 @@ namespace BelzontWE
             return true;
         }
 
-        private static Shader GetDefaultFontShader() => Shader.Find("BH/SG_DefaultShader");
+        private static Shader GetDefaultFontShader() => Shader.Find("HDRP/Lit");
 
         public void ClearFonts() => m_fontRegistered.Clear();
 

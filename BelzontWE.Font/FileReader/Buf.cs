@@ -1,6 +1,6 @@
 ﻿namespace BelzontWE.Font
 {
-	public struct Buf
+	public class Buf
 	{
 		public int cursor;
 		public FakePtr<byte> data;

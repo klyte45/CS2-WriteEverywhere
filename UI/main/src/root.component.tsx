@@ -66,6 +66,7 @@ export default class Root extends Component<{}, State> {
         }} maxLength={512} getValue={() => this.state?.textToRender} />
       </Cs2FormLine>
       <button className="negativeBtn" onClick={() => engine.call("k45::we.test.requestTextMesh", this.state?.textToRender, this.state?.selectedFont?.name).then(console.log)}>Generate text...</button>
+      <button className="positiveBtn" onClick={() => engine.call("k45::we.test.listShaderDatails").then(console.log)}>List shaders</button>
 
     </ErrorBoundary>;
   }

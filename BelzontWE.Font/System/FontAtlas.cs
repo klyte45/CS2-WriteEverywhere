@@ -1,5 +1,8 @@
 ﻿
+using Belzont.Interfaces;
+using Belzont.Utils;
 using System;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -32,23 +35,38 @@ namespace BelzontWE.Font
         {
             get; set;
         }
-        private Material m_materialBright;
+        private Material m_material;
         public Material Material
         {
             get
             {
-                if (m_materialBright == null)
+                if (m_material == null)
                 {
-                    m_materialBright = new Material(defaultShaderGetter());
+                    m_material = new Material(defaultShaderGetter());
+                    m_material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                    m_material.EnableKeyword("_ENABLE_FOG_ON_TRANSPARENT");
+                    m_material.DisableKeyword("_BLENDMODE_ADD");
+                    m_material.DisableKeyword("_BLENDMODE_PRE_MULTIPLY");
+                    m_material.SetInt("_SurfaceType", 1);
+                    m_material.SetInt("_RenderQueueType", 5);
+                    m_material.EnableKeyword("_BLENDMODE_ALPHA");
+                    m_material.SetFloat("_AlphaCutoffEnable", 0);
+                    m_material.SetFloat("_SrcBlend", 1f);
+                    m_material.SetFloat("_DstBlend", 10f);
+                    m_material.SetFloat("_AlphaSrcBlend", 1f);
+                    m_material.SetFloat("_AlphaDstBlend", 10f);
+                    m_material.SetFloat("_ZTestDepthEqualForOpaque", 4f);
+                    m_material.SetFloat("_DoubleSidedEnable", 1f);
+                    m_material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
                 }
-                return m_materialBright;
+                return m_material;
             }
         }
 
         ~FontAtlas()
         {
             UnityEngine.Object.Destroy(Texture);
-            UnityEngine.Object.Destroy(m_materialBright);
+            UnityEngine.Object.Destroy(m_material);
         }
 
         public FontAtlas(int w, int h, int count, Func<Shader> defaultShaderGetter)
@@ -273,12 +291,21 @@ namespace BelzontWE.Font
                 byte c = buffer[i];
                 colorBuffer[i].r = colorBuffer[i].g = colorBuffer[i].b = colorBuffer[i].a = c;
             }
-
             return colorBuffer;
         }
 
         public bool IsDirty { get; private set; } = false;
-        public void UpdateMaterial() => Material.mainTexture = Texture;
+
+        private static readonly int _BaseColorMap = Shader.PropertyToID("_BaseColorMap");
+        public void UpdateMaterial()
+        {
+            Material.mainTexture = Texture;
+            Material.SetTexture(_BaseColorMap, Texture);
+           
+            byte[] bytes = UnityEngine.ImageConversion.EncodeToPNG(Texture);
+            // For testing purposes, also write to a file in the project folder
+            File.WriteAllBytes(Path.Combine(BasicIMod.ModSettingsRootFolder, $"Texture_.png"), bytes);
+        }
 
         private void Blur(byte[] dst, int w, int h, int dstStride, int blur)
         {

@@ -3,7 +3,7 @@ using static BelzontWE.Font.Common;
 
 namespace BelzontWE.Font
 {
-	public struct Bitmap
+	public class Bitmap
 	{
 		private interface IHolder<T>
 		{
@@ -268,9 +268,7 @@ namespace BelzontWE.Font
 				scanline = new float[129];
 			scanline2 = w;
 			y = off_y;
-			var x = e[n];
-			x.y0 = (float)(off_y + h) + 1;
-			e[n] = x;
+			e[n].y0 = (float)(off_y + h) + 1;
 			while (j < h)
 			{
 				var scan_y_top = y + 0.0f;
