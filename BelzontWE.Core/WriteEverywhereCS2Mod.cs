@@ -3,12 +3,12 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font;
+using BelzontWE.Font.Utility;
 using Game;
 using Game.Common;
 using Game.Input;
 using Game.Modding;
 using Game.Prefabs;
-using Game.Rendering;
 using Game.Tools;
 using Game.UI.Localization;
 using Game.UI.Menu;
@@ -16,15 +16,14 @@ using Game.UI.Tooltip;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
-using Graphics = UnityEngine.Graphics;
 
 namespace BelzontWE
 {
@@ -62,33 +61,159 @@ namespace BelzontWE
         }
     }
 
-    public struct WECustomComponent : IComponentData
+    public struct WECustomComponent : IBufferElementData, IDisposable
     {
+        public unsafe static int Size => sizeof(WECustomComponent);
+
+        public Guid propertySourceGuid;
+        public FixedString512Bytes FontName
+        {
+            get => fontName; set
+            {
+                fontName = value;
+                if (basicRenderInformation.IsAllocated)
+                {
+                    basicRenderInformation.Free();
+                    basicRenderInformation = default;
+                }
+            }
+        }
+        public FixedString512Bytes Text
+        {
+            get => text; set
+            {
+                text = value;
+                if (basicRenderInformation.IsAllocated)
+                {
+                    basicRenderInformation.Free();
+                    basicRenderInformation = default;
+                }
+            }
+        }
+        public Vector3 offsetPosition;
+        public Quaternion offsetRotation;
+        public Vector3 scale;
+        public GCHandle basicRenderInformation;
+        /*private*/ public GCHandle materialBlockPtr;
+        /*private*/ public bool dirty;
+        /*private*/ public Color32 color;
+        /*private*/ public Color32 emmissiveColor;
+        /*private*/ public float metallic;
+        /*private*/ public FixedString512Bytes text;
+        /*private*/ public FixedString512Bytes fontName;
+
+        public float BriOffsetScaleX { get; private set; }
+        public float BriPixelDensity { get; private set; }
+        public MaterialPropertyBlock MaterialProperties
+        {
+            get
+            {
+                MaterialPropertyBlock block;
+                if (!materialBlockPtr.IsAllocated)
+                {
+                    block = new MaterialPropertyBlock();
+                    materialBlockPtr = GCHandle.Alloc(block, GCHandleType.Normal);
+                }
+                else
+                {
+                    block = (MaterialPropertyBlock)materialBlockPtr.Target;
+                }
+                if (dirty)
+                {
+                    block.SetColor("_EmissiveColor", emmissiveColor);
+                    block.SetColor("_BaseColor", color);
+                    block.SetFloat("_Metallic", metallic);
+                }
+                return block;
+            }
+        }
+
+        public bool IsDirty() => dirty;
+        public Color32 Color
+        {
+            get => color; set
+            {
+                color = value;
+                dirty = true;
+            }
+        }
+        public Color32 EmmissiveColor
+        {
+            get => emmissiveColor; set
+            {
+                emmissiveColor = value;
+                dirty = true;
+            }
+        }
+        public float Metallic
+        {
+            get => metallic; set
+            {
+                metallic = Mathf.Clamp01(value);
+                dirty = true;
+            }
+        }
+
+        internal static WECustomComponent From(WEWaitingRenderingComponent src, DynamicSpriteFont font, BasicRenderInformation bri)
+        {
+            return new WECustomComponent
+            {
+                propertySourceGuid = src.propertySourceGuid,
+                FontName = src.fontName,
+                Text = src.text,
+                offsetPosition = src.offsetPosition,
+                offsetRotation = src.offsetRotation,
+                scale = src.scale,
+                Color = src.color,
+                EmmissiveColor = src.emmissiveColor,
+                Metallic = src.metallic,
+                dirty = true,
+                basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak),
+                BriOffsetScaleX = bri.m_offsetScaleX,
+                BriPixelDensity = bri.m_pixelDensityMeters
+            };
+        }
+
+        public void Dispose()
+        {
+            basicRenderInformation.Free();
+        }
+    }
+
+    public struct WEWaitingRenderingComponent : IBufferElementData
+    {
+        public Guid propertySourceGuid;
         public FixedString512Bytes fontName;
         public FixedString512Bytes text;
         public Vector3 offsetPosition;
         public Quaternion offsetRotation;
         public Vector3 scale;
+        public Color32 color;
+        public Color32 emmissiveColor;
+        public float metallic;
+
+        internal static WEWaitingRenderingComponent From(WECustomComponent src)
+        {
+            var result = new WEWaitingRenderingComponent
+            {
+                propertySourceGuid = src.propertySourceGuid,
+                fontName = src.FontName,
+                text = src.Text,
+                offsetPosition = src.offsetPosition,
+                offsetRotation = src.offsetRotation,
+                scale = src.scale,
+                color = src.Color,
+                emmissiveColor = src.EmmissiveColor,
+                metallic = src.Metallic,
+            };
+            return result;
+        }
     }
 
     public partial class WETestTool : ToolBaseSystem
     {
         public override string toolID => $"K45_WE_{GetType().Name}";
         private Func<Entity, bool> callback;
-
-        private struct AddMyCustomComponentJob : IJob
-        {
-            public WECustomComponent myCustomComponent;
-            public EntityCommandBuffer buffer;
-            public Entity entity;
-            public void Execute()
-            {
-                buffer.AddComponent<WECustomComponent>(entity);
-                buffer.SetComponent(entity, myCustomComponent);
-                buffer.AddComponent<Highlighted>(entity);
-                LogUtils.DoInfoLog($"[WETestTool.AddMyCustomComponentJob] Scheduled MyCustomComponent to be added to Entity.Index = " + entity.Index.ToString() + " to Entity.Version = " + entity.Version.ToString());
-            }
-        }
 
         public override PrefabBase GetPrefab()
         {
@@ -338,7 +463,7 @@ namespace BelzontWE
         }
         private string GetShader()
         {
-         return  m_FontServer.GetDefaultShader();
+            return m_FontServer.GetDefaultShader();
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller)
@@ -372,7 +497,7 @@ namespace BelzontWE
                 SendToFrontend("test.enableTestTool->", e);
                 var prevEntity = targetEntity;
                 targetEntity = e;
-                UpdateDataAtEntity(prevEntity);
+                UpdateDataAtEntity();
                 return false;
             });
         }
@@ -382,32 +507,34 @@ namespace BelzontWE
             m_FontServer.ReloadFontsFromPath();
         }
 
-        private void UpdateDataAtEntity(Entity previousEntity)
+        private void UpdateDataAtEntity()
         {
             if (targetEntity != Entity.Null && targetString != null && targetFont != null)
             {
-                var buff = m_EndFrameBarrier.CreateCommandBuffer();
-                if (previousEntity != Entity.Null && EntityManager.HasComponent<WECustomComponent>(previousEntity))
-                {
-                    buff.RemoveComponent<WECustomComponent>(previousEntity);
-                }
                 if (EntityManager.HasComponent<WECustomComponent>(targetEntity))
                 {
-                    var currentComponent = EntityManager.GetComponentData<WECustomComponent>(targetEntity);
-                    currentComponent.fontName = targetFont;
-                    currentComponent.text = targetString;
-                    buff.SetComponent(targetEntity, currentComponent);
+                    var compList = EntityManager.GetBuffer<WECustomComponent>(targetEntity, false);
+                    for (int i = 0; i < compList.Length; i++)
+                    {
+                        var x = compList[i];
+                        x.FontName = targetFont;
+                        x.Text = targetString;
+                        x.Color = Color.white;
+                        x.EmmissiveColor = Color.gray;
+                        x.Metallic = .5f;
+                        compList[i] = x;
+                    }
                 }
                 else
                 {
                     var newComponent = new WECustomComponent
                     {
-                        fontName = targetFont,
-                        text = targetString,
+                        FontName = targetFont,
+                        Text = targetString,
                         offsetPosition = Vector3.up * 2,
                         scale = Vector3.one * 4
                     };
-                    buff.AddComponent(targetEntity, newComponent);
+                    EntityManager.AddBuffer<WECustomComponent>(targetEntity).Add(newComponent);
                 }
             }
         }
@@ -418,69 +545,12 @@ namespace BelzontWE
         {
             targetFont = fontName;
             targetString = text;
-            UpdateDataAtEntity(Entity.Null);
+            UpdateDataAtEntity();
             var result = m_FontServer[fontName]?.DrawString(text, Vector2.one);
             if (result is null) return null;
 
             return XmlUtils.DefaultXmlSerialize(result);
         }
-    }
-
-    public partial class WERendererSystem : SystemBase
-    {
-        private FontServer m_FontServer;
-        private EntityQuery m_renderQueueEntities;
-
-        protected override void OnCreate()
-        {
-            base.OnCreate();
-
-            m_FontServer = World.GetOrCreateSystemManaged<FontServer>();
-            m_renderQueueEntities = GetEntityQuery(new EntityQueryDesc[]
-{
-                new EntityQueryDesc
-                {
-                    All = new ComponentType[]
-                    {
-                        ComponentType.ReadOnly<CullingInfo>(),
-                        ComponentType.ReadOnly<InterpolatedTransform>(),
-                        ComponentType.ReadOnly<WECustomComponent>(),
-                    },
-                    None = new ComponentType[]
-                    {
-                        ComponentType.ReadOnly<Temp>(),
-                        ComponentType.ReadOnly<Deleted>(),
-                    }
-                }
-});
-        }
-        protected override void OnUpdate()
-        {
-            if (!m_renderQueueEntities.IsEmptyIgnoreFilter)
-            {
-                NativeArray<Entity> entities = m_renderQueueEntities.ToEntityArray(Allocator.TempJob);
-                for (var i = 0; i < entities.Length; i++)
-                {
-                    var entity = entities[i];
-                    var cullInfo = EntityManager.GetComponentData<CullingInfo>(entity);
-                    var transform = EntityManager.GetComponentData<InterpolatedTransform>(entity);
-                    var weCustomData = EntityManager.GetComponentData<WECustomComponent>(entity);
-
-                    var mesh = m_FontServer[weCustomData.fontName.ToString()].DrawString(weCustomData.text.ToString(), default);
-                    if (mesh == null)
-                    {
-                        LogUtils.DoLog("MESH IS NULL !!!!");
-                        continue;
-                    }
-
-                    float3 float2 = transform.m_Position + math.rotate(transform.m_Rotation, weCustomData.offsetPosition);
-                    quaternion quaternion = math.mul(transform.m_Rotation, weCustomData.offsetRotation * Quaternion.Euler(0, 180, 0));
-                    Graphics.DrawMesh(mesh.m_mesh, Matrix4x4.TRS(float2, quaternion, weCustomData.scale * mesh.m_offsetScaleX / mesh.m_pixelDensityMeters), mesh.m_generatedMaterial, 0);
-                }
-                entities.Dispose();
-            }
-        }
-
     }
 
 }

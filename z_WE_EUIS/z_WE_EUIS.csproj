@@ -17,7 +17,7 @@
 	<Copy SourceFiles="@(FilesToCopy)" DestinationFolder="@(DeployDir)" />
 	</Target>  
   <ItemGroup>
-    <ProjectReference Include="..\BelzontWE.Core\BelzontWE.zCore.csproj" />
+    <ProjectReference Include="..\BelzontWE.Core\BelzontWE_zCore.csproj" />
   </ItemGroup>
   <ItemGroup>
       <Reference Include="K45EUIS_Ext">
