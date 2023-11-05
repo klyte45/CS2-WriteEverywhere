@@ -183,7 +183,7 @@ namespace BelzontWE
                 }
                 if (!m_renderInterpolatedQueueEntities.IsEmptyIgnoreFilter)
                 {
-                    var job = new WERenderingInterpolatedJob
+                    var job = new WERenderingJob
                     {
                         m_EntityType = SystemAPI.GetEntityTypeHandle(),
                         m_cullingInfo = SystemAPI.GetComponentTypeHandle<CullingInfo>(true),
@@ -194,13 +194,14 @@ namespace BelzontWE
                         m_LodParameters = m_LodParameters,
                         m_CameraPosition = m_CameraPosition,
                         m_CameraDirection = m_CameraDirection,
-                        availToDraw = availToDraw
+                        availToDraw = availToDraw,
+                        isInterpolated = true
                     };
                     job.Schedule(m_renderInterpolatedQueueEntities, Dependency).Complete();
                 }
                 if (!m_renderQueueEntities.IsEmptyIgnoreFilter)
                 {
-                    var job2 = new WERenderingRegularJob
+                    var job2 = new WERenderingJob
                     {
                         m_EntityType = SystemAPI.GetEntityTypeHandle(),
                         m_cullingInfo = SystemAPI.GetComponentTypeHandle<CullingInfo>(true),
@@ -211,7 +212,8 @@ namespace BelzontWE
                         m_LodParameters = m_LodParameters,
                         m_CameraPosition = m_CameraPosition,
                         m_CameraDirection = m_CameraDirection,
-                        availToDraw = availToDraw
+                        availToDraw = availToDraw,
+                        isInterpolated = false
                     };
                     job2.Schedule(m_renderQueueEntities, Dependency).Complete();
                 }
@@ -243,71 +245,12 @@ namespace BelzontWE
             return levelOfDetail;
         }
         [BurstCompile]
-        private struct WERenderingInterpolatedJob : IJobChunk
+        private struct WERenderingJob : IJobChunk
         {
             public ComponentTypeHandle<CullingInfo> m_cullingInfo;
+            public BufferTypeHandle<WECustomComponent> m_weData;
+            public BufferTypeHandle<WEWaitingRenderingComponent> m_weDataPending;
             public ComponentTypeHandle<InterpolatedTransform> m_iTransform;
-            public BufferTypeHandle<WECustomComponent> m_weData;
-            public BufferTypeHandle<WEWaitingRenderingComponent> m_weDataPending;
-            public float4 m_LodParameters;
-            public float3 m_CameraPosition;
-            public float3 m_CameraDirection;
-            public EntityTypeHandle m_EntityType;
-            public NativeQueue<WERenderData> availToDraw;
-            public BufferLookup<WEWaitingRenderingComponent> m_weDataPendingLookup;
-
-            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
-            {
-                var entities = chunk.GetNativeArray(m_EntityType);
-                var cullings = chunk.GetNativeArray(ref m_cullingInfo);
-                var i_transforms = chunk.GetNativeArray(ref m_iTransform);
-                var weDatas = chunk.GetBufferAccessor(ref m_weData);
-                var weDataPendings = chunk.GetBufferAccessor(ref m_weDataPending);
-
-                for (int i = 0; i < entities.Length; i++)
-                {
-                    var cullInfo = cullings[i];
-                    var weCustomData = weDatas[i];
-                    var wePending = weDataPendings[i];
-                    var i_transform = i_transforms[i];
-
-                    float3 positionRef = i_transform.m_Position;
-                    quaternion rotationRef = i_transform.m_Rotation;
-
-
-
-                    for (int j = 0; j < weCustomData.Length; j++)
-                    {
-                        if (!weCustomData[j].basicRenderInformation.IsAllocated)
-                        {
-                            wePending.Add(WEWaitingRenderingComponent.From(weCustomData[j]));
-                            weCustomData.RemoveAt(j);
-                            j--;
-                            continue;
-                        }
-
-                        float minDist = RenderingUtils.CalculateMinDistance(cullInfo.m_Bounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
-                        int num7 = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
-                        if (num7 >= cullInfo.m_MinLod)
-                        {
-                            var position = positionRef + math.rotate(rotationRef, weCustomData[j].offsetPosition);
-                            var rotation = math.mul(rotationRef, weCustomData[j].offsetRotation * Quaternion.Euler(0, 180, 0));
-                            availToDraw.Enqueue(new WERenderData
-                            {
-                                weComponent = weCustomData[j],
-                                transformMatrix = Matrix4x4.TRS(position, rotation, weCustomData[j].scale * weCustomData[j].BriOffsetScaleX / weCustomData[j].BriPixelDensity)
-                            });
-                        }
-                    }
-                }
-            }
-        }
-        [BurstCompile]
-        private struct WERenderingRegularJob : IJobChunk
-        {
-            public ComponentTypeHandle<CullingInfo> m_cullingInfo;
-            public BufferTypeHandle<WECustomComponent> m_weData;
-            public BufferTypeHandle<WEWaitingRenderingComponent> m_weDataPending;
             public float4 m_LodParameters;
             public float3 m_CameraPosition;
             public float3 m_CameraDirection;
@@ -315,12 +258,24 @@ namespace BelzontWE
             public NativeQueue<WERenderData> availToDraw;
             public BufferLookup<WEWaitingRenderingComponent> m_weDataPendingLookup;
             internal ComponentTypeHandle<Game.Objects.Transform> m_transform;
+            public bool isInterpolated;
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
+                NativeArray<Game.Objects.Transform> transforms = default;
+                NativeArray<InterpolatedTransform> i_transforms = default;
+
+
                 var entities = chunk.GetNativeArray(m_EntityType);
                 var cullings = chunk.GetNativeArray(ref m_cullingInfo);
-                var transforms = chunk.GetNativeArray(ref m_transform);
+                if (isInterpolated)
+                {
+                    i_transforms = chunk.GetNativeArray(ref m_iTransform);
+                }
+                else
+                {
+                    transforms = chunk.GetNativeArray(ref m_transform);
+                }
                 var weDatas = chunk.GetBufferAccessor(ref m_weData);
                 var weDataPendings = chunk.GetBufferAccessor(ref m_weDataPending);
 
@@ -329,10 +284,22 @@ namespace BelzontWE
                     var cullInfo = cullings[i];
                     var weCustomData = weDatas[i];
                     var wePending = weDataPendings[i];
-                    var transform = transforms[i];
 
-                    float3 positionRef = transform.m_Position;
-                    quaternion rotationRef = transform.m_Rotation;
+                    float3 positionRef;
+                    quaternion rotationRef;
+
+                    if (isInterpolated)
+                    {
+                        var transform = i_transforms[i];
+                        positionRef = transform.m_Position;
+                        rotationRef = transform.m_Rotation;
+                    }
+                    else
+                    {
+                        var transform = transforms[i];
+                        positionRef = transform.m_Position;
+                        rotationRef = transform.m_Rotation;
+                    }
 
                     for (int j = 0; j < weCustomData.Length; j++)
                     {
