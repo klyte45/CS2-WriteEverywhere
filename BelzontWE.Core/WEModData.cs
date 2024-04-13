@@ -2,12 +2,18 @@
 //#define VERBOSE 
 
 using Belzont.Interfaces;
+using Game.Modding;
 
 namespace BelzontWE
 {
-    public class WEModData : IBasicModData
+    public class WEModData : BasicModData
     {
-        public bool DebugMode { get; set; }
+        public WEModData(IMod mod) : base(mod)
+        {
+        }
+        public override void OnSetDefaults()
+        {
+        }
     }
 
 }

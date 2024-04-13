@@ -2,10 +2,12 @@
 //#define VERBOSE 
 using BelzontWE.Font.Utility;
 using Colossal.Entities;
+using Colossal.IO.AssetDatabase.Internal;
 using Game;
 using Game.Common;
 using Game.Rendering;
 using Game.Tools;
+using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
@@ -47,7 +49,7 @@ namespace BelzontWE
                         ComponentType.ReadOnly<CullingInfo>(),
                         ComponentType.ReadOnly<InterpolatedTransform>(),
                         ComponentType.ReadWrite<WEWaitingRenderingComponent>(),
-                        ComponentType.ReadWrite<WECustomComponent>(),
+                        ComponentType.ReadWrite<WESimulationTextComponent>(),
                     },
                     None = new ComponentType[]
                     {
@@ -65,7 +67,7 @@ namespace BelzontWE
                         ComponentType.ReadOnly<CullingInfo>(),
                         ComponentType.ReadOnly<Game.Objects.Transform>(),
                         ComponentType.ReadWrite<WEWaitingRenderingComponent>(),
-                        ComponentType.ReadWrite<WECustomComponent>(),
+                        ComponentType.ReadWrite<WESimulationTextComponent>(),
                     },
                     None = new ComponentType[]
                     {
@@ -82,7 +84,7 @@ namespace BelzontWE
                     All = new ComponentType[]
                     {
                         ComponentType.ReadOnly<CullingInfo>(),
-                        ComponentType.ReadWrite<WECustomComponent>(),
+                        ComponentType.ReadWrite<WESimulationTextComponent>(),
                     },
                     Any =new ComponentType[]
                     {
@@ -118,6 +120,7 @@ namespace BelzontWE
                     }
                 }
             });
+            RenderPipelineManager.beginFrameRendering += Render;
         }
         [Preserve]
         protected override void OnUpdate()
@@ -130,9 +133,9 @@ namespace BelzontWE
                 {
                     var entity = entities[i];
                     var weCustomDataPending = EntityManager.GetBuffer<WEWaitingRenderingComponent>(entity);
-                    if (!EntityManager.TryGetBuffer<WECustomComponent>(entity, true, out var wePersistentData))
+                    if (!EntityManager.TryGetBuffer<WESimulationTextComponent>(entity, true, out var wePersistentData))
                     {
-                        wePersistentData = barrier.AddBuffer<WECustomComponent>(entity);
+                        wePersistentData = barrier.AddBuffer<WESimulationTextComponent>(entity);
                     }
 
                     for (var j = 0; j < weCustomDataPending.Length; j++)
@@ -148,7 +151,7 @@ namespace BelzontWE
                         {
                             continue;
                         }
-                        wePersistentData.Add(WECustomComponent.From(weCustomData, font, bri));
+                        wePersistentData.Add(WESimulationTextComponent.From(weCustomData, font, bri));
                         weCustomDataPending.RemoveAt(j);
                         j--;
                     }
@@ -166,6 +169,16 @@ namespace BelzontWE
                 }
                 entities.Dispose();
             }
+
+        }
+        [Preserve]
+        protected override void OnDestroy()
+        {
+            RenderPipelineManager.beginFrameRendering -= this.Render;
+            base.OnDestroy();
+        }
+        private void Render(ScriptableRenderContext context, Camera[] cameras)
+        {
             if (!m_renderQueueEntities.IsEmptyIgnoreFilter || !m_renderInterpolatedQueueEntities.IsEmptyIgnoreFilter)
             {
                 float4 m_LodParameters = 1f;
@@ -188,7 +201,7 @@ namespace BelzontWE
                         m_EntityType = SystemAPI.GetEntityTypeHandle(),
                         m_cullingInfo = SystemAPI.GetComponentTypeHandle<CullingInfo>(true),
                         m_iTransform = SystemAPI.GetComponentTypeHandle<InterpolatedTransform>(true),
-                        m_weData = SystemAPI.GetBufferTypeHandle<WECustomComponent>(false),
+                        m_weData = SystemAPI.GetBufferTypeHandle<WESimulationTextComponent>(false),
                         m_weDataPendingLookup = SystemAPI.GetBufferLookup<WEWaitingRenderingComponent>(false),
                         m_weDataPending = SystemAPI.GetBufferTypeHandle<WEWaitingRenderingComponent>(false),
                         m_LodParameters = m_LodParameters,
@@ -206,7 +219,7 @@ namespace BelzontWE
                         m_EntityType = SystemAPI.GetEntityTypeHandle(),
                         m_cullingInfo = SystemAPI.GetComponentTypeHandle<CullingInfo>(true),
                         m_transform = SystemAPI.GetComponentTypeHandle<Game.Objects.Transform>(true),
-                        m_weData = SystemAPI.GetBufferTypeHandle<WECustomComponent>(false),
+                        m_weData = SystemAPI.GetBufferTypeHandle<WESimulationTextComponent>(false),
                         m_weDataPendingLookup = SystemAPI.GetBufferLookup<WEWaitingRenderingComponent>(false),
                         m_weDataPending = SystemAPI.GetBufferTypeHandle<WEWaitingRenderingComponent>(false),
                         m_LodParameters = m_LodParameters,
@@ -226,14 +239,15 @@ namespace BelzontWE
                         continue;
                     }
                     //LogUtils.DoLog($"Matrix new:\n{string.Join("\t", item.transformMatrix.GetRow(0))}\n{string.Join("\t", item.transformMatrix.GetRow(1))}\n{string.Join("\t", item.transformMatrix.GetRow(2))}\n{string.Join("\t", item.transformMatrix.GetRow(3))}");
-                    Graphics.DrawMesh(bri.m_mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, null);//item.weComponent.MaterialProperties);
+                    cameras.ForEach(camera => Graphics.DrawMesh(bri.m_mesh, item.transformMatrix, bri.m_generatedMaterial, ~0, camera, 0, item.weComponent.MaterialProperties,true,true));
                 }
                 availToDraw.Dispose();
             }
         }
+
         private struct WERenderData
         {
-            public WECustomComponent weComponent;
+            public WESimulationTextComponent weComponent;
             public Matrix4x4 transformMatrix;
         }
         public float GetLevelOfDetail(float levelOfDetail, IGameCameraController cameraController)
@@ -248,7 +262,7 @@ namespace BelzontWE
         private struct WERenderingJob : IJobChunk
         {
             public ComponentTypeHandle<CullingInfo> m_cullingInfo;
-            public BufferTypeHandle<WECustomComponent> m_weData;
+            public BufferTypeHandle<WESimulationTextComponent> m_weData;
             public BufferTypeHandle<WEWaitingRenderingComponent> m_weDataPending;
             public ComponentTypeHandle<InterpolatedTransform> m_iTransform;
             public float4 m_LodParameters;
@@ -316,7 +330,7 @@ namespace BelzontWE
                         if (num7 >= cullInfo.m_MinLod)
                         {
                             var position = positionRef + math.rotate(rotationRef, weCustomData[j].offsetPosition);
-                            var rotation = math.mul(rotationRef, weCustomData[j].offsetRotation * Quaternion.Euler(0, 180, 0));
+                            quaternion rotation = default;// rotationRef * weCustomData[j].offsetRotation;
                             availToDraw.Enqueue(new WERenderData
                             {
                                 weComponent = weCustomData[j],

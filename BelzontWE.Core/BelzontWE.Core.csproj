@@ -1,45 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\Configuration.csproj" />
+  <Import Project="..\Targets.csproj" />
+  
 	<PropertyGroup>
-		<TargetFramework>net480</TargetFramework>
-		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
-		<Configurations>Steam;Editor</Configurations>
-   	<UnityVersion>2022.3.7f1</UnityVersion>
-		<EntityVersion>1.0.16</EntityVersion>
-		<InstallationPath>C:\Program Files (x86)\Steam\steamapps\common\Cities Skylines II</InstallationPath>
-		<DataPath>$(LOCALAPPDATA)\..\LocalLow\Colossal Order\Cities Skylines II</DataPath>
-    <Version>0.0.0.0</Version>
-		<UnityModProjectPath Condition="'$(Configuration)'=='Editor'">$(ProjectDir)..\..\UnityModsProject</UnityModProjectPath>
-		<UnityModProjectPath Condition="'$(Configuration)'=='Steam'">$(DataPath)\~Tooling~\UnityModsProject</UnityModProjectPath>
-
-		<ModPostProcessorPath Condition="'$(Configuration)'=='Editor'">$(ProjectDir)..\..\..\..\BeverlyHills\Assets\StreamingAssets\~Tooling~\ModPostProcessor.exe</ModPostProcessorPath>
-		<ModPostProcessorPath Condition="'$(Configuration)'=='Steam'">$(InstallationPath)\Cities2_Data\StreamingAssets\~Tooling~\ModPostProcessor.exe</ModPostProcessorPath>
-		
-		<ManagedDLLPathEditor>..\..\..\..\BeverlyHills\Library\ScriptAssemblies</ManagedDLLPathEditor>
-		<ManagedDLLPathSteam>$(K45_CS2_ALLROOT)\_Managed DLLs</ManagedDLLPathSteam>
-		<UnityEnginePath>C:\Program Files\Unity\Hub\Editor\$(UnityVersion)\Editor\Data\Managed\UnityEngine</UnityEnginePath>
-		
-		<AssemblySearchPaths Condition="'$(Configuration)'=='Editor'">
-			$(AssemblySearchPaths);
-			$(ManagedDLLPathEditor);
-			$(UnityEnginePath);
-		</AssemblySearchPaths>
-		<AssemblySearchPaths Condition="'$(Configuration)'=='Steam'">
-			$(AssemblySearchPaths);
-			$(ManagedDLLPathSteam);
-		</AssemblySearchPaths>
 		<LangVersion>10.0</LangVersion>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<Compile Remove="Logs\**" />
-		<EmbeddedResource Remove="Logs\**" />
-		<None Remove="Logs\**" />
-	</ItemGroup>
-  
-	<ItemGroup>
-	
+	<ItemGroup>	
     <Reference Include="0Harmony">
       <HintPath>$(K45_CS2_ALLROOT)\_commonDeps\0Harmony.dll</HintPath>
     </Reference>
@@ -162,39 +131,6 @@
 		
 	</ItemGroup>
 
-  
-	<ItemGroup>
-		<Analyzer Include="$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntityVersion)\Unity.Entities\SourceGenerators\Unity.Entities.SourceGen.SystemGenerator.SystemAPI.dll" />
-		<Analyzer Include="$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntityVersion)\Unity.Entities\SourceGenerators\Unity.Entities.SourceGen.SystemGenerator.dll" />
-		<Analyzer Include="$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntityVersion)\Unity.Entities\SourceGenerators\Unity.Entities.SourceGen.SystemGenerator.SystemAPI.QueryBuilder.dll" />
-		<Analyzer Include="$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntityVersion)\Unity.Entities\SourceGenerators\Unity.Entities.Analyzer.dll" />
-		<Analyzer Include="$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntityVersion)\Unity.Entities\SourceGenerators\Unity.Entities.SourceGen.SystemGenerator.LambdaJobs.dll" />
-		<Analyzer Include="$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntityVersion)\Unity.Entities\SourceGenerators\Unity.Entities.SourceGen.SystemGenerator.Common.dll" />
-		<Analyzer Include="$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntityVersion)\Unity.Entities\SourceGenerators\Unity.Entities.SourceGen.SystemGenerator.SystemAPI.Query.dll" />
-		<Analyzer Include="$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntityVersion)\Unity.Entities\SourceGenerators\Unity.Entities.Analyzer.CodeFixes.dll" />
-		<Analyzer Include="$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntityVersion)\Unity.Entities\SourceGenerators\Unity.Entities.SourceGen.AspectGenerator.dll" />
-		<Analyzer Include="$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntityVersion)\Unity.Entities\SourceGenerators\Unity.Entities.SourceGen.Common.dll" />
-		<Analyzer Include="$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntityVersion)\Unity.Entities\SourceGenerators\Unity.Entities.SourceGen.SystemGenerator.EntityQueryBulkOperations.dll" />
-		<Analyzer Include="$(UnityModProjectPath)\Library\PackageCache\com.unity.entities@$(EntityVersion)\Unity.Entities\SourceGenerators\Unity.Entities.SourceGen.JobEntityGenerator.dll" />
-	</ItemGroup>
-	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-		<RemoveDir Directories="$(OutDir)" />
-	</Target>
-	<Target Name="PostBuild" AfterTargets="AfterBuild">
-
-
-        <ItemGroup>
-          <FilesToCopy Include="$(OutDir)\**\*.*" Exclude="*.pdb" />
-          <DeployDir Include="$(K45_CS2_ALLROOT)\_appdataMods\$(SolutionName)" />
-        </ItemGroup>
-    
-        <Message Condition="Exists('$(ModPostProcessorPath)')" Text="Run post processor: $(ModPostProcessorPath) $(TargetPath) $(ProjectPath) $(UnityModProjectPath)" Importance="high" />
-		    <Message Condition="!Exists('$(ModPostProcessorPath)')" Text="Post processor was not found, please check the path: $(ModPostProcessorPath)" Importance="high" />
-		    <Exec Condition="Exists('$(ModPostProcessorPath)')" Command="&quot;$(ModPostProcessorPath)&quot; &quot;$(TargetPath)&quot; -p &quot;$(ProjectPath)&quot; -r &quot;$(UnityModProjectPath)&quot; -t Windows -t macOS -t Linux -b $(Configuration) -d -v"></Exec>
-    
-		<Message Text="Copy output to deploy dir @(DeployDir)" Importance="high" />
-		<Copy SourceFiles="@(FilesToCopy)" DestinationFolder="@(DeployDir)" />
-	</Target>
 	<ItemGroup>
 	  <ProjectReference Include="..\BelzontWE.Commons\BelzontWE.Commons.csproj" />
 	  <ProjectReference Include="..\BelzontWE.Font\BelzontWE_Font.csproj" />

@@ -110,13 +110,13 @@ namespace BelzontWE
             }
             return true;
         }
-        private const string defaultShaderName = "BH/SG_DefaultShader";
+        private static string defaultShaderName = "BH/SG_DefaultShader";
 
         internal void SetDefaultShader(string shaderName)
         {
             if (Shader.Find(shaderName))
             {
-                //defaultShaderName = shaderName;
+                defaultShaderName = shaderName;
                 ReloadFontsFromPath();
             }
         }

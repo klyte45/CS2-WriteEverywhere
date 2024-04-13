@@ -1,4 +1,4 @@
-#define JOBS_DEBUG
+//#define JOBS_DEBUG
 
 using Belzont.Interfaces;
 using Belzont.Utils;
@@ -261,7 +261,7 @@ namespace BelzontWE.Font
             {
                 int codepoint = char.ConvertToUtf32(str, i);
                 FontGlyph glyph = GetGlyph(glyphs, codepoint, out _);
-                if (glyph.Index <= 0)
+                if (!glyph.IsValid)
                 {
                     continue;
                 }
@@ -299,7 +299,7 @@ namespace BelzontWE.Font
 
                 FontGlyph glyph = GetGlyph(glyphs, codepoint, out _);
 
-                if (glyph.Index <= 0)
+                if (!glyph.IsValid)
                 {
                     continue;
                 }
@@ -420,7 +420,7 @@ namespace BelzontWE.Font
         {
             hasResetted = false;
             FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, ref data);
-            if (glyph.Font._font.numGlyphs <= 0)
+            if (!glyph.IsValid)
             {
                 return default;
             }
@@ -475,7 +475,7 @@ namespace BelzontWE.Font
         private FontGlyph GetGlyph(NativeHashMap<int, FontGlyph> glyphs, int codepoint, out bool hasResetted, bool ignoreDefaultChar = false)
         {
             FontGlyph result = GetGlyphInternal(glyphs, codepoint, out hasResetted);
-            if (!ignoreDefaultChar && result.Font._font.numGlyphs > 0 && DefaultCharacter != null)
+            if (!ignoreDefaultChar && result.Font is not null && DefaultCharacter != null)
             {
                 result = GetGlyphInternal(glyphs, DefaultCharacter.Value, out hasResetted);
             }
@@ -485,14 +485,13 @@ namespace BelzontWE.Font
 
         private unsafe static void GetQuad(ref FontGlyph glyph, ref FontGlyph prevGlyph, float spacingFactor, ref float x, ref float y, ref FontGlyphSquad q, ref FontSystemData data)
         {
-            if (prevGlyph.Index > 0)
+            if (prevGlyph.IsValid)
             {
                 float adv = 0;
                 if (data.UseKernings)
                 {
                     adv = prevGlyph.GetKerning(glyph) * glyph.Font.Scale;
                 }
-
                 x += (int)((adv + data.Spacing) * spacingFactor + 0.5f);
             }
 
@@ -539,7 +538,7 @@ namespace BelzontWE.Font
                 int codepoint = char.ConvertToUtf32(str, i);
 
                 FontGlyph glyph = GetGlyph(glyphs, codepoint, out _);
-                if (glyph.Index <= 0)
+                if (!glyph.IsValid)
                 {
                     continue;
                 }
@@ -576,7 +575,7 @@ namespace BelzontWE.Font
                 }
 
                 FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, ref data);
-                if (glyph.Index <= 0)
+                if (!glyph.IsValid)
                 {
                     continue;
                 }
@@ -657,8 +656,8 @@ namespace BelzontWE.Font
             result.m_refY = ReferenceHeight;
             result.m_baselineOffset = BaselineOffset;
             result.m_materialGeneratedTick = LastUpdateAtlas;
-            result.m_baselineOffset = BaselineOffset;
             result.m_refText = originalText;
+
             if (m_textCache.TryGetValue(originalText, out var currentVal) && currentVal == null)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] SET UP to val '{originalText}'");
@@ -705,7 +704,7 @@ namespace BelzontWE.Font
                 itemsQueue.Clear();
                 var glyphs = GetGlyphsCollection(FontHeight);
                 var charsToRender = itemsStarted.SelectMany(x => Enumerate(StringInfo.GetTextElementEnumerator(x.text.ToString())).Cast<string>()).GroupBy(x => x).Select(x => x.Key);
-                while (charsToRender.Any(x => GetGlyph(glyphs, char.ConvertToUtf32(x, 0), out bool hasReseted).Index >= 0 && hasReseted))
+                while (charsToRender.Any(x => GetGlyph(glyphs, char.ConvertToUtf32(x, 0), out bool hasReseted).IsValid && hasReseted))
                 {
                     LogUtils.DoInfoLog($"[FontSystem: {Name}] Reset texture! (Now {CurrentAtlas.Texture.width})");
                     m_textCache.Clear();
@@ -784,7 +783,7 @@ namespace BelzontWE.Font
 
                     if (debug) LogUtils.DoLog($"codepoint #{i}: {codepoint}");
                     FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, ref data);
-                    if (glyph.Index <= 0)
+                    if (!glyph.IsValid)
                     {
                         continue;
                     }
@@ -825,7 +824,7 @@ namespace BelzontWE.Font
                         }
 
                         FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, ref data);
-                        if (glyph.Index <= 0)
+                        if (!glyph.IsValid)
                         {
                             continue;
                         }
@@ -845,7 +844,7 @@ namespace BelzontWE.Font
                                                     (int)(q.Y1 - q.Y0));
 
                         if (debug) LogUtils.DoLog($"[Main] codepoint #{i}: destRect = {destRect}");
-                        DrawChar(glyph, vertices, triangles, uvs, colors, Color.white, Color.white, destRect);
+                        DrawChar(glyph, vertices, triangles, uvs, colors, Color.black, Color.white, destRect);
 
                         prevGlyph = glyph;
                     }
@@ -860,7 +859,7 @@ namespace BelzontWE.Font
                     result.m_YAxisOverflows.min *= scale.y;
                     result.m_YAxisOverflows.max *= scale.y;
                     result.vertices = new NativeArray<Vector3>(AlignVertices(vertices, alignment), Allocator.Persistent);
-                    result.colors = new NativeArray<Color32>(colors.Select(z => new Color32(z.a, z.a, z.a, z.a)).ToArray(), Allocator.Persistent);
+                    result.colors = new NativeArray<Color32>(colors.ToArray(), Allocator.Persistent);
                     result.uv1 = new(uvs.ToArray(), Allocator.Persistent);
                     result.triangles = new(triangles.ToArray(), Allocator.Persistent);
                     result.m_fontBaseLimits = new RangeVector { min = prevGlyph.Font.Descent, max = prevGlyph.Font.Ascent };
@@ -923,7 +922,7 @@ namespace BelzontWE.Font
 
             private void AddUVCoords(IList<Vector2> uvs, FontGlyph glyph)
             {
-                LogUtils.DoLog($"glyph ({glyph.Index})>  {glyph.xMin} {glyph.xMax} {glyph.yMin} {glyph.yMax}");
+                LogUtils.DoLog($"glyph ({glyph.IsValid})>  {glyph.xMin} {glyph.xMax} {glyph.yMin} {glyph.yMax}");
                 uvs.Add(new Vector2(glyph.xMax / CurrentAtlasSize.x, glyph.yMax / CurrentAtlasSize.y));
                 uvs.Add(new Vector2(glyph.xMin / CurrentAtlasSize.x, glyph.yMax / CurrentAtlasSize.y));
                 uvs.Add(new Vector2(glyph.xMin / CurrentAtlasSize.x, glyph.yMin / CurrentAtlasSize.y));
@@ -942,7 +941,7 @@ namespace BelzontWE.Font
                 {
                     var code = char.ConvertToUtf32(str, i);
                     var glyph = GetGlyphWithoutBitmap(glyphs, code, ref data);
-                    if (glyph.Index <= 0)
+                    if (!glyph.IsValid)
                     {
                         if (!char.ConvertFromUtf32(code).IsNormalized(System.Text.NormalizationForm.FormKD))
                         {
@@ -951,7 +950,7 @@ namespace BelzontWE.Font
                             {
                                 var codeJ = normalizedStr[j];
                                 var glyphJ = GetGlyphWithoutBitmap(glyphs, codeJ, ref data);
-                                if (!(glyphJ.Index <= 0))
+                                if (glyphJ.IsValid)
                                 {
                                     result += normalizedStr[j];
                                 }

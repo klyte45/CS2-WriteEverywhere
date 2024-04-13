@@ -3,7 +3,11 @@ import { CheckboxProps } from "./checkbox";
 
 
 
-export class Cs2FormLine extends Component<{ title: string; onClick?: () => void; }, {}> {
+export class Cs2FormLine extends Component<{
+    title: string | JSX.Element;
+    subtitle?: string | JSX.Element;
+    onClick?: () => void;
+}, {}> {
     constructor(props: CheckboxProps) {
         super(props);
         this.state = {};
@@ -13,7 +17,7 @@ export class Cs2FormLine extends Component<{ title: string; onClick?: () => void
             <>
                 <div className="cs2-fieldStyle cs2-fieldStyle2" onClick={() => this.props.onClick?.()}>
                     <div className="cs2-form-item-label cs2-form-item-label2">
-                        {this.props.title}
+                        {this.props.title}<br />{this.props.subtitle}
                     </div>
                     {this.props.children}
                 </div>

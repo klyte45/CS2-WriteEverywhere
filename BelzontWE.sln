@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BelzontWE_zCore", "BelzontWE.Core\BelzontWE_zCore.csproj", "{8861032F-DE0F-4BFA-AFA3-D910ED8282FD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BelzontWE.Core", "BelzontWE.Core\BelzontWE.Core.csproj", "{8861032F-DE0F-4BFA-AFA3-D910ED8282FD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{52018D6E-6430-4C36-AB19-0E6C5E21DDD1} = {52018D6E-6430-4C36-AB19-0E6C5E21DDD1}
 	EndProjectSection

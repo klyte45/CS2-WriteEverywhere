@@ -1,5 +1,7 @@
 ﻿using Belzont.Utils;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Xml.Serialization;
 using Unity.Collections;
 using Unity.Entities;
@@ -19,14 +21,16 @@ namespace BelzontWE.Font.Utility
             m_pixelDensityMeters = 1000f;
             m_mesh = new Mesh
             {
-                vertices = brij.vertices.ToArray(),
+                vertices = AlignVertices(brij.vertices.ToList()),
                 triangles = brij.triangles.ToArray(),
                 colors32 = brij.colors.ToArray(),
                 uv = brij.uv1.ToArray(),
             };
-            m_mesh.RecalculateBounds();
+            m_mesh.RecalculateUVDistributionMetrics();
+            m_mesh.Optimize();
             m_mesh.RecalculateNormals();
             m_mesh.RecalculateTangents();
+            m_mesh.RecalculateBounds();
             m_sizeMetersUnscaled = m_mesh.bounds.size;
             LogUtils.DoLog($"MESH: {m_mesh} {m_mesh.vertices.Length} {m_mesh.triangles.Length} {m_sizeMetersUnscaled}m");
             brij.Dispose();
@@ -48,6 +52,18 @@ namespace BelzontWE.Font.Utility
         public float m_lineOffset = .5f;
         public bool m_expandXIfAlone;
         public float m_offsetScaleX = 1f;
+
+        private static Vector3[] AlignVertices(List<Vector3> points)
+        {
+            if (points.Count == 0)
+            {
+                return points.ToArray();
+            }
+            var max = new Vector3(points.Select(x => x.x).Max(), points.Select(x => x.y).Max(), points.Select(x => x.z).Max());
+            var min = new Vector3(points.Select(x => x.x).Min(), points.Select(x => x.y).Min(), points.Select(x => x.z).Min());
+            Vector3 offset = (max + min) / 2;
+            return points.Select(x => x - offset).ToArray();
+        }
 
         public override string ToString() => $"BRI [m={m_mesh?.bounds};sz={m_sizeMetersUnscaled}]";
 

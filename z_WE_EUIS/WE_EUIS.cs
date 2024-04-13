@@ -1,4 +1,4 @@
-﻿#define LOCALURL
+﻿//#define LOCALURL
 
 using BelzontWE;
 using K45EUIS_Ext;

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using Unity.Collections;
-using UnityEngine;
 
 namespace BelzontWE.Font
 {
@@ -15,7 +14,7 @@ namespace BelzontWE.Font
         private GCHandle fontAddr;
         public Font Font
         {
-            get => (fontAddr.IsAllocated) ? (Font)fontAddr.Target : default;
+            get => (fontAddr.IsAllocated) ? (Font)fontAddr.Target : null;
             set
             {
                 if (fontAddr.IsAllocated) fontAddr.Free();
@@ -26,7 +25,7 @@ namespace BelzontWE.Font
         public int Index;
         public int Height;
         public int Blur;
-  
+
         public float xMin => x;
         public float yMin => y;
         public float xMax => x + width;
@@ -42,6 +41,7 @@ namespace BelzontWE.Font
         public int YOffset;
 
         public int Pad => PadFromBlur(Blur);
+        public bool IsValid => fontAddr.IsAllocated;
 
         public bool AtlasGenerated { get; internal set; }
 

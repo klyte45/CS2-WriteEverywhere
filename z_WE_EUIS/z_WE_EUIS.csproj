@@ -17,11 +17,11 @@
 	<Copy SourceFiles="@(FilesToCopy)" DestinationFolder="@(DeployDir)" />
 	</Target>  
   <ItemGroup>
-    <ProjectReference Include="..\BelzontWE.Core\BelzontWE_zCore.csproj" />
+    <ProjectReference Include="..\BelzontWE.Core\BelzontWE.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
       <Reference Include="K45EUIS_Ext">
-      <HintPath>$(K45_CS2_ALLROOT)\ExtraUIScreens\ExtraUIScreens\bin\Debug\ExtraUIScreens.dll</HintPath>
+      <HintPath>$(K45_CS2_ALLROOT)\ExtraUIScreens\ExtraUIScreens\bin\Steam\net480\K45EUIS_Ext.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="cohtml.Net">

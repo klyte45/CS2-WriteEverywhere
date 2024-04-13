@@ -11,7 +11,6 @@ using Game.Modding;
 using Game.Prefabs;
 using Game.Tools;
 using Game.UI.Localization;
-using Game.UI.Menu;
 using Game.UI.Tooltip;
 using System;
 using System.Collections.Generic;
@@ -23,11 +22,10 @@ using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.HighDefinition;
 
 namespace BelzontWE
 {
-    public class WriteEverywhereCS2Mod : BasicIMod<WEModData>, IMod
+    public class WriteEverywhereCS2Mod : BasicIMod, IMod
     {
         public override string SimpleName => "Write Everywhere";
 
@@ -36,8 +34,6 @@ namespace BelzontWE
         public override string Acronym => "WE";
 
         public override string Description => "Write Everywhere for Cities Skylines 2";
-
-        public override WEModData CreateNewModData() => new();
 
         public override void DoOnCreateWorld(UpdateSystem updateSystem)
         {
@@ -55,16 +51,18 @@ namespace BelzontWE
         {
         }
 
-        protected override IEnumerable<OptionsUISystem.Section> GenerateModOptionsSections()
+
+        public override BasicModData CreateSettingsFile()
         {
-            yield break;
+            return new WEModData(this);
         }
     }
 
-    public struct WECustomComponent : IBufferElementData, IDisposable
+    public struct WESimulationTextComponent : IBufferElementData, IDisposable
     {
-        public unsafe static int Size => sizeof(WECustomComponent);
+        public unsafe static int Size => sizeof(WESimulationTextComponent);
 
+        public Guid parentSourceGuid;
         public Guid propertySourceGuid;
         public FixedString512Bytes FontName
         {
@@ -94,13 +92,14 @@ namespace BelzontWE
         public Quaternion offsetRotation;
         public Vector3 scale;
         public GCHandle basicRenderInformation;
-        /*private*/ public GCHandle materialBlockPtr;
-        /*private*/ public bool dirty;
-        /*private*/ public Color32 color;
-        /*private*/ public Color32 emmissiveColor;
-        /*private*/ public float metallic;
-        /*private*/ public FixedString512Bytes text;
-        /*private*/ public FixedString512Bytes fontName;
+        public GCHandle materialBlockPtr;
+        public bool dirty;
+        public Color32 color;
+        public Color32 emissiveColor;
+        public float metallic;
+        public float emissiveIntensity;
+        public FixedString512Bytes text;
+        public FixedString512Bytes fontName;
 
         public float BriOffsetScaleX { get; private set; }
         public float BriPixelDensity { get; private set; }
@@ -116,13 +115,20 @@ namespace BelzontWE
                 }
                 else
                 {
-                    block = (MaterialPropertyBlock)materialBlockPtr.Target;
+                    block = materialBlockPtr.Target as MaterialPropertyBlock;
                 }
                 if (dirty)
                 {
-                    block.SetColor("_EmissiveColor", emmissiveColor);
+                    block.SetColor("_EmissiveColor", emissiveColor);
                     block.SetColor("_BaseColor", color);
                     block.SetFloat("_Metallic", metallic);
+                    // block.SetFloat("_EmissiveIntensity", emissiveIntensity);
+
+
+                    block.SetTexture("unity_Lightmaps", Texture2D.blackTexture);
+                    block.SetTexture("unity_LightmapsInd", Texture2D.blackTexture);
+                    block.SetTexture("unity_ShadowMasks", Texture2D.blackTexture);
+                    dirty = false;
                 }
                 return block;
             }
@@ -139,9 +145,9 @@ namespace BelzontWE
         }
         public Color32 EmmissiveColor
         {
-            get => emmissiveColor; set
+            get => emissiveColor; set
             {
-                emmissiveColor = value;
+                emissiveColor = value;
                 dirty = true;
             }
         }
@@ -154,9 +160,9 @@ namespace BelzontWE
             }
         }
 
-        internal static WECustomComponent From(WEWaitingRenderingComponent src, DynamicSpriteFont font, BasicRenderInformation bri)
+        internal static WESimulationTextComponent From(WEWaitingRenderingComponent src, DynamicSpriteFont font, BasicRenderInformation bri)
         {
-            return new WECustomComponent
+            return new WESimulationTextComponent
             {
                 propertySourceGuid = src.propertySourceGuid,
                 FontName = src.fontName,
@@ -192,7 +198,7 @@ namespace BelzontWE
         public Color32 emmissiveColor;
         public float metallic;
 
-        internal static WEWaitingRenderingComponent From(WECustomComponent src)
+        internal static WEWaitingRenderingComponent From(WESimulationTextComponent src)
         {
             var result = new WEWaitingRenderingComponent
             {
@@ -255,13 +261,17 @@ namespace BelzontWE
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            if (m_ApplyAction.WasPressedThisFrame())
+            bool flag = GetRaycastResult(out Entity e, out RaycastHit hit);
+            if (flag)
             {
-                bool flag = GetRaycastResult(out Entity e, out RaycastHit hit);
-                if (flag && !(callback?.Invoke(e) ?? true))
+                if (m_ApplyAction.WasPressedThisFrame())
                 {
-                    RequestDisable();
+                    if (flag && !(callback?.Invoke(e) ?? true))
+                    {
+                        RequestDisable();
+                    }
                 }
+
             }
             return inputDeps;
         }
@@ -354,7 +364,18 @@ namespace BelzontWE
             {
                 var mat = df.MainAtlas.Material;
                 var propertyCount = mat.shader.GetPropertyCount();
-                var listResult = new List<PropertyDescriptor>();
+                var listResult = new List<PropertyDescriptor>
+                {
+                    new()
+                    {
+                        Name = "<RenderQueue>",
+                        Idx = -1,
+                        Id= -1,
+                        Description="Render queue index",
+                        Type= "<RenderQueue>",
+                        Value = mat.renderQueue.ToString()
+                    }
+                };
                 for (int i = 0; i < propertyCount; i++)
                 {
                     int nameID = mat.shader.GetPropertyNameId(i);
@@ -378,73 +399,149 @@ namespace BelzontWE
                         }
                     });
                 }
+                foreach (var keyword in mat.shader.keywordSpace.keywords)
+                {
+                    listResult.Add(new()
+                    {
+                        Idx = -2,
+                        Name = keyword.ToString(),
+                        Id = -2,
+                        Description = keyword.type.ToString(),
+                        Type = "Keyword",
+                        Value = mat.enabledKeywords.Any(x => x == keyword).ToString()
+                    });
+                }
+                for (var i = 0; i < mat.passCount; i++)
+                {
+                    var passName = mat.GetPassName(i);
+                    listResult.Add(new()
+                    {
+                        Idx = -3,
+                        Name = passName,
+                        Id = -3,
+                        Description = passName,
+                        Type = "ShaderPass",
+                        Value = mat.GetShaderPassEnabled(passName).ToString()
+                    });
+                }
                 return listResult;
             }
             return null;
         }
 
-        private string SetCurrentMaterialSettings(string fontName, int propertyIdx, string value)
+        private string SetCurrentMaterialSettings(string fontName, string propertyIdxStr, string value)
         {
 
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
             if (m_FontServer[fontName] is DynamicSpriteFont df)
             {
                 var mat = df.MainAtlas.Material;
-                var nameID = mat.shader.GetPropertyNameId(propertyIdx);
-                ShaderPropertyType shaderPropertyType = mat.shader.GetPropertyType(propertyIdx);
-                switch (shaderPropertyType)
+                if (!int.TryParse(propertyIdxStr, out var propertyIdx))
                 {
-                    case ShaderPropertyType.Color:
-                        try
-                        {
-                            mat.SetColor(nameID, ColorExtensions.FromRGBA(value));
-                        }
-                        catch { }
-                        break;
-                    case ShaderPropertyType.Vector:
-                        var targVal = value.Split(",").Select(x => x.Trim()).ToArray();
-                        if (targVal.Length > 1 && targVal.All(x => float.TryParse(x, out _)))
-                        {
-                            Vector4 vect4 = new Vector4(float.Parse(targVal[0]), float.Parse(targVal[1]), float.Parse(targVal.ElementAtOrDefault(2) ?? "0"), float.Parse(targVal.ElementAtOrDefault(3) ?? "0"));
-                            mat.SetVector(nameID, vect4);
-                        }
-                        break;
-                    case ShaderPropertyType.Range:
-                    case ShaderPropertyType.Float:
-                        if (float.TryParse(value, out var valFloat))
-                        {
-                            mat.SetFloat(nameID, valFloat);
-                        }
-                        break;
-                    case ShaderPropertyType.Int:
-                        if (float.TryParse(value, out var valInt))
-                        {
-                            mat.SetFloat(nameID, valInt);
-                        }
-                        break;
+                    switch (propertyIdxStr)
+                    {
+                        case "<RenderQueue>":
+                            return (mat.renderQueue = int.TryParse(value, out var val) ? val : mat.renderQueue).ToString();
+                        default:
+                            var propertyName = propertyIdxStr[1..];
+                            switch (propertyIdxStr[0])
+                            {
+                                case 'k':
+                                    {
+                                        if (bool.TryParse(value, out var valBool) && valBool)
+                                        {
+                                            mat.EnableKeyword(propertyName);
+                                        }
+                                        else
+                                        {
+                                            mat.DisableKeyword(propertyName);
+                                        }
+                                        return mat.IsKeywordEnabled(propertyName).ToString();
+                                    }
+                                case 'p':
+                                    {
+                                        if (bool.TryParse(value, out var valBool))
+                                        {
+                                            mat.SetShaderPassEnabled(propertyName, valBool);
+                                        }
+                                        return mat.GetShaderPassEnabled(propertyName).ToString();
+                                    }
+                                default:
+                                    return null;
+                            }
+                    }
                 }
-                HDMaterial.ValidateMaterial(mat);
-                return shaderPropertyType switch
+                else
                 {
-                    ShaderPropertyType.Color => mat.GetColor(nameID).ToRGBA(),
-                    ShaderPropertyType.Vector => mat.GetVector(nameID).ToString()[1..^1].Trim(),
-                    ShaderPropertyType.Float or ShaderPropertyType.Range => mat.GetFloat(nameID).ToString(),
-                    ShaderPropertyType.Texture => mat.GetTexture(nameID) is Texture2D t2d ? Convert.ToBase64String(ImageConversion.EncodeToPNG(t2d)) : null,
-                    ShaderPropertyType.Int => mat.GetInt(nameID).ToString(),
-                    _ => null
-                };
+                    var oldRenderQueue = mat.renderQueue;
+                    var nameID = mat.shader.GetPropertyNameId(propertyIdx);
+                    ShaderPropertyType shaderPropertyType = mat.shader.GetPropertyType(propertyIdx);
+                    switch (shaderPropertyType)
+                    {
+                        case ShaderPropertyType.Color:
+                            try
+                            {
+                                mat.SetColor(nameID, ColorExtensions.FromRGBA(value));
+                            }
+                            catch { }
+                            break;
+                        case ShaderPropertyType.Vector:
+                            var targVal = value.Split(",").Select(x => x.Trim()).ToArray();
+                            if (targVal.Length > 1 && targVal.All(x => float.TryParse(x, out _)))
+                            {
+                                Vector4 vect4 = new Vector4(float.Parse(targVal[0]), float.Parse(targVal[1]), float.Parse(targVal.ElementAtOrDefault(2) ?? "0"), float.Parse(targVal.ElementAtOrDefault(3) ?? "0"));
+                                mat.SetVector(nameID, vect4);
+                            }
+                            break;
+                        case ShaderPropertyType.Range:
+                        case ShaderPropertyType.Float:
+                            if (float.TryParse(value, out var valFloat))
+                            {
+                                mat.SetFloat(nameID, valFloat);
+                            }
+                            break;
+                        case ShaderPropertyType.Int:
+                            if (float.TryParse(value, out var valInt))
+                            {
+                                mat.SetFloat(nameID, valInt);
+                            }
+                            break;
+                        case ShaderPropertyType.Texture:
+                            mat.SetTexture(nameID, value switch
+                            {
+                                "wh" => Texture2D.whiteTexture,
+                                "bk" => Texture2D.blackTexture,
+                                "gy" => Texture2D.grayTexture,
+                                _ => null
+                            });
+
+                            break;
+                    }
+                    //    HDMaterial.ValidateMaterial(mat);
+                    return shaderPropertyType switch
+                    {
+                        ShaderPropertyType.Color => mat.GetColor(nameID).ToRGBA(),
+                        ShaderPropertyType.Vector => mat.GetVector(nameID).ToString()[1..^1].Trim(),
+                        ShaderPropertyType.Float or ShaderPropertyType.Range => mat.GetFloat(nameID).ToString(),
+                        ShaderPropertyType.Texture => mat.GetTexture(nameID) is Texture2D t2d ? Convert.ToBase64String(ImageConversion.EncodeToPNG(t2d)) : null,
+                        ShaderPropertyType.Int => mat.GetInt(nameID).ToString(),
+                        _ => null
+                    };
+                }
             }
             return null;
         }
 
-        private Dictionary<string, Dictionary<string, string>> ListShadersDetails()
+        private Dictionary<string, Dictionary<string, object>> ListShadersDetails()
         {
             var allShaders = Resources.FindObjectsOfTypeAll<Shader>();
-            var result = new Dictionary<string, Dictionary<string, string>>();
+            var result = new Dictionary<string, Dictionary<string, object>>();
             foreach (var shader in allShaders)
             {
-                result[shader.name] = new Dictionary<string, string>();
+                result[shader.name] = new();
                 var count = shader.GetPropertyCount();
+                result[shader.name]["<Keywords>"] = shader.keywordSpace.keywordNames;
+                //result[shader.name]["<Keywords_Enabled>"] = shader.keywordSpace.keywordNames.Where(x=>shader.isK);
                 for (int i = 0; i < count; i++)
                 {
                     result[shader.name][shader.GetPropertyName(i)] = shader.GetPropertyType(i).ToString();
@@ -511,30 +608,30 @@ namespace BelzontWE
         {
             if (targetEntity != Entity.Null && targetString != null && targetFont != null)
             {
-                if (EntityManager.HasComponent<WECustomComponent>(targetEntity))
+                if (EntityManager.HasComponent<WESimulationTextComponent>(targetEntity))
                 {
-                    var compList = EntityManager.GetBuffer<WECustomComponent>(targetEntity, false);
+                    var compList = EntityManager.GetBuffer<WESimulationTextComponent>(targetEntity, false);
                     for (int i = 0; i < compList.Length; i++)
                     {
                         var x = compList[i];
                         x.FontName = targetFont;
                         x.Text = targetString;
-                        x.Color = Color.white;
+                        x.Color = Color.red;
                         x.EmmissiveColor = Color.gray;
-                        x.Metallic = .5f;
+                        x.Metallic = .0f;
                         compList[i] = x;
                     }
                 }
                 else
                 {
-                    var newComponent = new WECustomComponent
+                    var newComponent = new WESimulationTextComponent
                     {
                         FontName = targetFont,
                         Text = targetString,
                         offsetPosition = Vector3.up * 2,
                         scale = Vector3.one * 4
                     };
-                    EntityManager.AddBuffer<WECustomComponent>(targetEntity).Add(newComponent);
+                    EntityManager.AddBuffer<WESimulationTextComponent>(targetEntity).Add(newComponent);
                 }
             }
         }
@@ -547,9 +644,7 @@ namespace BelzontWE
             targetString = text;
             UpdateDataAtEntity();
             var result = m_FontServer[fontName]?.DrawString(text, Vector2.one);
-            if (result is null) return null;
-
-            return XmlUtils.DefaultXmlSerialize(result);
+            return result is null ? null : XmlUtils.DefaultXmlSerialize(result);
         }
     }
 

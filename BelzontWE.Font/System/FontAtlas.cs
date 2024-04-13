@@ -44,11 +44,10 @@ namespace BelzontWE.Font
                 {
                     m_material = new Material(defaultShaderGetter());
                     HDMaterial.SetAlphaClipping(m_material, true);
-                    HDMaterial.SetAlphaCutoff(m_material, .04f);
-                    m_material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
+                    HDMaterial.SetAlphaCutoff(m_material, .7f);
                     HDMaterial.SetUseEmissiveIntensity(m_material, true);
                     HDMaterial.SetEmissiveColor(m_material, Color.white);
-                    HDMaterial.SetEmissiveIntensity(m_material, 1, UnityEditor.Rendering.HighDefinition.EmissiveIntensityUnit.Nits);
+                    HDMaterial.SetEmissiveIntensity(m_material, 0, UnityEditor.Rendering.HighDefinition.EmissiveIntensityUnit.Nits);
                     m_material.SetFloat("_DoubleSidedEnable", 1);
                     HDMaterial.ValidateMaterial(m_material);
                     
