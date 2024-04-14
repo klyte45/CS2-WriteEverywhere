@@ -1,8 +1,11 @@
 ﻿
 using Belzont.Interfaces;
+using Game.Prefabs;
+using Kwytto.Utils;
 using System;
 using System.IO;
 using System.Linq;
+using Unity.Entities;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 
@@ -41,16 +44,20 @@ namespace BelzontWE.Font
             get
             {
                 if (m_material == null)
-                {
+                {                  
+
                     m_material = new Material(defaultShaderGetter());
+                    m_material.EnableKeyword("_GPU_ANIMATION_OFF");
                     HDMaterial.SetAlphaClipping(m_material, true);
                     HDMaterial.SetAlphaCutoff(m_material, .7f);
                     HDMaterial.SetUseEmissiveIntensity(m_material, true);
                     HDMaterial.SetEmissiveColor(m_material, Color.white);
                     HDMaterial.SetEmissiveIntensity(m_material, 0, UnityEditor.Rendering.HighDefinition.EmissiveIntensityUnit.Nits);
                     m_material.SetFloat("_DoubleSidedEnable", 1);
+                    m_material.SetFloat("_Smoothness", .5f);
+                    m_material.SetFloat(FontServer.DecalLayerMask, 8.ToFloatBitFlags());
                     HDMaterial.ValidateMaterial(m_material);
-                    
+
                 }
                 return m_material;
             }

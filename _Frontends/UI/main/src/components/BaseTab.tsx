@@ -10,6 +10,7 @@ type State = {
   fontsLoaded: { name: string }[],
   selectedFont?: { name: string },
   textToRender?: string,
+  currentOverlay: number,
   shaderList?: { name: string }[],
   currentShader?: { name: string }
 }
@@ -19,6 +20,7 @@ export class BaseTab extends Component<{}, State> {
 
   constructor(props) {
     super(props);
+    this.state ??= { currentOverlay: 0 } as any;
   }
 
   componentDidMount(): void {
@@ -27,6 +29,7 @@ export class BaseTab extends Component<{}, State> {
     engine.call("k45::we.test.listFonts").then((x) => this.setState({ fontsLoaded: (x as string[]).map(x => { return { name: x }; }) }));
     engine.call("k45::we.test.listShader").then((x) => this.setState({ shaderList: (x as string[]).sort((a, b) => a.localeCompare(b)).map(x => { return { name: x }; }) }));
     engine.call("k45::we.test.getShader").then((x) => this.setState({ currentShader: { name: x } }));
+    engine.call("k45::we.test.getOverlay").then((x) => this.setState({ currentOverlay: x }));
   }
   componentWillUnmount(): void {
     engine.off("k45::we.test.enableTestTool->");
@@ -61,6 +64,14 @@ export class BaseTab extends Component<{}, State> {
           this.setState({ textToRender: y });
           return y;
         }} maxLength={512} getValue={() => this.state?.textToRender} />
+      </Cs2FormLine>
+      <Cs2FormLine title="Overlay">
+        <SimpleInput onValueChanged={(y) => {
+          engine.call("k45::we.test.setOverlay", parseInt(y, 16) || 0).then(x => {
+            this.setState({ currentOverlay: x })
+          });
+          return (parseInt(y, 16).toString(16) || 0) + "";
+        }} maxLength={8} getValue={() => this.state?.currentOverlay.toString(16)} />
       </Cs2FormLine>
       <button className="negativeBtn" onClick={() => engine.call("k45::we.test.requestTextMesh", this.state?.textToRender, this.state?.selectedFont?.name).then(console.log)}>Generate text...</button>
       <button className="positiveBtn" onClick={() => engine.call("k45::we.test.listShaderDatails").then(console.log)}>List shaders</button>

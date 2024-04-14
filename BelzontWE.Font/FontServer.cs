@@ -1,4 +1,5 @@
 ﻿
+using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font;
 using Colossal.IO.AssetDatabase.Internal;
@@ -6,13 +7,14 @@ using Game;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Unity.Entities;
 using UnityEngine;
 
 namespace BelzontWE
 {
     public partial class FontServer : GameSystemBase
     {
-        public static string FOLDER_PATH => WriteEverywhereCS2Mod.ModSettingsRootFolder;
+        public static string FOLDER_PATH => BasicIMod.ModSettingsRootFolder;
         #region Fonts
         public const string DEFAULT_FONT_KEY = "/DEFAULT/";
         public const string FONTS_FILES_FOLDER = "Fonts";
@@ -20,26 +22,40 @@ namespace BelzontWE
         public static string FontFilesPath { get; } = FOLDER_PATH + Path.DirectorySeparatorChar + FONTS_FILES_FOLDER;
 
         public event Action OnFontsLoadedChanged;
+        private static string defaultShaderName = "BH/SG_DefaultShader";
+
+        private float m_targetHeight = 100;
+
+        private float m_qualityMultiplier = 1f;
+
+        private Dictionary<string, DynamicSpriteFont> m_fontRegistered = new Dictionary<string, DynamicSpriteFont>();
+        public static int DecalLayerMask { get; private set; }
+
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+
+            DecalLayerMask = Shader.PropertyToID("colossal_DecalLayerMask");
+        }
+
 
         public void ReloadFontsFromPath()
         {
             ResetCollection();
             //RegisterFont(DEFAULT_FONT_KEY, KResourceLoader.LoadResourceDataMod("UI.DefaultFont.SourceSansPro-Regular.ttf"), DefaultTextureSizeFont);
             KFileUtils.EnsureFolderCreation(FontFilesPath);
-            if (WriteEverywhereCS2Mod.DebugMode) LogUtils.DoLog($"Searching font files @ {FontFilesPath}");
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"Searching font files @ {FontFilesPath}");
             foreach (string fontFile in Directory.GetFiles(FontFilesPath, "*.ttf"))
             {
                 RegisterFont(Path.GetFileNameWithoutExtension(fontFile), File.ReadAllBytes(fontFile), DefaultTextureSizeFont);
 
-                if (WriteEverywhereCS2Mod.DebugMode) LogUtils.DoLog($"Font loaded: {Path.GetFileName(fontFile)}");
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Font loaded: {Path.GetFileName(fontFile)}");
             }
             OnFontsLoadedChanged?.Invoke();
         }
         #endregion
 
 
-
-        private Dictionary<string, DynamicSpriteFont> m_fontRegistered = new Dictionary<string, DynamicSpriteFont>();
 
         internal long GetAllFontsCacheSize()
         {
@@ -51,9 +67,6 @@ namespace BelzontWE
             return size;
         }
 
-        private float m_targetHeight = 100;
-
-        private float m_qualityMultiplier = 1f;
 
         private int DefaultTextureSize => 512;// WEMainController.DefaultTextureSizeFont;
 
@@ -110,7 +123,6 @@ namespace BelzontWE
             }
             return true;
         }
-        private static string defaultShaderName = "BH/SG_DefaultShader";
 
         internal void SetDefaultShader(string shaderName)
         {

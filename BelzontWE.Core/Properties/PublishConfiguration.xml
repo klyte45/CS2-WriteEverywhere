@@ -1,0 +1,13 @@
+<Publish>
+  <ModId Value="" />
+  <DisplayName Value="Write Everywhere" />
+  <ShortDescription Value="Write texts in the CS2 world!" />
+  <LongDescription>)</LongDescription>
+  <Thumbnail Value="Properties/Thumbnail.png" />
+  <ForumLink Value="" />
+  <ModVersion Value="0.0.0.0" />
+  <GameVersion Value="1.1.*" />
+  <ChangeLog>)</ChangeLog>
+  <Tag Value="Code Mod" />
+  <Dependency Id="74151" ModVersion="0.1.1.2" DisplayName="Extra UI Screens" />
+</Publish>

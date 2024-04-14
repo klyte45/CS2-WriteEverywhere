@@ -7,85 +7,16 @@
     <LangVersion>10.0</LangVersion>
     <DebugType Condition="'$(Configuration)'=='Release'">None</DebugType>
     <DebugSymbols Condition="'$(Configuration)'=='Release'">False</DebugSymbols>
-    <DebugType Condition="'$(Configuration)'=='Debug'">embedded</DebugType>
-    <!--The folder where Cities2.exe is located. Set it only if the game is not installed in the default location, otherwise keep it empty-->
-    <CustomInstallationPath></CustomInstallationPath>
-
-    <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
-    <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
-    <Bursted>false</Bursted>
-    <DefineConstants Condition="$(Bursted)">BURST</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <!--Imports must be after PropertyGroup block-->
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
   <Import Project="$(K45_CS2_ALLROOT)\_Shared\belzont.targets" />
+  <Target Name="RunModPublisher" Condition="false" />
   <Target Name="RunModPostProcessor" Condition="'$(Configuration)'=='Release'" />
-
-  <!--Mod data-->
-  <PropertyGroup>
-    <ModId></ModId>
-    <Version>0.0.0.0</Version>
-    <GameVersion>1.1.*</GameVersion>
-    <ThumbnailPath>Properties/Thumbnail.png</ThumbnailPath>
-    <DisplayName>Write Everywhere</DisplayName>
-    <ShortDescription>Write texts in the CS2 world!</ShortDescription>
-    <ForumLink></ForumLink>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <!--Mod multíple value data-->
-  <ItemGroup>
-    <ModTag Include="Code Mod" />
-    <Screenshots Include="Screenshots/*.jpg" />
-    <Dependency Include="EUIS">
-      <ModId>74151</ModId>
-      <Version>0.1.1.2</Version>
-      <DisplayName>Extra UI Screens</DisplayName>
-    </Dependency>
-  </ItemGroup>
-
-  <ItemGroup>
-    <AssemblyAttribute Include="Belzont.AssemblyUtility.KlyteModDescriptionAttribute">
-      <_Parameter1>$(ModId)</_Parameter1>
-      <_Parameter2>$(DisplayName)</_Parameter2>
-      <_Parameter3>$(ShortDescription)</_Parameter3>
-    </AssemblyAttribute>
-  </ItemGroup>
-  <!--Publishing generation files-->
-  <Target Name="SetupAttributes" BeforeTargets="BeforeBuild">
-    <PropertyGroup>
-      <PublishContent>
-        <ModId Value="$(ModId)" />
-        <DisplayName Value="$(DisplayName)" />
-        <ShortDescription Value="$(ShortDescription)" />
-        <LongDescription />
-        <Thumbnail Value="$(ThumbnailPath)" />
-        <ForumLink Value="$(ForumLink)" />
-        <ModVersion Value="$(Version)" />
-        <GameVersion Value="$(GameVersion)" />
-        <ChangeLog />
-      </PublishContent>
-      <PublishContent>$(PublishContent)@(ModTag->'&lt;Tag Value="%(Identity)" /&gt;','%0a%0d')</PublishContent>
-      <PublishContent>$(PublishContent)@(Screenshots->'&lt;Screenshot Value="%(Identity)" /&gt;','%0a%0d')</PublishContent>
-      <PublishContent>$(PublishContent)@(Dependency->'&lt;Dependency Id="%(ModId)" ModVersion="%(Version)" DisplayName="%(DisplayName)"/&gt;','%0a%0d')</PublishContent>
-    </PropertyGroup>
-    <XmlPoke XmlInputPath="$(PublishConfigurationPath)" Value="$(PublishContent)" Query="//Publish" />
-
-    <XmlPoke XmlInputPath="$(PublishConfigurationPath)" Value="$([System.IO.File]::ReadAllText($(ProjectDir)/longDescription.md)))" Query="//LongDescription" />
-    <XmlPoke XmlInputPath="$(PublishConfigurationPath)" Value="$([System.IO.File]::ReadAllText($(ProjectDir)changelog.md)))" Query="//ChangeLog" />
-  </Target>
-
-  <!--<Target Name="EUIS Build" BeforeTargets="DeployWIP" AfterTargets="RunModPostProcessor">
-    <Message Importance="high" Text="EUIS Build!" />
-    <MSBuild Projects="../WE_EUIS/WE_EUIS.csproj" Targets="Build" BuildInParallel="false" />
-    <ItemGroup>
-      <EuisResult Include="..\WE_EUIS\bin\$(Configuration)\$(TargetFramework)\*.euis" />
-    </ItemGroup>
-    <Copy SourceFiles="@(EuisResult)" DestinationFolder="$(OutDir)" ContinueOnError="false" />
-    
-  </Target>-->
+  <Target Name="MergeDll" Condition="False"/>
 
 
   <ItemGroup>
@@ -173,6 +104,10 @@
       <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.Collections.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Unity.RenderPipelines.HighDefinition.Runtime">
+      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Unity.RenderPipelines.HighDefinition.Runtime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.ImageConversionModule.dll">
       <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.ImageConversionModule.dll.dll</HintPath>
       <Private>False</Private>
@@ -208,13 +143,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BelzontWE.Commons\BelzontWE.Commons.csproj" />
-    <ProjectReference Include="..\BelzontWE.Font\BelzontWE.Font.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\_Frontends\_Frontends.csproj">
-      <Private>False</Private>
-      <CopyLocalSatelliteAssemblies>False</CopyLocalSatelliteAssemblies>
-    </ProjectReference>
     <Content Include="..\_Frontends\bin\$(Configuration)\$(TargetFramework)\*\**\*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -223,10 +153,6 @@
     </None>
     <Resource Include="*.md" />
 
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Remove="changelog.md" />
-    <Resource Remove="longDescription.md" />
   </ItemGroup>
 
 </Project>

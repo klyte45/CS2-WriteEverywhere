@@ -43,7 +43,7 @@ export default class Root extends Component<{}> {
 
   render() {
     return <ErrorBoundary>
-      <Tabs defaultIndex={1}>
+      <Tabs defaultIndex={0}>
         <TabList>
           <Tab>Start</Tab>
           <Tab>ShaderEditor</Tab>

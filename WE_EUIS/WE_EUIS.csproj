@@ -1,28 +1,39 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk" >
+  <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
+  <Target Name="MergeDll" Condition="False"/>
   <PropertyGroup>
-			<TargetFramework>net48</TargetFramework>
-		
-<LangVersion>9.0</LangVersion>
-<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DeployDir>$(LocalModsPath)\$(SolutionName)</DeployDir>
+    <AssemblySearchPaths>
+      $(AssemblySearchPaths)
+      $(DeployDir)
+    </AssemblySearchPaths>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>10.0</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetExt>.euis</TargetExt>
-	
-  </PropertyGroup>  
-  <Target Name="PostBuild" AfterTargets="AfterBuild">		
-		<ItemGroup>
-			<FilesToCopy Include="$(OutDir)\**\*.*" Exclude="*.pdb" />
-			<DeployDir Include="$(K45_CS2_ALLROOT)\_appdataMods\$(SolutionName)" />
-		</ItemGroup>
-		<Message Text="Copy output to deploy dir @(DeployDir)" Importance="high" />	
-	<Copy SourceFiles="@(FilesToCopy)" DestinationFolder="@(DeployDir)" />
-	</Target>  
+    <Configurations>Debug;Release</Configurations>
+    <DebugType Condition="'$(Configuration)'=='Release'">None</DebugType>
+    <DebugSymbols Condition="'$(Configuration)'=='Release'">False</DebugSymbols>
+  </PropertyGroup>
+  <Target Name="CopyEuis" AfterTargets="AfterBuild">
+    <ItemGroup>
+      <EuisResult Include="$(OutDir)\*.euis" />
+    </ItemGroup>
+    <Copy SourceFiles="@(EuisResult)" DestinationFolder="$(DeployDir)" ContinueOnError="false" />
+  </Target>
+  
   <ItemGroup>
-    <ProjectReference Include="..\BelzontWE.Core\BelzontWE.Core.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-      <Reference Include="K45EUIS_Ext">
-      <HintPath>$(K45_CS2_ALLROOT)\ExtraUIScreens\ExtraUIScreens\bin\Steam\net480\K45EUIS_Ext.dll</HintPath>
+    <Reference Include="$(SolutionName)">
       <Private>False</Private>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="K45EUIS_Ext">
+      <HintPath>$(K45_CS2_ALLROOT)\ExtraUIScreens\K45EUIS_Ext\bin\$(Configuration)\$(TargetFramework)\K45EUIS_Ext.dll</HintPath>
+      <Private>False</Private>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <SpecificVersion>False</SpecificVersion>
     </Reference>
     <Reference Include="cohtml.Net">
       <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\cohtml.Net.dll</HintPath>
