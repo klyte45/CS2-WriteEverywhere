@@ -2,7 +2,7 @@
 
 import { BaseTab } from "#components/BaseTab";
 import { ShaderEditTab } from "#components/ShaderEditTab";
-import "#styles/react-tabs.scss";
+import { MainSideTabMenuComponent } from "@klyte45/euis-components";
 import { Component } from "react";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 
@@ -12,7 +12,18 @@ export type Entity = {
   Index: number;
   Version: number;
 };
-
+const menus = [
+  {
+    iconUrl: "coui://we.k45/UI/images/WE.svg",
+    name: "Main",
+    panelContent: <BaseTab />
+  },
+  {
+    iconUrl: "coui://we.k45/UI/images/WE.svg",
+    name: "Shader Editing",
+    panelContent: <ShaderEditTab />
+  }
+]
 
 export default class Root extends Component<{}> {
 
@@ -40,15 +51,12 @@ export default class Root extends Component<{}> {
 
   render() {
     return <ErrorBoundary>
-      <Tabs defaultIndex={0}>
-        <TabList>
-          <Tab>Start</Tab>
-          <Tab>ShaderEditor</Tab>
-        </TabList>
-        <TabPanel><BaseTab /></TabPanel>
-        <TabPanel><ShaderEditTab /></TabPanel>
-      </Tabs>
-     
+      <MainSideTabMenuComponent
+        items={menus}
+        mainIconUrl="coui://we.k45/UI/images/WE.svg"
+        modTitle="Write Everywhere"
+        subtitle="Main settings window"
+      />
     </ErrorBoundary>;
   }
 }

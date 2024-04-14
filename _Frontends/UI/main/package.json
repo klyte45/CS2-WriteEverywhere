@@ -64,6 +64,7 @@
     "react-select": "file:../_replacements/react-select-5.7.3-k45.tgz",
     "react-tabs": "^4.3.0",
     "react-treeview": "^0.4.7",
+    "react-tooltip": "^5.18.1",
     "single-spa": "^5.9.3",
     "single-spa-react": "^4.3.1",
     "systemjs-webpack-interop": "file:../_replacements/systemjs-webpack-interop-2.3.7-euis.tgz",

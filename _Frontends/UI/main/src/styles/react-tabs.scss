@@ -19,7 +19,7 @@
         height: 35rem;
     }
 
-    &__tab {
+    [class=react-tabs__tab] {
         display: flex;
         border: 1rem solid transparent;
         border-bottom: none;
@@ -27,23 +27,23 @@
         position: relative;
         padding: 6rem 12rem;
         cursor: pointer;
-
-        &--selected {
-            background-color: var(--textColorHighlight);
-            color:  var(--normalTextColorDark);
-            border-radius: 5rem 5rem 0 0;
-            font-weight: 800;
-        }
-
-        &--disabled {
-            color: gray;
-            cursor: default;
-        }
-
-
     }
 
-    &__tab-panel {
+    [class=react-tabs__tab--selected] {
+        @extend [class=react-tabs__tab];
+        background-color: var(--textColorHighlight);
+        color: var(--normalTextColorDark);
+        border-radius: 5rem 5rem 0 0;
+        font-weight: 800;
+    }
+
+    [class=react-tabs__tab--disabled] {
+        @extend [class=react-tabs__tab];
+        color: gray;
+        cursor: default;
+    }
+
+    [class=react-tabs__tab-panel] {
         display: none;
         padding-left: 5rem;
         padding-right: 5rem;
@@ -54,8 +54,10 @@
         right: 0;
         overflow: scroll;
 
-        &--selected {
-            display: block;
-        }
+    }
+
+    [class=react-tabs__tab-panel--selected] {
+        @extend [class=react-tabs__tab-panel];
+        display: block;
     }
 }
