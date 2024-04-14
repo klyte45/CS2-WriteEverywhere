@@ -1,8 +1,5 @@
 import { Component } from "react";
-import { Cs2FormLine } from "./_common/Cs2FormLine";
-import Cs2Select from "./_common/cs2-select";
-import { Input } from "#components/_common/input";
-import { Checkbox } from "./_common/checkbox";
+import { Cs2Checkbox, Cs2FormLine, Cs2Select, DefaultPanelScreen, GameScrollComponent, Input } from "@klyte45/euis-components";
 
 enum ShaderPropertyType {
   Color = "Color",
@@ -52,32 +49,36 @@ export class ShaderEditTab extends Component<{}, State> {
 
   render() {
     return <>
-      <Cs2FormLine title="Select Font">
-        <Cs2Select
-          options={this.state?.fontsLoaded}
-          getOptionLabel={(x) => x.name}
-          getOptionValue={(x) => x.name}
-          onChange={(x) => this.onFontSet(x)}
-          value={this.state?.selectedFont} />
-      </Cs2FormLine>
-      {
-        this.state?.loadedProperties && <>
-          {this.state.loadedProperties.sort((a, b) => a.Name.localeCompare(b.Name))
-            .map((x) => {
-              if (x.Type == ShaderPropertyType.Keyword || x.Type == ShaderPropertyType.ShaderPass) {
-                return <Cs2FormLine key={x.Idx} title={x.Name} subtitle={<div style={{ display: "flex" }}><b style={{ color: "lime" }}>{x.Type}</b> - {x.Description}</div>}>
-                  <Checkbox isChecked={() => x.Value === "True"} onValueToggle={async (y) => { x.Value = await engine.call("k45::we.test.setCurrentMaterialSettings", this.state.selectedFont.name, (x.Type == ShaderPropertyType.Keyword ? "k" : "p") + x.Name, y ? "True" : "False"); this.setState({}) }} />
-                </Cs2FormLine>
-              } else if (x.Type == ShaderPropertyType.RenderQueue) {
-                return <Input key={x.Idx} title={x.Name} subtitle={<div style={{ display: "flex" }}><b style={{ color: "lime" }}>Int</b> - {x.Description}</div>} getValue={() => x.Value} onValueChanged={async (y) => await engine.call("k45::we.test.setCurrentMaterialSettings", this.state.selectedFont.name, x.Type, y)}>
-                </Input>
-              } else {
-                return <Input key={x.Idx} title={x.Name} subtitle={<div style={{ display: "flex" }}><b style={{ color: "lime" }}>{x.Type}</b> - {x.Description}</div>} getValue={() => x.Value} onValueChanged={async (y) => await engine.call("k45::we.test.setCurrentMaterialSettings", this.state.selectedFont.name, x.Idx + "", y)}>
-                </Input>
-              }
-            })}
-        </>
-      }
+      <DefaultPanelScreen title="Shader test">
+        <Cs2FormLine title="Select Font">
+          <Cs2Select
+            options={this.state?.fontsLoaded}
+            getOptionLabel={(x) => x.name}
+            getOptionValue={(x) => x.name}
+            onChange={(x) => this.onFontSet(x)}
+            value={this.state?.selectedFont} />
+        </Cs2FormLine>
+        <GameScrollComponent>
+          {
+            this.state?.loadedProperties && <>
+              {this.state.loadedProperties.sort((a, b) => a.Name.localeCompare(b.Name))
+                .map((x) => {
+                  if (x.Type == ShaderPropertyType.Keyword || x.Type == ShaderPropertyType.ShaderPass) {
+                    return <Cs2FormLine key={x.Idx} title={x.Name} subtitle={<div style={{ display: "flex" }}><b style={{ color: "lime" }}>{x.Type}</b> - {x.Description}</div>}>
+                      <Cs2Checkbox isChecked={() => x.Value === "True"} onValueToggle={async (y) => { x.Value = await engine.call("k45::we.test.setCurrentMaterialSettings", this.state.selectedFont.name, (x.Type == ShaderPropertyType.Keyword ? "k" : "p") + x.Name, y ? "True" : "False"); this.setState({}) }} />
+                    </Cs2FormLine>
+                  } else if (x.Type == ShaderPropertyType.RenderQueue) {
+                    return <Input key={x.Idx} title={x.Name} subtitle={<div style={{ display: "flex" }}><b style={{ color: "lime" }}>Int</b> - {x.Description}</div>} getValue={() => x.Value} onValueChanged={async (y) => await engine.call("k45::we.test.setCurrentMaterialSettings", this.state.selectedFont.name, x.Type, y)}>
+                    </Input>
+                  } else {
+                    return <Input key={x.Idx} title={x.Name} subtitle={<div style={{ display: "flex" }}><b style={{ color: "lime" }}>{x.Type}</b> - {x.Description}</div>} getValue={() => x.Value} onValueChanged={async (y) => await engine.call("k45::we.test.setCurrentMaterialSettings", this.state.selectedFont.name, x.Idx + "", y)}>
+                    </Input>
+                  }
+                })}
+            </>
+          }
+        </GameScrollComponent>
+      </DefaultPanelScreen>
     </>;
   }
   onFontSet(x: { name: string; }): void {

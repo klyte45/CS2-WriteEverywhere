@@ -1,8 +1,6 @@
 import { Component } from "react";
-import { Cs2FormLine } from "./_common/Cs2FormLine";
-import Cs2Select from "./_common/cs2-select";
-import { SimpleInput } from "#components/_common/input";
 import { Entity } from "../root.component";
+import { Cs2FormLine, Cs2Select, SimpleInput } from "@klyte45/euis-components";
 
 
 type State = {

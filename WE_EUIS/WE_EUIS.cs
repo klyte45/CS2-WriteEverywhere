@@ -1,4 +1,4 @@
-﻿//#define LOCALURL
+﻿#define LOCALURL
 
 using BelzontWE;
 using K45EUIS_Ext;
@@ -21,8 +21,8 @@ namespace z_WE_EUIS
         public string DisplayName => "Write Everywhere - Main";
 
 #if LOCALURL
-        public string UrlJs => "http://localhost:8500/k45-we-main.js";//
-        public string UrlCss => "http://localhost:8500/k45-we-main.css";//
+        public string UrlJs => "http://localhost:8775/k45-we-main.js";//
+        public string UrlCss => "http://localhost:8775/k45-we-main.css";//
         public string UrlIcon => $"coui://{WriteEverywhereCS2Mod.Instance.CouiHost}/UI/images/WE.svg";
 #else
         public string UrlJs => $"coui://{WriteEverywhereCS2Mod.Instance.CouiHost}/UI/k45-we-main.js";

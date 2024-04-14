@@ -1,13 +1,10 @@
 ///<reference path="euis.d.ts" />
 
-import { Component } from "react";
-import { Cs2FormLine } from "./components/_common/Cs2FormLine";
-import Cs2Select from "./components/_common/cs2-select";
-import { Input, SimpleInput } from "#components/_common/input";
-import "#styles/react-tabs.scss";
-import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import { BaseTab } from "#components/BaseTab";
 import { ShaderEditTab } from "#components/ShaderEditTab";
+import "#styles/react-tabs.scss";
+import { Component } from "react";
+import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 
 
 export type Entity = {
