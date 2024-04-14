@@ -300,11 +300,12 @@ namespace BelzontWE
 
         private void SetShader(string shaderName)
         {
-            m_FontServer.SetDefaultShader(shaderName);
+            //m_FontServer.SetDefaultShader(shaderName);
         }
         private string GetShader()
         {
-            return m_FontServer.GetDefaultShader();
+            return "";
+            //return m_FontServer.GetDefaultShader();
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller)

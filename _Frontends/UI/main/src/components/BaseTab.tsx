@@ -9,8 +9,7 @@ type State = {
   selectedFont?: { name: string },
   textToRender?: string,
   currentOverlay: number,
-  shaderList?: { name: string }[],
-  currentShader?: { name: string }
+  shaderList?: { name: string }[]
 }
 
 
@@ -25,8 +24,6 @@ export class BaseTab extends Component<{}, State> {
     engine.on("k45::we.test.enableTestTool->", this.onSelectEntity);
     engine.on("k45::we.test.fontsChanged->", this.onFontsChanged);
     engine.call("k45::we.test.listFonts").then((x) => this.setState({ fontsLoaded: (x as string[]).map(x => { return { name: x }; }) }));
-    engine.call("k45::we.test.listShader").then((x) => this.setState({ shaderList: (x as string[]).sort((a, b) => a.localeCompare(b)).map(x => { return { name: x }; }) }));
-    engine.call("k45::we.test.getShader").then((x) => this.setState({ currentShader: { name: x } }));
     engine.call("k45::we.test.getOverlay").then((x) => this.setState({ currentOverlay: x }));
   }
   componentWillUnmount(): void {
@@ -72,16 +69,6 @@ export class BaseTab extends Component<{}, State> {
         }} maxLength={8} getValue={() => this.state?.currentOverlay.toString(16)} />
       </Cs2FormLine>
       <button className="negativeBtn" onClick={() => engine.call("k45::we.test.requestTextMesh", this.state?.textToRender, this.state?.selectedFont?.name).then(console.log)}>Generate text...</button>
-      <button className="positiveBtn" onClick={() => engine.call("k45::we.test.listShaderDatails").then(console.log)}>List shaders</button>
-      <Cs2FormLine title="Select Shader">
-        <Cs2Select
-          options={this.state?.shaderList}
-          getOptionLabel={(x) => x.name}
-          getOptionValue={(x) => x.name}
-          onChange={(x) => this.setState({ currentShader: x })}
-          value={this.state?.currentShader} />
-      </Cs2FormLine>
-      <button className="positiveBtn" onClick={() => engine.call("k45::we.test.setShader", this.state.currentShader.name)}>Set shader</button>
     </>;
   }
 }

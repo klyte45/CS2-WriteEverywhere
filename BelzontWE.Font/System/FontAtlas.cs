@@ -1,19 +1,14 @@
 ﻿
 using Belzont.Interfaces;
-using Game.Prefabs;
-using Kwytto.Utils;
 using System;
 using System.IO;
 using System.Linq;
-using Unity.Entities;
 using UnityEngine;
-using UnityEngine.Rendering.HighDefinition;
 
 namespace BelzontWE.Font
 {
     public class FontAtlas
     {
-        private readonly Func<Shader> defaultShaderGetter;
         public int Width
         {
             get; private set;
@@ -44,19 +39,8 @@ namespace BelzontWE.Font
             get
             {
                 if (m_material == null)
-                {                  
-
-                    m_material = new Material(defaultShaderGetter());
-                    m_material.EnableKeyword("_GPU_ANIMATION_OFF");
-                    HDMaterial.SetAlphaClipping(m_material, true);
-                    HDMaterial.SetAlphaCutoff(m_material, .7f);
-                    HDMaterial.SetUseEmissiveIntensity(m_material, true);
-                    HDMaterial.SetEmissiveColor(m_material, Color.white);
-                    HDMaterial.SetEmissiveIntensity(m_material, 0, UnityEditor.Rendering.HighDefinition.EmissiveIntensityUnit.Nits);
-                    m_material.SetFloat("_DoubleSidedEnable", 1);
-                    m_material.SetFloat("_Smoothness", .5f);
-                    m_material.SetFloat(FontServer.DecalLayerMask, 8.ToFloatBitFlags());
-                    HDMaterial.ValidateMaterial(m_material);
+                {
+                    m_material = FontServer.CreateDefaultFontMaterial();
 
                 }
                 return m_material;
@@ -69,9 +53,8 @@ namespace BelzontWE.Font
             UnityEngine.Object.Destroy(m_material);
         }
 
-        public FontAtlas(int w, int h, int count, Func<Shader> defaultShaderGetter)
+        public FontAtlas(int w, int h, int count)
         {
-            this.defaultShaderGetter = defaultShaderGetter;
             Width = w;
             Height = h;
             Nodes = new FontAtlasNode[count];
@@ -223,7 +206,7 @@ namespace BelzontWE.Font
                 int y = RectFits(i, rw, rh);
                 if (y != -1)
                 {
-                    if (y + rh < besth || y + rh == besth && Nodes[i].Width < bestw)
+                    if (y + rh < besth || (y + rh == besth && Nodes[i].Width < bestw))
                     {
                         besti = i;
                         bestw = Nodes[i].Width;
@@ -275,8 +258,8 @@ namespace BelzontWE.Font
             int g = glyph.Index;
             var dst = new FakePtr<byte>(buffer, pad + (pad * Mathf.RoundToInt(glyph.width)));
             glyph.Font.RenderGlyphBitmap(dst,
-               Mathf.RoundToInt(glyph.width) - pad * 2,
-               Mathf.RoundToInt(glyph.height) - pad * 2,
+               Mathf.RoundToInt(glyph.width) - (pad * 2),
+               Mathf.RoundToInt(glyph.height) - (pad * 2),
                Mathf.RoundToInt(glyph.width),
                 g);
 

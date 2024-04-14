@@ -16,7 +16,7 @@
   <Import Project="$(K45_CS2_ALLROOT)\_Shared\belzont.targets" />
   <Target Name="RunModPublisher" Condition="false" />
   <Target Name="RunModPostProcessor" Condition="'$(Configuration)'=='Release'" />
-  <Target Name="MergeDll" Condition="False"/>
+  <Target Name="MergeDll" Condition="False" />
 
 
   <ItemGroup>
@@ -153,6 +153,9 @@
     </None>
     <Resource Include="*.md" />
 
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\SourceSansPro-Regular.ttf" />
   </ItemGroup>
 
 </Project>

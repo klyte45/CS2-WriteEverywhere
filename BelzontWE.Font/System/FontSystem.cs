@@ -25,10 +25,6 @@ namespace BelzontWE.Font
     {
         private struct FontSystemData : IDisposable
         {
-            public float Spacing;
-            public Vector2 CurrentAtlasSize;
-            public int Blur;
-            public int FontHeight;
             private GCHandle _fontListAddr;
             public List<Font> fonts
             {
@@ -39,7 +35,6 @@ namespace BelzontWE.Font
                     _fontListAddr = GCHandle.Alloc(value);
                 }
             }
-            public bool UseKernings;
             public float _itw;
             public float _ith;
 
@@ -115,7 +110,7 @@ namespace BelzontWE.Font
             {
                 if (_currentAtlas == null)
                 {
-                    _currentAtlas = new FontAtlas(Mathf.RoundToInt(_size.x), Mathf.RoundToInt(_size.y), 256, defaultShaderGetter);
+                    _currentAtlas = new FontAtlas(Mathf.RoundToInt(_size.x), Mathf.RoundToInt(_size.y), 256);
                     Atlases.Add(_currentAtlas);
                     LastUpdateAtlas = DateTime.Now.Ticks;
                 }
@@ -127,9 +122,8 @@ namespace BelzontWE.Font
         public List<FontAtlas> Atlases { get; } = new List<FontAtlas>();
 
         public event Action CurrentAtlasFull;
-        public Func<Shader> defaultShaderGetter;
 
-        public FontSystem(string name, int width, int height, Func<Shader> defaultShaderGetter, int blur = 0)
+        public FontSystem(string name, int width, int height, int blur = 0)
         {
             Name = name;
             if (width <= 0)
@@ -146,7 +140,6 @@ namespace BelzontWE.Font
             {
                 throw new ArgumentOutOfRangeException(nameof(blur));
             }
-            this.defaultShaderGetter = defaultShaderGetter;
             Blur = blur;
 
             _size = new Vector2(width, height);
@@ -393,7 +386,7 @@ namespace BelzontWE.Font
             int advance = 0, lsb = 0, x0 = 0, y0 = 0, x1 = 0, y1 = 0;
             font.BuildGlyphBitmap(g, font.Scale, ref advance, ref lsb, ref x0, ref y0, ref x1, ref y1);
 
-            int pad = FontGlyph.PadFromBlur(data.Blur);
+            int pad = FontGlyph.PadFromBlur(default);
             int gw = x1 - x0 + pad * 2;
             int gh = y1 - y0 + pad * 2;
 
@@ -401,8 +394,8 @@ namespace BelzontWE.Font
             {
                 Font = font,
                 Codepoint = codepoint,
-                Height = data.FontHeight,
-                Blur = data.Blur,
+                Height = default,
+                Blur = default,
                 Index = g,
                 width = gw,
                 height = gh,
@@ -488,11 +481,11 @@ namespace BelzontWE.Font
             if (prevGlyph.IsValid)
             {
                 float adv = 0;
-                if (data.UseKernings)
+                if (true)
                 {
                     adv = prevGlyph.GetKerning(glyph) * glyph.Font.Scale;
                 }
-                x += (int)((adv + data.Spacing) * spacingFactor + 0.5f);
+                x += (int)((adv + 0) * spacingFactor + 0.5f);
             }
 
             float rx = x + glyph.XOffset;
@@ -630,7 +623,7 @@ namespace BelzontWE.Font
 
         private void PrepareJob(ref StringRenderingJob job, StringRenderingQueueItem item)
         {
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] PrepareJob for {item.text}");
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] PrepareJob for {item.text}");      
             job.data = data;
             job.CurrentAtlasSize = new Vector3(_currentAtlas.Width, _currentAtlas.Height);
             job.input = item;
@@ -882,10 +875,10 @@ namespace BelzontWE.Font
             private void DrawChar(FontGlyph glyph, IList<Vector3> vertices, IList<int> triangles, IList<Vector2> uvs, IList<Color32> colors, Color overrideColor, Color bottomColor, Rect bounds)
             {
                 AddTriangleIndices(vertices, triangles);
-                vertices.Add(new Vector2(bounds.right, 1 - bounds.bottom));
-                vertices.Add(new Vector2(bounds.left, 1 - bounds.bottom));
-                vertices.Add(new Vector2(bounds.left, 1 - bounds.top));
-                vertices.Add(new Vector2(bounds.right, 1 - bounds.top));
+                vertices.Add(new Vector2(bounds.xMax, 1 - bounds.yMax));
+                vertices.Add(new Vector2(bounds.xMin, 1 - bounds.yMax));
+                vertices.Add(new Vector2(bounds.xMin, 1 - bounds.yMin));
+                vertices.Add(new Vector2(bounds.xMax, 1 - bounds.yMin));
                 Color32 item3 = overrideColor.linear;
                 Color32 item4 = bottomColor.linear;
                 colors.Add(item3);

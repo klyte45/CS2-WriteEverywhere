@@ -10,7 +10,7 @@ namespace BelzontWE.Font
 
         public static readonly FontGlyph Null = new FontGlyph();
 
-        private readonly NativeHashMap<int, int> _kernings;
+        private NativeHashMap<int, int> _kernings;
         private GCHandle fontAddr;
         public Font Font
         {
@@ -47,6 +47,10 @@ namespace BelzontWE.Font
 
         public int GetKerning(FontGlyph nextGlyph)
         {
+            if (!_kernings.IsCreated)
+            {
+                _kernings = new NativeHashMap<int, int>(1, Allocator.Persistent);
+            }
             if (_kernings.TryGetValue(nextGlyph.Index, out int result))
             {
                 return result;
@@ -62,6 +66,7 @@ namespace BelzontWE.Font
         public void Dispose()
         {
             if (fontAddr.IsAllocated) fontAddr.Free();
+            _kernings.Dispose();
         }
     }
 }

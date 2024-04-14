@@ -2,7 +2,7 @@
 
 import { BaseTab } from "#components/BaseTab";
 import { ShaderEditTab } from "#components/ShaderEditTab";
-import { MainSideTabMenuComponent } from "@klyte45/euis-components";
+import { MainSideTabMenuComponent, MenuItem } from "@klyte45/euis-components";
 import { Component } from "react";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 
@@ -12,11 +12,12 @@ export type Entity = {
   Index: number;
   Version: number;
 };
-const menus = [
+const menus: MenuItem[] = [
   {
-    iconUrl: "coui://we.k45/UI/images/WE.svg",
+    iconUrl: "coui://GameUI/Media/Glyphs/Gear.svg",
     name: "Main",
-    panelContent: <BaseTab />
+    panelContent: <BaseTab />,
+    tintedIcon: true
   },
   {
     iconUrl: "coui://we.k45/UI/images/WE.svg",

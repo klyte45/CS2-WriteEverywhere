@@ -72,9 +72,9 @@ namespace BelzontWE.Font
             }
         }
 
-        private DynamicSpriteFont(byte[] ttf, string name, int defaultTargetHeight, int textureWidth, int textureHeight, float qualityMultiplier, Func<Shader> defaultShaderGetter, int blur)
+        private DynamicSpriteFont(byte[] ttf, string name, int defaultTargetHeight, int textureWidth, int textureHeight, float qualityMultiplier,  int blur)
         {
-            _fontSystem = new FontSystem(name, textureWidth, textureHeight, defaultShaderGetter, blur)
+            _fontSystem = new FontSystem(name, textureWidth, textureHeight,  blur)
             {
                 FontHeight = defaultTargetHeight
             };
@@ -115,7 +115,7 @@ namespace BelzontWE.Font
         public void Reset() => _fontSystem.Reset();
 
 
-        public static DynamicSpriteFont FromTtf(byte[] ttf, string name, int defaultTargetHeight, int textureWidth, int textureHeight, float qualityMultiplier, Func<Shader> defaultShaderGetter, int blur = 0) => new DynamicSpriteFont(ttf, name, defaultTargetHeight, textureWidth, textureHeight, qualityMultiplier, defaultShaderGetter, blur);
+        public static DynamicSpriteFont FromTtf(byte[] ttf, string name, int defaultTargetHeight, int textureWidth, int textureHeight, float qualityMultiplier, int blur = 0) => new DynamicSpriteFont(ttf, name, defaultTargetHeight, textureWidth, textureHeight, qualityMultiplier, blur);
 
 
         public long GetCacheSize() => _fontSystem.GetCacheSize();
