@@ -1,6 +1,4 @@
-﻿#define BURST
-//#define VERBOSE 
-using Belzont.Utils;
+﻿using Belzont.Utils;
 using Game.Common;
 using Game.Input;
 using Game.Net;
@@ -10,6 +8,7 @@ using Game.Tools;
 using System;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Mathematics;
 
 namespace BelzontWE
 {
@@ -17,10 +16,8 @@ namespace BelzontWE
     {
         public override string toolID => $"K45_WE_{GetType().Name}";
 
-        // Token: 0x0400019A RID: 410
+        public float3 LastPos;
         public Entity HoveredEntity;
-
-        // Token: 0x0400019C RID: 412
         public Entity Selected;
         private Func<Entity, bool> callback;
 
@@ -64,18 +61,41 @@ namespace BelzontWE
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            bool flag = GetRaycastResult(out Entity e, out RaycastHit hit);
+            bool flag = GetRaycastResult(out Entity entity, out RaycastHit raycastHit);
+            LastPos = raycastHit.m_HitPosition;
             if (flag)
             {
-                if (m_ApplyAction.WasPressedThisFrame())
+                Entity hoveredEntity = this.HoveredEntity;
+                this.HoveredEntity = entity;
+                if (m_ApplyAction.WasPressedThisFrame() && entity != this.Selected)
                 {
-                    if (flag && !(callback?.Invoke(e) ?? true))
+                    ChangeHighlighting_MainThread(this.Selected, ChangeMode.RemoveHighlight);
+                    ChangeHighlighting_MainThread(entity, ChangeMode.AddHighlight);
+                    this.Selected = entity;
+                    if (flag && !(callback?.Invoke(entity) ?? true))
                     {
                         RequestDisable();
                     }
                 }
 
+                else if (hoveredEntity != this.HoveredEntity)
+                {
+                    if (hoveredEntity != this.Selected)
+                    {
+                        ChangeHighlighting_MainThread(hoveredEntity, ChangeMode.RemoveHighlight);
+                    }
+                    ChangeHighlighting_MainThread(this.HoveredEntity, ChangeMode.AddHighlight);
+                }
             }
+            else if (this.HoveredEntity != Entity.Null)
+            {
+                if (this.HoveredEntity != this.Selected)
+                {
+                    ChangeHighlighting_MainThread(this.HoveredEntity, ChangeMode.RemoveHighlight);
+                }
+                this.HoveredEntity = Entity.Null;
+            }
+
             return inputDeps;
         }
         protected override void OnStopRunning()
