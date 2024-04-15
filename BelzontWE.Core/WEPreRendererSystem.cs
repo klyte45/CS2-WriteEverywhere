@@ -108,17 +108,17 @@ namespace BelzontWE
                     for (var j = 0; j < weCustomDataPending.Length; j++)
                     {
                         var weCustomData = weCustomDataPending[j];
-                        var font = m_FontServer[weCustomData.fontName.ToString()];
+                        var font = m_FontServer[weCustomData.src.fontName.ToString()] ?? m_FontServer[FontServer.DEFAULT_FONT_KEY];
                         if (font is null)
                         {
                             continue;
                         }
-                        var bri = m_FontServer[weCustomData.fontName.ToString()].DrawString(weCustomData.text.ToString(), default);
+                        var bri = font.DrawString(weCustomData.src.text.ToString(), default);
                         if (bri == null)
                         {
                             continue;
                         }
-                        wePersistentData.Add(WESimulationTextComponent.From(weCustomData, font, bri));
+                        wePersistentData.Add(WESimulationTextComponent.From(weCustomData, bri));
                         weCustomDataPending.RemoveAt(j);
                         j--;
                     }

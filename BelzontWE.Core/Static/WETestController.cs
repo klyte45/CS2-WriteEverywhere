@@ -21,7 +21,6 @@ namespace BelzontWE
         private Action<string, object[]> eventCaller;
         private WETestTool m_WETestTool;
         private FontServer m_FontServer;
-        private EndFrameBarrier m_EndFrameBarrier;
 
         internal static Entity targetEntity;
         private string targetString;
@@ -320,7 +319,6 @@ namespace BelzontWE
         {
             m_WETestTool = World.GetExistingSystemManaged<WETestTool>();
             m_FontServer = World.GetOrCreateSystemManaged<FontServer>();
-            m_EndFrameBarrier = World.GetExistingSystemManaged<EndFrameBarrier>();
             m_FontServer.OnFontsLoadedChanged += () => SendToFrontend("test.fontsChanged->", new object[] { ListFonts() });
             base.OnCreate();
         }

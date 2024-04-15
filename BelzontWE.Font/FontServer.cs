@@ -40,6 +40,7 @@ namespace BelzontWE
             base.OnCreate();
             Instance = this;
             DecalLayerMask = Shader.PropertyToID("colossal_DecalLayerMask");
+            ReloadFontsFromPath();
         }
 
 

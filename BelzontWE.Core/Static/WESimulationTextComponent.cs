@@ -1,26 +1,32 @@
 ﻿#define BURST
 //#define VERBOSE 
+using Belzont.Utils;
 using BelzontWE.Font;
 using BelzontWE.Font.Utility;
+using Colossal.Serialization.Entities;
 using System;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace BelzontWE
 {
-    public struct WESimulationTextComponent : IBufferElementData, IDisposable
+
+    public struct WESimulationTextComponent : IBufferElementData, ISerializable, IDisposable
     {
+        public const uint CURRENT_VERSION = 0;
         public unsafe static int Size => sizeof(WESimulationTextComponent);
 
-        public Guid parentSourceGuid;
-        public Guid propertySourceGuid;
+        public Entity targetEntity;
+        public WEPropertyDescription targetProperty;
+
         public FixedString512Bytes FontName
         {
             get => fontName; set
             {
-                fontName = value;
+                fontName.CopyFrom(value);
                 if (basicRenderInformation.IsAllocated)
                 {
                     basicRenderInformation.Free();
@@ -32,7 +38,7 @@ namespace BelzontWE
         {
             get => text; set
             {
-                text = value;
+                text.CopyFrom(value);
                 if (basicRenderInformation.IsAllocated)
                 {
                     basicRenderInformation.Free();
@@ -40,18 +46,20 @@ namespace BelzontWE
                 }
             }
         }
-        public Vector3 offsetPosition;
-        public Quaternion offsetRotation;
-        public Vector3 scale;
+        public float3 offsetPosition;
+        public quaternion offsetRotation;
+        public float3 scale;
         public GCHandle basicRenderInformation;
         public GCHandle materialBlockPtr;
         public bool dirty;
         public Color32 color;
         public Color32 emissiveColor;
         public float metallic;
+        public float smoothness;
         public float emissiveIntensity;
         public FixedString512Bytes text;
         public FixedString512Bytes fontName;
+        public WEShader shader;
 
         public float BriOffsetScaleX { get; private set; }
         public float BriPixelDensity { get; private set; }
@@ -86,10 +94,10 @@ namespace BelzontWE
             }
         }
 
-        public bool IsDirty() => dirty;
+        public readonly bool IsDirty() => dirty;
         public Color32 Color
         {
-            get => color; set
+            readonly get => color; set
             {
                 color = value;
                 dirty = true;
@@ -97,7 +105,7 @@ namespace BelzontWE
         }
         public Color32 EmmissiveColor
         {
-            get => emissiveColor; set
+            readonly get => emissiveColor; set
             {
                 emissiveColor = value;
                 dirty = true;
@@ -105,37 +113,72 @@ namespace BelzontWE
         }
         public float Metallic
         {
-            get => metallic; set
+            readonly get => metallic; set
             {
                 metallic = Mathf.Clamp01(value);
                 dirty = true;
             }
         }
 
-        public static WESimulationTextComponent From(WEWaitingRenderingComponent src, DynamicSpriteFont font, BasicRenderInformation bri)
+        public static WESimulationTextComponent From(WEWaitingRenderingComponent src, BasicRenderInformation bri)
         {
-            return new WESimulationTextComponent
-            {
-                propertySourceGuid = src.propertySourceGuid,
-                FontName = src.fontName,
-                Text = src.text,
-                offsetPosition = src.offsetPosition,
-                offsetRotation = src.offsetRotation,
-                scale = src.scale,
-                Color = src.color,
-                EmmissiveColor = src.emmissiveColor,
-                Metallic = src.metallic,
-                dirty = true,
-                basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak),
-                BriOffsetScaleX = bri.m_offsetScaleX,
-                BriPixelDensity = bri.m_pixelDensityMeters
-            };
+            src.src.dirty = true;
+            if (src.src.basicRenderInformation.IsAllocated) src.src.basicRenderInformation.Free();
+            src.src.basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
+            src.src.BriOffsetScaleX = bri.m_offsetScaleX;
+            src.src.BriPixelDensity = bri.m_pixelDensityMeters;
+
+            return src.src;
         }
 
         public void Dispose()
         {
             basicRenderInformation.Free();
             materialBlockPtr.Free();
+        }
+
+        public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+        {
+            writer.Write(CURRENT_VERSION);
+            writer.Write(targetEntity);
+            writer.Write((uint)targetProperty);
+            writer.Write((byte)shader);
+            writer.Write(offsetPosition);
+            writer.Write(offsetRotation);
+            writer.Write(scale);
+            writer.Write(color);
+            writer.Write(emissiveColor);
+            writer.Write(emissiveIntensity);
+            writer.Write(metallic);
+            writer.Write(smoothness);
+            writer.Write(text);
+            writer.Write(fontName);
+        }
+
+        public void Deserialize<TReader>(TReader reader) where TReader : IReader
+        {
+            reader.Read(out uint version);
+            if (version > CURRENT_VERSION)
+            {
+                LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                return;
+            }
+            reader.Read(out targetEntity);
+            reader.Read(out uint targetProperty);
+            this.targetProperty = (WEPropertyDescription)targetProperty;
+            reader.Read(out byte shader);
+            this.shader = (WEShader)shader;
+            reader.Read(out offsetPosition);
+            reader.Read(out offsetRotation);
+            reader.Read(out scale);
+            reader.Read(out color);
+            reader.Read(out emissiveColor);
+            reader.Read(out emissiveIntensity);
+            reader.Read(out metallic);
+            reader.Read(out smoothness);
+            reader.Read(out text);
+            reader.Read(out fontName);
+
         }
     }
 
