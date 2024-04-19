@@ -1,7 +1,6 @@
 ﻿#define BURST
 //#define VERBOSE 
 using Belzont.Utils;
-using BelzontWE.Font;
 using BelzontWE.Font.Utility;
 using Colossal.Serialization.Entities;
 using System;
@@ -16,7 +15,7 @@ namespace BelzontWE
 
     public struct WESimulationTextComponent : IBufferElementData, ISerializable, IDisposable
     {
-        public const uint CURRENT_VERSION = 0;
+        public const uint CURRENT_VERSION = 1;
         public unsafe static int Size => sizeof(WESimulationTextComponent);
 
         public Entity targetEntity;
@@ -58,7 +57,8 @@ namespace BelzontWE
         public float smoothness;
         public float emissiveIntensity;
         public FixedString512Bytes text;
-        public FixedString512Bytes fontName;
+        public FixedString32Bytes fontName;
+        public FixedString32Bytes itemName;
         public WEShader shader;
 
         public float BriOffsetScaleX { get; private set; }
@@ -153,6 +153,7 @@ namespace BelzontWE
             writer.Write(smoothness);
             writer.Write(text);
             writer.Write(fontName);
+            writer.Write(itemName);
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -178,6 +179,10 @@ namespace BelzontWE
             reader.Read(out smoothness);
             reader.Read(out text);
             reader.Read(out fontName);
+            if (version >= 1)
+            {
+                reader.Read(out itemName);
+            }
 
         }
     }

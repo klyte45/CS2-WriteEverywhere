@@ -4,7 +4,7 @@
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
   <Import Project="$(K45_CS2_ALLROOT)\_Shared\belzont.targets" />
   <Target Name="RunModPublisher" Condition="false" />
-  <Target Name="MergeDll" Condition="False"/>
+  <Target Name="MergeDll" Condition="False" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net472</TargetFramework>

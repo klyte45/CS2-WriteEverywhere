@@ -263,12 +263,10 @@ namespace BelzontWE
                         int num7 = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
                         if (num7 >= cullInfo.m_MinLod)
                         {
-                            var position = positionRef + math.rotate(rotationRef, weCustomData[j].offsetPosition);
-                            quaternion rotation = default;// rotationRef * weCustomData[j].offsetRotation;
                             availToDraw.Enqueue(new WERenderData
                             {
                                 weComponent = weCustomData[j],
-                                transformMatrix = Matrix4x4.TRS(position, rotation, weCustomData[j].scale * weCustomData[j].BriOffsetScaleX / weCustomData[j].BriPixelDensity)
+                                transformMatrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one) * Matrix4x4.TRS(weCustomData[j].offsetPosition, weCustomData[j].offsetRotation, weCustomData[j].scale * weCustomData[j].BriOffsetScaleX / weCustomData[j].BriPixelDensity)
                             });
                         }
                     }

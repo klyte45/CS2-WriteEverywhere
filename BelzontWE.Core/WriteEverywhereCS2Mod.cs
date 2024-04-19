@@ -13,8 +13,8 @@ namespace BelzontWE
         public override void DoOnCreateWorld(UpdateSystem updateSystem)
         {
             updateSystem.UpdateBefore<FontServer>(SystemUpdatePhase.Rendering);
-            updateSystem.UpdateAt<WETestTool>(SystemUpdatePhase.ToolUpdate);
-            updateSystem.UpdateAfter<WETestTooltip>(SystemUpdatePhase.UITooltip);
+            updateSystem.UpdateAt<WEWorldPickerTool>(SystemUpdatePhase.ToolUpdate);
+            updateSystem.UpdateAfter<WEWorldPickerTooltip>(SystemUpdatePhase.UITooltip);
             updateSystem.UpdateAt<WEPreRendererSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WERendererSystem>(SystemUpdatePhase.MainLoop);
         }

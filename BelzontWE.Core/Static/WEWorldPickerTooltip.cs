@@ -2,7 +2,6 @@
 using Colossal.Entities;
 using Game.Common;
 using Game.Net;
-using Game.Prefabs;
 using Game.Tools;
 using Game.UI;
 using Game.UI.Tooltip;
@@ -13,18 +12,18 @@ using Unity.Mathematics;
 
 namespace BelzontWE
 {
-    public partial class WETestTooltip : TooltipSystemBase
+    public partial class WEWorldPickerTooltip : TooltipSystemBase
     {
         private ToolSystem m_ToolSystem;
         private TooltipGroup m_tooltipGroup;
-        private WETestTool m_WETestTool;
+        private WEWorldPickerTool m_WETestTool;
         private NameSystem m_nameSystem;
 
         protected override void OnCreate()
         {
             base.OnCreate();
             m_ToolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
-            m_WETestTool = World.GetOrCreateSystemManaged<WETestTool>();
+            m_WETestTool = World.GetOrCreateSystemManaged<WEWorldPickerTool>();
             m_nameSystem = World.GetExistingSystemManaged<NameSystem>();
             m_tooltipGroup = new TooltipGroup
             {
@@ -36,6 +35,7 @@ namespace BelzontWE
         }
         protected override void OnUpdate()
         {
+            return;
             if (m_ToolSystem.activeTool != m_WETestTool || m_WETestTool.HoveredEntity == default)
             {
                 return;

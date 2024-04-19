@@ -4,7 +4,7 @@ using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font;
 using Colossal.Entities;
-using Game;
+using Colossal.UI;
 using Kwytto.Utils;
 using System;
 using System.Collections.Generic;
@@ -16,10 +16,11 @@ using UnityEngine.Rendering;
 
 namespace BelzontWE
 {
+
     public class WETestController : ComponentSystemBase, IBelzontBindable
     {
         private Action<string, object[]> eventCaller;
-        private WETestTool m_WETestTool;
+        private WEWorldPickerTool m_WETestTool;
         private FontServer m_FontServer;
 
         internal static Entity targetEntity;
@@ -317,7 +318,7 @@ namespace BelzontWE
         }
         protected override void OnCreate()
         {
-            m_WETestTool = World.GetExistingSystemManaged<WETestTool>();
+            m_WETestTool = World.GetExistingSystemManaged<WEWorldPickerTool>();
             m_FontServer = World.GetOrCreateSystemManaged<FontServer>();
             m_FontServer.OnFontsLoadedChanged += () => SendToFrontend("test.fontsChanged->", new object[] { ListFonts() });
             base.OnCreate();
@@ -332,14 +333,7 @@ namespace BelzontWE
 
         private void EnableTestTool()
         {
-            m_WETestTool.SetCallbackAndEnable((e) =>
-            {
-                SendToFrontend("test.enableTestTool->", e);
-                var prevEntity = targetEntity;
-                targetEntity = e;
-                UpdateDataAtEntity();
-                return false;
-            });
+            m_WETestTool.Select();
         }
 
         private void ReloadFonts()

@@ -4,3 +4,6 @@
 [submodule "_Frontends/UI/_replacements"]
 	path = _Frontends/UI/_replacements
 	url = ../Cs2UIUtility
+[submodule "_Frontends/UI/_shared/vuio-commons"]
+	path = _Frontends/UI/_shared/vuio-commons
+	url = ../VuioCommons
