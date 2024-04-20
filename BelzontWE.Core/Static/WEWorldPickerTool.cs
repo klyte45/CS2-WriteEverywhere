@@ -4,11 +4,12 @@ using Game.Input;
 using Game.Net;
 using Game.Notifications;
 using Game.Prefabs;
+using Game.Rendering;
 using Game.Tools;
-using System;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using UnityEngine;
 
 namespace BelzontWE
 {
@@ -20,7 +21,10 @@ namespace BelzontWE
 
         public float3 LastPos;
         public Entity HoveredEntity;
-        private Func<Entity, bool> callback;
+        private CameraUpdateSystem m_cameraSystem;
+        private IGameCameraController m_oldController;
+        private float m_cameraDistance = 5f;
+        private bool m_cameraDisabledHere;
 
         public override PrefabBase GetPrefab()
         {
@@ -37,6 +41,8 @@ namespace BelzontWE
 
         private ProxyAction m_ApplyAction;
         private ProxyAction m_SecondaryApplyAction;
+        private ProxyAction m_CameraZoomAction;
+        private ProxyAction m_CameraZoomActionMouse;
         private ToolOutputBarrier m_ToolOutputBarrier;
         private WEWorldPickerController m_Controller;
 
@@ -45,15 +51,17 @@ namespace BelzontWE
         private float3 m_originalRotationText;
         private bool m_isDragging;
 
-        private int m_lastControllerVersion = -1;
-
         protected override void OnCreate()
         {
             Enabled = false;
             m_ApplyAction = InputManager.instance.FindAction("Tool", "Apply");
             m_SecondaryApplyAction = InputManager.instance.FindAction("Tool", "Secondary Apply");
+
+            m_CameraZoomAction = InputManager.instance.FindAction("Camera", "Zoom");
+            m_CameraZoomActionMouse = InputManager.instance.FindAction("Camera", "Zoom Mouse");
             m_ToolOutputBarrier = World.GetOrCreateSystemManaged<ToolOutputBarrier>();
             m_Controller = World.GetOrCreateSystemManaged<WEWorldPickerController>();
+            m_cameraSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
             base.OnCreate();
         }
         protected override void OnStartRunning()
@@ -77,6 +85,7 @@ namespace BelzontWE
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
+            bool cameraDisabledThisFrame = false;
             if (m_Controller.CurrentEntity.Value == default)
             {
                 bool collide = GetRaycastResult(out Entity entity, out RaycastHit raycastHit);
@@ -96,11 +105,6 @@ namespace BelzontWE
                         UpdateItemCount();
 
                         m_Controller.OnCurrentItemChanged();
-
-                        if (collide && !(callback?.Invoke(entity) ?? true))
-                        {
-                            RequestDisable();
-                        }
                     }
 
                     else if (hoveredEntity != HoveredEntity)
@@ -120,8 +124,6 @@ namespace BelzontWE
                     }
                     HoveredEntity = Entity.Null;
                 }
-
-                return inputDeps;
             }
             else
             {
@@ -152,13 +154,45 @@ namespace BelzontWE
                         var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
                         ApplyPosition(cmdBuff);
                     }
+                    if (m_Controller.CameraLocked.Value)
+                    {
+#pragma warning disable CS0252 // Possível comparação de referência inesperada; o lado esquerdo precisa de conversão
+                        if (m_cameraSystem.activeCameraController != m_cameraSystem.cinematicCameraController)
+                        {
+                            m_oldController = m_cameraSystem.activeCameraController;
+                            m_cameraSystem.activeCameraController = m_cameraSystem.cinematicCameraController;
+                            m_cameraSystem.cinematicCameraController.collisionsEnabled = false;
+                            m_cameraSystem.cinematicCameraController.inputEnabled = false;
+                        }
+#pragma warning restore CS0252 // Possível comparação de referência inesperada; o lado esquerdo precisa de conversão
+                        m_cameraDisabledHere = cameraDisabledThisFrame = true;
+                        m_cameraDistance = math.clamp(m_cameraDistance + (m_CameraZoomActionMouse.ReadValue<float>() * 4f) + m_CameraZoomAction.ReadValue<float>(), 1f, 20f);
+                        var targetMatrix = m_Controller.CurrentPlaneMode.Value switch
+                        {
+                            1 => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 75, 0)),
+                            2 => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(75, 0, 0)),
+                            _ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 0, 0)),
+                        };
+
+                        m_cameraSystem.cinematicCameraController.pivot = m_Controller.CurrentItemMatrix.GetPosition() + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));
+                        m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;// (Vector2)Quaternion.LookRotation((m_cameraController.position - m_Controller.CurrentItemMatrix.GetPosition()).normalized, Vector3.up).eulerAngles;
+
+                    }
+
                 }
                 else
                 {
                     m_isDragging = false;
                 }
-                return inputDeps;
+
             }
+            if (m_cameraDisabledHere && !cameraDisabledThisFrame)
+            {
+                m_cameraSystem.activeCameraController = m_oldController;
+                m_oldController = null;
+                m_cameraDisabledHere = false;
+            }
+            return inputDeps;
         }
 
         private void UpdateItemCount()
@@ -193,6 +227,15 @@ namespace BelzontWE
         protected override void OnStopRunning()
         {
             base.OnStopRunning();
+            if (m_cameraDisabledHere)
+            {
+                if (m_oldController != null)
+                {
+                    m_cameraSystem.activeCameraController = m_oldController;
+                    m_oldController = null;
+                }
+                m_cameraDisabledHere = false;
+            }
             ChangeHighlighting_MainThread(m_Controller.CurrentEntity.Value, ChangeMode.RemoveHighlight);
             ChangeHighlighting_MainThread(HoveredEntity, ChangeMode.RemoveHighlight);
             m_Controller.CurrentEntity.Value = Entity.Null;

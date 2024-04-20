@@ -42,6 +42,7 @@ namespace BelzontWE
         private readonly Queue<Action> m_executionQueue = new();
 
         public int IncrementalVersion { get; private set; }
+        public Matrix4x4 CurrentItemMatrix { get; private set; }
 
         public MultiUIValueBinding<string> CurrentItemName { get; private set; }
         public MultiUIValueBinding<int> CurrentItemIdx { get; private set; }
@@ -54,6 +55,8 @@ namespace BelzontWE
         public MultiUIValueBinding<int> CurrentPlaneMode { get; private set; }
         public MultiUIValueBinding<string> CurrentItemText { get; private set; }
         public MultiUIValueBinding<bool> CurrentItemIsValid { get; private set; }
+        public MultiUIValueBinding<bool> CameraLocked { get; private set; }
+
 
         public bool IsValidEditingItem()
         {
@@ -83,7 +86,6 @@ namespace BelzontWE
         private void InitValueBindings()
         {
             if (m_initialized) return;
-            CurrentItemName = new(default, $"{PREFIX}{nameof(CurrentItemName)}", m_eventCaller, m_callBinder);
             CurrentItemIdx = new(default, $"{PREFIX}{nameof(CurrentItemIdx)}", m_eventCaller, m_callBinder);
             CurrentEntity = new(default, $"{PREFIX}{nameof(CurrentEntity)}", m_eventCaller, m_callBinder);
             CurrentItemCount = new(default, $"{PREFIX}{nameof(CurrentItemCount)}", m_eventCaller, m_callBinder);
@@ -92,10 +94,13 @@ namespace BelzontWE
             CurrentRotation = new(default, $"{PREFIX}{nameof(CurrentRotation)}", m_eventCaller, m_callBinder, (x) => new[] { x.x, x.y, x.z }, (x) => new float3(x[0], x[1], x[2]));
             CurrentPosition = new(default, $"{PREFIX}{nameof(CurrentPosition)}", m_eventCaller, m_callBinder, (x) => new[] { x.x, x.y, x.z }, (x) => new float3(x[0], x[1], x[2]));
 
+            CurrentItemName = new(default, $"{PREFIX}{nameof(CurrentItemName)}", m_eventCaller, m_callBinder);
             CurrentItemText = new(default, $"{PREFIX}{nameof(CurrentItemText)}", m_eventCaller, m_callBinder);
             CurrentItemIsValid = new(default, $"{PREFIX}{nameof(CurrentItemIsValid)}", m_eventCaller, m_callBinder);
-            MouseSensibility = new(default, $"{PREFIX}{nameof(MouseSensibility)}", m_eventCaller, m_callBinder, (x) => x % WEWorldPickerTool.precisionIdx.Length);
             CurrentPlaneMode = new(default, $"{PREFIX}{nameof(CurrentPlaneMode)}", m_eventCaller, m_callBinder, (x) => x % 3); // WEWorldPickerTool.ToolEditMode Count
+
+            MouseSensibility = new(6, $"{PREFIX}{nameof(MouseSensibility)}", m_eventCaller, m_callBinder, (x) => x % WEWorldPickerTool.precisionIdx.Length);
+            CameraLocked = new(default, $"{PREFIX}{nameof(CameraLocked)}", m_eventCaller, m_callBinder);
 
             CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
             CurrentRotation.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.offsetRotation = KMathUtils.UnityEulerToQuaternion(x); return currentItem; });
@@ -201,6 +206,11 @@ namespace BelzontWE
             {
                 action();
             }
+        }
+
+        internal void SetCurrentTargetMatrix(Matrix4x4 transformMatrix)
+        {
+            m_executionQueue.Enqueue(() => CurrentItemMatrix = transformMatrix);
         }
     }
 

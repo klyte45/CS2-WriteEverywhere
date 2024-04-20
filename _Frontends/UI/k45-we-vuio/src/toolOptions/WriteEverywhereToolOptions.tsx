@@ -13,12 +13,13 @@ type Entity = {
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
 
-const XYplaneIcon = "coui://uil/Standard/BoxFront.svg";
-const ZYplaneIcon = "coui://uil/Standard/BoxSide.svg";
-const XZplaneIcon = "coui://uil/Standard/BoxTop.svg";
-const UnselectCurrentIcon = "coui://uil/Standard/PickerPipette.svg";
-const AddItemIcon = "coui://uil/Standard/Plus.svg";
-const RemoveItemIcon = "coui://uil/Standard/Minus.svg";
+const i_XYplaneIcon = "coui://uil/Standard/BoxFront.svg";
+const i_ZYplaneIcon = "coui://uil/Standard/BoxSide.svg";
+const i_XZplaneIcon = "coui://uil/Standard/BoxTop.svg";
+const i_UnselectCurrentIcon = "coui://uil/Standard/PickerPipette.svg";
+const i_AddItemIcon = "coui://uil/Standard/Plus.svg";
+const i_removeItemIcon = "coui://uil/Standard/Minus.svg";
+const i_cameraIcon = "coui://uil/Standard/VideoCamera.svg";
 
 
 
@@ -38,6 +39,7 @@ let CurrentPlaneMode: MultiUIValueBinding<number>
 let CurrentItemCount: MultiUIValueBinding<number>
 let CurrentItemText: MultiUIValueBinding<string>
 let CurrentItemIsValid: MultiUIValueBinding<string>
+let CameraLocked: MultiUIValueBinding<boolean>
 const Bindings: MultiUIValueBinding<any>[] = []
 
 function initBindings(x: Component) {
@@ -52,6 +54,7 @@ function initBindings(x: Component) {
     CurrentItemText ??= new MultiUIValueBinding<string>("k45::we.wpicker.CurrentItemText")
     CurrentItemIsValid ??= new MultiUIValueBinding<string>("k45::we.wpicker.CurrentItemIsValid")
     CurrentItemCount ??= new MultiUIValueBinding<number>("k45::we.wpicker.CurrentItemCount")
+    CameraLocked ??= new MultiUIValueBinding<boolean>("k45::we.wpicker.CameraLocked")
     Bindings.length = 0;
     Bindings.push(
         CurrentItemIdx,
@@ -64,7 +67,8 @@ function initBindings(x: Component) {
         CurrentItemIsValid,
         CurrentEntity,
         CurrentItemName,
-        CurrentItemCount
+        CurrentItemCount,
+        CameraLocked
     );
 
     Bindings.map(y => {
@@ -149,6 +153,7 @@ class WEWorldPickerToolPanel extends Component {
         const T_picker = "Pick another object"
         const T_addText = "Add text"
         const T_removeText = "Remove text"
+        const T_lockCamera = "Lock camera to editing plane area and angle"
 
         return !CurrentEntity.value?.Index ?
             <VanillaComponentResolver.instance.Section title={L_selectItem} children={[]} /> :
@@ -166,13 +171,13 @@ class WEWorldPickerToolPanel extends Component {
                     }}
                     actions={[
                         {
-                            icon: RemoveItemIcon,
+                            icon: i_removeItemIcon,
                             tooltip: T_removeText,
                             onSelect: () => removeItem(),
                             disabledFn: () => CurrentItemIdx.value >= CurrentItemCount.value
                         },
                         {
-                            icon: AddItemIcon,
+                            icon: i_AddItemIcon,
                             tooltip: T_addText,
                             onSelect: () => addItem()
                         },
@@ -181,7 +186,6 @@ class WEWorldPickerToolPanel extends Component {
 
                 {CurrentItemIdx.value < CurrentItemCount.value &&
                     <>
-
                         <VectorSectionEditable title={L_itemName}
                             valueGetter={() => [CurrentItemName.value]}
                             valueGetterFormatted={() => [CurrentItemName.value]}
@@ -204,9 +208,11 @@ class WEWorldPickerToolPanel extends Component {
                             }}
                         />
                         <VanillaComponentResolver.instance.Section title={L_editingPlane}>
-                            <VanillaComponentResolver.instance.ToolButton selected={CurrentPlaneMode.value == 0} onSelect={() => CurrentPlaneMode.set(0)} src={XYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XY}></VanillaComponentResolver.instance.ToolButton>
-                            <VanillaComponentResolver.instance.ToolButton selected={CurrentPlaneMode.value == 1} onSelect={() => CurrentPlaneMode.set(1)} src={ZYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_ZY}></VanillaComponentResolver.instance.ToolButton>
-                            <VanillaComponentResolver.instance.ToolButton selected={CurrentPlaneMode.value == 2} onSelect={() => CurrentPlaneMode.set(2)} src={XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_xz}></VanillaComponentResolver.instance.ToolButton>
+                            <VanillaComponentResolver.instance.ToolButton selected={CurrentPlaneMode.value == 0} onSelect={() => CurrentPlaneMode.set(0)} src={i_XYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XY}></VanillaComponentResolver.instance.ToolButton>
+                            <VanillaComponentResolver.instance.ToolButton selected={CurrentPlaneMode.value == 1} onSelect={() => CurrentPlaneMode.set(1)} src={i_ZYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_ZY}></VanillaComponentResolver.instance.ToolButton>
+                            <VanillaComponentResolver.instance.ToolButton selected={CurrentPlaneMode.value == 2} onSelect={() => CurrentPlaneMode.set(2)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_xz}></VanillaComponentResolver.instance.ToolButton>
+                            <div style={{ width: "10rem" }}></div>
+                            <VanillaComponentResolver.instance.ToolButton selected={CameraLocked.value} onSelect={() => CameraLocked.set(!CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
                         </VanillaComponentResolver.instance.Section>
                         <VectorSectionEditable title={L_position}
                             valueGetter={() => CurrentPosition.value?.map(x => x.toFixed(3))}
@@ -244,7 +250,7 @@ class WEWorldPickerToolPanel extends Component {
 
 
                 <VanillaComponentResolver.instance.Section title={L_actions}>
-                    <VanillaComponentResolver.instance.ToolButton onSelect={() => CurrentEntity.set(null)} src={UnselectCurrentIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_picker} />
+                    <VanillaComponentResolver.instance.ToolButton onSelect={() => CurrentEntity.set(null)} src={i_UnselectCurrentIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_picker} />
                 </VanillaComponentResolver.instance.Section>
             </>
     }

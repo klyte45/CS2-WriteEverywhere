@@ -22,6 +22,8 @@ namespace BelzontWE
         private EntityQuery m_renderQueueEntities;
         private CameraUpdateSystem m_CameraUpdateSystem;
         private RenderingSystem m_RenderingSystem;
+        private WEWorldPickerController m_pickerController;
+        private WEWorldPickerTool m_pickerTool;
         private NativeQueue<WERenderData> availToDraw = new(Allocator.Persistent);
 #if BURST
         [Preserve]
@@ -32,6 +34,9 @@ namespace BelzontWE
 
             m_CameraUpdateSystem = World.GetExistingSystemManaged<CameraUpdateSystem>();
             m_RenderingSystem = World.GetExistingSystemManaged<RenderingSystem>();
+            m_pickerController = World.GetExistingSystemManaged<WEWorldPickerController>();
+            m_pickerTool = World.GetExistingSystemManaged<WEWorldPickerTool>();
+
             m_renderInterpolatedQueueEntities = GetEntityQuery(new EntityQueryDesc[]
             {
                 new EntityQueryDesc
@@ -119,6 +124,10 @@ namespace BelzontWE
                         item.weComponent.basicRenderInformation = default;
                         continue;
                     }
+                    if (m_pickerTool.Enabled && item.refEntity == m_pickerController.CurrentEntity.Value && m_pickerController.CurrentItemIdx.Value == item.index)
+                    {
+                        m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
+                    }
                     Graphics.DrawMesh(bri.m_mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
                 }
             }
@@ -176,6 +185,8 @@ namespace BelzontWE
 
         private struct WERenderData
         {
+            public Entity refEntity;
+            public int index;
             public WESimulationTextComponent weComponent;
             public Matrix4x4 transformMatrix;
         }
@@ -208,7 +219,7 @@ namespace BelzontWE
             internal ComponentTypeHandle<Game.Objects.Transform> m_transform;
             public bool isInterpolated;
 
-            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+            public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
                 NativeArray<Game.Objects.Transform> transforms = default;
                 NativeArray<InterpolatedTransform> i_transforms = default;
@@ -265,6 +276,8 @@ namespace BelzontWE
                         {
                             availToDraw.Enqueue(new WERenderData
                             {
+                                index = j,
+                                refEntity = *chunk.GetEntityDataPtrRO(m_EntityType),
                                 weComponent = weCustomData[j],
                                 transformMatrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one) * Matrix4x4.TRS(weCustomData[j].offsetPosition, weCustomData[j].offsetRotation, weCustomData[j].scale * weCustomData[j].BriOffsetScaleX / weCustomData[j].BriPixelDensity)
                             });
