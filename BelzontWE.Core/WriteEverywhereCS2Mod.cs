@@ -17,6 +17,7 @@ namespace BelzontWE
             updateSystem.UpdateAfter<WEWorldPickerTooltip>(SystemUpdatePhase.UITooltip);
             updateSystem.UpdateAt<WEPreRendererSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WERendererSystem>(SystemUpdatePhase.MainLoop);
+            updateSystem.UpdateAt<WEWorldPickerController>(SystemUpdatePhase.ModificationEnd);
         }
 
         public override void OnDispose()

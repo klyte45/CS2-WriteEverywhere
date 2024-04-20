@@ -21,11 +21,11 @@ namespace BelzontWE
         public Entity targetEntity;
         public WEPropertyDescription targetProperty;
 
-        public FixedString512Bytes FontName
+        public FixedString32Bytes FontName
         {
-            get => fontName; set
+            readonly get => fontName; set
             {
-                fontName.CopyFrom(value);
+                fontName = value;
                 if (basicRenderInformation.IsAllocated)
                 {
                     basicRenderInformation.Free();
@@ -35,9 +35,9 @@ namespace BelzontWE
         }
         public FixedString512Bytes Text
         {
-            get => text; set
+            readonly get => text; set
             {
-                text.CopyFrom(value);
+                text = value;
                 if (basicRenderInformation.IsAllocated)
                 {
                     basicRenderInformation.Free();

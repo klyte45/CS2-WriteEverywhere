@@ -1,5 +1,4 @@
-﻿using Belzont.Utils;
-using Colossal.Entities;
+﻿using Colossal.Entities;
 using Game.Common;
 using Game.Input;
 using Game.Net;
@@ -46,6 +45,8 @@ namespace BelzontWE
         private float3 m_originalRotationText;
         private bool m_isDragging;
 
+        private int m_lastControllerVersion = -1;
+
         protected override void OnCreate()
         {
             Enabled = false;
@@ -59,6 +60,7 @@ namespace BelzontWE
         {
             m_Controller.CurrentEntity.Value = default;
             m_ApplyAction.shouldBeEnabled = true;
+            m_Controller.IsValidEditingItem();
         }
         public override void InitializeRaycast()
         {
@@ -91,11 +93,9 @@ namespace BelzontWE
                         ChangeHighlighting_MainThread(entity, ChangeMode.AddHighlight);
                         m_Controller.CurrentEntity.Value = entity;
                         m_Controller.CurrentItemIdx.Value = 0;
+                        UpdateItemCount();
 
-                        var currentItem = m_Controller.CurrentEditingItem;
-                        m_Controller.CurrentPosition.Value = currentItem.offsetPosition;
-                        m_Controller.CurrentRotation.Value = KMathUtils.UnityQuaternionToEuler(currentItem.offsetRotation);
-                        m_Controller.CurrentScale.Value = currentItem.scale;
+                        m_Controller.OnCurrentItemChanged();
 
                         if (collide && !(callback?.Invoke(entity) ?? true))
                         {
@@ -130,7 +130,7 @@ namespace BelzontWE
                     ChangeHighlighting_MainThread(HoveredEntity, ChangeMode.RemoveHighlight);
                     HoveredEntity = Entity.Null;
                 }
-                if (m_Controller.IsValidEditingItem)
+                if (m_Controller.IsValidEditingItem())
                 {
                     if (!InputManager.instance.mouseOverUI && m_ApplyAction.WasPressedThisFrame())
                     {
@@ -161,6 +161,11 @@ namespace BelzontWE
             }
         }
 
+        private void UpdateItemCount()
+        {
+            m_Controller.CurrentItemCount.Value = EntityManager.TryGetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value, true, out var buff) ? buff.Length : 0;
+        }
+
         private void ApplyPosition(EntityCommandBuffer cmdBuff)
         {
             var currentMousePos = new float2(InputManager.instance.mousePosition.x, InputManager.instance.mousePosition.y);
@@ -175,9 +180,9 @@ namespace BelzontWE
             var currentItem = currentBuffer[m_Controller.CurrentItemIdx.Value];
             m_Controller.CurrentPosition.Value = currentItem.offsetPosition = m_originalPositionText + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {
-                ToolEditMode.PlaneXY => math.mul(quaternion.RotateY(math.mul(currentItem.offsetRotation, new float3(0, 0, 1)).y), new float3(offsetWithAdjust, 0)),
-                ToolEditMode.PlaneXZ => math.mul(quaternion.RotateZ(math.mul(currentItem.offsetRotation, new float3(1, 0, 0)).z), new float3(offsetWithAdjust.x, 0, offsetWithAdjust.y)),
-                ToolEditMode.PlaneZY => math.mul(quaternion.RotateY(math.mul(currentItem.offsetRotation, new float3(0, 0, 1)).y), new float3(0, offsetWithAdjust.y, offsetWithAdjust.x)),
+                ToolEditMode.PlaneXY => math.mul(currentItem.offsetRotation, new float3(offsetWithAdjust, 0)),
+                ToolEditMode.PlaneXZ => math.mul(currentItem.offsetRotation, new float3(offsetWithAdjust.x, 0, offsetWithAdjust.y)),
+                ToolEditMode.PlaneZY => math.mul(currentItem.offsetRotation, new float3(0, offsetWithAdjust.y, -offsetWithAdjust.x)),
                 _ => default
             };
             currentBuffer[m_Controller.CurrentItemIdx.Value] = currentItem;
