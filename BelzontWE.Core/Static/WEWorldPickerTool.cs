@@ -48,8 +48,10 @@ namespace BelzontWE
 
         private float2 m_mousePositionRef;
         private float3 m_originalPositionText;
+        private float m_mousePositionRefRot;
         private float3 m_originalRotationText;
         private bool m_isDragging;
+        private bool m_isRotating;
 
         protected override void OnCreate()
         {
@@ -143,17 +145,37 @@ namespace BelzontWE
                     }
                     else if (m_isDragging && m_ApplyAction.WasReleasedThisFrame())
                     {
-                        var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
-                        ApplyPosition(cmdBuff);
+                        ApplyPosition();
                         m_mousePositionRef = default;
                         m_originalPositionText = default;
                         m_isDragging = false;
                     }
                     else if (m_isDragging && m_ApplyAction.IsPressed())
                     {
-                        var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
-                        ApplyPosition(cmdBuff);
+                        ApplyPosition();
                     }
+
+
+                    if (!InputManager.instance.mouseOverUI && m_SecondaryApplyAction.WasPressedThisFrame())
+                    {
+                        var currentItem = m_Controller.CurrentEditingItem;
+                        m_mousePositionRefRot = InputManager.instance.mousePosition.x;
+                        m_originalRotationText = ((Quaternion)currentItem.offsetRotation).eulerAngles;
+                        m_isRotating = true;
+                    }
+                    else if (m_isRotating && m_SecondaryApplyAction.WasReleasedThisFrame())
+                    {
+                        ApplyRotation();
+                        m_mousePositionRefRot = default;
+                        m_originalRotationText = default;
+                        m_isRotating = false;
+                    }
+                    else if (m_isRotating && m_SecondaryApplyAction.IsPressed())
+                    {
+                        ApplyRotation();
+                    }
+
+
                     if (m_Controller.CameraLocked.Value)
                     {
 #pragma warning disable CS0252 // Possível comparação de referência inesperada; o lado esquerdo precisa de conversão
@@ -183,6 +205,7 @@ namespace BelzontWE
                 else
                 {
                     m_isDragging = false;
+                    m_isRotating = false;
                 }
 
             }
@@ -200,8 +223,9 @@ namespace BelzontWE
             m_Controller.CurrentItemCount.Value = EntityManager.TryGetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value, true, out var buff) ? buff.Length : 0;
         }
 
-        private void ApplyPosition(EntityCommandBuffer cmdBuff)
+        private void ApplyPosition()
         {
+            var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
             var moveMode = m_Controller.CurrentMoveMode.Value;
             var currentMousePos = new float2(InputManager.instance.mousePosition.x, InputManager.instance.mousePosition.y);
             var offsetMouse = (Vector2)(currentMousePos - m_mousePositionRef) * moveMode switch
@@ -225,6 +249,32 @@ namespace BelzontWE
                 ToolEditMode.PlaneZY => math.mul(currentItem.offsetRotation, new float3(0, offsetWithAdjust.y, -offsetWithAdjust.x)),
                 _ => default
             };
+            currentBuffer[m_Controller.CurrentItemIdx.Value] = currentItem;
+            cmdBuff.SetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value).CopyFrom(currentBuffer);
+            cmdBuff.AddComponent<BatchesUpdated>(m_Controller.CurrentEntity.Value);
+        }
+
+        private void ApplyRotation()
+        {
+            var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
+            var offsetMouse = m_mousePositionRefRot - InputManager.instance.mousePosition.x ;
+
+            var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value] * 10;
+            var offsetWithAdjust = offsetMouse * currentPrecision;
+
+            if (!EntityManager.TryGetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value, false, out var currentBuffer))
+            {
+                currentBuffer = new DynamicBuffer<WESimulationTextComponent>();
+            };
+            var currentItem = currentBuffer[m_Controller.CurrentItemIdx.Value];
+            m_Controller.CurrentRotation.Value = m_originalRotationText + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
+            {
+                ToolEditMode.PlaneXY =>  new float3(0, 0, offsetWithAdjust),
+                ToolEditMode.PlaneXZ =>  new float3(0, offsetWithAdjust, 0),
+                ToolEditMode.PlaneZY =>  new float3(offsetWithAdjust, 0, 0),
+                _ => default
+            };
+            currentItem.offsetRotation = Quaternion.Euler(m_Controller.CurrentRotation.Value);
             currentBuffer[m_Controller.CurrentItemIdx.Value] = currentItem;
             cmdBuff.SetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value).CopyFrom(currentBuffer);
             cmdBuff.AddComponent<BatchesUpdated>(m_Controller.CurrentEntity.Value);

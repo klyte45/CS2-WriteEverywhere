@@ -153,9 +153,9 @@ class WEWorldPickerToolPanel extends Component {
 
         const T_mousePrecision_up = "Increment the strenght of the mouse moves when editing the text position/rotation";
         const T_mousePrecision_down = "Decrease the strenght of the mouse moves when editing the text position/rotation";
-        const T_editingPlane_XY = "XY (front)"
-        const T_editingPlane_ZY = "ZY (right)"
-        const T_editingPlane_xz = "XZ (top)"
+        const T_editingPlane_XY = "move in XY, rotate in Z (front)"
+        const T_editingPlane_ZY = "move in ZY, rotate in X (right)"
+        const T_editingPlane_XZ = "move in XZ, rotate in Y (top)"
         const T_picker = "Pick another object"
         const T_addText = "Add text"
         const T_removeText = "Remove text"
@@ -206,7 +206,8 @@ class WEWorldPickerToolPanel extends Component {
                             }} />
 
                         <AmountValueSection
-                            valueGetter={() => translateUnitResult([MetricUnitsEntries.distance.linear[UnitSystem.Metric][0], { VALUE: precisions[MouseSensibility.value] + "" }])}
+                            widthContent={120}
+                            valueGetter={() => translateUnitResult([MetricUnitsEntries.distance.linear[UnitSystem.Metric][0], { VALUE: precisions[MouseSensibility.value] + "" }]) + ` | ${(precisions[MouseSensibility.value] * 10).toFixed(2)}°`}
                             title={L_mousePrecision}
                             up={{
                                 tooltip: T_mousePrecision_up,
@@ -222,7 +223,7 @@ class WEWorldPickerToolPanel extends Component {
                         <VanillaComponentResolver.instance.Section title={L_editingPlane}>
                             <VanillaComponentResolver.instance.ToolButton selected={CurrentPlaneMode.value == 0} onSelect={() => CurrentPlaneMode.set(0)} src={i_XYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XY}></VanillaComponentResolver.instance.ToolButton>
                             <VanillaComponentResolver.instance.ToolButton selected={CurrentPlaneMode.value == 1} onSelect={() => CurrentPlaneMode.set(1)} src={i_ZYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_ZY}></VanillaComponentResolver.instance.ToolButton>
-                            <VanillaComponentResolver.instance.ToolButton selected={CurrentPlaneMode.value == 2} onSelect={() => CurrentPlaneMode.set(2)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_xz}></VanillaComponentResolver.instance.ToolButton>
+                            <VanillaComponentResolver.instance.ToolButton selected={CurrentPlaneMode.value == 2} onSelect={() => CurrentPlaneMode.set(2)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XZ}></VanillaComponentResolver.instance.ToolButton>
                             <div style={{ width: "10rem" }}></div>
                             <VanillaComponentResolver.instance.ToolButton selected={CurrentMoveMode.value > 0} onSelect={() => CurrentMoveMode.set((CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
                             <VanillaComponentResolver.instance.ToolButton selected={CameraLocked.value} onSelect={() => CameraLocked.set(!CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
