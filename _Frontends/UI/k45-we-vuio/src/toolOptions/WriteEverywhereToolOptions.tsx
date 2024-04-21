@@ -20,8 +20,11 @@ const i_UnselectCurrentIcon = "coui://uil/Standard/PickerPipette.svg";
 const i_AddItemIcon = "coui://uil/Standard/Plus.svg";
 const i_removeItemIcon = "coui://uil/Standard/Minus.svg";
 const i_cameraIcon = "coui://uil/Standard/VideoCamera.svg";
+const i_moveModeAll = "coui://uil/Standard/Plus.svg";
+const i_moveModeHorizontal = "coui://uil/Standard/ArrowRight.svg";
+const i_moveModeVertical = "coui://uil/Standard/ArrowUp.svg";
 
-
+const iarr_moveMode = [i_moveModeAll, i_moveModeHorizontal, i_moveModeVertical]
 
 
 
@@ -40,6 +43,7 @@ let CurrentItemCount: MultiUIValueBinding<number>
 let CurrentItemText: MultiUIValueBinding<string>
 let CurrentItemIsValid: MultiUIValueBinding<string>
 let CameraLocked: MultiUIValueBinding<boolean>
+let CurrentMoveMode: MultiUIValueBinding<number>
 const Bindings: MultiUIValueBinding<any>[] = []
 
 function initBindings(x: Component) {
@@ -55,6 +59,7 @@ function initBindings(x: Component) {
     CurrentItemIsValid ??= new MultiUIValueBinding<string>("k45::we.wpicker.CurrentItemIsValid")
     CurrentItemCount ??= new MultiUIValueBinding<number>("k45::we.wpicker.CurrentItemCount")
     CameraLocked ??= new MultiUIValueBinding<boolean>("k45::we.wpicker.CameraLocked")
+    CurrentMoveMode ??= new MultiUIValueBinding<number>("k45::we.wpicker.CurrentMoveMode")
     Bindings.length = 0;
     Bindings.push(
         CurrentItemIdx,
@@ -68,7 +73,8 @@ function initBindings(x: Component) {
         CurrentEntity,
         CurrentItemName,
         CurrentItemCount,
-        CameraLocked
+        CameraLocked,
+        CurrentMoveMode
     );
 
     Bindings.map(y => {
@@ -155,6 +161,12 @@ class WEWorldPickerToolPanel extends Component {
         const T_removeText = "Remove text"
         const T_lockCamera = "Lock camera to editing plane area and angle"
 
+        const Tarr_moveMode = [
+            "Toggle between modes to lock/unlock a axis in current plane.\nCurrently: Move in any direction",
+            "Toggle between modes to lock/unlock a axis in current plane.\nCurrently: Move horizontally only",
+            "Toggle between modes to lock/unlock a axis in current plane.\nCurrently: Move vertically only"
+        ]
+
         return !CurrentEntity.value?.Index ?
             <VanillaComponentResolver.instance.Section title={L_selectItem} children={[]} /> :
             <>
@@ -212,6 +224,7 @@ class WEWorldPickerToolPanel extends Component {
                             <VanillaComponentResolver.instance.ToolButton selected={CurrentPlaneMode.value == 1} onSelect={() => CurrentPlaneMode.set(1)} src={i_ZYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_ZY}></VanillaComponentResolver.instance.ToolButton>
                             <VanillaComponentResolver.instance.ToolButton selected={CurrentPlaneMode.value == 2} onSelect={() => CurrentPlaneMode.set(2)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_xz}></VanillaComponentResolver.instance.ToolButton>
                             <div style={{ width: "10rem" }}></div>
+                            <VanillaComponentResolver.instance.ToolButton selected={CurrentMoveMode.value > 0} onSelect={() => CurrentMoveMode.set((CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
                             <VanillaComponentResolver.instance.ToolButton selected={CameraLocked.value} onSelect={() => CameraLocked.set(!CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
                         </VanillaComponentResolver.instance.Section>
                         <VectorSectionEditable title={L_position}

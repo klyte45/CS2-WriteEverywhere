@@ -175,7 +175,7 @@ namespace BelzontWE
                         };
 
                         m_cameraSystem.cinematicCameraController.pivot = m_Controller.CurrentItemMatrix.GetPosition() + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));
-                        m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;// (Vector2)Quaternion.LookRotation((m_cameraController.position - m_Controller.CurrentItemMatrix.GetPosition()).normalized, Vector3.up).eulerAngles;
+                        m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;
 
                     }
 
@@ -202,8 +202,14 @@ namespace BelzontWE
 
         private void ApplyPosition(EntityCommandBuffer cmdBuff)
         {
+            var moveMode = m_Controller.CurrentMoveMode.Value;
             var currentMousePos = new float2(InputManager.instance.mousePosition.x, InputManager.instance.mousePosition.y);
-            var offsetMouse = currentMousePos - m_mousePositionRef;
+            var offsetMouse = (Vector2)(currentMousePos - m_mousePositionRef) * moveMode switch
+            {
+                1 => Vector2.right,
+                2 => Vector2.up,
+                _ => Vector2.one,
+            };
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value];
             var offsetWithAdjust = offsetMouse * currentPrecision;
 

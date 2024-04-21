@@ -53,6 +53,7 @@ namespace BelzontWE
         public MultiUIValueBinding<float3, float[]> CurrentPosition { get; private set; }
         public MultiUIValueBinding<int> MouseSensibility { get; private set; }
         public MultiUIValueBinding<int> CurrentPlaneMode { get; private set; }
+        public MultiUIValueBinding<int> CurrentMoveMode { get; private set; }
         public MultiUIValueBinding<string> CurrentItemText { get; private set; }
         public MultiUIValueBinding<bool> CurrentItemIsValid { get; private set; }
         public MultiUIValueBinding<bool> CameraLocked { get; private set; }
@@ -98,6 +99,7 @@ namespace BelzontWE
             CurrentItemText = new(default, $"{PREFIX}{nameof(CurrentItemText)}", m_eventCaller, m_callBinder);
             CurrentItemIsValid = new(default, $"{PREFIX}{nameof(CurrentItemIsValid)}", m_eventCaller, m_callBinder);
             CurrentPlaneMode = new(default, $"{PREFIX}{nameof(CurrentPlaneMode)}", m_eventCaller, m_callBinder, (x) => x % 3); // WEWorldPickerTool.ToolEditMode Count
+            CurrentMoveMode = new(default, $"{PREFIX}{nameof(CurrentMoveMode)}", m_eventCaller, m_callBinder, (x) => x % 3); // All, Horizontal, Vertical
 
             MouseSensibility = new(6, $"{PREFIX}{nameof(MouseSensibility)}", m_eventCaller, m_callBinder, (x) => x % WEWorldPickerTool.precisionIdx.Length);
             CameraLocked = new(default, $"{PREFIX}{nameof(CameraLocked)}", m_eventCaller, m_callBinder);
