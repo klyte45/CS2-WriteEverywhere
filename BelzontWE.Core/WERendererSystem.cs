@@ -118,10 +118,8 @@ namespace BelzontWE
             {
                 while (availToDraw.TryDequeue(out var item))
                 {
-                    if (item.weComponent.basicRenderInformation.Target is not BasicRenderInformation bri)
+                    if (item.weComponent.RenderInformation is not BasicRenderInformation bri)
                     {
-                        item.weComponent.basicRenderInformation.Free();
-                        item.weComponent.basicRenderInformation = default;
                         continue;
                     }
                     if (m_pickerTool.Enabled && item.refEntity == m_pickerController.CurrentEntity.Value && m_pickerController.CurrentItemIdx.Value == item.index)
@@ -262,7 +260,7 @@ namespace BelzontWE
 
                     for (int j = 0; j < weCustomData.Length; j++)
                     {
-                        if (!weCustomData[j].basicRenderInformation.IsAllocated)
+                        if (weCustomData[j].RenderInformation == null)
                         {
                             wePending.Add(WEWaitingRenderingComponent.From(weCustomData[j]));
                             weCustomData.RemoveAt(j);

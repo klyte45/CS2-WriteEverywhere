@@ -3,8 +3,13 @@
 using Belzont.Utils;
 using BelzontWE.Font.Utility;
 using Colossal.Serialization.Entities;
+using MonoMod.Utils;
 using System;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -15,8 +20,29 @@ namespace BelzontWE
 
     public struct WESimulationTextComponent : IBufferElementData, ISerializable, IDisposable
     {
-        public const uint CURRENT_VERSION = 1;
+        public const uint CURRENT_VERSION = 2;
         public unsafe static int Size => sizeof(WESimulationTextComponent);
+
+        public static WESimulationTextComponent CreateDefault()
+        {
+            return new WESimulationTextComponent
+            {
+                offsetPosition = new(0, 1, 0),
+                offsetRotation = new(),
+                scale = new(1, 1, 1),
+                dirty = true,
+                color = new(0xff, 0xff, 0xff, 0xff),
+                emissiveColor = new(0xff, 0xff, 0xff, 0xff),
+                metallic = 0,
+                smoothness = 0,
+                emissiveIntensity = 0,
+                coatStrength = 0.5f,
+                text = "NEW TEXT",
+                fontName = default,
+                itemName = "New item",
+                shader = WEShader.Default
+            };
+        }
 
         public Entity targetEntity;
         public WEPropertyDescription targetProperty;
@@ -48,21 +74,29 @@ namespace BelzontWE
         public float3 offsetPosition;
         public quaternion offsetRotation;
         public float3 scale;
-        public GCHandle basicRenderInformation;
-        public GCHandle materialBlockPtr;
-        public bool dirty;
-        public Color32 color;
-        public Color32 emissiveColor;
-        public float metallic;
-        public float smoothness;
-        public float emissiveIntensity;
-        public FixedString512Bytes text;
-        public FixedString32Bytes fontName;
+        private GCHandle basicRenderInformation;
+        private GCHandle materialBlockPtr;
+        private bool dirty;
+        private Color32 color;
+        private Color32 emissiveColor;
+        private float metallic;
+        private float smoothness;
+        private float emissiveIntensity;
+        private float emissiveExposureWeight;
+        private float coatStrength;
+        private FixedString512Bytes text;
+        private FixedString32Bytes fontName;
         public FixedString32Bytes itemName;
         public WEShader shader;
 
+        private int lastEvaluationFrame;
+        private GCHandle formulaeHandlerStr;
+        private GCHandle formulaeHandlerFn;
+
         public float BriOffsetScaleX { get; private set; }
         public float BriPixelDensity { get; private set; }
+
+        public BasicRenderInformation RenderInformation => basicRenderInformation.IsAllocated ? basicRenderInformation.Target as BasicRenderInformation : null;
         public MaterialPropertyBlock MaterialProperties
         {
             get
@@ -72,6 +106,7 @@ namespace BelzontWE
                 {
                     block = new MaterialPropertyBlock();
                     materialBlockPtr = GCHandle.Alloc(block, GCHandleType.Normal);
+                    dirty = true;
                 }
                 else
                 {
@@ -79,15 +114,14 @@ namespace BelzontWE
                 }
                 if (dirty)
                 {
-                    //  block.SetColor("_EmissiveColor", emissiveColor);
                     block.SetColor("_BaseColor", color);
-                    // block.SetFloat("_Metallic", metallic);
-                    // block.SetFloat("_EmissiveIntensity", emissiveIntensity);
+                    block.SetFloat("_Metallic", metallic);
+                    block.SetColor("_EmissiveColor", emissiveColor);
+                    block.SetFloat("_EmissiveIntensity", emissiveIntensity);
+                    block.SetFloat("_EmissiveExposureWeight", emissiveExposureWeight);
+                    block.SetFloat("_CoatStrength", coatStrength);
+                    block.SetFloat("_Smoothness", smoothness);
 
-
-                    // block.SetTexture("unity_Lightmaps", Texture2D.blackTexture);
-                    //   block.SetTexture("unity_LightmapsInd", Texture2D.blackTexture);
-                    //   block.SetTexture("unity_ShadowMasks", Texture2D.blackTexture);
                     dirty = false;
                 }
                 return block;
@@ -103,7 +137,7 @@ namespace BelzontWE
                 dirty = true;
             }
         }
-        public Color32 EmmissiveColor
+        public Color32 EmissiveColor
         {
             readonly get => emissiveColor; set
             {
@@ -117,6 +151,48 @@ namespace BelzontWE
             {
                 metallic = Mathf.Clamp01(value);
                 dirty = true;
+            }
+        }
+        public float Smoothness
+        {
+            readonly get => smoothness; set
+            {
+                smoothness = Mathf.Clamp01(value);
+                dirty = true;
+            }
+        }
+        public float EmissiveIntensity
+        {
+            readonly get => emissiveIntensity; set
+            {
+                emissiveIntensity = Mathf.Clamp01(value);
+                dirty = true;
+            }
+        }
+        public float EmissiveExposureWeight
+        {
+            readonly get => emissiveExposureWeight; set
+            {
+                emissiveExposureWeight = Mathf.Clamp01(value);
+                dirty = true;
+            }
+        }
+        public float CoatStrength
+        {
+            readonly get => coatStrength; set
+            {
+                coatStrength = Mathf.Clamp01(value);
+                dirty = true;
+            }
+        }
+
+        public string Formulae
+        {
+            get => formulaeHandlerStr.IsAllocated ? formulaeHandlerStr.Target as string : null;
+            set
+            {
+                if (value.TrimToNull() is string checkedStr) formulaeHandlerStr.Target = checkedStr;
+                else if (formulaeHandlerStr.IsAllocated) formulaeHandlerStr.Free();
             }
         }
 
@@ -154,6 +230,8 @@ namespace BelzontWE
             writer.Write(text);
             writer.Write(fontName);
             writer.Write(itemName);
+            writer.Write(coatStrength);
+            writer.Write(Formulae ?? "");
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -183,7 +261,99 @@ namespace BelzontWE
             {
                 reader.Read(out itemName);
             }
+            if (version >= 2)
+            {
+                reader.Read(out coatStrength);
+                reader.Read(out string formulae);
+                Formulae = formulae.TrimToNull();
+            }
+            else
+            {
+                coatStrength = 0.5f;
+            }
+        }
 
+        internal void MarkDirty()
+        {
+            basicRenderInformation.Free();
+            materialBlockPtr.Free();
+            dirty = true;
+        }
+
+        private static MethodInfo r_GetComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
+            .First(x => x.Name == "GetComponentData" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 1 && pi[0].ParameterType == typeof(Entity));
+
+
+        public readonly byte SetFormulae(EntityManager em, string newFormulae)
+        {
+            if (targetEntity == Entity.Null) return 2; // Must define a targetEntity before compiling formulae
+
+            var path = newFormulae.Split("/");
+            DynamicMethodDefinition dynamicMethodDefinition = new DynamicMethodDefinition($"__WE_CS2_{nameof(WESimulationTextComponent)}_formulae_{targetEntity.Index}_{targetEntity.Version}_{new Regex("[Â-Za-z0-9_]").Replace(newFormulae, "_")}", typeof(string), new Type[] { typeof(EntityManager), typeof(Entity) });
+            ILGenerator iLGenerator = dynamicMethodDefinition.GetILGenerator();
+            var entityLocalField = iLGenerator.DeclareLocal(typeof(Entity));
+            var currentComponentType = typeof(Entity);
+            for (int i = 0; i < path.Length; i++)
+            {
+                if (currentComponentType != typeof(Entity))
+                {
+                    return 4; // Each block on formulae path must result in an Entity
+                }
+
+                var itemSplitted = path[i].Split(";");
+                var entityTypeName = itemSplitted[0];
+                var fieldPath = itemSplitted[1].Split(".");
+
+                Type itemComponentType = Type.GetType(entityTypeName, throwOnError: false);
+                if (itemComponentType is null)
+                {
+                    return 1; // Component type not found for {0}
+                }
+                iLGenerator.Emit(OpCodes.Ldarg_0);
+                iLGenerator.Emit(OpCodes.Ldarg_1);
+                iLGenerator.Emit(OpCodes.Call, r_GetComponent.MakeGenericMethod(itemComponentType));
+
+
+                currentComponentType = itemComponentType;
+                for (int j = 0; j < fieldPath.Length; j++)
+                {
+                    string field = fieldPath[j];
+                    if (itemComponentType.GetField(field, ReflectionUtils.allFlags) is FieldInfo targetField)
+                    {
+                        iLGenerator.Emit(OpCodes.Ldfld, targetField);
+                        currentComponentType = targetField.DeclaringType;
+                        continue;
+                    }
+                    else if (itemComponentType.GetProperty(field, ReflectionUtils.allFlags) is PropertyInfo targetProperty && targetProperty.GetMethod != null)
+                    {
+                        iLGenerator.Emit(targetProperty.GetMethod.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, targetProperty.GetMethod);
+                        currentComponentType = targetProperty.GetMethod.ReturnType;
+                        continue;
+                    }
+                    else if (itemComponentType.GetMethod(field, ReflectionUtils.allFlags, null, new Type[0], null) is MethodInfo targetMethod)
+                    {
+                        iLGenerator.Emit(targetMethod.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, targetMethod);
+                        currentComponentType = targetMethod.ReturnType;
+                        continue;
+                    }
+                    else
+                    {
+                        return 3; // Member {0} not found at component type {1}
+                    }
+                }
+
+            }
+
+
+            return 0;
+        }
+
+        public void UpdateFormulaeValue(EntityManager em)
+        {
+            if (formulaeHandlerFn.IsAllocated && formulaeHandlerFn.Target is Func<EntityManager, string> fn)
+            {
+                Text = fn(em).Truncate(500);
+            }
         }
     }
 

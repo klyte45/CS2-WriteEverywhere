@@ -52,8 +52,7 @@ namespace BelzontWE
                 if (EntityManager.TryGetBuffer<WESimulationTextComponent>(targetEntity, false, out var buff))
                 {
                     var x = buff[0];
-                    x.basicRenderInformation = default;
-                    x.dirty = true;
+                    x.MarkDirty();
                     buff[0] = x;
                 }
             }
@@ -354,7 +353,7 @@ namespace BelzontWE
                         x.FontName = targetFont;
                         x.Text = targetString;
                         x.Color = Color.red;
-                        x.EmmissiveColor = Color.gray;
+                        x.EmissiveColor = Color.gray;
                         x.Metallic = .0f;
                         compList[i] = x;
                     }

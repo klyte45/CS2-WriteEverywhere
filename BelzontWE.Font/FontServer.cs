@@ -191,6 +191,7 @@ namespace BelzontWE
             material.SetFloat("_Smoothness", .5f);
             material.SetFloat("_ZTestGBuffer", 7);
             material.SetFloat(FontServer.DecalLayerMask, 8.ToFloatBitFlags());
+            material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
             HDMaterial.ValidateMaterial(material);
             return material;
         }

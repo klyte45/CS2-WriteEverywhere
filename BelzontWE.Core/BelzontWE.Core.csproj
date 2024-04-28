@@ -7,7 +7,8 @@
     <LangVersion>10.0</LangVersion>
     <DebugType Condition="'$(Configuration)'=='Release'">None</DebugType>
     <DebugSymbols Condition="'$(Configuration)'=='Release'">False</DebugSymbols>
-    <DebugType Condition="'$(Configuration)'=='Debug'">embedded</DebugType>
+    <DebugSymbols Condition="'$(Configuration)'=='Debug'">True</DebugSymbols>
+    <DebugType Condition="'$(Configuration)'=='Debug'">Embedded</DebugType>
     <!--The folder where Cities2.exe is located. Set it only if the game is not installed in the default location, otherwise keep it empty-->
     <CustomInstallationPath></CustomInstallationPath>
 

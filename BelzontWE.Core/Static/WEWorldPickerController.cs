@@ -59,6 +59,16 @@ namespace BelzontWE
         public MultiUIValueBinding<bool> CameraLocked { get; private set; }
 
 
+        public MultiUIValueBinding<Color, UIColorRGBA> MainColor { get; private set; }
+        public MultiUIValueBinding<Color, UIColorRGBA> EmissiveColor { get; private set; }
+        public MultiUIValueBinding<float> Metallic { get; private set; }
+        public MultiUIValueBinding<float> Smoothness { get; private set; }
+        public MultiUIValueBinding<float> EmissiveIntensity { get; private set; }
+        public MultiUIValueBinding<float> CoatStrength { get; private set; }
+        public MultiUIValueBinding<float> EmissiveExposureWeight { get; private set; }
+
+
+
         public bool IsValidEditingItem()
         {
             return CurrentItemIsValid.Value = CurrentEntity.Value != default && EntityManager.TryGetBuffer<WESimulationTextComponent>(CurrentEntity.Value, true, out var buffer) && buffer.Length > CurrentItemIdx.Value && CurrentItemIdx.Value >= 0;
@@ -104,6 +114,18 @@ namespace BelzontWE
             MouseSensibility = new(6, $"{PREFIX}{nameof(MouseSensibility)}", m_eventCaller, m_callBinder, (x) => x % WEWorldPickerTool.precisionIdx.Length);
             CameraLocked = new(default, $"{PREFIX}{nameof(CameraLocked)}", m_eventCaller, m_callBinder);
 
+
+            MainColor = new(default, $"{PREFIX}{nameof(MainColor)}", m_eventCaller, m_callBinder, (x) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x) => new Color(x.r, x.g, x.b, x.a));
+            EmissiveColor = new(default, $"{PREFIX}{nameof(EmissiveColor)}", m_eventCaller, m_callBinder, (x) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x) => new Color(x.r, x.g, x.b, x.a));
+
+            Metallic = new(default, $"{PREFIX}{nameof(Metallic)}", m_eventCaller, m_callBinder, (x) => math.clamp(x, 0, 1));
+            Smoothness = new(default, $"{PREFIX}{nameof(Smoothness)}", m_eventCaller, m_callBinder, (x) => math.clamp(x, 0, 1));
+            EmissiveIntensity = new(default, $"{PREFIX}{nameof(EmissiveIntensity)}", m_eventCaller, m_callBinder, (x) => math.clamp(x, 0, 1));
+            CoatStrength = new(default, $"{PREFIX}{nameof(CoatStrength)}", m_eventCaller, m_callBinder, (x) => math.clamp(x, 0, 1));
+            EmissiveExposureWeight = new(default, $"{PREFIX}{nameof(EmissiveExposureWeight)}", m_eventCaller, m_callBinder, (x) => math.clamp(x, 0, 1));
+
+
+
             CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
             CurrentRotation.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.offsetRotation = KMathUtils.UnityEulerToQuaternion(x); return currentItem; });
             CurrentPosition.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.offsetPosition = x; return currentItem; });
@@ -111,6 +133,13 @@ namespace BelzontWE
             CurrentItemText.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Text = x.Truncate(500); return currentItem; });
             CurrentItemIdx.OnScreenValueChanged += (x) => OnCurrentItemChanged();
 
+            MainColor.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Color = x; return currentItem; });
+            EmissiveColor.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveColor = x; return currentItem; });
+            Metallic.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Metallic = x; return currentItem; });
+            Smoothness.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Smoothness = x; return currentItem; });
+            EmissiveIntensity.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveIntensity = x; return currentItem; });
+            CoatStrength.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.CoatStrength = x; return currentItem; });
+            EmissiveExposureWeight.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveExposureWeight = x; return currentItem; });
 
             m_initialized = true;
         }
@@ -149,12 +178,7 @@ namespace BelzontWE
                 m_executionQueue.Enqueue(() => DoWithBuffer<WESimulationTextComponent>(
                    (buff) =>
                    {
-                       buff.Add(new WESimulationTextComponent
-                       {
-                           text = "NEW TEXT",
-                           color = Color.white,
-                           scale = Vector3.one
-                       });
+                       buff.Add(WESimulationTextComponent.CreateDefault());
                        var newCount = buff.Length;
                        CurrentItemIdx.Value = buff.Length - 1;
                        CurrentItemCount.Value = newCount;
@@ -194,6 +218,14 @@ namespace BelzontWE
             CurrentScale.Value = currentItem.scale;
             CurrentItemText.Value = currentItem.Text.ToString();
             CurrentItemName.Value = currentItem.itemName.ToString();
+
+
+            MainColor.Value = currentItem.Color;
+            EmissiveColor.Value = currentItem.EmissiveColor;
+            Metallic.Value = currentItem.Metallic;
+            Smoothness.Value = currentItem.Smoothness;
+            EmissiveIntensity.Value = currentItem.EmissiveIntensity;
+            CoatStrength.Value = currentItem.CoatStrength;
         }
 
         protected override void OnCreate()
