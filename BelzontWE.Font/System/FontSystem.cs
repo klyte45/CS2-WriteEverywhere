@@ -333,9 +333,12 @@ namespace BelzontWE.Font
 
         public void Reset(float width, float height)
         {
-            Atlases.Clear();
+            foreach (var atlas in Atlases)
+            {
+                atlas.Reset((int)width, (int)height);
+            }
 
-            _glyphs.Clear();
+            if (_glyphs.IsCreated) _glyphs.Clear();
 
             m_textCache.Clear();
 
@@ -623,7 +626,7 @@ namespace BelzontWE.Font
 
         private void PrepareJob(ref StringRenderingJob job, StringRenderingQueueItem item)
         {
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] PrepareJob for {item.text}");      
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] PrepareJob for {item.text}");
             job.data = data;
             job.CurrentAtlasSize = new Vector3(_currentAtlas.Width, _currentAtlas.Height);
             job.input = item;

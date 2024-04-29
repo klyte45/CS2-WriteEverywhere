@@ -72,9 +72,9 @@ namespace BelzontWE.Font
             }
         }
 
-        private DynamicSpriteFont(byte[] ttf, string name, int defaultTargetHeight, int textureWidth, int textureHeight, float qualityMultiplier,  int blur)
+        private DynamicSpriteFont(byte[] ttf, string name, int defaultTargetHeight, int textureWidth, int textureHeight, float qualityMultiplier, int blur)
         {
-            _fontSystem = new FontSystem(name, textureWidth, textureHeight,  blur)
+            _fontSystem = new FontSystem(name, textureWidth, textureHeight, blur)
             {
                 FontHeight = defaultTargetHeight
             };
@@ -83,7 +83,7 @@ namespace BelzontWE.Font
 
         }
 
-        public BasicRenderInformation DrawString(string text, Vector2 pos) => DrawString(text, pos, Vector2.one);
+        public BasicRenderInformation DrawString(string text, Vector2 scale) => DrawString(text, default, scale);
 
         public BasicRenderInformation DrawString(string text, Vector2 pos, Vector2 scale) => _fontSystem.DrawText(pos.x, pos.y, text, scale);
         public void EnsureText(string text, Vector2 pos, Vector2 scale) => _fontSystem.EnsureText(pos.x, pos.y, text, scale);

@@ -4,7 +4,6 @@ using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font;
 using Colossal.Entities;
-using Colossal.UI;
 using Kwytto.Utils;
 using System;
 using System.Collections.Generic;
@@ -379,7 +378,7 @@ namespace BelzontWE
             targetFont = fontName;
             targetString = text;
             UpdateDataAtEntity();
-            var result = m_FontServer[targetFont]?.DrawString(text, Vector2.one);
+            var result = m_FontServer[targetFont]?.DrawString(text, FontServer.Instance.ScaleEffective);
             return result is null ? null : XmlUtils.DefaultXmlSerialize(result);
         }
     }

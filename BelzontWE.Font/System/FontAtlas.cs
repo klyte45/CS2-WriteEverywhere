@@ -118,6 +118,10 @@ namespace BelzontWE.Font
         {
             Width = w;
             Height = h;
+            UnityEngine.Object.Destroy(Texture);
+            UnityEngine.Object.Destroy(m_material);
+            Texture = null;
+            m_material = null;
             NodesNumber = 0;
             Nodes[0].X = 0;
             Nodes[0].Y = 0;
@@ -285,10 +289,11 @@ namespace BelzontWE.Font
         {
             Material.mainTexture = Texture;
             Material.SetTexture(_BaseColorMap, Texture);
-
+#if DEBUG
             byte[] bytes = UnityEngine.ImageConversion.EncodeToPNG(Texture);
             // For testing purposes, also write to a file in the project folder
             File.WriteAllBytes(Path.Combine(BasicIMod.ModSettingsRootFolder, $"Texture_.png"), bytes);
+#endif
         }
 
         private void Blur(byte[] dst, int w, int h, int dstStride, int blur)

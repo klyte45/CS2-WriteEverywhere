@@ -11,7 +11,6 @@ using System.IO;
 using Unity.Entities;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
-using static Game.Rendering.Debug.RenderPrefabRenderer;
 
 namespace BelzontWE
 {
@@ -22,7 +21,7 @@ namespace BelzontWE
         #region Fonts
         public const string DEFAULT_FONT_KEY = "/DEFAULT/";
         public const string FONTS_FILES_FOLDER = "Fonts";
-        public static int DefaultTextureSizeFont => 1024;//512 << WriteEverywhereCS2Mod.StartTextureSizeFont;
+        public static int DefaultTextureSizeFont => 512 << WEModData.InstanceWE?.StartTextureSizeFont ?? 2;
         public static string FontFilesPath { get; } = FOLDER_PATH + Path.DirectorySeparatorChar + FONTS_FILES_FOLDER;
         public event Action OnFontsLoadedChanged;
 
@@ -47,12 +46,12 @@ namespace BelzontWE
         public void ReloadFontsFromPath()
         {
             ResetCollection();
-            RegisterFont(DEFAULT_FONT_KEY, KResourceLoader.LoadResourceDataMod("Font.Resources.SourceSansPro-Regular.ttf"), DefaultTextureSizeFont);
+            RegisterFont(DEFAULT_FONT_KEY, KResourceLoader.LoadResourceDataMod("Font.Resources.SourceSansPro-Regular.ttf"));
             KFileUtils.EnsureFolderCreation(FontFilesPath);
             if (BasicIMod.DebugMode) LogUtils.DoLog($"Searching font files @ {FontFilesPath}");
             foreach (string fontFile in Directory.GetFiles(FontFilesPath, "*.ttf"))
             {
-                RegisterFont(Path.GetFileNameWithoutExtension(fontFile), File.ReadAllBytes(fontFile), DefaultTextureSizeFont);
+                RegisterFont(Path.GetFileNameWithoutExtension(fontFile), File.ReadAllBytes(fontFile));
 
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Font loaded: {Path.GetFileName(fontFile)}");
             }
@@ -73,7 +72,7 @@ namespace BelzontWE
         }
 
 
-        private int DefaultTextureSize => 512;// WEMainController.DefaultTextureSizeFont;
+        private int DefaultTextureSize => DefaultTextureSizeFont;
 
         private int FontSizeEffective => Mathf.RoundToInt(m_targetHeight * m_qualityMultiplier);
         public Vector2 ScaleEffective => Vector2.one / m_qualityMultiplier;
@@ -105,7 +104,7 @@ namespace BelzontWE
             }
         }
 
-        public bool RegisterFont(string name, byte[] fontData, int textureSize)
+        public bool RegisterFont(string name, byte[] fontData)
         {
             try
             {
@@ -119,7 +118,7 @@ namespace BelzontWE
                 {
                     m_fontRegistered[name].Reset(1, 1);
                 }
-                m_fontRegistered[name] = DynamicSpriteFont.FromTtf(fontData, name, FontSizeEffective, textureSize, textureSize, m_qualityMultiplier);
+                m_fontRegistered[name] = DynamicSpriteFont.FromTtf(fontData, name, FontSizeEffective, DefaultTextureSize, DefaultTextureSize, m_qualityMultiplier);
             }
             catch (FontCreationException)
             {

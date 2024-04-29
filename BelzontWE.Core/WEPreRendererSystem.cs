@@ -113,7 +113,7 @@ namespace BelzontWE
                         {
                             continue;
                         }
-                        var bri = font.DrawString(weCustomData.src.Text.ToString(), default);
+                        var bri = font.DrawString(weCustomData.src.Text.ToString(), FontServer.Instance.ScaleEffective);
                         if (bri == null)
                         {
                             continue;
