@@ -1,11 +1,11 @@
-import { AmountValueSection, MetricUnitsEntries, MultiUIValueBinding, UnitSystem, VanillaComponentResolver, VectorSection, VectorSectionEditable, translateUnitResult } from "@klyte45/vuio-commons";
+import { AmountValueSection, MetricUnitsEntries, UnitSystem, VanillaComponentResolver, VectorSectionEditable, translateUnitResult } from "@klyte45/vuio-commons";
 import { useValue } from "cs2/api";
 import { tool } from "cs2/bindings";
 import { ModuleRegistryExtend, getModule } from "cs2/modding";
-import { ConfirmationDialog } from "cs2/ui";
-import { Component, ReactNode, useEffect, useState } from "react";
-import { WETextAppearenceSettings } from "./WETextAppearenceSettings";
+import { Component } from "react";
 import { WorldPickerService } from "services/WorldPickerService";
+import { WETextAppearenceSettings } from "./WETextAppearenceSettings";
+import { translate } from "../utils/translate"
 
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
@@ -54,6 +54,34 @@ export const WriteEverywhereToolOptions: ModuleRegistryExtend = (Component: any)
     };
 }
 
+//Labels and tooltips
+const L_itemTitle = translate("toolOption.itemTitle"); //"Text #"
+const L_itemName = translate("toolOption.itemName"); //"Name";
+const L_mousePrecision = translate("toolOption.mousePrecision"); //"Mouse precision";
+const L_editingPlane = translate("toolOption.editingPlane"); //"Editing plane";
+const L_position = translate("toolOption.position"); //"Position"
+const L_rotation = translate("toolOption.rotation"); //"Rotation"
+const L_scale = translate("toolOption.scale"); //"Scale"
+const L_text = translate("toolOption.text"); //"Text"
+const L_actions = translate("toolOption.actions"); //"Actions"
+const L_selectItem = translate("toolOption.selectItem"); //"Select an Item"
+const T_mousePrecision_up = translate("toolOption.mousePrecision_up.tooltip"); //"Increment the strenght of the mouse moves when editing the text position/rotation";
+const T_mousePrecision_down = translate("toolOption.mousePrecision_down.tooltip"); //"Decrease the strenght of the mouse moves when editing the text position/rotation";
+const T_editingPlane_XY = translate("toolOption.editingPlane_XY.tooltip"); //"move in XY, rotate in Z (front)"
+const T_editingPlane_ZY = translate("toolOption.editingPlane_ZY.tooltip"); //"move in ZY, rotate in X (right)"
+const T_editingPlane_XZ = translate("toolOption.editingPlane_XZ.tooltip"); //"move in XZ, rotate in Y (top)"
+const T_picker = translate("toolOption.picker.tooltip"); //"Pick another object"
+const T_addText = translate("toolOption.addText.tooltip"); //"Add text"
+const T_removeText = translate("toolOption.removeText.tooltip"); //"Remove text"
+const T_lockCamera = translate("toolOption.lockCamera.tooltip"); //"Lock camera to editing plane area and angle"
+const T_AppearenceBtn = translate("toolOption.AppearenceBtn.tooltip"); //"Appearance settings"
+
+const Tarr_moveMode = [
+    `${translate("toolOption.moveMode.tooltip")} ${translate("toolOption.moveMode.descriptionBoth")}`,// "Toggle between modes to lock/unlock a axis in current plane. Currently: Move in any direction",
+    `${translate("toolOption.moveMode.tooltip")} ${translate("toolOption.moveMode.descriptionHorizontal")}`,// "Toggle between modes to lock/unlock a axis in current plane. Currently: Move horizontally only",
+    `${translate("toolOption.moveMode.tooltip")} ${translate("toolOption.moveMode.descriptionVertical")}`,// "Toggle between modes to lock/unlock a axis in current plane. Currently: Move vertically only"
+]
+
 
 class WEWorldPickerToolPanel extends Component<{}, State> {
 
@@ -71,34 +99,6 @@ class WEWorldPickerToolPanel extends Component<{}, State> {
 
         const wps = WorldPickerService.instance;
 
-        //Labels and tooltips
-        const L_itemTitle = "Text #"
-        const L_itemName = "Name";
-        const L_mousePrecision = "Mouse precision";
-        const L_editingPlane = "Editing plane";
-        const L_position = "Position"
-        const L_rotation = "Rotation"
-        const L_scale = "Scale"
-        const L_text = "Text"
-        const L_actions = "Actions"
-        const L_selectItem = "Select an Item"
-
-        const T_mousePrecision_up = "Increment the strenght of the mouse moves when editing the text position/rotation";
-        const T_mousePrecision_down = "Decrease the strenght of the mouse moves when editing the text position/rotation";
-        const T_editingPlane_XY = "move in XY, rotate in Z (front)"
-        const T_editingPlane_ZY = "move in ZY, rotate in X (right)"
-        const T_editingPlane_XZ = "move in XZ, rotate in Y (top)"
-        const T_picker = "Pick another object"
-        const T_addText = "Add text"
-        const T_removeText = "Remove text"
-        const T_lockCamera = "Lock camera to editing plane area and angle"
-        const T_AppearenceBtn = "Appearance settings"
-
-        const Tarr_moveMode = [
-            "Toggle between modes to lock/unlock a axis in current plane.\nCurrently: Move in any direction",
-            "Toggle between modes to lock/unlock a axis in current plane.\nCurrently: Move horizontally only",
-            "Toggle between modes to lock/unlock a axis in current plane.\nCurrently: Move vertically only"
-        ]
 
         return !wps.CurrentEntity.value?.Index ?
             <VanillaComponentResolver.instance.Section title={L_selectItem} children={[]} /> :
@@ -159,7 +159,7 @@ class WEWorldPickerToolPanel extends Component<{}, State> {
                             <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 2} onSelect={() => wps.CurrentPlaneMode.set(2)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XZ}></VanillaComponentResolver.instance.ToolButton>
                             <div style={{ width: "10rem" }}></div>
                             <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentMoveMode.value > 0} onSelect={() => wps.CurrentMoveMode.set((wps.CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[wps.CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[wps.CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
-                            <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() =>wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
+                            <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
                         </VanillaComponentResolver.instance.Section>
                         <VectorSectionEditable title={L_position}
                             valueGetter={() => wps.CurrentPosition.value?.map(x => x.toFixed(3))}

@@ -9,5 +9,5 @@
   <GameVersion Value="1.1.*" />
   <ChangeLog>)</ChangeLog>
   <Tag Value="Code Mod" />
-  <Dependency Id="74151" ModVersion="0.1.1.2" DisplayName="Extra UI Screens" />
+  <Dependency Id="74417" ModVersion="" DisplayName="Unified Icon Library" />
 </Publish>
