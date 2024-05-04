@@ -10,25 +10,24 @@ namespace BelzontWE.Font
 	struct FakePtr<T> where T : new()
 	{
 		public static readonly FakePtr<T> Null = new FakePtr<T>(null);
+        public int Offset;
 
-		private readonly T[] _array;
+		public bool IsNull => ArrayData == null;
 
-		public int Offset;
+        public T[] ArrayData { get; }
 
-		public bool IsNull => _array == null;
-
-		public T this[int index]
+        public T this[int index]
 		{
-			get => _array[Offset + index];
+			get => ArrayData[Offset + index];
 
-			set => _array[Offset + index] = value;
+			set => ArrayData[Offset + index] = value;
 		}
 
 		public T this[long index]
 		{
-			get => _array[Offset + index];
+			get => ArrayData[Offset + index];
 
-			set => _array[Offset + index] = value;
+			set => ArrayData[Offset + index] = value;
 		}
 
 		public T Value
@@ -41,13 +40,13 @@ namespace BelzontWE.Font
 		public FakePtr(FakePtr<T> ptr, int offset)
 		{
 			Offset = ptr.Offset + offset;
-			_array = ptr._array;
+			ArrayData = ptr.ArrayData;
 		}
 
 		public FakePtr(T[] data, int offset)
 		{
 			Offset = offset;
-			_array = data;
+			ArrayData = data;
 		}
 
 		public FakePtr(T[] data) : this(data, 0)
@@ -57,18 +56,18 @@ namespace BelzontWE.Font
 		public FakePtr(T value)
 		{
 			Offset = 0;
-			_array = new T[1];
-			_array[0] = value;
+			ArrayData = new T[1];
+			ArrayData[0] = value;
 		}
 
 		public void Clear(int count)
 		{
-			Array.Clear(_array, Offset, count);
+			Array.Clear(ArrayData, Offset, count);
 		}
 
 		public T GetAndIncrease()
 		{
-			var result = _array[Offset];
+			var result = ArrayData[Offset];
 			++Offset;
 
 			return result;
@@ -76,18 +75,18 @@ namespace BelzontWE.Font
 
 		public void SetAndIncrease(T value)
 		{
-			_array[Offset] = value;
+			ArrayData[Offset] = value;
 			++Offset;
 		}
 
 		public void Set(T value)
 		{
-			_array[Offset] = value;
+			ArrayData[Offset] = value;
 		}
 
 		public static FakePtr<T> operator +(FakePtr<T> p, int offset)
 		{
-			return new FakePtr<T>(p._array) {Offset = p.Offset + offset};
+			return new FakePtr<T>(p.ArrayData) {Offset = p.Offset + offset};
 		}
 
 		public static FakePtr<T> operator -(FakePtr<T> p, int offset)

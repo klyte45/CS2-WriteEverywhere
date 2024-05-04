@@ -22,7 +22,7 @@ namespace BelzontWE
             m_callBinder = callBinder;
             callBinder($"{PREFIX}getItemsAvailable", GetItemsAvailable);
             callBinder($"{PREFIX}toolPrecisions", () => WEWorldPickerTool.precisionIdx);
-            callBinder($"{PREFIX}enableTool", () => WEWorldPickerTool.precisionIdx);
+            callBinder($"{PREFIX}enableTool", OnEnableTool);
             callBinder($"{PREFIX}addItem", AddItem);
             callBinder($"{PREFIX}removeItem", RemoveItem);
             if (m_eventCaller != null) InitValueBindings();
@@ -38,8 +38,14 @@ namespace BelzontWE
         {
         }
 
+        private void OnEnableTool(Entity e)
+        {            
+            var wpt = World.GetExistingSystemManaged<WEWorldPickerTool>();
+            wpt.Select(e);
+        }
+
         private bool m_initialized = false;
-        private readonly Queue<Action> m_executionQueue = new();
+        private readonly Queue<System.Action> m_executionQueue = new();
 
         public int IncrementalVersion { get; private set; }
         public Matrix4x4 CurrentItemMatrix { get; private set; }

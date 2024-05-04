@@ -53,7 +53,6 @@ export const WriteEverywhereToolOptions: ModuleRegistryExtend = (Component: any)
         return result;
     };
 }
-
 //Labels and tooltips
 const L_itemTitle = translate("toolOption.itemTitle"); //"Text #"
 const L_itemName = translate("toolOption.itemName"); //"Name";

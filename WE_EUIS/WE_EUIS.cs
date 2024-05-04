@@ -1,4 +1,4 @@
-﻿#define LOCALURL
+﻿//#define LOCALURL
 
 using BelzontWE;
 using K45EUIS_Ext;
@@ -6,6 +6,7 @@ using System;
 
 namespace z_WE_EUIS
 {
+#if ENABLE_EUIS
     public class WE_EUIS : IEUISModRegister
     {
         public string ModderIdentifier => "k45";
@@ -34,5 +35,5 @@ namespace z_WE_EUIS
 
         public string ModAcronym => "we";
     }
-
+#endif
 }

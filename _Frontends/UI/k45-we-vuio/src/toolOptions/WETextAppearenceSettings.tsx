@@ -5,14 +5,14 @@ import { WorldPickerService } from "services/WorldPickerService";
 import "../style/floatingPanels.scss";
 import { translate } from "utils/translate";
 
-const T_appearenceTitle = translate("appearenceSettings.appearenceTitle.tooltip"); //"Appearance Settings"
-const T_mainColor = translate("appearenceSettings.mainColor.tooltip"); //"Main Color"
-const T_emissiveColor = translate("appearenceSettings.emissiveColor.tooltip"); //"Emission Color"
-const T_Metallic = translate("appearenceSettings.Metallic.tooltip"); //"Metallic"
-const T_CoatStrength = translate("appearenceSettings.CoatStrength.tooltip"); //"Coat Strength"
-const T_Smoothness = translate("appearenceSettings.Smoothness.tooltip"); //"Smoothness"
-const T_EmissiveIntensity = translate("appearenceSettings.EmissiveIntensity.tooltip"); //"Emissive Intensity"
-const T_EmissiveExposureWeight = translate("appearenceSettings.EmissiveExposureWeight.tooltip"); //"Emissive Exposure"
+const T_appearenceTitle = translate("appearenceSettings.appearenceTitle"); //"Appearance Settings"
+const T_mainColor = translate("appearenceSettings.mainColor"); //"Main Color"
+const T_emissiveColor = translate("appearenceSettings.emissiveColor"); //"Emission Color"
+const T_Metallic = translate("appearenceSettings.Metallic"); //"Metallic"
+const T_CoatStrength = translate("appearenceSettings.CoatStrength"); //"Coat Strength"
+const T_Smoothness = translate("appearenceSettings.Smoothness"); //"Smoothness"
+const T_EmissiveIntensity = translate("appearenceSettings.EmissiveIntensity"); //"Emissive Intensity"
+const T_EmissiveExposureWeight = translate("appearenceSettings.EmissiveExposureWeight"); //"Emissive Exposure"
 
 export class WETextAppearenceSettings extends Component<{ initialPosition?: { x: number, y: number } }> {
     render() {

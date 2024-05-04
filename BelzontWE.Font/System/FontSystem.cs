@@ -3,6 +3,7 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font.Utility;
+using Colossal.Serialization.Entities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,7 +11,9 @@ using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace BelzontWE.Font
@@ -23,40 +26,96 @@ namespace BelzontWE.Font
     }
     public class FontSystem : IDisposable
     {
-        private struct FontSystemData : IDisposable
+        public struct FontSystemData : IDisposable, IComponentData, ISerializable
         {
-            private GCHandle _fontListAddr;
-            public List<Font> fonts
+            private const uint CURRENT_VERSION = 0;
+
+            private GCHandle _fontAddr;
+            public Font Font
             {
-                get => _fontListAddr.IsAllocated ? _fontListAddr.Target as List<Font> : null;
+                get => _fontAddr.IsAllocated ? _fontAddr.Target as Font : null;
                 set
                 {
-                    if (_fontListAddr.IsAllocated) _fontListAddr.Free();
-                    _fontListAddr = GCHandle.Alloc(value);
+                    if (_fontAddr.IsAllocated) _fontAddr.Free();
+                    _fontAddr = GCHandle.Alloc(value);
                 }
             }
-            public float _itw;
-            public float _ith;
+            public float _itw { get; private set; }
+            public float _ith { get; private set; }
+
+            public int Width
+            {
+                get => width; set
+                {
+                    width = math.max(1, value);
+                    _itw = 1f / width;
+                }
+            }
+            public int Height
+            {
+                get => height; set
+                {
+                    height = math.max(1, value);
+                    _ith = 1f / height;
+                }
+            }
+
+            public FixedString32Bytes name;
+            private int width;
+            private int height;
 
             public void Dispose()
             {
-                if (_fontListAddr.IsAllocated)
+                if (_fontAddr.IsAllocated)
                 {
-                    _fontListAddr.Free();
+                    _fontAddr.Free();
+                }
+            }
+
+            public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+            {
+                writer.Write(CURRENT_VERSION);
+                writer.Write(name);
+                writer.Write(width);
+                writer.Write(height);
+                var zippedFontFile = new NativeArray<byte>(ZipUtils.ZipBytes(Font._font.data.ArrayData), Allocator.Temp);
+                writer.Write(zippedFontFile.Length);
+                writer.Write(zippedFontFile);
+                zippedFontFile.Dispose();
+            }
+
+            public void Deserialize<TReader>(TReader reader) where TReader : IReader
+            {
+                reader.Read(out uint version);
+                if (version > CURRENT_VERSION)
+                {
+                    LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                    return;
+                }
+                reader.Read(out name);
+                reader.Read(out width); Width = width;
+                reader.Read(out height); Height = height;
+                reader.Read(out int length);
+                var zippedFontFile = new NativeArray<byte>(length, Allocator.Temp);
+                try
+                {
+                    reader.Read(zippedFontFile);
+                    Font = Font.FromMemory(ZipUtils.UnzipBytes(zippedFontFile.ToArray()));
+                }
+                finally
+                {
+                    zippedFontFile.Dispose();
                 }
             }
         }
 
-        private FontSystemData data = new()
-        {
-            fonts = new(),
-        };
+        private FontSystemData data = new() { };
 
         public NativeHashMap<int, NativeHashMap<int, FontGlyph>> _glyphs;
 
 
         private FontAtlas _currentAtlas;
-        private Vector2 _size;
+        private Vector2Int _size;
         private int _fontHeight;
 
         private Dictionary<string, BasicRenderInformation> m_textCache = new Dictionary<string, BasicRenderInformation>();
@@ -84,12 +143,9 @@ namespace BelzontWE.Font
             set
             {
                 _fontHeight = value;
-                if (data.fonts is not null)
+                if (data.Font is not null)
                 {
-                    foreach (Font f in data.fonts)
-                    {
-                        f.RecalculateBasedOnHeight(_fontHeight);
-                    }
+                    data.Font.RecalculateBasedOnHeight(_fontHeight);
                 }
             }
         }
@@ -98,7 +154,7 @@ namespace BelzontWE.Font
         public readonly int Blur;
         public float Spacing;
         public bool UseKernings = true;
-        private readonly string Name;
+        private string Name => data.name.ToString();
 
         public long LastUpdateAtlas { get; private set; }
 
@@ -125,7 +181,7 @@ namespace BelzontWE.Font
 
         public FontSystem(string name, int width, int height, int blur = 0)
         {
-            Name = name;
+            data.name = name;
             if (width <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(width));
@@ -142,10 +198,26 @@ namespace BelzontWE.Font
             }
             Blur = blur;
 
-            _size = new Vector2(width, height);
+            _size = new(width, height);
 
-            data._itw = 1.0f / _size.x;
-            data._ith = 1.0f / _size.y;
+            data.Width = width;
+            data.Height = height;
+            ClearState();
+        }
+
+        public FontSystem(FontSystemData data)
+        {
+            Blur = 0;
+            if (data.Width <= 0)
+            {
+                throw new ArgumentOutOfRangeException("data.Width");
+            }
+
+            if (data.Height <= 0)
+            {
+                throw new ArgumentOutOfRangeException("data.Height");
+            }
+            _size = new(data.Width, data.Height);
             ClearState();
         }
 
@@ -160,11 +232,7 @@ namespace BelzontWE.Font
         {
             var font = Font.FromMemory(fontData);
             font.RecalculateBasedOnHeight(FontHeight);
-            if (data.fonts is null)
-            {
-                data.fonts = new List<Font>();
-            }
-            data.fonts.Add(font);
+            data.Font = font;
             this.qualityMultiplier = qualityMultiplier;
             metricsCalculated = false;
         }
@@ -331,11 +399,11 @@ namespace BelzontWE.Font
             return advance;
         }
 
-        public void Reset(float width, float height)
+        public void Reset(int width, int height)
         {
             foreach (var atlas in Atlases)
             {
-                atlas.Reset((int)width, (int)height);
+                atlas.Reset(width, height);
             }
 
             if (_glyphs.IsCreated) _glyphs.Clear();
@@ -347,30 +415,14 @@ namespace BelzontWE.Font
                 return;
             }
 
-            _size = new Vector2(width, height);
-            data._itw = 1.0f / _size.x;
-            data._ith = 1.0f / _size.y;
+            _size = new(width, height);
+            data.Width = width;
+            data.Height = height;
         }
 
         public void Reset() => Reset(_size.x, _size.y);
 
-        private static int GetCodepointIndex(int codepoint, List<Font> fonts, out Font font)
-        {
-            font = default;
-
-            int g = 0;
-            foreach (Font f in fonts)
-            {
-                g = f.GetGlyphIndex(codepoint);
-                if (g != 0)
-                {
-                    font = f;
-                    break;
-                }
-            }
-
-            return g;
-        }
+        private static int GetCodepointIndex(int codepoint, Font f) => f.GetGlyphIndex(codepoint);
 
 
         private static FontGlyph GetGlyphWithoutBitmap(NativeHashMap<int, FontGlyph> glyphs, int codepoint, ref FontSystemData data)
@@ -380,12 +432,12 @@ namespace BelzontWE.Font
                 return glyph;
             }
 
-            int g = GetCodepointIndex(codepoint, data.fonts, out Font font);
+            int g = GetCodepointIndex(codepoint, data.Font);
             if (g == 0)
             {
                 return FontGlyph.Null;
             }
-
+            var font = data.Font;
             int advance = 0, lsb = 0, x0 = 0, y0 = 0, x1 = 0, y1 = 0;
             font.BuildGlyphBitmap(g, font.Scale, ref advance, ref lsb, ref x0, ref y0, ref x1, ref y1);
 

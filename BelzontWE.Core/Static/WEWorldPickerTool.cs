@@ -25,6 +25,7 @@ namespace BelzontWE
         private IGameCameraController m_oldController;
         private float m_cameraDistance = 5f;
         private bool m_cameraDisabledHere;
+        private Entity entityToSelectOnStart;
 
         public override PrefabBase GetPrefab()
         {
@@ -68,7 +69,11 @@ namespace BelzontWE
         }
         protected override void OnStartRunning()
         {
-            m_Controller.CurrentEntity.Value = default;
+            m_Controller.CurrentEntity.Value = entityToSelectOnStart;
+            entityToSelectOnStart = default;
+            UpdateItemCount();
+            m_Controller.OnCurrentItemChanged();
+
             m_ApplyAction.shouldBeEnabled = true;
             m_Controller.IsValidEditingItem();
         }
@@ -257,7 +262,7 @@ namespace BelzontWE
         private void ApplyRotation()
         {
             var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
-            var offsetMouse = m_mousePositionRefRot - InputManager.instance.mousePosition.x ;
+            var offsetMouse = m_mousePositionRefRot - InputManager.instance.mousePosition.x;
 
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value] * 10;
             var offsetWithAdjust = offsetMouse * currentPrecision;
@@ -269,9 +274,9 @@ namespace BelzontWE
             var currentItem = currentBuffer[m_Controller.CurrentItemIdx.Value];
             m_Controller.CurrentRotation.Value = m_originalRotationText + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {
-                ToolEditMode.PlaneXY =>  new float3(0, 0, offsetWithAdjust),
-                ToolEditMode.PlaneXZ =>  new float3(0, offsetWithAdjust, 0),
-                ToolEditMode.PlaneZY =>  new float3(offsetWithAdjust, 0, 0),
+                ToolEditMode.PlaneXY => new float3(0, 0, offsetWithAdjust),
+                ToolEditMode.PlaneXZ => new float3(0, offsetWithAdjust, 0),
+                ToolEditMode.PlaneZY => new float3(offsetWithAdjust, 0, 0),
                 _ => default
             };
             currentItem.offsetRotation = Quaternion.Euler(m_Controller.CurrentRotation.Value);
@@ -304,8 +309,9 @@ namespace BelzontWE
             m_Controller.CurrentEntity.Value = default;
             m_Controller.CurrentItemIdx.Value = 0;
         }
-        public void Select()
+        public void Select(Entity e = default)
         {
+            entityToSelectOnStart = e;
             m_ToolSystem.activeTool = this;
         }
 

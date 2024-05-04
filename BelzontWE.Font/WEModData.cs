@@ -37,7 +37,7 @@ namespace BelzontWE
             get => startTextureSizeFont; set
             {
                 startTextureSizeFont = value;
-                FontServer.Instance.ReloadFontsFromPath();
+                FontServer.Instance?.ReloadFontsFromPath();
             }
         }
         private DropdownItem<int>[] StartTextureSizeFontValues() => new int[5].Select((_, i) => new DropdownItem<int> { value = i, displayName = $"{512 << i}x{512 << i}" }).ToArray();
