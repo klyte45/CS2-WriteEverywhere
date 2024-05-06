@@ -26,10 +26,10 @@ namespace BelzontWE.Font
         public int Height;
         public int Blur;
 
-        public float xMin => x;
-        public float yMin => y;
-        public float xMax => x + width;
-        public float yMax => y + height;
+        public readonly float xMin => x;
+        public readonly float yMin => y;
+        public readonly float xMax => x + width;
+        public readonly float yMax => y + height;
         public float x;
         public float y;
         public float width;
@@ -40,7 +40,7 @@ namespace BelzontWE.Font
         public int XOffset;
         public int YOffset;
 
-        public int Pad => PadFromBlur(Blur);
+        public readonly int Pad => PadFromBlur(Blur);
         public bool IsValid => fontAddr.IsAllocated;
 
         public bool AtlasGenerated { get; internal set; }
@@ -68,5 +68,7 @@ namespace BelzontWE.Font
             if (fontAddr.IsAllocated) fontAddr.Free();
             _kernings.Dispose();
         }
+
+        public override string ToString() => $"Glyph#{Index}: x{x} y{y} w{width} h{height} xA{XAdvance} xO{XOffset} yO{YOffset}";
     }
 }

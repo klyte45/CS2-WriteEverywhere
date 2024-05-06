@@ -1,7 +1,11 @@
-﻿using Colossal.Entities;
+﻿using Belzont.Interfaces;
+using Belzont.Utils;
+using BelzontWE.Font;
+using Colossal.Entities;
 using Game;
 using Game.Common;
 using Game.Rendering;
+using Game.SceneFlow;
 using Game.Tools;
 using Unity.Collections;
 using Unity.Entities;
@@ -10,7 +14,6 @@ namespace BelzontWE
 {
     public partial class WEPreRendererSystem : SystemBase
     {
-        private FontServer m_FontServer;
         private EntityQuery m_noWaitQueueEntities;
         private EntityQuery m_pendingQueueEntities;
         private EndFrameBarrier m_endFrameBarrier;
@@ -19,12 +22,11 @@ namespace BelzontWE
         {
             base.OnCreate();
 
-            m_FontServer = World.GetOrCreateSystemManaged<FontServer>();
             m_endFrameBarrier = World.GetExistingSystemManaged<EndFrameBarrier>();
 
             m_noWaitQueueEntities = GetEntityQuery(new EntityQueryDesc[]
             {
-                new EntityQueryDesc
+                new ()
                 {
                     All = new ComponentType[]
                     {
@@ -46,7 +48,7 @@ namespace BelzontWE
             });
             m_pendingQueueEntities = GetEntityQuery(new EntityQueryDesc[]
             {
-                new EntityQueryDesc
+                new ()
                 {
                     All = new ComponentType[]
                     {
@@ -70,6 +72,7 @@ namespace BelzontWE
         }
         protected override void OnUpdate()
         {
+            if (GameManager.instance.isLoading) return;
             CheckPendingQueue();
             CheckNoWaitQueue();
 
@@ -108,14 +111,17 @@ namespace BelzontWE
                     for (var j = 0; j < weCustomDataPending.Length; j++)
                     {
                         var weCustomData = weCustomDataPending[j];
-                        var font = m_FontServer[weCustomData.src.FontName.ToString()] ?? m_FontServer[FontServer.DEFAULT_FONT_KEY];
-                        if (font is null)
+                        var font = EntityManager.TryGetComponent<FontSystemData>(weCustomData.src.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
+                        if (font.Font == null)
                         {
+                            if (BasicIMod.DebugMode) LogUtils.DoLog("Font not initialized!!!");
                             continue;
                         }
-                        var bri = font.DrawString(weCustomData.src.Text.ToString(), FontServer.Instance.ScaleEffective);
+
+                        var bri = font.FontSystem.DrawText(weCustomData.src.Text.ToString(), FontServer.Instance.ScaleEffective);
                         if (bri == null)
                         {
+                            if (BasicIMod.TraceMode) LogUtils.DoTraceLog("BRI STILL NULL!!!");
                             continue;
                         }
                         wePersistentData.Add(WESimulationTextComponent.From(weCustomData, bri));

@@ -1,4 +1,5 @@
-﻿using Belzont.Utils;
+﻿using Belzont.Interfaces;
+using Belzont.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,17 +28,13 @@ namespace BelzontWE.Font.Utility
                 triangles = brij.triangles.ToArray(),
                 colors32 = brij.colors.ToArray(),
                 uv = brij.uv1.ToArray(),
-                //normals = brij.vertices.Select(_ => new Vector3(x, y, z)).ToArray()
             };
-            //m_mesh.tangents = m_mesh.vertices.Select(x => new Vector4(1, 0, 0, 1)).ToArray();
-            //m_mesh.RecalculateUVDistributionMetrics();
-            //m_mesh.Optimize();
             m_mesh.RecalculateBounds();
             m_mesh.RecalculateNormals();
             m_mesh.RecalculateTangents();
 
             m_sizeMetersUnscaled = m_mesh.bounds.size;
-            //  LogUtils.DoLog($"MESH: {m_mesh} {m_mesh.vertices[0]} {m_mesh.vertices[1]}...  {m_mesh.tangents[0]} {m_mesh.tangents[1]}...  {m_mesh.normals[0]} {m_mesh.normals[1]}... {m_mesh.vertices.Length} {m_mesh.triangles.Length} {m_sizeMetersUnscaled}m");
+            //   if (BasicIMod.DebugMode) LogUtils.DoLog($"MESH: {m_mesh} {m_mesh.vertices[0]} {m_mesh.vertices[1]}...  {m_mesh.tangents[0]} {m_mesh.tangents[1]}...  {m_mesh.normals[0]} {m_mesh.normals[1]}... {m_mesh.vertices.Length} {m_mesh.triangles.Length} {m_sizeMetersUnscaled}m");
             brij.Dispose();
         }
         [XmlIgnore]
@@ -115,16 +112,12 @@ namespace BelzontWE.Font.Utility
 
         public void Dispose()
         {
-            LogUtils.DoInfoLog("DISPOSING BRIJ");
+            if (BasicIMod.DebugMode) LogUtils.DoLog("DISPOSING BRIJ");
             colors.Dispose();
             vertices.Dispose();
             triangles.Dispose();
             uv1.Dispose();
         }
-
-        internal long GetSize() => GetMeshSize();
-
-        private unsafe long GetMeshSize() => sizeof(BasicRenderInformationJob);
     }
 
     public struct RangeVector
@@ -132,10 +125,10 @@ namespace BelzontWE.Font.Utility
         public float min;
         public float max;
 
-        public float Offset => max - min;
-        public float Center => max + (min / 2);
+        public readonly float Offset => max - min;
+        public readonly float Center => max + (min / 2);
 
-        public override string ToString() => $"[min = {min}, max = {max}]";
+        public override readonly string ToString() => $"[min = {min}, max = {max}]";
 
 
     }

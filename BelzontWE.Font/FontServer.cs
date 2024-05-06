@@ -2,12 +2,14 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font;
-using Colossal.IO.AssetDatabase.Internal;
 using Game;
+using Game.Common;
+using Game.SceneFlow;
+using Game.Tools;
 using Kwytto.Utils;
 using System;
-using System.Collections.Generic;
 using System.IO;
+using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
@@ -21,15 +23,23 @@ namespace BelzontWE
         #region Fonts
         public const string DEFAULT_FONT_KEY = "/DEFAULT/";
         public const string FONTS_FILES_FOLDER = "Fonts";
-        public static int DefaultTextureSizeFont => 512 << WEModData.InstanceWE?.StartTextureSizeFont ?? 2;
+        public static int DefaultTextureSizeFont => 512 << (WEModData.InstanceWE?.StartTextureSizeFont ?? 1);
         public static string FontFilesPath { get; } = FOLDER_PATH + Path.DirectorySeparatorChar + FONTS_FILES_FOLDER;
         public event Action OnFontsLoadedChanged;
 
-        private float m_targetHeight = 100;
+        public static int QualitySize
+        {
+            get => qualitySize; set
+            {
+                qualitySize = value;
+                Instance.OnChangeSizeParam();
+            }
+        }
+        public FontSystemData DefaultFont { get; private set; }
+        private EntityQuery m_fontEntitiesQuery;
+        private bool requiresUpdateParameter;
+        private static int qualitySize = 100;
 
-        private float m_qualityMultiplier = 1f;
-
-        private Dictionary<string, DynamicSpriteFont> m_fontRegistered = new Dictionary<string, DynamicSpriteFont>();
         public static FontServer Instance { get; private set; }
 
         public static int DecalLayerMask { get; private set; }
@@ -39,69 +49,30 @@ namespace BelzontWE
             base.OnCreate();
             Instance = this;
             DecalLayerMask = Shader.PropertyToID("colossal_DecalLayerMask");
-            ReloadFontsFromPath();
+            m_fontEntitiesQuery = GetEntityQuery(new EntityQueryDesc[]
+           {
+                new() {
+                    All = new ComponentType[]
+                    {
+                        ComponentType.ReadWrite<FontSystemData>()
+                    },
+                    None = new ComponentType[]
+                    {
+                        ComponentType.ReadOnly<Temp>(),
+                        ComponentType.ReadOnly<Deleted>(),
+                    }
+                }
+           });
+            DefaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Font.Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY);
         }
 
-
-        public void ReloadFontsFromPath()
-        {
-            ResetCollection();
-            RegisterFont(DEFAULT_FONT_KEY, KResourceLoader.LoadResourceDataMod("Font.Resources.SourceSansPro-Regular.ttf"));
-            KFileUtils.EnsureFolderCreation(FontFilesPath);
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"Searching font files @ {FontFilesPath}");
-            foreach (string fontFile in Directory.GetFiles(FontFilesPath, "*.ttf"))
-            {
-                RegisterFont(Path.GetFileNameWithoutExtension(fontFile), File.ReadAllBytes(fontFile));
-
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"Font loaded: {Path.GetFileName(fontFile)}");
-            }
-            OnFontsLoadedChanged?.Invoke();
-        }
         #endregion
 
+        public Vector2 ScaleEffective => Vector2.one / QualitySize * 100;
 
-
-        internal long GetAllFontsCacheSize()
+        public void OnChangeSizeParam()
         {
-            long size = 0L;
-            foreach (var font in m_fontRegistered.Values)
-            {
-                size += font.GetCacheSize();
-            }
-            return size;
-        }
-
-
-        private int DefaultTextureSize => DefaultTextureSizeFont;
-
-        private int FontSizeEffective => Mathf.RoundToInt(m_targetHeight * m_qualityMultiplier);
-        public Vector2 ScaleEffective => Vector2.one / m_qualityMultiplier;
-
-
-        public void ResetCollection() => m_fontRegistered = new Dictionary<string, DynamicSpriteFont>();
-        public void SetOverallSize(float f)
-        {
-            m_targetHeight = f;
-            OnChangeSizeParam();
-        }
-
-        public void ResetOverallSize() => SetOverallSize(120);
-
-        public void SetQualityMultiplier(float f)
-        {
-            m_qualityMultiplier = f;
-            OnChangeSizeParam();
-        }
-
-        public void ResetQualityMultiplier() => SetQualityMultiplier(1);
-
-        private void OnChangeSizeParam()
-        {
-            foreach (DynamicSpriteFont font in m_fontRegistered.Values)
-            {
-                font.Height = FontSizeEffective;
-                font.Reset(DefaultTextureSize, DefaultTextureSize);
-            }
+            requiresUpdateParameter = true;
         }
 
         public bool RegisterFont(string name, byte[] fontData)
@@ -113,12 +84,10 @@ namespace BelzontWE
                     LogUtils.DoErrorLog($"RegisterFont: FONT NAME CANNOT BE NULL!!");
                     return false;
                 }
-
-                if (m_fontRegistered.ContainsKey(name))
-                {
-                    m_fontRegistered[name].Reset(1, 1);
-                }
-                m_fontRegistered[name] = DynamicSpriteFont.FromTtf(fontData, name, FontSizeEffective, DefaultTextureSize, DefaultTextureSize, m_qualityMultiplier);
+                var fontSystemData = FontSystemData.From(fontData, name);
+                var fontEntity = EntityManager.CreateEntity();
+                EntityManager.AddComponent<Created>(fontEntity);
+                EntityManager.AddComponentData(fontEntity, fontSystemData);
             }
             catch (FontCreationException)
             {
@@ -128,48 +97,38 @@ namespace BelzontWE
             return true;
         }
 
-        public void ClearFonts() => m_fontRegistered.Clear();
-
-        public DynamicSpriteFont this[string idx]
-        {
-            get
-            {
-                if (idx != null)
-                {
-                    if (Aliases.ContainsKey(idx))
-                    {
-                        idx = Aliases[idx];
-                    }
-                    return m_fontRegistered.TryGetValue(idx, out DynamicSpriteFont value) ? value : null;
-                }
-                return null;
-            }
-        }
-
-        public DynamicSpriteFont FirstOf(IEnumerable<Func<string>> names)
-        {
-            foreach (var run in names)
-            {
-                var idx = run();
-                if (idx != null)
-                {
-                    if (m_fontRegistered.TryGetValue(Aliases.TryGetValue(idx, out string alias) ? alias : idx, out DynamicSpriteFont value))
-                    {
-                        return value;
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        public Dictionary<string, string> Aliases { get; } = new Dictionary<string, string>();
-
-        public IEnumerable<string> GetAllFonts() => m_fontRegistered.Keys;
-
         protected override void OnUpdate()
         {
-            m_fontRegistered.Values.ForEach(x => x.RunJobs());
+            if (GameManager.instance.isLoading) return;
+            if (!m_fontEntitiesQuery.IsEmpty)
+            {
+                var entities = m_fontEntitiesQuery.ToEntityArray(Allocator.Temp);
+                for (var i = 0; i < entities.Length; i++)
+                {
+                    var entity = entities[i];
+                    var data = EntityManager.GetComponentData<FontSystemData>(entity);
+                    UpdateFontSystem(data);
+                }
+            }
+            UpdateFontSystem(DefaultFont);
+            requiresUpdateParameter = false;
+        }
+
+        private void UpdateFontSystem(FontSystemData data)
+        {
+            try
+            {
+                if (requiresUpdateParameter)
+                {
+                    if (BasicIMod.DebugMode) LogUtils.DoLog("Resetting font system!");
+                    data.FontSystem.Reset();
+                }
+                data.FontSystem.RunJobs();
+            }
+            catch (Exception e)
+            {
+                LogUtils.DoWarnLog($"Error on UpdateFontSystem for {data.Name}: {e}");
+            }
         }
 
         internal static Material CreateDefaultFontMaterial()
@@ -183,7 +142,7 @@ namespace BelzontWE
             HDMaterial.SetAlphaClipping(material, true);
             HDMaterial.SetAlphaCutoff(material, .7f);
             HDMaterial.SetUseEmissiveIntensity(material, true);
-            HDMaterial.SetEmissiveColor(material, Color.white);
+            HDMaterial.SetEmissiveColor(material, UnityEngine.Color.white);
             HDMaterial.SetEmissiveIntensity(material, 0, UnityEditor.Rendering.HighDefinition.EmissiveIntensityUnit.Nits);
             material.SetFloat("_DoubleSidedEnable", 1);
             material.SetVector("_DoubleSidedConstants", new Vector4(1, 1, -1, 0));
@@ -194,5 +153,7 @@ namespace BelzontWE
             HDMaterial.ValidateMaterial(material);
             return material;
         }
+
+
     }
 }

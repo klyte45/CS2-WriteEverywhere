@@ -1,6 +1,9 @@
-﻿using BelzontWE.Font.Utility;
+﻿using Belzont.Interfaces;
+using Belzont.Utils;
+using BelzontWE.Font.Utility;
 using Game.Common;
 using Game.Rendering;
+using Game.SceneFlow;
 using Game.Tools;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
@@ -83,6 +86,7 @@ namespace BelzontWE
 #endif
         protected override void OnUpdate()
         {
+            if (GameManager.instance.isLoading) return;
             float4 m_LodParameters = 1f;
             float3 m_CameraPosition = 0f;
             float3 m_CameraDirection = 0f;
@@ -96,7 +100,7 @@ namespace BelzontWE
             }
             CheckInterpolated(m_LodParameters, m_CameraPosition, m_CameraDirection);
             CheckRenderQueue(m_LodParameters, m_CameraPosition, m_CameraDirection);
-            Render_Impl(m_CameraUpdateSystem.activeCamera);
+            Render_Impl();
 
         }
 
@@ -112,7 +116,7 @@ namespace BelzontWE
         [Preserve]
 #endif
 
-        private void Render_Impl(Camera camera)
+        private void Render_Impl()
         {
             if (!m_renderQueueEntities.IsEmptyIgnoreFilter || !m_renderInterpolatedQueueEntities.IsEmptyIgnoreFilter)
             {
@@ -279,6 +283,10 @@ namespace BelzontWE
                                 weComponent = weCustomData[j],
                                 transformMatrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one) * Matrix4x4.TRS(weCustomData[j].offsetPosition, weCustomData[j].offsetRotation, weCustomData[j].scale * weCustomData[j].BriOffsetScaleX / weCustomData[j].BriPixelDensity)
                             });
+                        }
+                        else if (BasicIMod.VerboseMode)
+                        {
+                            LogUtils.DoVerboseLog($"NOT RENDER: num7 < cullInfo.m_MinLod = {num7} < {cullInfo.m_MinLod}");
                         }
                     }
                 }

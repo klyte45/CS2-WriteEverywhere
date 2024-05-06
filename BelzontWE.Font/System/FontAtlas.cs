@@ -236,19 +236,21 @@ namespace BelzontWE.Font
             return true;
         }
 
-        public void RenderGlyph(FontGlyph glyph)
+        public bool RenderGlyph(FontGlyph glyph)
         {
             Color[] colorBuffer = GetGlyphColors(glyph);
-
+            bool wasRecreated = false;
             // Write to texture
             if (Texture == null)
             {
                 Texture = new Texture2D(Width, Height, TextureFormat.ARGB32, false);
                 Texture.SetPixels(new Color[Width * Height].Select(x => Color.clear).ToArray());
+                wasRecreated = true;
             }
 
             Texture.SetPixels(Mathf.RoundToInt(glyph.x), Mathf.RoundToInt(glyph.y), Mathf.RoundToInt(glyph.width), Mathf.RoundToInt(glyph.height), colorBuffer, 0);
             Texture.Apply();
+            return wasRecreated;
         }
 
         public Color[] GetGlyphColors(FontGlyph glyph)
@@ -285,8 +287,13 @@ namespace BelzontWE.Font
         public bool IsDirty { get; private set; } = false;
 
         private static readonly int _BaseColorMap = Shader.PropertyToID("_BaseColorMap");
-        public void UpdateMaterial()
+        public bool UpdateMaterial()
         {
+            if (Texture == null)
+            {
+                return false;
+            }
+
             Material.mainTexture = Texture;
             Material.SetTexture(_BaseColorMap, Texture);
 #if DEBUG
@@ -294,6 +301,7 @@ namespace BelzontWE.Font
             // For testing purposes, also write to a file in the project folder
             File.WriteAllBytes(Path.Combine(BasicIMod.ModSettingsRootFolder, $"Texture_.png"), bytes);
 #endif
+            return true;
         }
 
         private void Blur(byte[] dst, int w, int h, int dstStride, int blur)

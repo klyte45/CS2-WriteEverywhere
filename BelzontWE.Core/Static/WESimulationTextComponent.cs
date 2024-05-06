@@ -20,7 +20,7 @@ namespace BelzontWE
 
     public struct WESimulationTextComponent : IBufferElementData, ISerializable, IDisposable
     {
-        public const uint CURRENT_VERSION = 2;
+        public const uint CURRENT_VERSION = 3;
         public unsafe static int Size => sizeof(WESimulationTextComponent);
 
         public static WESimulationTextComponent CreateDefault()
@@ -38,7 +38,6 @@ namespace BelzontWE
                 emissiveIntensity = 0,
                 coatStrength = 0.5f,
                 text = "NEW TEXT",
-                fontName = default,
                 itemName = "New item",
                 shader = WEShader.Default
             };
@@ -47,18 +46,7 @@ namespace BelzontWE
         public Entity targetEntity;
         public WEPropertyDescription targetProperty;
 
-        public FixedString32Bytes FontName
-        {
-            readonly get => fontName; set
-            {
-                fontName = value;
-                if (basicRenderInformation.IsAllocated)
-                {
-                    basicRenderInformation.Free();
-                    basicRenderInformation = default;
-                }
-            }
-        }
+        public Entity Font;
         public FixedString512Bytes Text
         {
             readonly get => text; set
@@ -85,7 +73,6 @@ namespace BelzontWE
         private float emissiveExposureWeight;
         private float coatStrength;
         private FixedString512Bytes text;
-        private FixedString32Bytes fontName;
         public FixedString32Bytes itemName;
         public WEShader shader;
 
@@ -228,7 +215,7 @@ namespace BelzontWE
             writer.Write(metallic);
             writer.Write(smoothness);
             writer.Write(text);
-            writer.Write(fontName);
+            writer.Write(Font);
             writer.Write(itemName);
             writer.Write(coatStrength);
             writer.Write(Formulae ?? "");
@@ -256,7 +243,14 @@ namespace BelzontWE
             reader.Read(out metallic);
             reader.Read(out smoothness);
             reader.Read(out text);
-            reader.Read(out fontName);
+            if (version < 3)
+            {
+                reader.Read(out FixedString32Bytes _);
+            }
+            else
+            {
+                reader.Read(out Font);
+            }
             if (version >= 1)
             {
                 reader.Read(out itemName);

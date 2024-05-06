@@ -20,7 +20,7 @@ namespace BelzontWE
         const string kSpritesSection = "Sprites";
         const string kFormattingSection = "Formatting";
         const string kSourcesTab = "SourcesTab";
-        private static readonly float[] m_qualityArray = new float[] { .5f, .75f, 1f, 1.25f, 1.5f, 2f, 4f, 8f };
+        private static readonly int[] m_qualityArray = new[] { 50, 75, 100, 125, 150, 200, 400, 800 };
 
         public static WEModData InstanceWE => Instance as WEModData;
         public WEModData(IMod mod) : base(mod)
@@ -37,7 +37,7 @@ namespace BelzontWE
             get => startTextureSizeFont; set
             {
                 startTextureSizeFont = value;
-                FontServer.Instance?.ReloadFontsFromPath();
+                FontServer.Instance?.OnChangeSizeParam();
             }
         }
         private DropdownItem<int>[] StartTextureSizeFontValues() => new int[5].Select((_, i) => new DropdownItem<int> { value = i, displayName = $"{512 << i}x{512 << i}" }).ToArray();
@@ -51,10 +51,10 @@ namespace BelzontWE
             get => fontQualityIdx; set
             {
                 fontQualityIdx = value;
-                FontServer.Instance.SetQualityMultiplier(m_qualityArray[value]);
+                FontServer.QualitySize = m_qualityArray[value];
             }
         }
-        private DropdownItem<int>[] FontQualityValues() => m_qualityArray.Select((x, i) => new DropdownItem<int> { value = i, displayName = $"{x:0%}{(x >= 2 ? $" ({new string('!', (int)x / 2)})" : "")}" }).ToArray();
+        private DropdownItem<int>[] FontQualityValues() => m_qualityArray.Select((x, i) => new DropdownItem<int> { value = i, displayName = $"{x:0}%{(x >= 200 ? $" ({new string('!', x / 200)})" : "")}" }).ToArray();
 
         [SettingsUIButton]
         [SettingsUISection(kSourcesTab, kFontsSection)]
@@ -62,14 +62,6 @@ namespace BelzontWE
         {
             set => RemoteProcess.OpenFolder(FontServer.FontFilesPath);
         }
-
-        [SettingsUIButton]
-        [SettingsUISection(kSourcesTab, kFontsSection)]
-        public bool FontsFolderRefresh
-        {
-            set => FontServer.Instance.ReloadFontsFromPath();
-        }
-
 
         [SettingsUIButton]
         [SettingsUISection(kSourcesTab, kSpritesSection)]

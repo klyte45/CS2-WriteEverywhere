@@ -39,7 +39,7 @@ namespace BelzontWE
         }
 
         private void OnEnableTool(Entity e)
-        {            
+        {
             var wpt = World.GetExistingSystemManaged<WEWorldPickerTool>();
             wpt.Select(e);
         }
@@ -157,7 +157,9 @@ namespace BelzontWE
                 m_executionQueue.Enqueue(() => DoWithBuffer<WESimulationTextComponent>(
                     (buff) =>
                     {
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"CurrentItemIdx => {CurrentItemIdx}, buff = {buff}, {buff.Length}");
                         var currentItem = buff[CurrentItemIdx.Value];
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"x = {x}");
                         currentItem = x(newVal, currentItem);
                         buff[CurrentItemIdx.Value] = currentItem;
                     }));

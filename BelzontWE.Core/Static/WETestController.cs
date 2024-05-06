@@ -30,15 +30,15 @@ namespace BelzontWE
         public void SetupCallBinder(Action<string, Delegate> eventCaller)
         {
             eventCaller("test.enableTestTool", EnableTestTool);
-            eventCaller("test.reloadFonts", ReloadFonts);
-            eventCaller("test.listFonts", ListFonts);
-            eventCaller("test.requestTextMesh", RequestTextMesh);
+            //eventCaller("test.reloadFonts", ReloadFonts);
+            //eventCaller("test.listFonts", ListFonts);
+            //eventCaller("test.requestTextMesh", RequestTextMesh);
             eventCaller("test.listShaderDatails", ListShadersDetails);
             eventCaller("test.listShader", ListShaders);
             eventCaller("test.setShader", SetShader);
             eventCaller("test.getShader", GetShader);
-            eventCaller("test.listCurrentMaterialSettings", ListCurrentMaterialSettings);
-            eventCaller("test.setCurrentMaterialSettings", SetCurrentMaterialSettings);
+            //eventCaller("test.listCurrentMaterialSettings", ListCurrentMaterialSettings);
+            //eventCaller("test.setCurrentMaterialSettings", SetCurrentMaterialSettings);
             eventCaller("test.setOverlay", SetOverlay);
             eventCaller("test.getOverlay", GetOverlay);
         }
@@ -71,77 +71,77 @@ namespace BelzontWE
             public string Value { get; set; }
         }
 
-        private List<PropertyDescriptor> ListCurrentMaterialSettings(string fontName)
-        {
-            Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-            if (m_FontServer[fontName] is DynamicSpriteFont df)
-            {
-                var mat = df.MainAtlas.Material;
-                var propertyCount = mat.shader.GetPropertyCount();
-                var listResult = new List<PropertyDescriptor>
-                {
-                    new()
-                    {
-                        Name = "<RenderQueue>",
-                        Idx = -1,
-                        Id= -1,
-                        Description="Render queue index",
-                        Type= "<RenderQueue>",
-                        Value = mat.renderQueue.ToString()
-                    }
-                };
-                for (int i = 0; i < propertyCount; i++)
-                {
-                    int nameID = mat.shader.GetPropertyNameId(i);
-                    var name = mat.shader.GetPropertyName(i);
-                    ShaderPropertyType shaderPropertyType = mat.shader.GetPropertyType(i);
-                    listResult.Add(new()
-                    {
-                        Idx = i,
-                        Name = name,
-                        Id = nameID,
-                        Description = mat.shader.GetPropertyDescription(i),
-                        Type = shaderPropertyType.ToString(),
-                        Value = shaderPropertyType switch
-                        {
-                            ShaderPropertyType.Color => mat.GetColor(name).ToRGBA(),
-                            ShaderPropertyType.Vector => mat.GetVector(name).ToString()[1..^1].Trim(),
-                            ShaderPropertyType.Float or ShaderPropertyType.Range => GetFloatVal(mat, name),
-                            ShaderPropertyType.Texture => ReadTexture(mat, name),
-                            ShaderPropertyType.Int => mat.GetInt(name).ToString(),
-                            _ => null
-                        }
-                    });
-                }
-                foreach (var keyword in mat.shader.keywordSpace.keywords)
-                {
-                    listResult.Add(new()
-                    {
-                        Idx = -2,
-                        Name = keyword.ToString(),
-                        Id = -2,
-                        Description = keyword.type.ToString(),
-                        Type = "Keyword",
-                        Value = mat.enabledKeywords.Any(x => x == keyword).ToString()
-                    });
-                }
-                for (var i = 0; i < mat.passCount; i++)
-                {
-                    var passName = mat.GetPassName(i);
-                    listResult.Add(new()
-                    {
-                        Idx = -3,
-                        Name = passName,
-                        Id = -3,
-                        Description = passName,
-                        Type = "ShaderPass",
-                        Value = mat.GetShaderPassEnabled(passName).ToString()
-                    });
-                }
-                return listResult;
-            }
-            return null;
-        }
+        //private List<PropertyDescriptor> ListCurrentMaterialSettings(string fontName)
+        //{
+        //    Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+        //    if (m_FontServer[fontName] is DynamicSpriteFont df)
+        //    {
+        //        var mat = df.MainAtlas.Material;
+        //        var propertyCount = mat.shader.GetPropertyCount();
+        //        var listResult = new List<PropertyDescriptor>
+        //        {
+        //            new()
+        //            {
+        //                Name = "<RenderQueue>",
+        //                Idx = -1,
+        //                Id= -1,
+        //                Description="Render queue index",
+        //                Type= "<RenderQueue>",
+        //                Value = mat.renderQueue.ToString()
+        //            }
+        //        };
+        //        for (int i = 0; i < propertyCount; i++)
+        //        {
+        //            int nameID = mat.shader.GetPropertyNameId(i);
+        //            var name = mat.shader.GetPropertyName(i);
+        //            ShaderPropertyType shaderPropertyType = mat.shader.GetPropertyType(i);
+        //            listResult.Add(new()
+        //            {
+        //                Idx = i,
+        //                Name = name,
+        //                Id = nameID,
+        //                Description = mat.shader.GetPropertyDescription(i),
+        //                Type = shaderPropertyType.ToString(),
+        //                Value = shaderPropertyType switch
+        //                {
+        //                    ShaderPropertyType.Color => mat.GetColor(name).ToRGBA(),
+        //                    ShaderPropertyType.Vector => mat.GetVector(name).ToString()[1..^1].Trim(),
+        //                    ShaderPropertyType.Float or ShaderPropertyType.Range => GetFloatVal(mat, name),
+        //                    ShaderPropertyType.Texture => ReadTexture(mat, name),
+        //                    ShaderPropertyType.Int => mat.GetInt(name).ToString(),
+        //                    _ => null
+        //                }
+        //            });
+        //        }
+        //        foreach (var keyword in mat.shader.keywordSpace.keywords)
+        //        {
+        //            listResult.Add(new()
+        //            {
+        //                Idx = -2,
+        //                Name = keyword.ToString(),
+        //                Id = -2,
+        //                Description = keyword.type.ToString(),
+        //                Type = "Keyword",
+        //                Value = mat.enabledKeywords.Any(x => x == keyword).ToString()
+        //            });
+        //        }
+        //        for (var i = 0; i < mat.passCount; i++)
+        //        {
+        //            var passName = mat.GetPassName(i);
+        //            listResult.Add(new()
+        //            {
+        //                Idx = -3,
+        //                Name = passName,
+        //                Id = -3,
+        //                Description = passName,
+        //                Type = "ShaderPass",
+        //                Value = mat.GetShaderPassEnabled(passName).ToString()
+        //            });
+        //        }
+        //        return listResult;
+        //    }
+        //    return null;
+        //}
 
         private static string GetFloatVal(Material mat, string name)
         {
@@ -167,112 +167,112 @@ namespace BelzontWE
             }
         }
 
-        private string SetCurrentMaterialSettings(string fontName, string propertyIdxStr, string value)
-        {
+        //private string SetCurrentMaterialSettings(string fontName, string propertyIdxStr, string value)
+        //{
 
-            Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-            if (m_FontServer[fontName] is DynamicSpriteFont df)
-            {
-                var mat = df.MainAtlas.Material;
-                if (!int.TryParse(propertyIdxStr, out var propertyIdx))
-                {
-                    switch (propertyIdxStr)
-                    {
-                        case "<RenderQueue>":
-                            return (mat.renderQueue = int.TryParse(value, out var val) ? val : mat.renderQueue).ToString();
-                        default:
-                            var propertyName = propertyIdxStr[1..];
-                            switch (propertyIdxStr[0])
-                            {
-                                case 'k':
-                                    {
-                                        if (bool.TryParse(value, out var valBool) && valBool)
-                                        {
-                                            mat.EnableKeyword(propertyName);
-                                        }
-                                        else
-                                        {
-                                            mat.DisableKeyword(propertyName);
-                                        }
-                                        return mat.IsKeywordEnabled(propertyName).ToString();
-                                    }
-                                case 'p':
-                                    {
-                                        if (bool.TryParse(value, out var valBool))
-                                        {
-                                            mat.SetShaderPassEnabled(propertyName, valBool);
-                                        }
-                                        return mat.GetShaderPassEnabled(propertyName).ToString();
-                                    }
-                                default:
-                                    return null;
-                            }
-                    }
-                }
-                else
-                {
-                    var oldRenderQueue = mat.renderQueue;
-                    var nameID = mat.shader.GetPropertyNameId(propertyIdx);
-                    ShaderPropertyType shaderPropertyType = mat.shader.GetPropertyType(propertyIdx);
-                    switch (shaderPropertyType)
-                    {
-                        case ShaderPropertyType.Color:
-                            try
-                            {
-                                mat.SetColor(nameID, ColorExtensions.FromRGBA(value));
-                            }
-                            catch { }
-                            break;
-                        case ShaderPropertyType.Vector:
-                            var targVal = value.Split(",").Select(x => x.Trim()).ToArray();
-                            if (targVal.Length > 1 && targVal.All(x => float.TryParse(x, out _)))
-                            {
-                                Vector4 vect4 = new Vector4(float.Parse(targVal[0]), float.Parse(targVal[1]), float.Parse(targVal.ElementAtOrDefault(2) ?? "0"), float.Parse(targVal.ElementAtOrDefault(3) ?? "0"));
-                                mat.SetVector(nameID, vect4);
-                            }
-                            break;
-                        case ShaderPropertyType.Range:
-                        case ShaderPropertyType.Float:
-                            if (value.StartsWith("0x"))
-                            {
-                                mat.SetFloat(nameID, NumberExtensions.FromHexString(value));
-                            }
-                            else if (float.TryParse(value, out var valFloat))
-                            {
-                                mat.SetFloat(nameID, valFloat);
-                            }
-                            break;
-                        case ShaderPropertyType.Int:
-                            if (float.TryParse(value, out var valInt))
-                            {
-                                mat.SetFloat(nameID, valInt);
-                            }
-                            break;
-                        case ShaderPropertyType.Texture:
-                            mat.SetTexture(nameID, value switch
-                            {
-                                "wh" => Texture2D.whiteTexture,
-                                "bk" => Texture2D.blackTexture,
-                                "gy" => Texture2D.grayTexture,
-                                _ => null
-                            });
+        //    Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+        //    if (m_FontServer[fontName] is DynamicSpriteFont df)
+        //    {
+        //        var mat = df.MainAtlas.Material;
+        //        if (!int.TryParse(propertyIdxStr, out var propertyIdx))
+        //        {
+        //            switch (propertyIdxStr)
+        //            {
+        //                case "<RenderQueue>":
+        //                    return (mat.renderQueue = int.TryParse(value, out var val) ? val : mat.renderQueue).ToString();
+        //                default:
+        //                    var propertyName = propertyIdxStr[1..];
+        //                    switch (propertyIdxStr[0])
+        //                    {
+        //                        case 'k':
+        //                            {
+        //                                if (bool.TryParse(value, out var valBool) && valBool)
+        //                                {
+        //                                    mat.EnableKeyword(propertyName);
+        //                                }
+        //                                else
+        //                                {
+        //                                    mat.DisableKeyword(propertyName);
+        //                                }
+        //                                return mat.IsKeywordEnabled(propertyName).ToString();
+        //                            }
+        //                        case 'p':
+        //                            {
+        //                                if (bool.TryParse(value, out var valBool))
+        //                                {
+        //                                    mat.SetShaderPassEnabled(propertyName, valBool);
+        //                                }
+        //                                return mat.GetShaderPassEnabled(propertyName).ToString();
+        //                            }
+        //                        default:
+        //                            return null;
+        //                    }
+        //            }
+        //        }
+        //        else
+        //        {
+        //            var oldRenderQueue = mat.renderQueue;
+        //            var nameID = mat.shader.GetPropertyNameId(propertyIdx);
+        //            ShaderPropertyType shaderPropertyType = mat.shader.GetPropertyType(propertyIdx);
+        //            switch (shaderPropertyType)
+        //            {
+        //                case ShaderPropertyType.Color:
+        //                    try
+        //                    {
+        //                        mat.SetColor(nameID, ColorExtensions.FromRGBA(value));
+        //                    }
+        //                    catch { }
+        //                    break;
+        //                case ShaderPropertyType.Vector:
+        //                    var targVal = value.Split(",").Select(x => x.Trim()).ToArray();
+        //                    if (targVal.Length > 1 && targVal.All(x => float.TryParse(x, out _)))
+        //                    {
+        //                        Vector4 vect4 = new Vector4(float.Parse(targVal[0]), float.Parse(targVal[1]), float.Parse(targVal.ElementAtOrDefault(2) ?? "0"), float.Parse(targVal.ElementAtOrDefault(3) ?? "0"));
+        //                        mat.SetVector(nameID, vect4);
+        //                    }
+        //                    break;
+        //                case ShaderPropertyType.Range:
+        //                case ShaderPropertyType.Float:
+        //                    if (value.StartsWith("0x"))
+        //                    {
+        //                        mat.SetFloat(nameID, NumberExtensions.FromHexString(value));
+        //                    }
+        //                    else if (float.TryParse(value, out var valFloat))
+        //                    {
+        //                        mat.SetFloat(nameID, valFloat);
+        //                    }
+        //                    break;
+        //                case ShaderPropertyType.Int:
+        //                    if (float.TryParse(value, out var valInt))
+        //                    {
+        //                        mat.SetFloat(nameID, valInt);
+        //                    }
+        //                    break;
+        //                case ShaderPropertyType.Texture:
+        //                    mat.SetTexture(nameID, value switch
+        //                    {
+        //                        "wh" => Texture2D.whiteTexture,
+        //                        "bk" => Texture2D.blackTexture,
+        //                        "gy" => Texture2D.grayTexture,
+        //                        _ => null
+        //                    });
 
-                            break;
-                    }
-                    //    HDMaterial.ValidateMaterial(mat);
-                    return shaderPropertyType switch
-                    {
-                        ShaderPropertyType.Color => mat.GetColor(nameID).ToRGBA(),
-                        ShaderPropertyType.Vector => mat.GetVector(nameID).ToString()[1..^1].Trim(),
-                        ShaderPropertyType.Float or ShaderPropertyType.Range => mat.GetFloat(nameID).ToString(),
-                        ShaderPropertyType.Texture => mat.GetTexture(nameID) is Texture2D t2d ? Convert.ToBase64String(ImageConversion.EncodeToPNG(t2d)) : null,
-                        ShaderPropertyType.Int => mat.GetInt(nameID).ToString(),
-                        _ => null
-                    };
-                }
-            }
-            return null;
-        }
+        //                    break;
+        //            }
+        //            //    HDMaterial.ValidateMaterial(mat);
+        //            return shaderPropertyType switch
+        //            {
+        //                ShaderPropertyType.Color => mat.GetColor(nameID).ToRGBA(),
+        //                ShaderPropertyType.Vector => mat.GetVector(nameID).ToString()[1..^1].Trim(),
+        //                ShaderPropertyType.Float or ShaderPropertyType.Range => mat.GetFloat(nameID).ToString(),
+        //                ShaderPropertyType.Texture => mat.GetTexture(nameID) is Texture2D t2d ? Convert.ToBase64String(ImageConversion.EncodeToPNG(t2d)) : null,
+        //                ShaderPropertyType.Int => mat.GetInt(nameID).ToString(),
+        //                _ => null
+        //            };
+        //        }
+        //    }
+        //    return null;
+        //}
 
         private Dictionary<string, Dictionary<string, object>> ListShadersDetails()
         {
@@ -318,7 +318,7 @@ namespace BelzontWE
         {
             m_WETestTool = World.GetExistingSystemManaged<WEWorldPickerTool>();
             m_FontServer = World.GetOrCreateSystemManaged<FontServer>();
-            m_FontServer.OnFontsLoadedChanged += () => SendToFrontend("test.fontsChanged->", new object[] { ListFonts() });
+            //m_FontServer.OnFontsLoadedChanged += () => SendToFrontend("test.fontsChanged->", new object[] { ListFonts() });
             base.OnCreate();
         }
         public override void Update()
@@ -334,53 +334,53 @@ namespace BelzontWE
             m_WETestTool.Select();
         }
 
-        private void ReloadFonts()
-        {
-            m_FontServer.ReloadFontsFromPath();
-        }
+        //private void ReloadFonts()
+        //{
+        //    m_FontServer.ReloadFontsFromPath();
+        //}
 
-        private void UpdateDataAtEntity()
-        {
-            if (targetEntity != Entity.Null && targetString != null && targetFont != null)
-            {
-                if (EntityManager.HasComponent<WESimulationTextComponent>(targetEntity))
-                {
-                    var compList = EntityManager.GetBuffer<WESimulationTextComponent>(targetEntity, false);
-                    for (int i = 0; i < compList.Length; i++)
-                    {
-                        var x = compList[i];
-                        x.FontName = targetFont;
-                        x.Text = targetString;
-                        x.Color = Color.red;
-                        x.EmissiveColor = Color.gray;
-                        x.Metallic = .0f;
-                        compList[i] = x;
-                    }
-                }
-                else
-                {
-                    var newComponent = new WESimulationTextComponent
-                    {
-                        FontName = targetFont,
-                        Text = targetString,
-                        offsetPosition = Vector3.up * 2,
-                        scale = Vector3.one * 4
-                    };
-                    EntityManager.AddBuffer<WESimulationTextComponent>(targetEntity).Add(newComponent);
-                }
-            }
-        }
+        //private void UpdateDataAtEntity()
+        //{
+        //    if (targetEntity != Entity.Null && targetString != null && targetFont != null)
+        //    {
+        //        if (EntityManager.HasComponent<WESimulationTextComponent>(targetEntity))
+        //        {
+        //            var compList = EntityManager.GetBuffer<WESimulationTextComponent>(targetEntity, false);
+        //            for (int i = 0; i < compList.Length; i++)
+        //            {
+        //                var x = compList[i];
+        //                x.FontName = targetFont;
+        //                x.Text = targetString;
+        //                x.Color = Color.red;
+        //                x.EmissiveColor = Color.gray;
+        //                x.Metallic = .0f;
+        //                compList[i] = x;
+        //            }
+        //        }
+        //        else
+        //        {
+        //            var newComponent = new WESimulationTextComponent
+        //            {
+        //                FontName = targetFont,
+        //                Text = targetString,
+        //                offsetPosition = Vector3.up * 2,
+        //                scale = Vector3.one * 4
+        //            };
+        //            EntityManager.AddBuffer<WESimulationTextComponent>(targetEntity).Add(newComponent);
+        //        }
+        //    }
+        //}
 
-        private string[] ListFonts() => m_FontServer.GetAllFonts()?.ToArray();
+        //private string[] ListFonts() => m_FontServer.GetAllFonts()?.ToArray();
 
-        private string RequestTextMesh(string text, string fontName)
-        {
-            targetFont = fontName;
-            targetString = text;
-            UpdateDataAtEntity();
-            var result = m_FontServer[targetFont]?.DrawString(text, FontServer.Instance.ScaleEffective);
-            return result is null ? null : XmlUtils.DefaultXmlSerialize(result);
-        }
+        //private string RequestTextMesh(string text, string fontName)
+        //{
+        //    targetFont = fontName;
+        //    targetString = text;
+        //    UpdateDataAtEntity();
+        //    var result = m_FontServer[targetFont]?.DrawString(text, FontServer.Instance.ScaleEffective);
+        //    return result is null ? null : XmlUtils.DefaultXmlSerialize(result);
+        //}
     }
 
 }

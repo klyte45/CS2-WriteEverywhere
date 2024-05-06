@@ -13,16 +13,17 @@ namespace BelzontWE
 
         public override void DoOnCreateWorld(UpdateSystem updateSystem)
         {
-            updateSystem.UpdateBefore<FontServer>(SystemUpdatePhase.Rendering);
+            updateSystem.UpdateAt<FontServer>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WEWorldPickerTool>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<WEWorldPickerTooltip>(SystemUpdatePhase.UITooltip);
-            updateSystem.UpdateAt<WEPreRendererSystem>(SystemUpdatePhase.Rendering);
-            updateSystem.UpdateAt<WERendererSystem>(SystemUpdatePhase.MainLoop);
+            updateSystem.UpdateBefore<WEPreRendererSystem>(SystemUpdatePhase.Rendering);
+            updateSystem.UpdateAt<WERendererSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WEWorldPickerController>(SystemUpdatePhase.ModificationEnd);
 #if !ENABLE_EUIS
             SelfRegiterUIEvents("we");
             GameManager.instance.userInterface.view.uiSystem.UIViews[0].Listener.ReadyForBindings += () => SelfRegiterUIEvents("we");
 #endif
+            
         }
 
         public override void OnDispose()
