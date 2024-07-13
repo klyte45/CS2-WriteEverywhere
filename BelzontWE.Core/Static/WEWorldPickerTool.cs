@@ -6,6 +6,7 @@ using Game.Notifications;
 using Game.Prefabs;
 using Game.Rendering;
 using Game.Tools;
+using System;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -39,11 +40,20 @@ namespace BelzontWE
 
         public override int uiModeIndex => base.uiModeIndex;
 
+        public bool IsSelected => m_ToolSystem.activeTool == this;
+
 
         private ProxyAction m_ApplyAction;
-        private ProxyAction m_SecondaryApplyAction;
+        private ProxyAction m_CancelAction;
         private ProxyAction m_CameraZoomAction;
         private ProxyAction m_CameraZoomActionMouse;
+        private ProxyAction m_increasePrecisionValue;
+        private ProxyAction m_reducePrecisionValue;
+        private ProxyAction m_alternateFixedCamera;
+        private ProxyAction m_useXY;
+        private ProxyAction m_useXZ;
+        private ProxyAction m_useZY;
+        private ProxyAction m_cycleAxisLock;
         private ToolOutputBarrier m_ToolOutputBarrier;
         private WEWorldPickerController m_Controller;
 
@@ -57,8 +67,18 @@ namespace BelzontWE
         protected override void OnCreate()
         {
             Enabled = false;
-            m_ApplyAction = InputManager.instance.FindAction("Tool", "Apply");
-            m_SecondaryApplyAction = InputManager.instance.FindAction("Tool", "Secondary Apply");
+            m_ApplyAction = WEModData.Instance.GetAction(WEModData.kActionApplyMouse);
+            m_CancelAction = WEModData.Instance.GetAction(WEModData.kActionCancelMouse);
+
+            m_increasePrecisionValue = WEModData.Instance.GetAction(WEModData.kActionIncreaseMovementStrenght);
+            m_reducePrecisionValue = WEModData.Instance.GetAction(WEModData.kActionReduceMovementStrenght);
+
+
+            m_alternateFixedCamera = WEModData.Instance.GetAction(WEModData.kActionAlternateFixedCamera);
+            m_useXY = WEModData.Instance.GetAction(WEModData.kActionPerspectiveXY);
+            m_useXZ = WEModData.Instance.GetAction(WEModData.kActionPerspectiveXZ);
+            m_useZY = WEModData.Instance.GetAction(WEModData.kActionPerspectiveZY);
+            m_cycleAxisLock = WEModData.Instance.GetAction(WEModData.kActionCycleEditAxisLock);
 
             m_CameraZoomAction = InputManager.instance.FindAction("Camera", "Zoom");
             m_CameraZoomActionMouse = InputManager.instance.FindAction("Camera", "Zoom Mouse");
@@ -74,8 +94,17 @@ namespace BelzontWE
             UpdateItemCount();
             m_Controller.OnCurrentItemChanged();
 
-            m_ApplyAction.shouldBeEnabled = true;
             m_Controller.IsValidEditingItem();
+
+            m_ApplyAction.shouldBeEnabled = true;
+            m_CancelAction.shouldBeEnabled = true;
+            m_increasePrecisionValue.shouldBeEnabled = true;
+            m_reducePrecisionValue.shouldBeEnabled = true;
+            m_alternateFixedCamera.shouldBeEnabled = true;
+            m_useXY.shouldBeEnabled = true;
+            m_useXZ.shouldBeEnabled = true;
+            m_useZY.shouldBeEnabled = true;
+            m_cycleAxisLock.shouldBeEnabled = true;
         }
         public override void InitializeRaycast()
         {
@@ -134,6 +163,16 @@ namespace BelzontWE
             }
             else
             {
+                if (m_increasePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Max(m_Controller.MouseSensibility.Value - 1, 0));
+                if (m_reducePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Min(m_Controller.MouseSensibility.Value + 1, precisionIdx.Length - 1));
+
+                if (m_useXY.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)ToolEditMode.PlaneXY);
+                if (m_useXZ.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)ToolEditMode.PlaneXZ);
+                if (m_useZY.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)ToolEditMode.PlaneZY);
+                if (m_alternateFixedCamera.WasPressedThisFrame()) m_Controller.CameraLocked.ChangeValueWithEffects(!m_Controller.CameraLocked.Value);
+                if (m_cycleAxisLock.WasPressedThisFrame()) m_Controller.CurrentMoveMode.ChangeValueWithEffects((1 + m_Controller.CurrentMoveMode.Value) % 3);
+
+
                 if (HoveredEntity != Entity.Null)
                 {
                     ChangeHighlighting_MainThread(HoveredEntity, ChangeMode.RemoveHighlight);
@@ -161,21 +200,21 @@ namespace BelzontWE
                     }
 
 
-                    if (!InputManager.instance.mouseOverUI && m_SecondaryApplyAction.WasPressedThisFrame())
+                    if (!InputManager.instance.mouseOverUI && m_CancelAction.WasPressedThisFrame())
                     {
                         var currentItem = m_Controller.CurrentEditingItem;
                         m_mousePositionRefRot = InputManager.instance.mousePosition.x;
                         m_originalRotationText = ((Quaternion)currentItem.offsetRotation).eulerAngles;
                         m_isRotating = true;
                     }
-                    else if (m_isRotating && m_SecondaryApplyAction.WasReleasedThisFrame())
+                    else if (m_isRotating && m_CancelAction.WasReleasedThisFrame())
                     {
                         ApplyRotation();
                         m_mousePositionRefRot = default;
                         m_originalRotationText = default;
                         m_isRotating = false;
                     }
-                    else if (m_isRotating && m_SecondaryApplyAction.IsPressed())
+                    else if (m_isRotating && m_CancelAction.IsPressed())
                     {
                         ApplyRotation();
                     }
@@ -302,6 +341,14 @@ namespace BelzontWE
             m_Controller.CurrentEntity.Value = Entity.Null;
             HoveredEntity = Entity.Null;
             m_ApplyAction.shouldBeEnabled = false;
+            m_CancelAction.shouldBeEnabled = false;
+            m_increasePrecisionValue.shouldBeEnabled = false;
+            m_reducePrecisionValue.shouldBeEnabled = false;
+            m_alternateFixedCamera.shouldBeEnabled = false;
+            m_useXY.shouldBeEnabled = false;
+            m_useXZ.shouldBeEnabled = false;
+            m_useZY.shouldBeEnabled = false;
+            m_cycleAxisLock.shouldBeEnabled = false;
         }
         public void RequestDisable()
         {

@@ -2,6 +2,7 @@
 using Belzont.Utils;
 using Colossal;
 using Colossal.IO.AssetDatabase;
+using Game.Input;
 using Game.Modding;
 using Game.SceneFlow;
 using Game.Settings;
@@ -13,13 +14,41 @@ using System.Linq;
 namespace BelzontWE
 {
     [FileLocation("ModsData\\Klyte45Mods\\WriteEverywhere\\settings")]
-    [SettingsUIShowGroupName(kLogSection, kFontsSection, kSpritesSection)]
+    [SettingsUIShowGroupName(kLogSection, kFontsSection, kSpritesSection,
+         kToolControlsSection, kViewPerspectiveSection)]
+    [SettingsUIMouseAction(kActionApplyMouse, ActionType.Button, false, false, new string[] { "K45_WE.Tool" })]
+    [SettingsUIMouseAction(kActionCancelMouse, ActionType.Button, false, false, new string[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionIncreaseMovementStrenght, ActionType.Button, "K45_WE.Tool")]
+    [SettingsUIKeyboardAction(kActionReduceMovementStrenght, ActionType.Button, "K45_WE.Tool")]
+    [SettingsUIKeyboardAction(kActionAlternateFixedCamera, ActionType.Button, "K45_WE.Tool")]
+    [SettingsUIKeyboardAction(kActionPerspectiveXY, ActionType.Button, "K45_WE.Tool")]
+    [SettingsUIKeyboardAction(kActionPerspectiveZY, ActionType.Button, "K45_WE.Tool")]
+    [SettingsUIKeyboardAction(kActionPerspectiveXZ, ActionType.Button, "K45_WE.Tool")]
+    [SettingsUIKeyboardAction(kActionCycleEditAxisLock, ActionType.Button, "K45_WE.Tool")]
     public class WEModData : BasicModData
     {
         const string kFontsSection = "Font";
+        const string kKeybindingSection = "Keybinding";
         const string kSpritesSection = "Sprites";
         const string kFormattingSection = "Formatting";
         const string kSourcesTab = "SourcesTab";
+
+        const string kToolControlsSection = "ToolControls";
+        const string kViewPerspectiveSection = "ViewPerspective";
+
+        public const string kActionApplyMouse = "K45_WE_MoveText";
+        public const string kActionCancelMouse = "K45_WE_RotateText";
+        public const string kActionIncreaseMovementStrenght = "K45_WE_PrecisionHigherNum";
+        public const string kActionReduceMovementStrenght = "K45_WE_PrecisionLowerNum";
+        public const string kActionEnablePicker = "K45_WE_EnablePicker";
+
+        public const string kActionAlternateFixedCamera = "K45_WE_AlternateFixedCamera";
+        public const string kActionPerspectiveXY = "K45_WE_PerspectiveXY";
+        public const string kActionPerspectiveZY = "K45_WE_PerspectiveZY";
+        public const string kActionPerspectiveXZ = "K45_WE_PerspectiveXZ";
+        public const string kActionCycleEditAxisLock = "K45_WE_CycleEditAxisLock";
+
+
         private static readonly int[] m_qualityArray = new[] { 50, 75, 100, 125, 150, 200, 400, 800 };
 
         public static WEModData InstanceWE => Instance as WEModData;
@@ -141,6 +170,49 @@ namespace BelzontWE
         //    set { }
         //}
         private bool AlwaysDisabled() => true;
+
+
+        #region Keybinding
+        [SettingsUISection(kKeybindingSection, kToolControlsSection)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.W, kActionEnablePicker, ctrl: true, shift: true)]
+        public ProxyBinding EnableTool { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kToolControlsSection)]
+        [SettingsUIMouseBinding(BindingMouse.Left, kActionApplyMouse)]
+        public ProxyBinding MouseToolMove { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kToolControlsSection)]
+        [SettingsUIMouseBinding(BindingMouse.Right, kActionCancelMouse)]
+        public ProxyBinding MouseToolRotate { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kToolControlsSection)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.PageUp, kActionIncreaseMovementStrenght)]
+        public ProxyBinding ToolIncreaseMovementStrenght { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kToolControlsSection)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.PageDown, kActionReduceMovementStrenght)]
+        public ProxyBinding ToolReduceMovementStrenght { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad0, kActionAlternateFixedCamera)]
+        public ProxyBinding AlternateFixedCamera { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad1, kActionPerspectiveXY)]
+        public ProxyBinding ActionPerspectiveXY { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad2, kActionPerspectiveZY)]
+        public ProxyBinding ActionPerspectiveZY { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad3, kActionPerspectiveXZ)]
+        public ProxyBinding ActionPerspectiveXZ { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.NumpadPeriod, kActionCycleEditAxisLock)]
+        public ProxyBinding ActionCycleAxisLock { get; set; }
+        #endregion
     }
 
 }

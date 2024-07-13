@@ -2,7 +2,6 @@
 using Belzont.Interfaces;
 using System;
 using System.IO;
-using System.Linq;
 using UnityEngine;
 
 namespace BelzontWE.Font
@@ -46,6 +45,8 @@ namespace BelzontWE.Font
                 return m_material;
             }
         }
+
+        public uint Version { get; private set; }
 
         ~FontAtlas()
         {
@@ -127,6 +128,7 @@ namespace BelzontWE.Font
             Nodes[0].Y = 0;
             Nodes[0].Width = w;
             NodesNumber++;
+            Version++;
         }
 
         public bool AddSkylineLevel(int idx, int x, int y, int w, int h)
@@ -244,12 +246,14 @@ namespace BelzontWE.Font
             if (Texture == null)
             {
                 Texture = new Texture2D(Width, Height, TextureFormat.ARGB32, false);
-                Texture.SetPixels(new Color[Width * Height].Select(x => Color.clear).ToArray());
+                //    Texture.SetPixels(new Color[Width * Height].Select(x => Color.clear).ToArray());
+                //     Texture.Apply();
                 wasRecreated = true;
             }
 
             Texture.SetPixels(Mathf.RoundToInt(glyph.x), Mathf.RoundToInt(glyph.y), Mathf.RoundToInt(glyph.width), Mathf.RoundToInt(glyph.height), colorBuffer, 0);
             Texture.Apply();
+            Version++;
             return wasRecreated;
         }
 

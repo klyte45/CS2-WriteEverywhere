@@ -2,6 +2,7 @@
 using Belzont.Utils;
 using Colossal.Entities;
 using Game.Common;
+using Game.Input;
 using System;
 using System.Collections.Generic;
 using Unity.Entities;
@@ -17,6 +18,9 @@ namespace BelzontWE
         Action<string, object[]> m_eventCaller;
         Action<string, Delegate> m_callBinder;
         private ModificationEndBarrier m_EndBarrier;
+        private WEWorldPickerTool m_pickerTool;
+        private ProxyAction m_enableToolAction;
+
         public void SetupCallBinder(Action<string, Delegate> callBinder)
         {
             m_callBinder = callBinder;
@@ -238,7 +242,6 @@ namespace BelzontWE
 
         protected override void OnCreate()
         {
-            base.OnCreate();
             m_EndBarrier = World.GetExistingSystemManaged<ModificationEndBarrier>();
         }
 

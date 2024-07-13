@@ -542,6 +542,7 @@ namespace BelzontWE.Font
             job.input = item;
             job.glyphs = GetGlyphsCollection(FontHeight);
             job.result = new NativeArray<BasicRenderInformationJob>(1, Allocator.Persistent);
+            job.AtlasVersion = CurrentAtlas.Version;
         }
 
         private void PostJob(StringRenderingJob jobResult)
@@ -549,7 +550,7 @@ namespace BelzontWE.Font
 
             var originalText = jobResult.input.text.ToString();
             if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] Post job for {originalText} ");
-            if (jobResult.CurrentAtlasSize.x != CurrentAtlas.Width)
+            if (jobResult.AtlasVersion != CurrentAtlas.Version)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} since atlas changed");
                 m_textCache.Remove(originalText);
@@ -575,7 +576,13 @@ namespace BelzontWE.Font
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] REMOVING '{originalText}'");
                 m_textCache.Remove(originalText);
             }
-
+            if (!CurrentAtlas.UpdateMaterial())
+            {
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Failed updating material... Restarting process");
+                m_textCache.Clear();
+                _glyphs.Clear();
+                CurrentAtlas.Reset(_size.x, _size.y);
+            }
         }
 
         public void Dispose()
@@ -614,35 +621,24 @@ namespace BelzontWE.Font
                 var charsToRender = itemsStarted.SelectMany(x => Enumerate(StringInfo.GetTextElementEnumerator(x.text.ToString())).Cast<string>()).GroupBy(x => x).Select(x => x.Key);
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"charsToRender = ['{string.Join("', '", charsToRender)}']");
 
-                do
+                var countSucceeded = 0;
+                foreach (var charact in charsToRender)
                 {
-                    var countSucceeded = 0;
-                    foreach (var charact in charsToRender)
+                    var result = GetGlyph(glyphs, char.ConvertToUtf32(charact, 0), out bool hasReseted);
+                    if (result.IsValid)
                     {
-                        var result = GetGlyph(glyphs, char.ConvertToUtf32(charact, 0), out bool hasReseted);
-                        if (result.IsValid)
+                        if (hasReseted)
                         {
-                            if (hasReseted)
-                            {
-                                LogUtils.DoInfoLog($"[FontSystem: {Name}] Reset texture! (Now {CurrentAtlas.Texture.width})");
-                                m_textCache.Clear();
-                                continue;
-                            }
-
-                            countSucceeded++;
+                            LogUtils.DoInfoLog($"[FontSystem: {Name}] Reset texture! (Now {CurrentAtlas.Texture.width})");
+                            m_textCache.Clear();
+                            continue;
                         }
-                    }
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Glyphs rendered: {countSucceeded}");
-                    if (CurrentAtlas.UpdateMaterial())
-                    {
-                        break;
-                    }
 
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Failed updating material... Restarting process");
-                    m_textCache.Clear();
-                    glyphs.Clear();
-                    CurrentAtlas.Reset(_size.x, _size.y);
-                } while (true);
+                        countSucceeded++;
+                    }
+                }
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Glyphs rendered: {countSucceeded}");
+
                 foreach (var item in itemsStarted)
                 {
                     var job = new StringRenderingJob();
@@ -679,6 +675,7 @@ namespace BelzontWE.Font
             public FontSystemData data;
             public NativeHashMap<int, FontGlyph> glyphs;
             public Vector3 CurrentAtlasSize;
+            public uint AtlasVersion;
 #if JOBS_DEBUG
             const bool debug = true;
 #else

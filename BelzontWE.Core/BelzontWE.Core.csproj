@@ -9,20 +9,14 @@
     <DebugSymbols Condition="'$(Configuration)'=='Release'">False</DebugSymbols>
     <DebugSymbols Condition="'$(Configuration)'=='Debug'">True</DebugSymbols>
     <DebugType Condition="'$(Configuration)'=='Debug'">Embedded</DebugType>
-    <!--The folder where Cities2.exe is located. Set it only if the game is not installed in the default location, otherwise keep it empty-->
-    <CustomInstallationPath></CustomInstallationPath>
-
     <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
     <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
-    <Bursted>false</Bursted>
-    <DefineConstants Condition="$(Bursted)">BURST</DefineConstants>
   </PropertyGroup>
 
   <!--Imports must be after PropertyGroup block-->
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
-  <Import Project="$(K45_CS2_ALLROOT)\_Shared\belzont.targets" />
-  <Target Name="RunModPostProcessor" Condition="'$(Configuration)'=='Release'" />
+  <Import Project="$(SolutionDir)\_Build\belzont_public.targets" />
 
   <!--Mod data-->
   <PropertyGroup>
@@ -42,7 +36,6 @@
     <Screenshots Include="Screenshots/*.jpg" />
     <!--<Dependency Include="EUIS">
       <ModId>74151</ModId>
-      <Version>0.1.1.2</Version>
       <DisplayName>Extra UI Screens</DisplayName>
     </Dependency>-->
     <Dependency Include="UnifiedIconLibrary">
@@ -56,6 +49,7 @@
       <_Parameter1>$(ModId)</_Parameter1>
       <_Parameter2>$(DisplayName)</_Parameter2>
       <_Parameter3>$(ShortDescription)</_Parameter3>
+      <_Parameter4>$(ForumLink)</_Parameter4>
     </AssemblyAttribute>
   </ItemGroup>
   <!--Publishing generation files-->

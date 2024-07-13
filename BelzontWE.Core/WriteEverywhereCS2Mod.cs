@@ -1,6 +1,5 @@
-﻿#define BURST
-//#define VERBOSE 
-using Belzont.Interfaces;
+﻿using Belzont.Interfaces;
+using Colossal.UI;
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
@@ -19,6 +18,7 @@ namespace BelzontWE
             updateSystem.UpdateBefore<WEPreRendererSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WERendererSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WEWorldPickerController>(SystemUpdatePhase.ModificationEnd);
+            updateSystem.UpdateAt<WEUISystem>(SystemUpdatePhase.UIUpdate);
 #if !ENABLE_EUIS
             SelfRegiterUIEvents("we");
             GameManager.instance.userInterface.view.uiSystem.UIViews[0].Listener.ReadyForBindings += () => SelfRegiterUIEvents("we");
@@ -40,5 +40,4 @@ namespace BelzontWE
             return new WEModData(this);
         }
     }
-
 }
