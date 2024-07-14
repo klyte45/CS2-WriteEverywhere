@@ -7,8 +7,6 @@ using System.Xml.Serialization;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
-using Material = UnityEngine.Material;
-using Mesh = UnityEngine.Mesh;
 
 namespace BelzontWE.Font.Utility
 {
@@ -35,7 +33,7 @@ namespace BelzontWE.Font.Utility
 
             m_sizeMetersUnscaled = m_mesh.bounds.size;
             //   if (BasicIMod.DebugMode) LogUtils.DoLog($"MESH: {m_mesh} {m_mesh.vertices[0]} {m_mesh.vertices[1]}...  {m_mesh.tangents[0]} {m_mesh.tangents[1]}...  {m_mesh.normals[0]} {m_mesh.normals[1]}... {m_mesh.vertices.Length} {m_mesh.triangles.Length} {m_sizeMetersUnscaled}m");
-            brij.Dispose();
+           brij.Dispose();
         }
         [XmlIgnore]
         public Mesh m_mesh;

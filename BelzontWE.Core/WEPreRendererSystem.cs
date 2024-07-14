@@ -72,7 +72,7 @@ namespace BelzontWE
         }
         protected override void OnUpdate()
         {
-            if (GameManager.instance.isLoading) return;
+            if (GameManager.instance.isGameLoading) return;
             CheckPendingQueue();
             CheckNoWaitQueue();
 

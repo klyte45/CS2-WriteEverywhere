@@ -3,6 +3,7 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font.Utility;
+using Game.SceneFlow;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -115,6 +116,7 @@ namespace BelzontWE.Font
         public BasicRenderInformation DrawText(string str, Vector3 scale, UIHorizontalAlignment alignment = UIHorizontalAlignment.Center) => DrawText(0, 0, str, scale, alignment);
         public BasicRenderInformation DrawText(float x, float y, string str, Vector3 scale, UIHorizontalAlignment alignment = UIHorizontalAlignment.Center)
         {
+            if (GameManager.instance.isGameLoading) return null;
             BasicRenderInformation bri;
             if (string.IsNullOrWhiteSpace(str))
             {
