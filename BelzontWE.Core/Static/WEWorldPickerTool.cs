@@ -49,6 +49,8 @@ namespace BelzontWE
         private ProxyAction m_CameraZoomActionMouse;
         private ProxyAction m_increasePrecisionValue;
         private ProxyAction m_reducePrecisionValue;
+        private ProxyAction m_nextText;
+        private ProxyAction m_prevText;
         private ProxyAction m_alternateFixedCamera;
         private ProxyAction m_useXY;
         private ProxyAction m_useXZ;
@@ -73,6 +75,10 @@ namespace BelzontWE
 
             m_increasePrecisionValue = WEModData.Instance.GetAction(WEModData.kActionIncreaseMovementStrenght);
             m_reducePrecisionValue = WEModData.Instance.GetAction(WEModData.kActionReduceMovementStrenght);
+
+
+            m_nextText = WEModData.Instance.GetAction(WEModData.kActionNextText);
+            m_prevText = WEModData.Instance.GetAction(WEModData.kActionPreviousText);
 
 
             m_alternateFixedCamera = WEModData.Instance.GetAction(WEModData.kActionAlternateFixedCamera);
@@ -102,6 +108,8 @@ namespace BelzontWE
             m_CancelAction.shouldBeEnabled = true;
             m_increasePrecisionValue.shouldBeEnabled = true;
             m_reducePrecisionValue.shouldBeEnabled = true;
+            m_prevText.shouldBeEnabled = true;
+            m_nextText.shouldBeEnabled = true;
             m_alternateFixedCamera.shouldBeEnabled = true;
             m_useXY.shouldBeEnabled = true;
             m_useXZ.shouldBeEnabled = true;
@@ -109,6 +117,35 @@ namespace BelzontWE
             m_cycleAxisLock.shouldBeEnabled = true;
             m_ToggleLockCameraRotation.shouldBeEnabled = true;
         }
+        protected override void OnStopRunning()
+        {
+            base.OnStopRunning();
+            if (m_cameraDisabledHere)
+            {
+                if (m_oldController != null)
+                {
+                    m_cameraSystem.activeCameraController = m_oldController;
+                    m_oldController = null;
+                }
+                m_cameraDisabledHere = false;
+            }
+            ChangeHighlighting_MainThread(m_Controller.CurrentEntity.Value, ChangeMode.RemoveHighlight);
+            ChangeHighlighting_MainThread(HoveredEntity, ChangeMode.RemoveHighlight);
+            m_Controller.CurrentEntity.Value = Entity.Null;
+            HoveredEntity = Entity.Null;
+            m_ApplyAction.shouldBeEnabled = false;
+            m_CancelAction.shouldBeEnabled = false;
+            m_prevText.shouldBeEnabled = false;
+            m_nextText.shouldBeEnabled = false;
+            m_increasePrecisionValue.shouldBeEnabled = false;
+            m_reducePrecisionValue.shouldBeEnabled = false;
+            m_alternateFixedCamera.shouldBeEnabled = false;
+            m_useXY.shouldBeEnabled = false;
+            m_useXZ.shouldBeEnabled = false;
+            m_useZY.shouldBeEnabled = false;
+            m_cycleAxisLock.shouldBeEnabled = false;
+        }
+
         public override void InitializeRaycast()
         {
             base.InitializeRaycast();
@@ -168,6 +205,9 @@ namespace BelzontWE
             {
                 if (m_increasePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Max(m_Controller.MouseSensibility.Value - 1, 0));
                 if (m_reducePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Min(m_Controller.MouseSensibility.Value + 1, precisionIdx.Length - 1));
+
+                if (m_nextText.WasPressedThisFrame()) m_Controller.CurrentItemIdx.ChangeValueWithEffects((m_Controller.CurrentItemIdx.Value + m_Controller.CurrentItemCount.Value - 1) % m_Controller.CurrentItemCount.Value);
+                if (m_prevText.WasPressedThisFrame()) m_Controller.CurrentItemIdx.ChangeValueWithEffects((m_Controller.CurrentItemIdx.Value + 1) % m_Controller.CurrentItemCount.Value);
 
                 if (m_useXY.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)ToolEditMode.PlaneXY);
                 if (m_useXZ.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)ToolEditMode.PlaneXZ);
@@ -337,32 +377,6 @@ namespace BelzontWE
             cmdBuff.AddComponent<BatchesUpdated>(m_Controller.CurrentEntity.Value);
         }
 
-        protected override void OnStopRunning()
-        {
-            base.OnStopRunning();
-            if (m_cameraDisabledHere)
-            {
-                if (m_oldController != null)
-                {
-                    m_cameraSystem.activeCameraController = m_oldController;
-                    m_oldController = null;
-                }
-                m_cameraDisabledHere = false;
-            }
-            ChangeHighlighting_MainThread(m_Controller.CurrentEntity.Value, ChangeMode.RemoveHighlight);
-            ChangeHighlighting_MainThread(HoveredEntity, ChangeMode.RemoveHighlight);
-            m_Controller.CurrentEntity.Value = Entity.Null;
-            HoveredEntity = Entity.Null;
-            m_ApplyAction.shouldBeEnabled = false;
-            m_CancelAction.shouldBeEnabled = false;
-            m_increasePrecisionValue.shouldBeEnabled = false;
-            m_reducePrecisionValue.shouldBeEnabled = false;
-            m_alternateFixedCamera.shouldBeEnabled = false;
-            m_useXY.shouldBeEnabled = false;
-            m_useXZ.shouldBeEnabled = false;
-            m_useZY.shouldBeEnabled = false;
-            m_cycleAxisLock.shouldBeEnabled = false;
-        }
         public void RequestDisable()
         {
             m_ToolSystem.activeTool = m_DefaultToolSystem;

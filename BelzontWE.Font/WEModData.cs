@@ -15,7 +15,7 @@ namespace BelzontWE
 {
     [FileLocation("ModsData\\Klyte45Mods\\WriteEverywhere\\settings")]
     [SettingsUIShowGroupName(kLogSection, kFontsSection, kSpritesSection,
-         kToolControlsSection, kViewPerspectiveSection)]
+         kToolControlsSection, kItemEditing, kViewPerspectiveSection)]
     [SettingsUIMouseAction(kActionApplyMouse, ActionType.Button, false, false, new string[] { "K45_WE.Tool" })]
     [SettingsUIMouseAction(kActionCancelMouse, ActionType.Button, false, false, new string[] { "K45_WE.Tool" })]
     [SettingsUIKeyboardAction(kActionIncreaseMovementStrenght, ActionType.Button, "K45_WE.Tool")]
@@ -35,6 +35,7 @@ namespace BelzontWE
         const string kSourcesTab = "SourcesTab";
 
         const string kToolControlsSection = "ToolControls";
+        const string kItemEditing = "ItemEditing";
         const string kViewPerspectiveSection = "ViewPerspective";
 
         public const string kActionApplyMouse = "K45_WE_MoveText";
@@ -42,6 +43,8 @@ namespace BelzontWE
         public const string kActionIncreaseMovementStrenght = "K45_WE_PrecisionHigherNum";
         public const string kActionReduceMovementStrenght = "K45_WE_PrecisionLowerNum";
         public const string kActionEnablePicker = "K45_WE_EnablePicker";
+        public const string kActionNextText = "K45_WE_NextText";
+        public const string kActionPreviousText = "K45_WE_PreviousText";
 
         public const string kActionAlternateFixedCamera = "K45_WE_AlternateFixedCamera";
         public const string kActionPerspectiveXY = "K45_WE_PerspectiveXY";
@@ -218,6 +221,14 @@ namespace BelzontWE
         [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
         [SettingsUIKeyboardBinding(BindingKeyboard.Numpad5, kActionToggleLockCameraRotation)]
         public ProxyBinding ToggleLockCameraRotation { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kItemEditing)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad6, kActionNextText)]
+        public ProxyBinding ActionNextText { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kItemEditing)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad4, kActionPreviousText)]
+        public ProxyBinding ActionPreviousText { get; set; }
         #endregion
     }
 
