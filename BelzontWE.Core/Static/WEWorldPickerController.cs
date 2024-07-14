@@ -3,6 +3,7 @@ using Belzont.Utils;
 using Colossal.Entities;
 using Game.Common;
 using Game.Input;
+using Game.SceneFlow;
 using System;
 using System.Collections.Generic;
 using Unity.Entities;
@@ -245,6 +246,8 @@ namespace BelzontWE
         protected override void OnCreate()
         {
             m_EndBarrier = World.GetExistingSystemManaged<ModificationEndBarrier>();
+
+            GameManager.instance.userInterface.view.Listener.BindingsReleased += () => m_initialized = false;
         }
 
         public override void Update()

@@ -161,8 +161,8 @@ class WEWorldPickerToolPanel extends Component<{}, State> {
                             <div style={{ width: "10rem" }}></div>
                             <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentMoveMode.value > 0} onSelect={() => wps.CurrentMoveMode.set((wps.CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[wps.CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[wps.CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
                             <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
-                            <VanillaComponentResolver.instance.ToolButton disabled={!wps.CameraLocked.value} selected={wps.CameraRotationLocked.value} onSelect={() => wps.CameraRotationLocked.set(!wps.CameraRotationLocked.value)} src={i_lockRotationView} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockRotationView}></VanillaComponentResolver.instance.ToolButton>
-                        </VanillaComponentResolver.instance.Section>
+                            <VanillaComponentResolver.instance.ToolButton disabled={!wps.CameraLocked.value} selected={wps.CameraLocked.value && wps.CameraRotationLocked.value} onSelect={() => wps.CameraRotationLocked.set(!wps.CameraRotationLocked.value)} src={i_lockRotationView} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockRotationView}></VanillaComponentResolver.instance.ToolButton>
+                        </VanillaComponentResolver.instance.Section> 
                         <VectorSectionEditable title={L_position}
                             valueGetter={() => wps.CurrentPosition.value?.map(x => x.toFixed(3))}
                             valueGetterFormatted={() => wps.CurrentPosition.value?.map(x => translateUnitResult([MetricUnitsEntries.distance.linear[UnitSystem.Metric][0], { VALUE: x.toFixed(3) + "" }]))}
@@ -170,7 +170,7 @@ class WEWorldPickerToolPanel extends Component<{}, State> {
                                 const newVal = wps.CurrentPosition.value;
                                 newVal[i] = parseFloat(x);
                                 if (isNaN(newVal[i])) return;
-                                wps.CurrentPosition.set(newVal); 
+                                wps.CurrentPosition.set(newVal);
                             }} />
                         <VectorSectionEditable title={L_rotation}
                             valueGetter={() => wps.CurrentRotation.value?.map(x => x.toFixed(3))}
