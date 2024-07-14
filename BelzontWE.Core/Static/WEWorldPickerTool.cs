@@ -43,14 +43,20 @@ namespace BelzontWE
         public bool IsSelected => m_ToolSystem.activeTool == this;
 
 
-        private ProxyAction m_ApplyAction;
-        private ProxyAction m_CancelAction;
+        private ProxyAction m_MoveAction;
+        private ProxyAction m_RotateAction;
         private ProxyAction m_CameraZoomAction;
         private ProxyAction m_CameraZoomActionMouse;
         private ProxyAction m_increasePrecisionValue;
         private ProxyAction m_reducePrecisionValue;
         private ProxyAction m_nextText;
         private ProxyAction m_prevText;
+        private ProxyAction m_moveLeft;
+        private ProxyAction m_moveRight;
+        private ProxyAction m_moveUp;
+        private ProxyAction m_moveDown;
+        private ProxyAction m_rotateClockwise;
+        private ProxyAction m_rotateCounterClockwise;
         private ProxyAction m_alternateFixedCamera;
         private ProxyAction m_useXY;
         private ProxyAction m_useXZ;
@@ -67,11 +73,13 @@ namespace BelzontWE
         private bool m_isDragging;
         private bool m_isRotating;
 
+        private byte m_keyMoveRotateCooldown;
+
         protected override void OnCreate()
         {
             Enabled = false;
-            m_ApplyAction = WEModData.Instance.GetAction(WEModData.kActionApplyMouse);
-            m_CancelAction = WEModData.Instance.GetAction(WEModData.kActionCancelMouse);
+            m_MoveAction = WEModData.Instance.GetAction(WEModData.kActionApplyMouse);
+            m_RotateAction = WEModData.Instance.GetAction(WEModData.kActionCancelMouse);
 
             m_increasePrecisionValue = WEModData.Instance.GetAction(WEModData.kActionIncreaseMovementStrenght);
             m_reducePrecisionValue = WEModData.Instance.GetAction(WEModData.kActionReduceMovementStrenght);
@@ -79,6 +87,13 @@ namespace BelzontWE
 
             m_nextText = WEModData.Instance.GetAction(WEModData.kActionNextText);
             m_prevText = WEModData.Instance.GetAction(WEModData.kActionPreviousText);
+
+            m_moveLeft = WEModData.Instance.GetAction(WEModData.kActionMoveLeft);
+            m_moveRight = WEModData.Instance.GetAction(WEModData.kActionMoveRight);
+            m_moveUp = WEModData.Instance.GetAction(WEModData.kActionMoveUp);
+            m_moveDown = WEModData.Instance.GetAction(WEModData.kActionMoveDown);
+            m_rotateClockwise = WEModData.Instance.GetAction(WEModData.kActionRotateClockwise);
+            m_rotateCounterClockwise = WEModData.Instance.GetAction(WEModData.kActionRotateCounterClockwise);
 
 
             m_alternateFixedCamera = WEModData.Instance.GetAction(WEModData.kActionAlternateFixedCamera);
@@ -104,8 +119,8 @@ namespace BelzontWE
 
             m_Controller.IsValidEditingItem();
 
-            m_ApplyAction.shouldBeEnabled = true;
-            m_CancelAction.shouldBeEnabled = true;
+            m_MoveAction.shouldBeEnabled = true;
+            m_RotateAction.shouldBeEnabled = true;
             m_increasePrecisionValue.shouldBeEnabled = true;
             m_reducePrecisionValue.shouldBeEnabled = true;
             m_prevText.shouldBeEnabled = true;
@@ -116,6 +131,13 @@ namespace BelzontWE
             m_useZY.shouldBeEnabled = true;
             m_cycleAxisLock.shouldBeEnabled = true;
             m_ToggleLockCameraRotation.shouldBeEnabled = true;
+
+            m_moveLeft.shouldBeEnabled = true;
+            m_moveRight.shouldBeEnabled = true;
+            m_moveUp.shouldBeEnabled = true;
+            m_moveDown.shouldBeEnabled = true;
+            m_rotateClockwise.shouldBeEnabled = true;
+            m_rotateCounterClockwise.shouldBeEnabled = true;
         }
         protected override void OnStopRunning()
         {
@@ -133,8 +155,8 @@ namespace BelzontWE
             ChangeHighlighting_MainThread(HoveredEntity, ChangeMode.RemoveHighlight);
             m_Controller.CurrentEntity.Value = Entity.Null;
             HoveredEntity = Entity.Null;
-            m_ApplyAction.shouldBeEnabled = false;
-            m_CancelAction.shouldBeEnabled = false;
+            m_MoveAction.shouldBeEnabled = false;
+            m_RotateAction.shouldBeEnabled = false;
             m_prevText.shouldBeEnabled = false;
             m_nextText.shouldBeEnabled = false;
             m_increasePrecisionValue.shouldBeEnabled = false;
@@ -144,6 +166,13 @@ namespace BelzontWE
             m_useXZ.shouldBeEnabled = false;
             m_useZY.shouldBeEnabled = false;
             m_cycleAxisLock.shouldBeEnabled = false;
+
+            m_moveLeft.shouldBeEnabled = false;
+            m_moveRight.shouldBeEnabled = false;
+            m_moveUp.shouldBeEnabled = false;
+            m_moveDown.shouldBeEnabled = false;
+            m_rotateClockwise.shouldBeEnabled = false;
+            m_rotateCounterClockwise.shouldBeEnabled = false;
         }
 
         public override void InitializeRaycast()
@@ -172,7 +201,7 @@ namespace BelzontWE
                 {
                     Entity hoveredEntity = HoveredEntity;
                     HoveredEntity = entity;
-                    if (!InputManager.instance.mouseOverUI && m_ApplyAction.WasPressedThisFrame() && entity != m_Controller.CurrentEntity.Value)
+                    if (!InputManager.instance.mouseOverUI && m_MoveAction.WasPressedThisFrame() && entity != m_Controller.CurrentEntity.Value)
                     {
                         ChangeHighlighting_MainThread(m_Controller.CurrentEntity.Value, ChangeMode.RemoveHighlight);
                         ChangeHighlighting_MainThread(entity, ChangeMode.AddHighlight);
@@ -224,45 +253,71 @@ namespace BelzontWE
                 }
                 if (m_Controller.IsValidEditingItem())
                 {
-                    if (!InputManager.instance.mouseOverUI && m_ApplyAction.WasPressedThisFrame())
+                    if (m_keyMoveRotateCooldown > 0) m_keyMoveRotateCooldown--;
+                    var hasKeyPressedMovedRotated = false;
+
+                    if (!InputManager.instance.mouseOverUI && m_MoveAction.WasPressedThisFrame())
                     {
                         var currentItem = m_Controller.CurrentEditingItem;
                         m_mousePositionRef = new float2(InputManager.instance.mousePosition.x, InputManager.instance.mousePosition.y);
                         m_originalPositionText = currentItem.offsetPosition;
                         m_isDragging = true;
                     }
-                    else if (m_isDragging && m_ApplyAction.WasReleasedThisFrame())
+                    else if (m_isDragging && m_MoveAction.WasReleasedThisFrame())
                     {
-                        ApplyPosition();
+                        ApplyPositionMouseRelative();
                         m_mousePositionRef = default;
                         m_originalPositionText = default;
                         m_isDragging = false;
                     }
-                    else if (m_isDragging && m_ApplyAction.IsPressed())
+                    else if (m_isDragging && m_MoveAction.IsPressed())
                     {
-                        ApplyPosition();
+                        ApplyPositionMouseRelative();
+                    }
+                    else if (m_keyMoveRotateCooldown == 0 && (
+                        m_moveLeft.IsPressed() ||
+                        m_moveRight.IsPressed() ||
+                        m_moveUp.IsPressed() ||
+                        m_moveDown.IsPressed())
+                        )
+                    {
+                        ApplyPositionKeys();
+                        m_keyMoveRotateCooldown = 8;
+                        hasKeyPressedMovedRotated = true;
                     }
 
-
-                    if (!InputManager.instance.mouseOverUI && m_CancelAction.WasPressedThisFrame())
+                    if (!InputManager.instance.mouseOverUI && m_RotateAction.WasPressedThisFrame())
                     {
                         var currentItem = m_Controller.CurrentEditingItem;
                         m_mousePositionRefRot = InputManager.instance.mousePosition.x;
                         m_originalRotationText = ((Quaternion)currentItem.offsetRotation).eulerAngles;
                         m_isRotating = true;
                     }
-                    else if (m_isRotating && m_CancelAction.WasReleasedThisFrame())
+                    else if (m_isRotating && m_RotateAction.WasReleasedThisFrame())
                     {
-                        ApplyRotation();
+                        ApplyRotationMouseRelative();
                         m_mousePositionRefRot = default;
                         m_originalRotationText = default;
                         m_isRotating = false;
                     }
-                    else if (m_isRotating && m_CancelAction.IsPressed())
+                    else if (m_isRotating && m_RotateAction.IsPressed())
                     {
-                        ApplyRotation();
+                        ApplyRotationMouseRelative();
+                    }
+                    else if (m_keyMoveRotateCooldown == 0 && (
+                        m_rotateClockwise.IsPressed() ||
+                        m_rotateCounterClockwise.IsPressed())
+                        )
+                    {
+                        ApplyRotationKeys();
+                        m_keyMoveRotateCooldown = 8;
+                        hasKeyPressedMovedRotated = true;
                     }
 
+                    if (!hasKeyPressedMovedRotated)
+                    {
+                        m_keyMoveRotateCooldown = 0;
+                    }
 
                     if (m_Controller.CameraLocked.Value)
                     {
@@ -277,7 +332,7 @@ namespace BelzontWE
 #pragma warning restore CS0252 // Possível comparação de referência inesperada; o lado esquerdo precisa de conversão
                         m_cameraDisabledHere = cameraDisabledThisFrame = true;
                         m_cameraDistance = math.clamp(m_cameraDistance + (m_CameraZoomActionMouse.ReadValue<float>() * 4f) + m_CameraZoomAction.ReadValue<float>(), 1f, 20f);
-                        var itemAngles = m_Controller.CurrentItemMatrix.rotation.eulerAngles;
+                        var itemAngles = m_Controller.CurrentRotation.Value;
                         var isRotationLocked = m_Controller.CameraRotationLocked.Value;
                         var targetMatrix = (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
                         {
@@ -316,9 +371,8 @@ namespace BelzontWE
             m_Controller.CurrentItemCount.Value = EntityManager.TryGetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value, true, out var buff) ? buff.Length : 0;
         }
 
-        private void ApplyPosition()
+        private void ApplyPositionMouseRelative()
         {
-            var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
             var moveMode = m_Controller.CurrentMoveMode.Value;
             var currentMousePos = new float2(InputManager.instance.mousePosition.x, InputManager.instance.mousePosition.y);
             var offsetMouse = (Vector2)(currentMousePos - m_mousePositionRef) * moveMode switch
@@ -327,8 +381,27 @@ namespace BelzontWE
                 2 => Vector2.up,
                 _ => Vector2.one,
             };
+            ApplyPosition(m_originalPositionText, offsetMouse);
+        }
+
+        private void ApplyPositionKeys()
+        {
+            var offsetRef = new float2(
+                m_moveLeft.IsPressed() ? -1 :
+                m_moveRight.IsPressed() ? 1 : 0,
+                m_moveUp.IsPressed() ? 1 :
+                m_moveDown.IsPressed() ? -1 : 0
+                );
+            if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) offsetRef *= 10;
+
+            ApplyPosition(m_Controller.CurrentEditingItem.offsetPosition, offsetRef);
+        }
+
+        private void ApplyPosition(float3 originalPosition, Vector2 offsetPosition)
+        {
+            var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value];
-            var offsetWithAdjust = offsetMouse * currentPrecision;
+            var offsetWithAdjust = offsetPosition * currentPrecision;
 
             if (!EntityManager.TryGetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value, false, out var currentBuffer))
             {
@@ -336,10 +409,10 @@ namespace BelzontWE
             };
             var currentItem = currentBuffer[m_Controller.CurrentItemIdx.Value];
 
-            var itemAngles = m_Controller.CurrentItemMatrix.rotation.eulerAngles;
+            var itemAngles = m_Controller.CurrentRotation.Value;
             var isRotationLocked = m_Controller.CameraRotationLocked.Value;
 
-            m_Controller.CurrentPosition.Value = currentItem.offsetPosition = m_originalPositionText + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
+            m_Controller.CurrentPosition.Value = currentItem.offsetPosition = originalPosition + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {
                 ToolEditMode.PlaneXY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 0, 0))).rotation, new float3(offsetWithAdjust, 0)),
                 ToolEditMode.PlaneXZ => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, isRotationLocked ? -itemAngles.y : 0, 0))).rotation, new float3(offsetWithAdjust.x, 0, offsetWithAdjust.y)),
@@ -351,20 +424,31 @@ namespace BelzontWE
             cmdBuff.AddComponent<BatchesUpdated>(m_Controller.CurrentEntity.Value);
         }
 
-        private void ApplyRotation()
+        private void ApplyRotationMouseRelative()
         {
-            var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
             var offsetMouse = m_mousePositionRefRot - InputManager.instance.mousePosition.x;
 
+            ApplyRotation(m_originalRotationText, offsetMouse);
+        }
+
+        private void ApplyRotationKeys()
+        {
+            var offset = m_rotateClockwise.IsPressed() ? -1 : m_rotateCounterClockwise.IsPressed() ? 1 : 0;
+            if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) offset *= 10;
+            ApplyRotation(((Quaternion)m_Controller.CurrentEditingItem.offsetRotation).eulerAngles, offset);
+        }
+        private void ApplyRotation(float3 originalRotation, float value)
+        {
+            var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value] * 10;
-            var offsetWithAdjust = offsetMouse * currentPrecision;
+            var offsetWithAdjust = value * currentPrecision;
 
             if (!EntityManager.TryGetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value, false, out var currentBuffer))
             {
                 currentBuffer = new DynamicBuffer<WESimulationTextComponent>();
             };
             var currentItem = currentBuffer[m_Controller.CurrentItemIdx.Value];
-            m_Controller.CurrentRotation.Value = m_originalRotationText + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
+            m_Controller.CurrentRotation.Value = originalRotation + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {
                 ToolEditMode.PlaneXY => new float3(0, 0, offsetWithAdjust),
                 ToolEditMode.PlaneXZ => new float3(0, offsetWithAdjust, 0),

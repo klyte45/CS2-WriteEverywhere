@@ -26,6 +26,14 @@ namespace BelzontWE
     [SettingsUIKeyboardAction(kActionPerspectiveXZ, ActionType.Button, "K45_WE.Tool")]
     [SettingsUIKeyboardAction(kActionCycleEditAxisLock, ActionType.Button, "K45_WE.Tool")]
     [SettingsUIKeyboardAction(kActionToggleLockCameraRotation, ActionType.Button, "K45_WE.Tool")]
+    [SettingsUIKeyboardAction(kActionNextText, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionPreviousText, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionMoveLeft, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionMoveRight, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionMoveUp, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionMoveDown, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionRotateClockwise, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionRotateCounterClockwise, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
     public class WEModData : BasicModData
     {
         const string kFontsSection = "Font";
@@ -43,8 +51,15 @@ namespace BelzontWE
         public const string kActionIncreaseMovementStrenght = "K45_WE_PrecisionHigherNum";
         public const string kActionReduceMovementStrenght = "K45_WE_PrecisionLowerNum";
         public const string kActionEnablePicker = "K45_WE_EnablePicker";
+
         public const string kActionNextText = "K45_WE_NextText";
         public const string kActionPreviousText = "K45_WE_PreviousText";
+        public const string kActionMoveLeft = "K45_WE_MoveLeft";
+        public const string kActionMoveRight = "K45_WE_MoveRight";
+        public const string kActionMoveUp = "K45_WE_MoveUp";
+        public const string kActionMoveDown = "K45_WE_MoveDown";
+        public const string kActionRotateClockwise = "K45_WE_RotateClockwise";
+        public const string kActionRotateCounterClockwise = "K45_WE_RotateCounterClockwise";
 
         public const string kActionAlternateFixedCamera = "K45_WE_AlternateFixedCamera";
         public const string kActionPerspectiveXY = "K45_WE_PerspectiveXY";
@@ -178,57 +193,30 @@ namespace BelzontWE
 
 
         #region Keybinding
-        [SettingsUISection(kKeybindingSection, kToolControlsSection)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.W, kActionEnablePicker, ctrl: true, shift: true)]
-        public ProxyBinding EnableTool { get; set; }
+        [SettingsUISection(kKeybindingSection, kToolControlsSection)][SettingsUIKeyboardBinding(BindingKeyboard.W, kActionEnablePicker, ctrl: true, shift: true)] public ProxyBinding EnableTool { get; set; }
 
-        [SettingsUISection(kKeybindingSection, kToolControlsSection)]
-        [SettingsUIMouseBinding(BindingMouse.Left, kActionApplyMouse)]
-        public ProxyBinding MouseToolMove { get; set; }
+        [SettingsUISection(kKeybindingSection, kToolControlsSection)][SettingsUIMouseBinding(BindingMouse.Left, kActionApplyMouse)] public ProxyBinding MouseToolMove { get; set; }
+        [SettingsUISection(kKeybindingSection, kToolControlsSection)][SettingsUIMouseBinding(BindingMouse.Right, kActionCancelMouse)] public ProxyBinding MouseToolRotate { get; set; }
+        [SettingsUISection(kKeybindingSection, kToolControlsSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadPeriod, kActionIncreaseMovementStrenght)] public ProxyBinding ToolIncreaseMovementStrenght { get; set; }
+        [SettingsUISection(kKeybindingSection, kToolControlsSection)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad0, kActionReduceMovementStrenght)] public ProxyBinding ToolReduceMovementStrenght { get; set; }
 
-        [SettingsUISection(kKeybindingSection, kToolControlsSection)]
-        [SettingsUIMouseBinding(BindingMouse.Right, kActionCancelMouse)]
-        public ProxyBinding MouseToolRotate { get; set; }
+        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadEnter, kActionAlternateFixedCamera)] public ProxyBinding AlternateFixedCamera { get; set; }
+        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadDivide, kActionToggleLockCameraRotation)] public ProxyBinding ToggleLockCameraRotation { get; set; }
+        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad1, kActionPerspectiveXY)] public ProxyBinding ActionPerspectiveXY { get; set; }
+        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad2, kActionPerspectiveZY)] public ProxyBinding ActionPerspectiveZY { get; set; }
+        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad3, kActionPerspectiveXZ)] public ProxyBinding ActionPerspectiveXZ { get; set; }
+        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMultiply, kActionCycleEditAxisLock)] public ProxyBinding ActionCycleAxisLock { get; set; }
 
-        [SettingsUISection(kKeybindingSection, kToolControlsSection)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.PageUp, kActionIncreaseMovementStrenght)]
-        public ProxyBinding ToolIncreaseMovementStrenght { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadPlus, kActionNextText)] public ProxyBinding ActionNextText { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMinus, kActionPreviousText)] public ProxyBinding ActionPreviousText { get; set; }
 
-        [SettingsUISection(kKeybindingSection, kToolControlsSection)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.PageDown, kActionReduceMovementStrenght)]
-        public ProxyBinding ToolReduceMovementStrenght { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad4, kActionMoveLeft)] public ProxyBinding ActionMoveLeft { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad6, kActionMoveRight)] public ProxyBinding ActionMoveRight { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad8, kActionMoveUp)] public ProxyBinding ActionMoveUp { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad5, kActionMoveDown)] public ProxyBinding ActionMoveDown { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad9, kActionRotateClockwise)] public ProxyBinding ActionRotateClockwise { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad7, kActionRotateCounterClockwise)] public ProxyBinding ActionRotateCounterClockwise { get; set; }
 
-        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad0, kActionAlternateFixedCamera)]
-        public ProxyBinding AlternateFixedCamera { get; set; }
-
-        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad1, kActionPerspectiveXY)]
-        public ProxyBinding ActionPerspectiveXY { get; set; }
-
-        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad2, kActionPerspectiveZY)]
-        public ProxyBinding ActionPerspectiveZY { get; set; }
-
-        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad3, kActionPerspectiveXZ)]
-        public ProxyBinding ActionPerspectiveXZ { get; set; }
-
-        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.NumpadPeriod, kActionCycleEditAxisLock)]
-        public ProxyBinding ActionCycleAxisLock { get; set; }
-
-        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad5, kActionToggleLockCameraRotation)]
-        public ProxyBinding ToggleLockCameraRotation { get; set; }
-
-        [SettingsUISection(kKeybindingSection, kItemEditing)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad6, kActionNextText)]
-        public ProxyBinding ActionNextText { get; set; }
-
-        [SettingsUISection(kKeybindingSection, kItemEditing)]
-        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad4, kActionPreviousText)]
-        public ProxyBinding ActionPreviousText { get; set; }
         #endregion
     }
 
