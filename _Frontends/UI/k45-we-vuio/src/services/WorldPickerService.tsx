@@ -24,6 +24,7 @@ export class WorldPickerService {
     CurrentItemText: MultiUIValueBinding<string>
     CurrentItemIsValid: MultiUIValueBinding<string>
     CameraLocked: MultiUIValueBinding<boolean>
+    CameraRotationLocked: MultiUIValueBinding<boolean>
     CurrentMoveMode: MultiUIValueBinding<number>
 
     MainColor: MultiUIValueBinding<UIColorRGBA>
@@ -50,6 +51,7 @@ export class WorldPickerService {
         this.CurrentItemIsValid ??= new MultiUIValueBinding<string>("k45::we.wpicker.CurrentItemIsValid")
         this.CurrentItemCount ??= new MultiUIValueBinding<number>("k45::we.wpicker.CurrentItemCount")
         this.CameraLocked ??= new MultiUIValueBinding<boolean>("k45::we.wpicker.CameraLocked")
+        this.CameraRotationLocked ??= new MultiUIValueBinding<boolean>("k45::we.wpicker.CameraRotationLocked")
         this.CurrentMoveMode ??= new MultiUIValueBinding<number>("k45::we.wpicker.CurrentMoveMode")
 
         this.MainColor ??= new MultiUIValueBinding<UIColorRGBA>("k45::we.wpicker.MainColor")
@@ -57,7 +59,7 @@ export class WorldPickerService {
         this.Metallic ??= new MultiUIValueBinding<number>("k45::we.wpicker.Metallic")
         this.Smoothness ??= new MultiUIValueBinding<number>("k45::we.wpicker.Smoothness")
         this.EmissiveIntensity ??= new MultiUIValueBinding<number>("k45::we.wpicker.EmissiveIntensity")
-        this.CoatStrength ??= new MultiUIValueBinding<number>("k45::we.wpicker.CoatStrength")
+        this.CoatStrength ??= new MultiUIValueBinding<number>("k45::we.wpicker.CoatStrength") 
         this.EmissiveExposureWeight ??= new MultiUIValueBinding<number>("k45::we.wpicker.EmissiveExposureWeight")
 
         this.Bindings.push(
@@ -73,6 +75,7 @@ export class WorldPickerService {
             this.CurrentItemName,
             this.CurrentItemCount,
             this.CameraLocked,
+            this.CameraRotationLocked,
             this.CurrentMoveMode,
             this.MainColor,
             this.EmissiveColor,

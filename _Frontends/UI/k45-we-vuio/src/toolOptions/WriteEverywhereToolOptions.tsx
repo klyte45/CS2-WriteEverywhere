@@ -20,6 +20,7 @@ const i_cameraIcon = "coui://uil/Standard/VideoCamera.svg";
 const i_moveModeAll = "coui://uil/Standard/ArrowsMoveAll.svg";
 const i_moveModeHorizontal = "coui://uil/Standard/ArrowsMoveLeftRight.svg";
 const i_moveModeVertical = "coui://uil/Standard/ArrowsMoveUpDown.svg";
+const i_lockRotationView = "coui://uil/Standard/ArrowCircularLeft.svg";
 const i_AppearenceBtnIcon = "coui://uil/Standard/ColorPalette.svg";
 
 const iarr_moveMode = [i_moveModeAll, i_moveModeHorizontal, i_moveModeVertical]
@@ -73,6 +74,7 @@ const T_picker = translate("toolOption.picker.tooltip"); //"Pick another object"
 const T_addText = translate("toolOption.addText.tooltip"); //"Add text"
 const T_removeText = translate("toolOption.removeText.tooltip"); //"Remove text"
 const T_lockCamera = translate("toolOption.lockCamera.tooltip"); //"Lock camera to editing plane area and angle"
+const T_lockRotationView = translate("toolOption.lockRotationView.tooltip"); //"Do not rotate camera along the text"
 const T_AppearenceBtn = translate("toolOption.AppearenceBtn.tooltip"); //"Appearance settings"
 
 const Tarr_moveMode = [
@@ -159,6 +161,7 @@ class WEWorldPickerToolPanel extends Component<{}, State> {
                             <div style={{ width: "10rem" }}></div>
                             <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentMoveMode.value > 0} onSelect={() => wps.CurrentMoveMode.set((wps.CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[wps.CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[wps.CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
                             <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
+                            <VanillaComponentResolver.instance.ToolButton disabled={!wps.CameraLocked.value} selected={wps.CameraRotationLocked.value} onSelect={() => wps.CameraRotationLocked.set(!wps.CameraRotationLocked.value)} src={i_lockRotationView} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockRotationView}></VanillaComponentResolver.instance.ToolButton>
                         </VanillaComponentResolver.instance.Section>
                         <VectorSectionEditable title={L_position}
                             valueGetter={() => wps.CurrentPosition.value?.map(x => x.toFixed(3))}
@@ -167,7 +170,7 @@ class WEWorldPickerToolPanel extends Component<{}, State> {
                                 const newVal = wps.CurrentPosition.value;
                                 newVal[i] = parseFloat(x);
                                 if (isNaN(newVal[i])) return;
-                                wps.CurrentPosition.set(newVal);
+                                wps.CurrentPosition.set(newVal); 
                             }} />
                         <VectorSectionEditable title={L_rotation}
                             valueGetter={() => wps.CurrentRotation.value?.map(x => x.toFixed(3))}

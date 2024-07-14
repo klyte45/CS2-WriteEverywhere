@@ -25,6 +25,7 @@ namespace BelzontWE
     [SettingsUIKeyboardAction(kActionPerspectiveZY, ActionType.Button, "K45_WE.Tool")]
     [SettingsUIKeyboardAction(kActionPerspectiveXZ, ActionType.Button, "K45_WE.Tool")]
     [SettingsUIKeyboardAction(kActionCycleEditAxisLock, ActionType.Button, "K45_WE.Tool")]
+    [SettingsUIKeyboardAction(kActionToggleLockCameraRotation, ActionType.Button, "K45_WE.Tool")]
     public class WEModData : BasicModData
     {
         const string kFontsSection = "Font";
@@ -47,6 +48,7 @@ namespace BelzontWE
         public const string kActionPerspectiveZY = "K45_WE_PerspectiveZY";
         public const string kActionPerspectiveXZ = "K45_WE_PerspectiveXZ";
         public const string kActionCycleEditAxisLock = "K45_WE_CycleEditAxisLock";
+        public const string kActionToggleLockCameraRotation = "K45_WE_ToggleLockCameraRotation";
 
 
         private static readonly int[] m_qualityArray = new[] { 50, 75, 100, 125, 150, 200, 400, 800 };
@@ -212,6 +214,10 @@ namespace BelzontWE
         [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
         [SettingsUIKeyboardBinding(BindingKeyboard.NumpadPeriod, kActionCycleEditAxisLock)]
         public ProxyBinding ActionCycleAxisLock { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.Numpad5, kActionToggleLockCameraRotation)]
+        public ProxyBinding ToggleLockCameraRotation { get; set; }
         #endregion
     }
 

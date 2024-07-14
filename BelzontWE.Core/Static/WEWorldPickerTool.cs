@@ -54,6 +54,7 @@ namespace BelzontWE
         private ProxyAction m_useXZ;
         private ProxyAction m_useZY;
         private ProxyAction m_cycleAxisLock;
+        private ProxyAction m_ToggleLockCameraRotation;
         private ToolOutputBarrier m_ToolOutputBarrier;
         private WEWorldPickerController m_Controller;
 
@@ -79,6 +80,7 @@ namespace BelzontWE
             m_useXZ = WEModData.Instance.GetAction(WEModData.kActionPerspectiveXZ);
             m_useZY = WEModData.Instance.GetAction(WEModData.kActionPerspectiveZY);
             m_cycleAxisLock = WEModData.Instance.GetAction(WEModData.kActionCycleEditAxisLock);
+            m_ToggleLockCameraRotation = WEModData.Instance.GetAction(WEModData.kActionToggleLockCameraRotation);
 
             m_CameraZoomAction = InputManager.instance.FindAction("Camera", "Zoom");
             m_CameraZoomActionMouse = InputManager.instance.FindAction("Camera", "Zoom Mouse");
@@ -105,6 +107,7 @@ namespace BelzontWE
             m_useXZ.shouldBeEnabled = true;
             m_useZY.shouldBeEnabled = true;
             m_cycleAxisLock.shouldBeEnabled = true;
+            m_ToggleLockCameraRotation.shouldBeEnabled = true;
         }
         public override void InitializeRaycast()
         {
@@ -171,6 +174,7 @@ namespace BelzontWE
                 if (m_useZY.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)ToolEditMode.PlaneZY);
                 if (m_alternateFixedCamera.WasPressedThisFrame()) m_Controller.CameraLocked.ChangeValueWithEffects(!m_Controller.CameraLocked.Value);
                 if (m_cycleAxisLock.WasPressedThisFrame()) m_Controller.CurrentMoveMode.ChangeValueWithEffects((1 + m_Controller.CurrentMoveMode.Value) % 3);
+                if (m_Controller.CameraLocked.Value && m_ToggleLockCameraRotation.WasPressedThisFrame()) m_Controller.CameraRotationLocked.ChangeValueWithEffects(!m_Controller.CameraRotationLocked.Value);
 
 
                 if (HoveredEntity != Entity.Null)
@@ -233,15 +237,20 @@ namespace BelzontWE
 #pragma warning restore CS0252 // Possível comparação de referência inesperada; o lado esquerdo precisa de conversão
                         m_cameraDisabledHere = cameraDisabledThisFrame = true;
                         m_cameraDistance = math.clamp(m_cameraDistance + (m_CameraZoomActionMouse.ReadValue<float>() * 4f) + m_CameraZoomAction.ReadValue<float>(), 1f, 20f);
-                        var targetMatrix = m_Controller.CurrentPlaneMode.Value switch
+                        var itemAngles = m_Controller.CurrentItemMatrix.rotation.eulerAngles;
+                        var isRotationLocked = m_Controller.CameraRotationLocked.Value;
+                        var targetMatrix = (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
                         {
-                            1 => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 75, 0)),
-                            2 => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(75, 0, 0)),
-                            _ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 0, 0)),
+                            ToolEditMode.PlaneZY => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 75, 0)),
+                            ToolEditMode.PlaneXZ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(75, isRotationLocked ? -itemAngles.y : 0, 0)),
+                            _ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 0, isRotationLocked ? -itemAngles.z : 0)),
                         };
 
                         m_cameraSystem.cinematicCameraController.pivot = m_Controller.CurrentItemMatrix.GetPosition() + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));
+
+
                         m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;
+
 
                     }
 
@@ -286,11 +295,15 @@ namespace BelzontWE
                 currentBuffer = new DynamicBuffer<WESimulationTextComponent>();
             };
             var currentItem = currentBuffer[m_Controller.CurrentItemIdx.Value];
+
+            var itemAngles = m_Controller.CurrentItemMatrix.rotation.eulerAngles;
+            var isRotationLocked = m_Controller.CameraRotationLocked.Value;
+
             m_Controller.CurrentPosition.Value = currentItem.offsetPosition = m_originalPositionText + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {
-                ToolEditMode.PlaneXY => math.mul(currentItem.offsetRotation, new float3(offsetWithAdjust, 0)),
-                ToolEditMode.PlaneXZ => math.mul(currentItem.offsetRotation, new float3(offsetWithAdjust.x, 0, offsetWithAdjust.y)),
-                ToolEditMode.PlaneZY => math.mul(currentItem.offsetRotation, new float3(0, offsetWithAdjust.y, -offsetWithAdjust.x)),
+                ToolEditMode.PlaneXY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 0, 0))).rotation, new float3(offsetWithAdjust, 0)),
+                ToolEditMode.PlaneXZ => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, isRotationLocked ? -itemAngles.y : 0, 0))).rotation, new float3(offsetWithAdjust.x, 0, offsetWithAdjust.y)),
+                ToolEditMode.PlaneZY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, 0, isRotationLocked ? -itemAngles.z : 0))).rotation, new float3(0, offsetWithAdjust.y, -offsetWithAdjust.x)),
                 _ => default
             };
             currentBuffer[m_Controller.CurrentItemIdx.Value] = currentItem;

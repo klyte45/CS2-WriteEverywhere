@@ -21,7 +21,7 @@ namespace BelzontWE
             updateSystem.UpdateAt<WEUISystem>(SystemUpdatePhase.UIUpdate);
 #if !ENABLE_EUIS
             SelfRegiterUIEvents("we");
-            GameManager.instance.userInterface.view.uiSystem.UIViews[0].Listener.ReadyForBindings += () => SelfRegiterUIEvents("we");
+            GameManager.instance.userInterface.view.uiSystem.defaultUIView.Listener.ReadyForBindings += () => SelfRegiterUIEvents("we");
 #endif
             
         }

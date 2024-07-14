@@ -67,6 +67,7 @@ namespace BelzontWE
         public MultiUIValueBinding<string> CurrentItemText { get; private set; }
         public MultiUIValueBinding<bool> CurrentItemIsValid { get; private set; }
         public MultiUIValueBinding<bool> CameraLocked { get; private set; }
+        public MultiUIValueBinding<bool> CameraRotationLocked { get; private set; }
 
 
         public MultiUIValueBinding<Color, UIColorRGBA> MainColor { get; private set; }
@@ -123,6 +124,7 @@ namespace BelzontWE
 
             MouseSensibility = new(6, $"{PREFIX}{nameof(MouseSensibility)}", m_eventCaller, m_callBinder, (x) => x % WEWorldPickerTool.precisionIdx.Length);
             CameraLocked = new(default, $"{PREFIX}{nameof(CameraLocked)}", m_eventCaller, m_callBinder);
+            CameraRotationLocked = new(default, $"{PREFIX}{nameof(CameraRotationLocked)}", m_eventCaller, m_callBinder);
 
 
             MainColor = new(default, $"{PREFIX}{nameof(MainColor)}", m_eventCaller, m_callBinder, (x) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x) => new Color(x.r, x.g, x.b, x.a));
