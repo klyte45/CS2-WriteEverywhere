@@ -59,7 +59,7 @@ export class WorldPickerService {
         this.Metallic ??= new MultiUIValueBinding<number>("k45::we.wpicker.Metallic")
         this.Smoothness ??= new MultiUIValueBinding<number>("k45::we.wpicker.Smoothness")
         this.EmissiveIntensity ??= new MultiUIValueBinding<number>("k45::we.wpicker.EmissiveIntensity")
-        this.CoatStrength ??= new MultiUIValueBinding<number>("k45::we.wpicker.CoatStrength") 
+        this.CoatStrength ??= new MultiUIValueBinding<number>("k45::we.wpicker.CoatStrength")
         this.EmissiveExposureWeight ??= new MultiUIValueBinding<number>("k45::we.wpicker.EmissiveExposureWeight")
 
         this.Bindings.push(
@@ -87,10 +87,10 @@ export class WorldPickerService {
         );
     }
 
-    registerBindings(x: Component) {
+    registerBindings(refreshFn: () => any) {
         this.Bindings.map(y => {
             y.reactivate();
-            y.subscribe(async () => x.setState({}));
+            y.subscribe(async () => refreshFn());
         })
     }
 

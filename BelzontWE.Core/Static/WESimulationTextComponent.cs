@@ -283,7 +283,7 @@ namespace BelzontWE
             if (targetEntity == Entity.Null) return 2; // Must define a targetEntity before compiling formulae
 
             var path = newFormulae.Split("/");
-            DynamicMethodDefinition dynamicMethodDefinition = new DynamicMethodDefinition($"__WE_CS2_{nameof(WESimulationTextComponent)}_formulae_{targetEntity.Index}_{targetEntity.Version}_{new Regex("[Â-Za-z0-9_]").Replace(newFormulae, "_")}", typeof(string), new Type[] { typeof(EntityManager), typeof(Entity) });
+            DynamicMethodDefinition dynamicMethodDefinition = new DynamicMethodDefinition($"__WE_CS2_{nameof(WESimulationTextComponent)}_formulae_{targetEntity.Index}_{targetEntity.Version}_{new Regex("[A-Za-z0-9_]").Replace(newFormulae, "_")}", typeof(string), new Type[] { typeof(EntityManager), typeof(Entity) });
             ILGenerator iLGenerator = dynamicMethodDefinition.GetILGenerator();
             var entityLocalField = iLGenerator.DeclareLocal(typeof(Entity));
             var currentComponentType = typeof(Entity);
