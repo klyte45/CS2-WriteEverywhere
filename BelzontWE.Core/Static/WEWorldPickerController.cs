@@ -1,11 +1,13 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
+using BelzontWE.Font;
 using Colossal.Entities;
 using Game.Common;
 using Game.Input;
 using Game.SceneFlow;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -78,6 +80,8 @@ namespace BelzontWE
         public MultiUIValueBinding<float> EmissiveIntensity { get; private set; }
         public MultiUIValueBinding<float> CoatStrength { get; private set; }
         public MultiUIValueBinding<float> EmissiveExposureWeight { get; private set; }
+        public MultiUIValueBinding<string> SelectedFont { get; private set; }
+        public MultiUIValueBinding<Dictionary<string, Entity>, string[]> FontList { get; private set; }
 
 
 
@@ -113,30 +117,31 @@ namespace BelzontWE
             CurrentEntity = new(default, $"{PREFIX}{nameof(CurrentEntity)}", m_eventCaller, m_callBinder);
             CurrentItemCount = new(default, $"{PREFIX}{nameof(CurrentItemCount)}", m_eventCaller, m_callBinder);
 
-            CurrentScale = new(default, $"{PREFIX}{nameof(CurrentScale)}", m_eventCaller, m_callBinder, (x) => new[] { x.x, x.y, x.z }, (x) => new float3(x[0], x[1], x[2]));
-            CurrentRotation = new(default, $"{PREFIX}{nameof(CurrentRotation)}", m_eventCaller, m_callBinder, (x) => new[] { x.x, x.y, x.z }, (x) => new float3(x[0], x[1], x[2]));
-            CurrentPosition = new(default, $"{PREFIX}{nameof(CurrentPosition)}", m_eventCaller, m_callBinder, (x) => new[] { x.x, x.y, x.z }, (x) => new float3(x[0], x[1], x[2]));
+            CurrentScale = new(default, $"{PREFIX}{nameof(CurrentScale)}", m_eventCaller, m_callBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new float3(x[0], x[1], x[2]));
+            CurrentRotation = new(default, $"{PREFIX}{nameof(CurrentRotation)}", m_eventCaller, m_callBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new float3(x[0], x[1], x[2]));
+            CurrentPosition = new(default, $"{PREFIX}{nameof(CurrentPosition)}", m_eventCaller, m_callBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new float3(x[0], x[1], x[2]));
 
             CurrentItemName = new(default, $"{PREFIX}{nameof(CurrentItemName)}", m_eventCaller, m_callBinder);
             CurrentItemText = new(default, $"{PREFIX}{nameof(CurrentItemText)}", m_eventCaller, m_callBinder);
             CurrentItemIsValid = new(default, $"{PREFIX}{nameof(CurrentItemIsValid)}", m_eventCaller, m_callBinder);
-            CurrentPlaneMode = new(default, $"{PREFIX}{nameof(CurrentPlaneMode)}", m_eventCaller, m_callBinder, (x) => x % 3); // WEWorldPickerTool.ToolEditMode Count
-            CurrentMoveMode = new(default, $"{PREFIX}{nameof(CurrentMoveMode)}", m_eventCaller, m_callBinder, (x) => x % 3); // All, Horizontal, Vertical
+            CurrentPlaneMode = new(default, $"{PREFIX}{nameof(CurrentPlaneMode)}", m_eventCaller, m_callBinder, (x, _) => x % 3); // WEWorldPickerTool.ToolEditMode Count
+            CurrentMoveMode = new(default, $"{PREFIX}{nameof(CurrentMoveMode)}", m_eventCaller, m_callBinder, (x, _) => x % 3); // All, Horizontal, Vertical
 
-            MouseSensibility = new(6, $"{PREFIX}{nameof(MouseSensibility)}", m_eventCaller, m_callBinder, (x) => x % WEWorldPickerTool.precisionIdx.Length);
+            MouseSensibility = new(6, $"{PREFIX}{nameof(MouseSensibility)}", m_eventCaller, m_callBinder, (x, _) => x % WEWorldPickerTool.precisionIdx.Length);
             CameraLocked = new(default, $"{PREFIX}{nameof(CameraLocked)}", m_eventCaller, m_callBinder);
             CameraRotationLocked = new(default, $"{PREFIX}{nameof(CameraRotationLocked)}", m_eventCaller, m_callBinder);
 
 
-            MainColor = new(default, $"{PREFIX}{nameof(MainColor)}", m_eventCaller, m_callBinder, (x) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x) => new Color(x.r, x.g, x.b, x.a));
-            EmissiveColor = new(default, $"{PREFIX}{nameof(EmissiveColor)}", m_eventCaller, m_callBinder, (x) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x) => new Color(x.r, x.g, x.b, x.a));
+            MainColor = new(default, $"{PREFIX}{nameof(MainColor)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
+            EmissiveColor = new(default, $"{PREFIX}{nameof(EmissiveColor)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
 
-            Metallic = new(default, $"{PREFIX}{nameof(Metallic)}", m_eventCaller, m_callBinder, (x) => math.clamp(x, 0, 1));
-            Smoothness = new(default, $"{PREFIX}{nameof(Smoothness)}", m_eventCaller, m_callBinder, (x) => math.clamp(x, 0, 1));
-            EmissiveIntensity = new(default, $"{PREFIX}{nameof(EmissiveIntensity)}", m_eventCaller, m_callBinder, (x) => math.clamp(x, 0, 1));
-            CoatStrength = new(default, $"{PREFIX}{nameof(CoatStrength)}", m_eventCaller, m_callBinder, (x) => math.clamp(x, 0, 1));
-            EmissiveExposureWeight = new(default, $"{PREFIX}{nameof(EmissiveExposureWeight)}", m_eventCaller, m_callBinder, (x) => math.clamp(x, 0, 1));
-
+            Metallic = new(default, $"{PREFIX}{nameof(Metallic)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
+            Smoothness = new(default, $"{PREFIX}{nameof(Smoothness)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
+            EmissiveIntensity = new(default, $"{PREFIX}{nameof(EmissiveIntensity)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
+            CoatStrength = new(default, $"{PREFIX}{nameof(CoatStrength)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
+            EmissiveExposureWeight = new(default, $"{PREFIX}{nameof(EmissiveExposureWeight)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
+            SelectedFont = new(default, $"{PREFIX}{nameof(SelectedFont)}", m_eventCaller, m_callBinder);
+            FontList = new(new Dictionary<string, Entity>(), $"{PREFIX}{nameof(FontList)}", m_eventCaller, m_callBinder, (x, t) => x.Keys.ToArray(), (_, t) => t.Value);
 
 
             CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
@@ -153,6 +158,7 @@ namespace BelzontWE
             EmissiveIntensity.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveIntensity = x; return currentItem; });
             CoatStrength.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.CoatStrength = x; return currentItem; });
             EmissiveExposureWeight.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveExposureWeight = x; return currentItem; });
+            SelectedFont.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Font = FontList.Value.TryGetValue(x, out var entity) ? entity : Entity.Null; return currentItem; });
 
             m_initialized = true;
         }
@@ -180,6 +186,7 @@ namespace BelzontWE
                 buff = EntityManager.AddBuffer<T>(CurrentEntity.Value);
             }
             task(buff);
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"!!ad  + {m_EndBarrier} | {CurrentEntity}");
             var cmd = m_EndBarrier.CreateCommandBuffer();
             cmd.AddBuffer<T>(CurrentEntity.Value).CopyFrom(buff);
             cmd.AddComponent<BatchesUpdated>(CurrentEntity.Value);
@@ -241,6 +248,7 @@ namespace BelzontWE
             Smoothness.Value = currentItem.Smoothness;
             EmissiveIntensity.Value = currentItem.EmissiveIntensity;
             CoatStrength.Value = currentItem.CoatStrength;
+            SelectedFont.Value = EntityManager.TryGetComponent<FontSystemData>(currentItem.Font, out var fsd) ? fsd.Name : "";
         }
 
         protected override void OnCreate()

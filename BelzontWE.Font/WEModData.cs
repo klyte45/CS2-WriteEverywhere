@@ -216,7 +216,6 @@ namespace BelzontWE
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad5, kActionMoveDown)] public ProxyBinding ActionMoveDown { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad9, kActionRotateClockwise)] public ProxyBinding ActionRotateClockwise { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad7, kActionRotateCounterClockwise)] public ProxyBinding ActionRotateCounterClockwise { get; set; }
-
         #endregion
     }
 

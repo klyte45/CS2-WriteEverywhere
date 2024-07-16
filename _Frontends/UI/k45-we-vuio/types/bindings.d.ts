@@ -550,9 +550,9 @@ declare module "cs2/bindings" {
   	signed: boolean;
   }
   export interface LocalizedString {
-  	id: string | null;
-  	value: string | null;
-  	args: Record<string, LocElement> | null;
+  	id?: string | null;
+  	value?: string | null;
+  	args?: Record<string, LocElement> | null;
   }
   export type NumericProperty = NumberProperty | Number2Property;
   const NUMBER_PROPERTY = "Game.UI.Common.NumberProperty";

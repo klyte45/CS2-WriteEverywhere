@@ -5,7 +5,6 @@ import { getModule, ModuleRegistryExtend } from "cs2/modding";
 import { useEffect, useState } from "react";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "../utils/translate";
-import { WEFontSettings } from "./WEFontSettings";
 import { WETextAppearenceSettings } from "./WETextAppearenceSettings";
 
 
@@ -207,9 +206,6 @@ const WEWorldPickerToolPanel = () => {
             {wps.CurrentItemIdx.value < wps.CurrentItemCount.value && <>
                 {displayAppearenceWindow && <WETextAppearenceSettings />}
             </>}
-            {/* {wps.CurrentItemIdx.value < wps.CurrentItemCount.value && <>
-                {displayAppearenceWindow && <WEFontSettings />}
-            </>} */}
         </>
 
 }

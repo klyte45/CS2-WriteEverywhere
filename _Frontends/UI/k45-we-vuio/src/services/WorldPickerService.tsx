@@ -35,6 +35,9 @@ export class WorldPickerService {
     CoatStrength: MultiUIValueBinding<number>
     EmissiveExposureWeight: MultiUIValueBinding<number>
 
+    FontList: MultiUIValueBinding<string[]>
+    SelectedFont: MultiUIValueBinding<string>
+
 
     private Bindings: MultiUIValueBinding<any>[] = []
 
@@ -61,6 +64,8 @@ export class WorldPickerService {
         this.EmissiveIntensity ??= new MultiUIValueBinding<number>("k45::we.wpicker.EmissiveIntensity")
         this.CoatStrength ??= new MultiUIValueBinding<number>("k45::we.wpicker.CoatStrength")
         this.EmissiveExposureWeight ??= new MultiUIValueBinding<number>("k45::we.wpicker.EmissiveExposureWeight")
+        this.FontList = new MultiUIValueBinding<string[]>("k45::we.wpicker.FontList")
+        this.SelectedFont = new MultiUIValueBinding<string>("k45::we.wpicker.SelectedFont")
 
         this.Bindings.push(
             this.CurrentItemIdx,
@@ -84,16 +89,17 @@ export class WorldPickerService {
             this.EmissiveIntensity,
             this.CoatStrength,
             this.EmissiveExposureWeight,
+            this.FontList,
+            this.SelectedFont
         );
     }
 
     registerBindings(refreshFn: () => any) {
         this.Bindings.map(y => {
-            y.reactivate();
             y.subscribe(async () => refreshFn());
         })
     }
-
+ 
     disposeBindings() {
         this.Bindings.map(y => {
             y.dispose();
