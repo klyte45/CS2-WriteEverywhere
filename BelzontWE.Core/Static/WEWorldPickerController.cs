@@ -82,6 +82,9 @@ namespace BelzontWE
         public MultiUIValueBinding<float> EmissiveExposureWeight { get; private set; }
         public MultiUIValueBinding<string> SelectedFont { get; private set; }
         public MultiUIValueBinding<Dictionary<string, Entity>, string[]> FontList { get; private set; }
+        public MultiUIValueBinding<string> FormulaeStr { get; private set; }
+        public MultiUIValueBinding<int> FormulaeCompileResult { get; private set; }
+        public MultiUIValueBinding<string[]> FormulaeCompileResultErrorArgs { get; private set; }
 
 
 
@@ -142,6 +145,9 @@ namespace BelzontWE
             EmissiveExposureWeight = new(default, $"{PREFIX}{nameof(EmissiveExposureWeight)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
             SelectedFont = new(default, $"{PREFIX}{nameof(SelectedFont)}", m_eventCaller, m_callBinder);
             FontList = new(new Dictionary<string, Entity>(), $"{PREFIX}{nameof(FontList)}", m_eventCaller, m_callBinder, (x, t) => x.Keys.ToArray(), (_, t) => t.Value);
+            FormulaeStr = new(default, $"{PREFIX}{nameof(FormulaeStr)}", m_eventCaller, m_callBinder);
+            FormulaeCompileResult = new(default, $"{PREFIX}{nameof(FormulaeCompileResult)}", m_eventCaller, m_callBinder);
+            FormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(FormulaeCompileResultErrorArgs)}", m_eventCaller, m_callBinder);
 
 
             CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
@@ -159,6 +165,7 @@ namespace BelzontWE
             CoatStrength.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.CoatStrength = x; return currentItem; });
             EmissiveExposureWeight.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveExposureWeight = x; return currentItem; });
             SelectedFont.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Font = FontList.Value.TryGetValue(x, out var entity) ? entity : Entity.Null; return currentItem; });
+            FormulaeStr.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { FormulaeCompileResult.Value = currentItem.SetFormulae(FormulaeStr.Value, out var cmpErr); FormulaeCompileResultErrorArgs.Value = cmpErr; if (currentItem.targetEntity == Entity.Null) currentItem.targetEntity = CurrentEntity.Value; return currentItem; });
 
             m_initialized = true;
         }

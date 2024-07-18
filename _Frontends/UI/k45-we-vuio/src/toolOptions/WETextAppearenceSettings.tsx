@@ -25,6 +25,7 @@ const T_EmissiveIntensity = translate("appearenceSettings.EmissiveIntensity"); /
 const T_EmissiveExposureWeight = translate("appearenceSettings.EmissiveExposureWeight"); //"Emissive Exposure"
 const T_uploadNewFont = translate("appearenceSettings.importNewFont"); //
 const T_fontFieldTitle = translate("appearenceSettings.fontFieldTitle"); //
+const T_formulae = translate("appearenceSettings.formulae"); //
 
 export const WETextAppearenceSettings = (props: { initialPosition?: { x: number, y: number } }) => {
     const [buildIdx, setBuild] = useState(0);
@@ -39,11 +40,13 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
 
     const EditorItemRow = VanillaComponentResolver.instance.EditorItemRow;
     const DropdownField = VanillaComponentResolver.instance.DropdownField<string>();
+    const StringInputField = VanillaComponentResolver.instance.StringInputField;
     const CommonButton = VanillaComponentResolver.instance.CommonButton;
     const Tooltip = VanillaComponentResolver.instance.Tooltip;
     const editorTheme = VanillaComponentResolver.instance.editorItemModule;
     const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
 
+    const [formulaeTyping, setFormulaeTyping] = useState(wps.FormulaeStr.value);
 
     return <Portal>
         <Panel draggable header={T_appearenceTitle} className="k45_we_floatingSettingsPanel" initialPosition={props.initialPosition ?? { x: 0.5, y: 0 }} >
@@ -66,6 +69,20 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
             <VanillaComponentResolver.instance.FloatSlider value={wps.Metallic.value} onChange={(x) => { wps.Metallic.set(x) }} label={T_Metallic} max={1} min={0} />
             <VanillaComponentResolver.instance.FloatSlider value={wps.CoatStrength.value} onChange={(x) => { wps.CoatStrength.set(x) }} label={T_CoatStrength} max={1} min={0} />
             <VanillaComponentResolver.instance.FloatSlider value={wps.Smoothness.value} onChange={(x) => { wps.Smoothness.set(x) }} label={T_Smoothness} max={1} min={0} />
+            <EditorItemRow label={T_formulae} styleContent={{ paddingLeft: "34rem" }}>
+                <StringInputField
+                    value={formulaeTyping}
+                    onChange={(x) => { setFormulaeTyping(x.replaceAll(/\s/g, "")) }}
+                    onChangeEnd={() => wps.FormulaeStr.set(formulaeTyping)}
+                    className="we_formulaeInput"
+                    maxLength={400}
+                />
+                <Tooltip tooltip={T_uploadNewFont}>
+                    <CommonButton className={editorTheme.pickerToggle} style={{ width: "34rem" }} focusKey={noFocus}>
+                        {wps.FormulaeCompileResult.value}
+                    </CommonButton>
+                </Tooltip>
+            </EditorItemRow>
         </Panel>
     </Portal>;
 } 

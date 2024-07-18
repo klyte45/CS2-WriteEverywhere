@@ -38,6 +38,9 @@ export class WorldPickerService {
     FontList: MultiUIValueBinding<string[]>
     SelectedFont: MultiUIValueBinding<string>
 
+    FormulaeStr: MultiUIValueBinding<string>
+    FormulaeCompileResult: MultiUIValueBinding<number>
+
 
     private Bindings: MultiUIValueBinding<any>[] = []
 
@@ -66,6 +69,8 @@ export class WorldPickerService {
         this.EmissiveExposureWeight ??= new MultiUIValueBinding<number>("k45::we.wpicker.EmissiveExposureWeight")
         this.FontList = new MultiUIValueBinding<string[]>("k45::we.wpicker.FontList")
         this.SelectedFont = new MultiUIValueBinding<string>("k45::we.wpicker.SelectedFont")
+        this.FormulaeStr = new MultiUIValueBinding<string>("k45::we.wpicker.FormulaeStr")
+        this.FormulaeCompileResult = new MultiUIValueBinding<number>("k45::we.wpicker.FormulaeCompileResult")
 
         this.Bindings.push(
             this.CurrentItemIdx,
@@ -90,7 +95,9 @@ export class WorldPickerService {
             this.CoatStrength,
             this.EmissiveExposureWeight,
             this.FontList,
-            this.SelectedFont
+            this.SelectedFont,
+            this.FormulaeStr,
+            this.FormulaeCompileResult
         );
     }
 
@@ -99,7 +106,7 @@ export class WorldPickerService {
             y.subscribe(async () => refreshFn());
         })
     }
- 
+
     disposeBindings() {
         this.Bindings.map(y => {
             y.dispose();

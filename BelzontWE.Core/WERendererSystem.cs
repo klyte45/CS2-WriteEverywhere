@@ -112,12 +112,13 @@ namespace BelzontWE
             availToDraw.Dispose();
             base.OnDestroy();
         }
+        private uint counter = 0;
 #if BURST
         [Preserve]
 #endif
-
         private void Render_Impl()
         {
+            var checkUpdates = (++counter & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal;
             if (!m_renderQueueEntities.IsEmptyIgnoreFilter || !m_renderInterpolatedQueueEntities.IsEmptyIgnoreFilter)
             {
                 while (availToDraw.TryDequeue(out var item))
@@ -129,6 +130,10 @@ namespace BelzontWE
                     if (m_pickerTool.Enabled && item.refEntity == m_pickerController.CurrentEntity.Value && m_pickerController.CurrentItemIdx.Value == item.index)
                     {
                         m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
+                    }
+                    if (checkUpdates && item.weComponent.GetEffectiveText(EntityManager) != bri.m_refText)
+                    {
+                        item.weComponent.MarkDirty();
                     }
                     Graphics.DrawMesh(bri.m_mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
                 }
