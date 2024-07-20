@@ -8,14 +8,16 @@ namespace BelzontWE
 {
     public struct WEWaitingRenderingComponent : ISerializable, IBufferElementData
     {
-        private const uint CURRENT_VERSION = 0;
+        private const uint CURRENT_VERSION = 1;
         public WESimulationTextComponent src;
+        public int originalIdx;
 
-        public static WEWaitingRenderingComponent From(WESimulationTextComponent src)
+        public static WEWaitingRenderingComponent From(WESimulationTextComponent src, int originalIdx)
         {
             var result = new WEWaitingRenderingComponent
             {
-                src = src
+                src = src,
+                originalIdx = originalIdx
             };
             return result;
         }
@@ -29,12 +31,17 @@ namespace BelzontWE
                 return;
             }
             reader.Read(out src);
+            if (version >= 1)
+            {
+                reader.Read(out originalIdx);
+            }
         }
 
         public readonly void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
             writer.Write(CURRENT_VERSION);
             writer.Write(src);
+            writer.Write(originalIdx);
         }
     }
 

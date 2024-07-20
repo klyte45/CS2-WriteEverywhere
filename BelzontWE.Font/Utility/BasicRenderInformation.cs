@@ -52,6 +52,7 @@ namespace BelzontWE.Font.Utility
         public float m_lineOffset = .5f;
         public bool m_expandXIfAlone;
         public float m_offsetScaleX = 1f;
+        public bool m_isError = false;
 
         private static Vector3[] AlignVertices(List<Vector3> points)
         {

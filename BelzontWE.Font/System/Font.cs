@@ -1,6 +1,4 @@
-﻿using BelzontWE.Font;
-
-namespace BelzontWE.Font
+﻿namespace BelzontWE.Font
 {
     public class Font
     {
@@ -24,6 +22,7 @@ namespace BelzontWE.Font
         {
             float tempScale = _font.stbtt_ScaleForPixelHeight(100);
             int aIdx = GetGlyphIndex(char.ConvertToUtf32("Á", 0));
+            if (aIdx == 0) aIdx = GetGlyphIndex(char.ConvertToUtf32("A", 0));
             int jIdx = GetGlyphIndex(char.ConvertToUtf32("j", 0));
             int x0 = 0, y0 = 0, x1 = 0, y1 = 0;
 

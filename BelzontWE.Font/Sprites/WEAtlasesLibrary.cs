@@ -66,7 +66,7 @@ namespace WriteEverywhere.Sprites
 
         public string[] ListLocalAtlases()
         {
-            return LocalAtlases.Keys.Where(x => x != INTERNAL_ATLAS_NAME).ToArray();
+            return LocalAtlases.Where(x => x.Key != INTERNAL_ATLAS_NAME && x.Value.Count > 0).Select(x => x.Key).ToArray();
         }
         public string[] ListLocalAtlasImages(string atlasName)
         {
@@ -109,7 +109,7 @@ namespace WriteEverywhere.Sprites
                 LocalAtlasesCache[atlasName ?? string.Empty] = new Dictionary<string, BasicRenderInformation>();
             }
 
-            return LocalAtlasesCache[atlasName ?? string.Empty][spriteName] = CreateItemAtlasCoroutine(LocalAtlases, LocalAtlasesCache, atlasName ?? string.Empty, spriteName) ?? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage);
+            return LocalAtlasesCache[atlasName ?? string.Empty][spriteName] = CreateItemAtlasCoroutine(LocalAtlases, atlasName ?? string.Empty, spriteName) ?? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage);
         }
         public BasicRenderInformation GetSlideFromLocal(string atlasName, Func<int, int> idxFunc, bool fallbackOnInvalid = false) => !LocalAtlases.TryGetValue(atlasName ?? string.Empty, out Dictionary<string, WEImageInfo> atlas)
                 ? fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidFolder) : null
@@ -146,7 +146,7 @@ namespace WriteEverywhere.Sprites
         //    StartCoroutine(CreateItemAtlasCoroutine(AssetAtlases, AssetAtlasesCache, assetId, spriteName));
         //    return null;
         //}
-        private BasicRenderInformation CreateItemAtlasCoroutine<T>(Dictionary<T, Dictionary<string, WEImageInfo>> spriteDict, Dictionary<T, Dictionary<string, BasicRenderInformation>> spriteDictCache, T assetId, string spriteName)
+        private BasicRenderInformation CreateItemAtlasCoroutine<T>(Dictionary<T, Dictionary<string, WEImageInfo>> spriteDict, T assetId, string spriteName)
         {
             if (!spriteDict.TryGetValue(assetId, out var targetAtlas))
             {
@@ -161,6 +161,10 @@ namespace WriteEverywhere.Sprites
             var info = targetAtlas[spriteName];
             var bri = WERenderingHelper.GenerateBri(info.Texture, info.Borders, info.PixelsPerMeter);
             bri.m_refText = spriteName;
+            if ((assetId as string) == INTERNAL_ATLAS_NAME)
+            {
+                bri.m_isError = true;
+            }
             return bri;
         }
         #endregion

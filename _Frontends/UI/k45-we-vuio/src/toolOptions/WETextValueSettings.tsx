@@ -24,6 +24,8 @@ const T_fixedText = translate("textValueSettings.fixedText"); //
 const T_contentType = translate("textValueSettings.contentType"); //
 const T_atlas = translate("textValueSettings.atlas"); //
 const T_image = translate("textValueSettings.image"); //
+const T_Height = translate("textValueSettings.height"); //
+const T_widthDistortion = translate("textValueSettings.widthDistortion"); //
 
 export const WETextValueSettings = (props: { initialPosition?: { x: number, y: number } }) => {
     const wps = WorldPickerService.instance;
@@ -31,10 +33,16 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     useEffect(() => {
         WorldPickerService.instance.registerBindings(() => setBuild(buildIdx + 1))
-        WorldPickerService.listAvailableLibraries().then(x => setAtlases(x ?? []));
-        WorldPickerService.listAtlasImages(wps.ImageAtlasName.value).then(x => setImgOptions(x ?? []));
         return () => WorldPickerService.instance.disposeBindings()
-    }, [buildIdx, wps.ImageAtlasName.value])
+    }, [buildIdx])
+
+    useEffect(() => {
+        WorldPickerService.listAtlasImages(wps.ImageAtlasName.value).then(x => setImgOptions(x ?? []));
+    }, [wps.ImageAtlasName.value, wps.CurrentItemIdx.value])
+
+    useEffect(() => {
+        WorldPickerService.listAvailableLibraries().then(x => setAtlases(x ?? []));
+    }, [wps.CurrentItemIdx.value])
 
     const Locale = VanillaFnResolver.instance.localization.useCachedLocalization();
     const decimalsFormat = (value: number) => VanillaFnResolver.instance.localizedNumber.formatFloat(Locale, value, false, 3, true, false, Infinity);
@@ -46,18 +54,45 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const CommonButton = VanillaComponentResolver.instance.CommonButton;
     const Tooltip = VanillaComponentResolver.instance.Tooltip;
     const ToggleField = VanillaWidgets.instance.ToggleField;
+    const FloatInputField = VanillaWidgets.instance.FloatInputField;
     const editorTheme = VanillaWidgets.instance.editorItemModule;
     const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
-    const onFontSelectWindow = () => console.log("ADJHAKD")
+    const onFontSelectWindow = async () => wps.SelectedFont.set(await WorldPickerService.requireFontInstallation(""))
 
     const [formulaeTyping, setFormulaeTyping] = useState(wps.FormulaeStr.value);
     const [fixedTextTyping, setFixedTextTyping] = useState(wps.CurrentItemText.value);
     const [usingFormulae, setUsingFormulae] = useState(!!wps.FormulaeStr.value);
 
-
     const [atlases, setAtlases] = useState([]);
     const [imgOptions, setImgOptions] = useState([]);
 
+    const [height, setHeight] = useState(wps.CurrentScale.value[1]);
+    const [widthDistortion, setWidthDistortion] = useState(wps.CurrentScale.value[0] / wps.CurrentScale.value[1]);
+
+
+    useEffect(() => {
+        setHeight(wps.CurrentScale.value[1]);
+        setWidthDistortion(wps.CurrentScale.value[0] / wps.CurrentScale.value[1]);
+    }, [wps.CurrentScale.value, wps.CurrentItemIdx.value])
+
+    useEffect(() => {
+        setFormulaeTyping(wps.FormulaeStr.value);
+        setUsingFormulae(!!wps.FormulaeStr.value);
+    }, [wps.FormulaeStr.value, wps.CurrentItemIdx.value])
+    useEffect(() => { setFixedTextTyping(wps.CurrentItemText.value); }, [wps.CurrentItemText.value, wps.CurrentItemIdx.value])
+
+    const saveHeight = (height: number) => {
+        const scale = wps.CurrentScale.value;
+        const proportion = wps.CurrentScale.value[0] / wps.CurrentScale.value[1];
+        scale[1] = height;
+        scale[0] = height * proportion;
+        wps.CurrentScale.set(scale);
+    }
+    const saveWidthDistortion = (proportion: number) => {
+        const scale = wps.CurrentScale.value;
+        scale[0] = scale[1] * proportion;
+        wps.CurrentScale.set(scale);
+    }
 
     const defaultPosition = props.initialPosition ?? { x: 200 / window.innerWidth, y: 200 / window.innerHeight }
 
@@ -71,6 +106,8 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                     style={{ flexGrow: 1, width: "inherit" }}
                 />
             </EditorItemRow>
+            <FloatInputField label={T_Height} min={.001} max={10000000} value={height} onChange={saveHeight} onChangeEnd={(x) => { console.log(x); saveHeight(height) }} />
+            <FloatInputField label={T_widthDistortion} min={.001} max={1000000} value={widthDistortion} onChange={setWidthDistortion} onChangeEnd={() => saveWidthDistortion(widthDistortion)} />
             {wps.TextSourceType.value == 0 && <>
                 <EditorItemRow label={T_fontFieldTitle} styleContent={{ paddingLeft: "34rem" }}>
                     <DropdownField

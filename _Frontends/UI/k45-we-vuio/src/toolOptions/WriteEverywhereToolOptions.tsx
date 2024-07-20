@@ -176,18 +176,7 @@ const WEWorldPickerToolPanel = () => {
                             newVal[i] = parseFloat(x);
                             if (isNaN(newVal[i])) return;
                             wps.CurrentRotation.set(newVal);
-                        }} />     
-
-                    <VectorSectionEditable title={"::::"}
-                        valueGetter={() => wps.CurrentScale.value?.map(x => x.toFixed(3))}
-                        valueGetterFormatted={() => wps.CurrentScale.value?.map(x => decimalsFormat(x))}
-                        onValueChanged={(i, x) => {
-                            const newVal = wps.CurrentScale.value;
-                            newVal[i] = parseFloat(x);
-                            if (isNaN(newVal[i])) return;
-                            wps.CurrentScale.set(newVal);
-                        }} />
-      
+                        }} />           
                 </>}
 
 

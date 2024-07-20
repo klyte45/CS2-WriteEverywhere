@@ -2,6 +2,7 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font;
+using Colossal.Entities;
 using Game;
 using Game.Common;
 using Game.SceneFlow;
@@ -32,7 +33,7 @@ namespace BelzontWE
             get => qualitySize; set
             {
                 qualitySize = value;
-                Instance.OnChangeSizeParam();
+                Instance?.OnChangeSizeParam();
             }
         }
         public FontSystemData DefaultFont { get; private set; }
@@ -79,12 +80,12 @@ namespace BelzontWE
         {
             try
             {
+                var fontSystemData = FontSystemData.From(fontData, name);
                 if (name == null)
                 {
                     LogUtils.DoErrorLog($"RegisterFont: FONT NAME CANNOT BE NULL!!");
                     return false;
                 }
-                var fontSystemData = FontSystemData.From(fontData, name);
                 var fontEntity = EntityManager.CreateEntity();
                 EntityManager.AddComponent<Created>(fontEntity);
                 EntityManager.AddComponentData(fontEntity, fontSystemData);
@@ -106,8 +107,10 @@ namespace BelzontWE
                 for (var i = 0; i < entities.Length; i++)
                 {
                     var entity = entities[i];
-                    var data = EntityManager.GetComponentData<FontSystemData>(entity);
-                    UpdateFontSystem(data);
+                    if (EntityManager.TryGetComponent(entity, out FontSystemData data))
+                    {
+                        UpdateFontSystem(data);
+                    }
                 }
             }
             UpdateFontSystem(DefaultFont);

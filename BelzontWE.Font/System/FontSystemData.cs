@@ -83,6 +83,7 @@ namespace BelzontWE.Font
             {
                 zippedFontFile.Dispose();
             }
+            FontSystem = new FontSystem(this);
         }
 
         public static FontSystemData From(byte[] fontData, string name)

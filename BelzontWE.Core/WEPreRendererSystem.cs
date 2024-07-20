@@ -114,36 +114,14 @@ namespace BelzontWE
                     for (var j = 0; j < weCustomDataPending.Length; j++)
                     {
                         var weCustomData = weCustomDataPending[j];
+                        var text = weCustomData.src.GetEffectiveText(EntityManager);
                         if (weCustomData.src.TextType == WESimulationTextType.Text)
                         {
-                            var font = EntityManager.TryGetComponent<FontSystemData>(weCustomData.src.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
-                            if (font.Font == null)
-                            {
-                                if (BasicIMod.DebugMode) LogUtils.DoLog("Font not initialized!!!");
-                                continue;
-                            }
-
-                            var bri = font.FontSystem.DrawText(weCustomData.src.GetEffectiveText(EntityManager), FontServer.Instance.ScaleEffective);
-                            if (bri == null)
-                            {
-                                if (BasicIMod.TraceMode) LogUtils.DoTraceLog("BRI STILL NULL!!!");
-                                continue;
-                            }
-                            wePersistentData.Add(WESimulationTextComponent.From(weCustomData, bri));
-                            weCustomDataPending.RemoveAt(j);
-                            j--;
+                            UpdateTextMesh(ref weCustomDataPending, ref wePersistentData, ref j, weCustomData, text);
                         }
                         else if (weCustomData.src.TextType == WESimulationTextType.Image)
                         {
-                            var bri = m_atlasesLibrary.GetFromLocalAtlases(weCustomData.src.Atlas, weCustomData.src.GetEffectiveText(EntityManager), true);
-                            if (bri == null)
-                            {
-                                if (BasicIMod.TraceMode) LogUtils.DoTraceLog("BRI STILL NULL!!!");
-                                continue;
-                            }
-                            wePersistentData.Add(WESimulationTextComponent.From(weCustomData, bri));
-                            weCustomDataPending.RemoveAt(j);
-                            j--;
+                            UpdateImageMesh(ref weCustomDataPending, ref wePersistentData, ref j, weCustomData, text);
                         }
                     }
                 }
@@ -151,6 +129,38 @@ namespace BelzontWE
             }
         }
 
+        private void UpdateImageMesh(ref DynamicBuffer<WEWaitingRenderingComponent> weCustomDataPending, ref DynamicBuffer<WESimulationTextComponent> wePersistentData, ref int j, WEWaitingRenderingComponent weCustomData, string text)
+        {
+            var bri = m_atlasesLibrary.GetFromLocalAtlases(weCustomData.src.Atlas, text, true);
+            if (bri == null)
+            {
+                 LogUtils.DoWarnLog("IMAGE BRI STILL NULL!!!");
+                return;
+            }
+            wePersistentData.Add(WESimulationTextComponent.From(weCustomData, bri, text));
+            weCustomDataPending.RemoveAt(j);
+            j--;
+        }
+
+        private void UpdateTextMesh(ref DynamicBuffer<WEWaitingRenderingComponent> weCustomDataPending, ref DynamicBuffer<WESimulationTextComponent> wePersistentData, ref int j, WEWaitingRenderingComponent weCustomData, string text)
+        {
+            var font = EntityManager.TryGetComponent<FontSystemData>(weCustomData.src.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
+            if (font.Font == null)
+            {
+                if (BasicIMod.DebugMode) LogUtils.DoLog("Font not initialized!!!");
+                return;
+            }
+
+            var bri = font.FontSystem.DrawText(text, FontServer.Instance.ScaleEffective);
+            if (bri == null)
+            {
+                if (BasicIMod.TraceMode) LogUtils.DoTraceLog("BRI STILL NULL!!!");
+                return;
+            }
+            wePersistentData.Add(WESimulationTextComponent.From(weCustomData, bri, text));
+            weCustomDataPending.RemoveAt(j);
+            j--;
+        }
     }
 
 }

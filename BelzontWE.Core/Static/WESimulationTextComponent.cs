@@ -47,7 +47,18 @@ namespace BelzontWE
         public Entity targetEntity;
         public WEPropertyDescription targetProperty;
 
-        public Entity Font;
+        public Entity Font
+        {
+            get => font; set
+            {
+                font = value;
+                if (basicRenderInformation.IsAllocated)
+                {
+                    basicRenderInformation.Free();
+                    basicRenderInformation = default;
+                }
+            }
+        }
         public string Text
         {
             readonly get => text.IsAllocated ? text.Target as string ?? "" : ""; set
@@ -107,6 +118,7 @@ namespace BelzontWE
         private GCHandle text;
         public FixedString32Bytes itemName;
         public WEShader shader;
+        public FixedString512Bytes LastErrorStr { get; private set; }
 
         private int lastEvaluationFrame;
         private FixedString512Bytes formulaeHandlerStr;
@@ -216,14 +228,17 @@ namespace BelzontWE
 
         public bool HasFormulae => formulaeHandlerFn.IsAllocated;
 
-        public static WESimulationTextComponent From(WEWaitingRenderingComponent src, BasicRenderInformation bri)
+        public static WESimulationTextComponent From(WEWaitingRenderingComponent src, BasicRenderInformation bri, string text)
         {
             src.src.dirty = true;
             if (src.src.basicRenderInformation.IsAllocated) src.src.basicRenderInformation.Free();
             src.src.basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
             src.src.BriOffsetScaleX = bri.m_offsetScaleX;
             src.src.BriPixelDensity = bri.m_pixelDensityMeters;
-
+            if (bri.m_isError)
+            {
+                src.src.LastErrorStr = text;
+            }
             return src.src;
         }
 
@@ -248,7 +263,7 @@ namespace BelzontWE
             writer.Write(metallic);
             writer.Write(smoothness);
             writer.Write(text.IsAllocated ? new FixedString512Bytes(text.Target as string ?? "") : "");
-            writer.Write(Font);
+            writer.Write(font);
             writer.Write(itemName);
             writer.Write(coatStrength);
             writer.Write(Formulae ?? "");
@@ -286,7 +301,7 @@ namespace BelzontWE
             }
             else
             {
-                reader.Read(out Font);
+                reader.Read(out font);
             }
             if (version >= 1)
             {
@@ -320,7 +335,7 @@ namespace BelzontWE
 
         private static MethodInfo r_GetComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
             .First(x => x.Name == "GetComponentData" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 1 && pi[0].ParameterType == typeof(Entity));
-
+        private Entity font;
 
         public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
         {

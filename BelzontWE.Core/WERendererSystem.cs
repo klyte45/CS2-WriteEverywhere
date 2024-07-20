@@ -131,7 +131,7 @@ namespace BelzontWE
                     {
                         m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
                     }
-                    if (checkUpdates && item.weComponent.GetEffectiveText(EntityManager) != bri.m_refText)
+                    if (checkUpdates && item.weComponent.GetEffectiveText(EntityManager) != (bri.m_isError ? item.weComponent.LastErrorStr : bri.m_refText))
                     {
                         item.weComponent.MarkDirty();
                     }

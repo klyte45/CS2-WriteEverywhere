@@ -7,6 +7,7 @@ using Game.Input;
 using Game.SceneFlow;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -36,6 +37,7 @@ namespace BelzontWE
             callBinder($"{PREFIX}removeItem", RemoveItem);
             callBinder($"{PREFIX}listAvailableLibraries", ListAvailableLibraries);
             callBinder($"{PREFIX}listAtlasImages", ListAtlasImages);
+            callBinder($"{PREFIX}requireFontInstallation", RequireFontInstallation);
             if (m_eventCaller != null) InitValueBindings();
         }
 
@@ -100,7 +102,16 @@ namespace BelzontWE
         {
             return m_AtlasLibrary.ListLocalAtlasImages(atlas);
         }
-
+        private string RequireFontInstallation(string path)
+        {
+            if (!File.Exists(path)) return "";
+            var name = Path.GetFileNameWithoutExtension(path);
+            if (FontServer.Instance.RegisterFont(name, File.ReadAllBytes(path)))
+            {
+                return name;
+            }
+            return "";
+        }
 
         public bool IsValidEditingItem()
         {
@@ -197,9 +208,9 @@ namespace BelzontWE
                 m_executionQueue.Enqueue(() => DoWithBuffer<WESimulationTextComponent>(
                     (buff) =>
                     {
-                        if (BasicIMod.DebugMode) LogUtils.DoLog($"CurrentItemIdx => {CurrentItemIdx}, buff = {buff}, {buff.Length}");
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"CurrentItemIdx => {CurrentItemIdx.Value}\nbuff = {buff} : {buff.Length}");
                         var currentItem = buff[CurrentItemIdx.Value];
-                        if (BasicIMod.DebugMode) LogUtils.DoLog($"x = {x}");
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"x = {x}; currentItem[{CurrentItemIdx.Value}] = {currentItem.itemName}");
                         currentItem = x(newVal, currentItem);
                         buff[CurrentItemIdx.Value] = currentItem;
                     }));

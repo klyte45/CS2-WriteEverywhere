@@ -71,7 +71,7 @@ namespace BelzontWE
 
 
         private static readonly int[] m_qualityArray = new[] { 50, 75, 100, 125, 150, 200, 400, 800 };
-        private static readonly int[] m_framesUpdate = new[] { 0xf, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff };
+        private static readonly int[] m_framesUpdate = new[] { 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff };
 
         public static WEModData InstanceWE => Instance as WEModData;
         public WEModData(IMod mod) : base(mod)
@@ -103,7 +103,6 @@ namespace BelzontWE
             {
                 fontQualityIdx = value;
                 FontServer.QualitySize = m_qualityArray[value];
-                FontServer.Instance?.OnChangeSizeParam();
             }
         }
         private DropdownItem<int>[] FontQualityValues() => m_qualityArray.Select((x, i) => new DropdownItem<int> { value = i, displayName = $"{x:0}%{(x >= 200 ? $" ({new string('!', x / 200)})" : "")}" }).ToArray();
