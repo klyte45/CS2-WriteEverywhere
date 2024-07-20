@@ -9,6 +9,7 @@ using Game.SceneFlow;
 using Game.Tools;
 using Unity.Collections;
 using Unity.Entities;
+using WriteEverywhere.Sprites;
 
 namespace BelzontWE
 {
@@ -17,12 +18,14 @@ namespace BelzontWE
         private EntityQuery m_noWaitQueueEntities;
         private EntityQuery m_pendingQueueEntities;
         private EndFrameBarrier m_endFrameBarrier;
+        private WEAtlasesLibrary m_atlasesLibrary;
 
         protected override void OnCreate()
         {
             base.OnCreate();
 
             m_endFrameBarrier = World.GetExistingSystemManaged<EndFrameBarrier>();
+            m_atlasesLibrary = World.GetOrCreateSystemManaged<WEAtlasesLibrary>();
 
             m_noWaitQueueEntities = GetEntityQuery(new EntityQueryDesc[]
             {
@@ -111,22 +114,37 @@ namespace BelzontWE
                     for (var j = 0; j < weCustomDataPending.Length; j++)
                     {
                         var weCustomData = weCustomDataPending[j];
-                        var font = EntityManager.TryGetComponent<FontSystemData>(weCustomData.src.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
-                        if (font.Font == null)
+                        if (weCustomData.src.TextType == WESimulationTextType.Text)
                         {
-                            if (BasicIMod.DebugMode) LogUtils.DoLog("Font not initialized!!!");
-                            continue;
-                        }
+                            var font = EntityManager.TryGetComponent<FontSystemData>(weCustomData.src.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
+                            if (font.Font == null)
+                            {
+                                if (BasicIMod.DebugMode) LogUtils.DoLog("Font not initialized!!!");
+                                continue;
+                            }
 
-                        var bri = font.FontSystem.DrawText(weCustomData.src.GetEffectiveText(EntityManager), FontServer.Instance.ScaleEffective);
-                        if (bri == null)
-                        {
-                            if (BasicIMod.TraceMode) LogUtils.DoTraceLog("BRI STILL NULL!!!");
-                            continue;
+                            var bri = font.FontSystem.DrawText(weCustomData.src.GetEffectiveText(EntityManager), FontServer.Instance.ScaleEffective);
+                            if (bri == null)
+                            {
+                                if (BasicIMod.TraceMode) LogUtils.DoTraceLog("BRI STILL NULL!!!");
+                                continue;
+                            }
+                            wePersistentData.Add(WESimulationTextComponent.From(weCustomData, bri));
+                            weCustomDataPending.RemoveAt(j);
+                            j--;
                         }
-                        wePersistentData.Add(WESimulationTextComponent.From(weCustomData, bri));
-                        weCustomDataPending.RemoveAt(j);
-                        j--;
+                        else if (weCustomData.src.TextType == WESimulationTextType.Image)
+                        {
+                            var bri = m_atlasesLibrary.GetFromLocalAtlases(weCustomData.src.Atlas, weCustomData.src.GetEffectiveText(EntityManager), true);
+                            if (bri == null)
+                            {
+                                if (BasicIMod.TraceMode) LogUtils.DoTraceLog("BRI STILL NULL!!!");
+                                continue;
+                            }
+                            wePersistentData.Add(WESimulationTextComponent.From(weCustomData, bri));
+                            weCustomDataPending.RemoveAt(j);
+                            j--;
+                        }
                     }
                 }
                 entities.Dispose();

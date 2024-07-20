@@ -10,6 +10,7 @@ using Game.UI.Widgets;
 using System;
 using System.Globalization;
 using System.Linq;
+using WriteEverywhere.Sprites;
 
 namespace BelzontWE
 {
@@ -122,17 +123,15 @@ namespace BelzontWE
 
         [SettingsUIButton]
         [SettingsUISection(kSourcesTab, kSpritesSection)]
-        [SettingsUIDisableByCondition(typeof(WEModData), nameof(AlwaysDisabled))]
         public bool SpritesFolder
         {
-            set { }
+            set => RemoteProcess.OpenFolder(WEAtlasesLibrary.IMAGES_FOLDER);
         }
         [SettingsUIButton]
         [SettingsUISection(kSourcesTab, kSpritesSection)]
-        [SettingsUIDisableByCondition(typeof(WEModData), nameof(AlwaysDisabled))]
         public bool SpritesFolderRefresh
         {
-            set { }
+            set => WEAtlasesLibrary.Instance?.LoadImagesFromLocalFolders();
         }
 
         [SettingsUISection(kSourcesTab, kFormattingSection)]
@@ -188,16 +187,6 @@ namespace BelzontWE
                 }
             }
         }
-
-
-        //[SettingsUIButton]
-        //[SettingsUISection(kSourcesTab, kFormattingSection)]
-        //[SettingsUIDisableByCondition(typeof(WEModData), nameof(AlwaysDisabled))]
-        //public bool SpritesFolderRefresh
-        //{
-        //    set { }
-        //}
-        private bool AlwaysDisabled() => true;
 
 
         #region Keybinding

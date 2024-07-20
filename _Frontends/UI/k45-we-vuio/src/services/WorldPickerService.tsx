@@ -40,6 +40,8 @@ export class WorldPickerService {
 
     FormulaeStr: MultiUIValueBinding<string>
     FormulaeCompileResult: MultiUIValueBinding<number>
+    TextSourceType: MultiUIValueBinding<number>
+    ImageAtlasName: MultiUIValueBinding<string>
 
 
     private Bindings: MultiUIValueBinding<any>[] = []
@@ -71,6 +73,8 @@ export class WorldPickerService {
         this.SelectedFont = new MultiUIValueBinding<string>("k45::we.wpicker.SelectedFont")
         this.FormulaeStr = new MultiUIValueBinding<string>("k45::we.wpicker.FormulaeStr")
         this.FormulaeCompileResult = new MultiUIValueBinding<number>("k45::we.wpicker.FormulaeCompileResult")
+        this.TextSourceType = new MultiUIValueBinding<number>("k45::we.wpicker.TextSourceType")
+        this.ImageAtlasName = new MultiUIValueBinding<string>("k45::we.wpicker.ImageAtlasName")
 
         this.Bindings.push(
             this.CurrentItemIdx,
@@ -97,7 +101,9 @@ export class WorldPickerService {
             this.FontList,
             this.SelectedFont,
             this.FormulaeStr,
-            this.FormulaeCompileResult
+            this.FormulaeCompileResult,
+            this.TextSourceType,
+            this.ImageAtlasName
         );
     }
 
@@ -111,6 +117,13 @@ export class WorldPickerService {
         this.Bindings.map(y => {
             y.dispose();
         })
+    }
+
+    static async listAvailableLibraries() {
+        return await engine.call("k45::we.wpicker.listAvailableLibraries");
+    }
+    static async listAtlasImages(atlas: string) {
+        return await engine.call("k45::we.wpicker.listAtlasImages", atlas);
     }
 
 }

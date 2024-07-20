@@ -18,7 +18,7 @@ namespace BelzontWE
 {
     public partial class FontServer : GameSystemBase
     {
-        private const string defaultShaderName = "BH/SG_DefaultShader";
+        public const string defaultShaderName = "BH/SG_DefaultShader";
         public static string FOLDER_PATH => BasicIMod.ModSettingsRootFolder;
         #region Fonts
         public const string DEFAULT_FONT_KEY = "/DEFAULT/";
@@ -131,7 +131,7 @@ namespace BelzontWE
             }
         }
 
-        internal static Material CreateDefaultFontMaterial()
+        public static Material CreateDefaultFontMaterial()
         {
             return Instance.CreateDefaultFontMaterial_Impl();
         }

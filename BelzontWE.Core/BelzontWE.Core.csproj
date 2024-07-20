@@ -11,6 +11,7 @@
     <DebugType Condition="'$(Configuration)'=='Debug'">Embedded</DebugType>
     <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
     <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
+    <RootNamespace>BelzontWE</RootNamespace>
   </PropertyGroup>
 
   <!--Imports must be after PropertyGroup block-->
@@ -224,8 +225,26 @@
 
   </ItemGroup>
   <ItemGroup>
-    <Resource Remove="changelog.md" />
+    <None Remove="UI\Images\FrameBorder.png" />
+    <None Remove="UI\Images\FrameParamsFolderRequired.png" />
+    <None Remove="UI\Images\FrameParamsImageRequired.png" />
+    <None Remove="UI\Images\FrameParamsInvalidFolder.png" />
+    <None Remove="UI\Images\FrameParamsInvalidImage.png" />
+    <None Remove="UI\Images\FrameParamsInvalidImageAsset.png" />
+    <None Remove="UI\Images\FrameParamsNotSet.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="changelog.md" />
     <Resource Remove="longDescription.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="UI\Images\FrameBorder.png" />
+    <EmbeddedResource Include="UI\Images\FrameParamsFolderRequired.png" />
+    <EmbeddedResource Include="UI\Images\FrameParamsImageRequired.png" />
+    <EmbeddedResource Include="UI\Images\FrameParamsInvalidFolder.png" />
+    <EmbeddedResource Include="UI\Images\FrameParamsInvalidImage.png" />
+    <EmbeddedResource Include="UI\Images\FrameParamsInvalidImageAsset.png" />
+    <EmbeddedResource Include="UI\Images\FrameParamsNotSet.png" />
   </ItemGroup>
 
 </Project>

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "../utils/translate";
 import { WETextAppearenceSettings } from "./WETextAppearenceSettings";
+import { WETextValueSettings } from "./WETextValueSettings";
 
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
@@ -57,8 +58,6 @@ const L_mousePrecision = translate("toolOption.mousePrecision"); //"Mouse precis
 const L_editingPlane = translate("toolOption.editingPlane"); //"Editing plane";
 const L_position = translate("toolOption.position"); //"Position"
 const L_rotation = translate("toolOption.rotation"); //"Rotation"
-const L_scale = translate("toolOption.scale"); //"Scale"
-const L_text = translate("toolOption.text"); //"Text"
 const L_actions = translate("toolOption.actions"); //"Actions"
 const L_selectItem = translate("toolOption.selectItem"); //"Select an Item"
 const T_mousePrecision_up = translate("toolOption.mousePrecision_up.tooltip"); //"Increment the strenght of the mouse moves when editing the text position/rotation";
@@ -84,7 +83,7 @@ const WEWorldPickerToolPanel = () => {
 
     const [buildIdx, setBuild] = useState(0);
     useEffect(() => {
-        WorldPickerService.instance.registerBindings(() => setTimeout(() => setBuild(buildIdx + 1),100))
+        WorldPickerService.instance.registerBindings(() => setTimeout(() => setBuild(buildIdx + 1), 100))
         return () => WorldPickerService.instance.disposeBindings()
     }, [buildIdx])
 
@@ -94,6 +93,8 @@ const WEWorldPickerToolPanel = () => {
     const wps = WorldPickerService.instance;
     const Locale = VanillaFnResolver.instance.localization.useCachedLocalization();
     const decimalsFormat = (value: number) => VanillaFnResolver.instance.localizedNumber.formatFloat(Locale, value, false, 3, true, false, Infinity);
+
+    const currentItemIsValid = wps.CurrentItemCount.value > 0 && wps.CurrentItemIdx.value < wps.CurrentItemCount.value;
 
 
     return !wps.CurrentEntity.value?.Index ?
@@ -125,7 +126,7 @@ const WEWorldPickerToolPanel = () => {
                 ]}
             />
 
-            {wps.CurrentItemIdx.value < wps.CurrentItemCount.value &&
+            {currentItemIsValid &&
                 <>
                     <VectorSectionEditable title={L_itemName}
                         valueGetter={() => [wps.CurrentItemName.value]}
@@ -175,8 +176,9 @@ const WEWorldPickerToolPanel = () => {
                             newVal[i] = parseFloat(x);
                             if (isNaN(newVal[i])) return;
                             wps.CurrentRotation.set(newVal);
-                        }} />
-                    <VectorSectionEditable title={L_scale}
+                        }} />     
+
+                    <VectorSectionEditable title={"::::"}
                         valueGetter={() => wps.CurrentScale.value?.map(x => x.toFixed(3))}
                         valueGetterFormatted={() => wps.CurrentScale.value?.map(x => decimalsFormat(x))}
                         onValueChanged={(i, x) => {
@@ -185,27 +187,22 @@ const WEWorldPickerToolPanel = () => {
                             if (isNaN(newVal[i])) return;
                             wps.CurrentScale.set(newVal);
                         }} />
-                    <VectorSectionEditable title={L_text}
-                        valueGetter={() => [wps.CurrentItemText.value]}
-                        valueGetterFormatted={() => [wps.CurrentItemText.value]}
-                        onValueChanged={(i, x) => {
-                            wps.CurrentItemText.set(x);
-                        }} /></>}
+      
+                </>}
 
 
             <VanillaComponentResolver.instance.Section title={L_actions}>
                 <>
-                    {wps.CurrentItemIdx.value < wps.CurrentItemCount.value && <>
-                        <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
+                    {currentItemIsValid && <>
+                       <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
                         <div style={{ width: "10rem" }}></div>
                     </>
                     }
                     <VanillaComponentResolver.instance.ToolButton onSelect={() => wps.CurrentEntity.set(null)} src={i_UnselectCurrentIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_picker} />
                 </>
             </VanillaComponentResolver.instance.Section>
-            {wps.CurrentItemIdx.value < wps.CurrentItemCount.value && <>
-                {displayAppearenceWindow && <WETextAppearenceSettings />}
-            </>}
+            {currentItemIsValid && displayAppearenceWindow && <WETextAppearenceSettings />}
+            {currentItemIsValid && <WETextValueSettings />}
         </>
 
 }

@@ -11,6 +11,7 @@ using System.Linq;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
+using WriteEverywhere.Sprites;
 
 namespace BelzontWE
 {
@@ -21,6 +22,7 @@ namespace BelzontWE
         Action<string, object[]> m_eventCaller;
         Action<string, Delegate> m_callBinder;
         private ModificationEndBarrier m_EndBarrier;
+        private WEAtlasesLibrary m_AtlasLibrary;
         private WEWorldPickerTool m_pickerTool;
         private ProxyAction m_enableToolAction;
 
@@ -32,6 +34,8 @@ namespace BelzontWE
             callBinder($"{PREFIX}enableTool", OnEnableTool);
             callBinder($"{PREFIX}addItem", AddItem);
             callBinder($"{PREFIX}removeItem", RemoveItem);
+            callBinder($"{PREFIX}listAvailableLibraries", ListAvailableLibraries);
+            callBinder($"{PREFIX}listAtlasImages", ListAtlasImages);
             if (m_eventCaller != null) InitValueBindings();
         }
 
@@ -85,7 +89,17 @@ namespace BelzontWE
         public MultiUIValueBinding<string> FormulaeStr { get; private set; }
         public MultiUIValueBinding<int> FormulaeCompileResult { get; private set; }
         public MultiUIValueBinding<string[]> FormulaeCompileResultErrorArgs { get; private set; }
+        public MultiUIValueBinding<int> TextSourceType { get; private set; }
+        public MultiUIValueBinding<string> ImageAtlasName { get; private set; }
 
+        private string[] ListAvailableLibraries()
+        {
+            return m_AtlasLibrary.ListLocalAtlases();
+        }
+        private string[] ListAtlasImages(string atlas)
+        {
+            return m_AtlasLibrary.ListLocalAtlasImages(atlas);
+        }
 
 
         public bool IsValidEditingItem()
@@ -148,6 +162,8 @@ namespace BelzontWE
             FormulaeStr = new(default, $"{PREFIX}{nameof(FormulaeStr)}", m_eventCaller, m_callBinder);
             FormulaeCompileResult = new(default, $"{PREFIX}{nameof(FormulaeCompileResult)}", m_eventCaller, m_callBinder);
             FormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(FormulaeCompileResultErrorArgs)}", m_eventCaller, m_callBinder);
+            TextSourceType = new(default, $"{PREFIX}{nameof(TextSourceType)}", m_eventCaller, m_callBinder);
+            ImageAtlasName = new(default, $"{PREFIX}{nameof(ImageAtlasName)}", m_eventCaller, m_callBinder);
 
 
             CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
@@ -164,8 +180,12 @@ namespace BelzontWE
             EmissiveIntensity.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveIntensity = x; return currentItem; });
             CoatStrength.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.CoatStrength = x; return currentItem; });
             EmissiveExposureWeight.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveExposureWeight = x; return currentItem; });
+
             SelectedFont.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Font = FontList.Value.TryGetValue(x, out var entity) ? entity : Entity.Null; return currentItem; });
             FormulaeStr.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { FormulaeCompileResult.Value = currentItem.SetFormulae(FormulaeStr.Value, out var cmpErr); FormulaeCompileResultErrorArgs.Value = cmpErr; if (currentItem.targetEntity == Entity.Null) currentItem.targetEntity = CurrentEntity.Value; return currentItem; });
+            TextSourceType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; return currentItem; });
+            ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Atlas = x; return currentItem; });
+
 
             m_initialized = true;
         }
@@ -255,12 +275,17 @@ namespace BelzontWE
             Smoothness.Value = currentItem.Smoothness;
             EmissiveIntensity.Value = currentItem.EmissiveIntensity;
             CoatStrength.Value = currentItem.CoatStrength;
+
             SelectedFont.Value = EntityManager.TryGetComponent<FontSystemData>(currentItem.Font, out var fsd) ? fsd.Name : "";
+            FormulaeStr.Value = currentItem.Formulae;
+            TextSourceType.Value = (int)currentItem.TextType;
+            ImageAtlasName.Value = currentItem.Atlas;
         }
 
         protected override void OnCreate()
         {
             m_EndBarrier = World.GetExistingSystemManaged<ModificationEndBarrier>();
+            m_AtlasLibrary = World.GetOrCreateSystemManaged<WEAtlasesLibrary>();
 
             GameManager.instance.userInterface.view.Listener.BindingsReleased += () => m_initialized = false;
         }

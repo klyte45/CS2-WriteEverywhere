@@ -290,7 +290,7 @@ namespace BelzontWE.Font
 
         public bool IsDirty { get; private set; } = false;
 
-        private static readonly int _BaseColorMap = Shader.PropertyToID("_BaseColorMap");
+        public static readonly int _BaseColorMap = Shader.PropertyToID("_BaseColorMap");
         public bool UpdateMaterial()
         {
             if (Texture == null)

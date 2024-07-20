@@ -21,7 +21,7 @@ namespace BelzontWE
 
     public struct WESimulationTextComponent : IBufferElementData, ISerializable, IDisposable
     {
-        public const uint CURRENT_VERSION = 3;
+        public const uint CURRENT_VERSION = 4;
         public unsafe static int Size => sizeof(WESimulationTextComponent);
 
         public static WESimulationTextComponent CreateDefault()
@@ -61,6 +61,34 @@ namespace BelzontWE
                 }
             }
         }
+        public string Atlas
+        {
+            readonly get => atlas.IsAllocated ? atlas.Target as string ?? "" : ""; set
+            {
+                if (atlas.IsAllocated) atlas.Free();
+                atlas = GCHandle.Alloc(value);
+                if (type == WESimulationTextType.Image && basicRenderInformation.IsAllocated)
+                {
+                    basicRenderInformation.Free();
+                    basicRenderInformation = default;
+                }
+            }
+        }
+        public WESimulationTextType TextType
+        {
+            readonly get => type; set
+            {
+                if (type != value)
+                {
+                    type = value;
+                    if (basicRenderInformation.IsAllocated)
+                    {
+                        basicRenderInformation.Free();
+                        basicRenderInformation = default;
+                    }
+                }
+            }
+        }
         public float3 offsetPosition;
         public quaternion offsetRotation;
         public float3 scale;
@@ -74,6 +102,8 @@ namespace BelzontWE
         private float emissiveIntensity;
         private float emissiveExposureWeight;
         private float coatStrength;
+        private WESimulationTextType type;
+        private GCHandle atlas;
         private GCHandle text;
         public FixedString32Bytes itemName;
         public WEShader shader;
@@ -222,6 +252,8 @@ namespace BelzontWE
             writer.Write(itemName);
             writer.Write(coatStrength);
             writer.Write(Formulae ?? "");
+            writer.Write((ushort)TextType);
+            writer.Write(Atlas);
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -269,6 +301,13 @@ namespace BelzontWE
             else
             {
                 coatStrength = 0.5f;
+            }
+            if (version >= 4)
+            {
+                reader.Read(out short type);
+                this.type = (WESimulationTextType)type;
+                reader.Read(out string atlas);
+                Atlas = atlas;
             }
         }
 
