@@ -94,7 +94,7 @@ const WEWorldPickerToolPanel = () => {
     const Locale = VanillaFnResolver.instance.localization.useCachedLocalization();
     const decimalsFormat = (value: number) => VanillaFnResolver.instance.localizedNumber.formatFloat(Locale, value, false, 3, true, false, Infinity);
 
-    const currentItemIsValid = wps.CurrentItemCount.value > 0 && wps.CurrentItemIdx.value < wps.CurrentItemCount.value;
+    const currentItemIsValid = wps.CurrentItemCount.value > 0 && wps.CurrentItemIdx.value < wps.CurrentItemCount.value && wps.CurrentItemIdx.value >= 0;
 
 
     return !wps.CurrentEntity.value?.Index ?
@@ -176,14 +176,14 @@ const WEWorldPickerToolPanel = () => {
                             newVal[i] = parseFloat(x);
                             if (isNaN(newVal[i])) return;
                             wps.CurrentRotation.set(newVal);
-                        }} />           
+                        }} />
                 </>}
 
 
             <VanillaComponentResolver.instance.Section title={L_actions}>
                 <>
                     {currentItemIsValid && <>
-                       <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
+                        <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
                         <div style={{ width: "10rem" }}></div>
                     </>
                     }

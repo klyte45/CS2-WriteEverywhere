@@ -405,7 +405,7 @@ namespace BelzontWE
 
         private void UpdateItemCount()
         {
-            m_Controller.CurrentItemCount.Value = EntityManager.TryGetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value, true, out var buff) ? buff.Length : 0;
+            m_Controller.CurrentItemCount.Value = EntityManager.TryGetBuffer<WESubTextRef>(m_Controller.CurrentEntity.Value, true, out var buff) ? buff.Length : 0;
         }
 
         private void ApplyPositionMouseRelative()
@@ -440,11 +440,11 @@ namespace BelzontWE
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value];
             var offsetWithAdjust = offsetPosition * currentPrecision;
 
-            if (!EntityManager.TryGetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value, false, out var currentBuffer))
+            if (!EntityManager.TryGetBuffer<WESubTextRef>(m_Controller.CurrentEntity.Value, false, out var currentBuffer))
             {
-                currentBuffer = new DynamicBuffer<WESimulationTextComponent>();
+                currentBuffer = new DynamicBuffer<WESubTextRef>();
             };
-            var currentItem = currentBuffer[m_Controller.CurrentItemIdx.Value];
+            if (!EntityManager.TryGetComponent<WETextData>(currentBuffer[m_Controller.CurrentItemIdx.Value].m_weTextData, out var currentItem)) return;
 
             var itemAngles = m_Controller.CurrentRotation.Value;
             var isRotationLocked = m_Controller.CameraRotationLocked.Value;
@@ -456,8 +456,7 @@ namespace BelzontWE
                 ToolEditMode.PlaneZY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, 0, isRotationLocked ? -itemAngles.z : 0))).rotation, new float3(0, offsetWithAdjust.y, -offsetWithAdjust.x)),
                 _ => default
             };
-            currentBuffer[m_Controller.CurrentItemIdx.Value] = currentItem;
-            cmdBuff.SetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value).CopyFrom(currentBuffer);
+            EntityManager.SetComponentData(currentBuffer[m_Controller.CurrentItemIdx.Value].m_weTextData, currentItem);
             cmdBuff.AddComponent<BatchesUpdated>(m_Controller.CurrentEntity.Value);
         }
 
@@ -480,11 +479,12 @@ namespace BelzontWE
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value] * 10;
             var offsetWithAdjust = value * currentPrecision;
 
-            if (!EntityManager.TryGetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value, false, out var currentBuffer))
+            if (!EntityManager.TryGetBuffer<WESubTextRef>(m_Controller.CurrentEntity.Value, false, out var currentBuffer))
             {
-                currentBuffer = new DynamicBuffer<WESimulationTextComponent>();
+                currentBuffer = new DynamicBuffer<WESubTextRef>();
             };
-            var currentItem = currentBuffer[m_Controller.CurrentItemIdx.Value];
+            if (!EntityManager.TryGetComponent<WETextData>(currentBuffer[m_Controller.CurrentItemIdx.Value].m_weTextData, out var currentItem)) return;
+
             m_Controller.CurrentRotation.Value = originalRotation + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {
                 ToolEditMode.PlaneXY => new float3(0, 0, offsetWithAdjust),
@@ -493,8 +493,7 @@ namespace BelzontWE
                 _ => default
             };
             currentItem.offsetRotation = Quaternion.Euler(m_Controller.CurrentRotation.Value);
-            currentBuffer[m_Controller.CurrentItemIdx.Value] = currentItem;
-            cmdBuff.SetBuffer<WESimulationTextComponent>(m_Controller.CurrentEntity.Value).CopyFrom(currentBuffer);
+            EntityManager.SetComponentData(currentBuffer[m_Controller.CurrentItemIdx.Value].m_weTextData, currentItem);
             cmdBuff.AddComponent<BatchesUpdated>(m_Controller.CurrentEntity.Value);
         }
 

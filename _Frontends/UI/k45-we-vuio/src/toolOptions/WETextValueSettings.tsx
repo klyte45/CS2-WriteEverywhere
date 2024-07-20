@@ -33,7 +33,6 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     useEffect(() => {
         WorldPickerService.instance.registerBindings(() => setBuild(buildIdx + 1))
-        return () => WorldPickerService.instance.disposeBindings()
     }, [buildIdx])
 
     useEffect(() => {
@@ -106,7 +105,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                     style={{ flexGrow: 1, width: "inherit" }}
                 />
             </EditorItemRow>
-            <FloatInputField label={T_Height} min={.001} max={10000000} value={height} onChange={saveHeight} onChangeEnd={(x) => { console.log(x); saveHeight(height) }} />
+            <FloatInputField label={T_Height} min={.001} max={10000000} value={height} onChange={saveHeight} onChangeEnd={() => saveHeight(height)} />
             <FloatInputField label={T_widthDistortion} min={.001} max={1000000} value={widthDistortion} onChange={setWidthDistortion} onChangeEnd={() => saveWidthDistortion(widthDistortion)} />
             {wps.TextSourceType.value == 0 && <>
                 <EditorItemRow label={T_fontFieldTitle} styleContent={{ paddingLeft: "34rem" }}>

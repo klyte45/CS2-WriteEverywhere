@@ -48,12 +48,12 @@ namespace BelzontWE
             Overlay = (uint)newVal;
             try
             {
-                if (EntityManager.TryGetBuffer<WESimulationTextComponent>(targetEntity, false, out var buff))
-                {
-                    var x = buff[0];
-                    x.MarkDirty();
-                    buff[0] = x;
-                }
+                //if (EntityManager.TryGetBuffer<WETextData>(targetEntity, false, out var buff))
+                //{
+                //    var x = buff[0];
+                //    x.MarkDirty();
+                //    buff[0] = x;
+                //}
             }
             catch { }
             return Overlay;

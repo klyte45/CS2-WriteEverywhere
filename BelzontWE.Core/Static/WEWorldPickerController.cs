@@ -5,6 +5,7 @@ using Colossal.Entities;
 using Game.Common;
 using Game.Input;
 using Game.SceneFlow;
+using Game.Simulation;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,6 +27,7 @@ namespace BelzontWE
         private WEAtlasesLibrary m_AtlasLibrary;
         private WEWorldPickerTool m_pickerTool;
         private ProxyAction m_enableToolAction;
+        private SimulationSystem m_SimulationSystem;
 
         public void SetupCallBinder(Action<string, Delegate> callBinder)
         {
@@ -115,10 +117,10 @@ namespace BelzontWE
 
         public bool IsValidEditingItem()
         {
-            return CurrentItemIsValid.Value = CurrentEntity.Value != default && EntityManager.TryGetBuffer<WESimulationTextComponent>(CurrentEntity.Value, true, out var buffer) && buffer.Length > CurrentItemIdx.Value && CurrentItemIdx.Value >= 0;
+            return CurrentItemIsValid.Value = CurrentEntity.Value != default && EntityManager.TryGetBuffer<WESubTextRef>(CurrentEntity.Value, true, out var buffer) && buffer.Length > CurrentItemIdx.Value && CurrentItemIdx.Value >= 0;
         }
 
-        public WESimulationTextComponent CurrentEditingItem => EntityManager.TryGetBuffer<WESimulationTextComponent>(CurrentEntity.Value, true, out var buffer) && buffer.Length > CurrentItemIdx.Value && CurrentItemIdx.Value >= 0 ? buffer[CurrentItemIdx.Value] : default;
+        public WETextData CurrentEditingItem => EntityManager.TryGetBuffer<WESubTextRef>(CurrentEntity.Value, true, out var buffer) && buffer.Length > CurrentItemIdx.Value && CurrentItemIdx.Value >= 0 ? EntityManager.TryGetComponent<WETextData>(buffer[CurrentItemIdx.Value].m_weTextData, out var result) ? result : default : default;
 
         private string[] GetItemsAvailable()
         {
@@ -126,14 +128,14 @@ namespace BelzontWE
             {
                 return null;
             }
-            if (!EntityManager.TryGetBuffer<WESimulationTextComponent>(CurrentEntity.Value, true, out var buffer))
+            if (!EntityManager.TryGetBuffer<WESubTextRef>(CurrentEntity.Value, true, out var buffer))
             {
                 return new string[0];
             }
             string[] result = new string[buffer.Length];
             for (int i = 0; i < result.Length; i++)
             {
-                result[i] = $"{buffer[i].itemName.ToString().TrimToNull() ?? "N/A"}";
+                result[i] = $"{EntityManager.GetComponentData<WETextData>(buffer[i].m_weTextData).itemName.ToString().TrimToNull() ?? "N/A"}";
             }
             return result;
         }
@@ -193,7 +195,7 @@ namespace BelzontWE
             EmissiveExposureWeight.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveExposureWeight = x; return currentItem; });
 
             SelectedFont.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Font = FontList.Value.TryGetValue(x, out var entity) ? entity : Entity.Null; return currentItem; });
-            FormulaeStr.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { FormulaeCompileResult.Value = currentItem.SetFormulae(FormulaeStr.Value, out var cmpErr); FormulaeCompileResultErrorArgs.Value = cmpErr; if (currentItem.targetEntity == Entity.Null) currentItem.targetEntity = CurrentEntity.Value; return currentItem; });
+            FormulaeStr.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { FormulaeCompileResult.Value = currentItem.SetFormulae(FormulaeStr.Value, out var cmpErr); FormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
             TextSourceType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; return currentItem; });
             ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Atlas = x; return currentItem; });
 
@@ -201,18 +203,19 @@ namespace BelzontWE
             m_initialized = true;
         }
 
-        private void EnqueueModification<T>(T newVal, Func<T, WESimulationTextComponent, WESimulationTextComponent> x)
+        private void EnqueueModification<T>(T newVal, Func<T, WETextData, WETextData> x)
         {
             if (IsValidEditingItem())
             {
-                m_executionQueue.Enqueue(() => DoWithBuffer<WESimulationTextComponent>(
+                m_executionQueue.Enqueue(() => DoWithBuffer<WESubTextRef>(
                     (buff) =>
                     {
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"CurrentItemIdx => {CurrentItemIdx.Value}\nbuff = {buff} : {buff.Length}");
-                        var currentItem = buff[CurrentItemIdx.Value];
+                        var currentItemRef = buff[CurrentItemIdx.Value];
+                        var currentItem = EntityManager.GetComponentData<WETextData>(currentItemRef.m_weTextData);
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"x = {x}; currentItem[{CurrentItemIdx.Value}] = {currentItem.itemName}");
                         currentItem = x(newVal, currentItem);
-                        buff[CurrentItemIdx.Value] = currentItem;
+                        EntityManager.SetComponentData(currentItemRef.m_weTextData, currentItem);
                     }));
             }
         }
@@ -235,14 +238,18 @@ namespace BelzontWE
         {
             if (CurrentEntity.Value != Entity.Null)
             {
-                m_executionQueue.Enqueue(() => DoWithBuffer<WESimulationTextComponent>(
+                m_executionQueue.Enqueue(() => DoWithBuffer<WESubTextRef>(
                    (buff) =>
                    {
-                       buff.Add(WESimulationTextComponent.CreateDefault());
+                       var subref = new WESubTextRef();
+                       subref.m_weTextData = EntityManager.CreateEntity(typeof(WEWaitingRenderingComponent));
+                       var newData = WETextData.CreateDefault(CurrentEntity.Value);
+                       EntityManager.AddComponentData(subref.m_weTextData, newData);
+                       buff.Add(subref);
                        var newCount = buff.Length;
                        CurrentItemIdx.Value = buff.Length - 1;
                        CurrentItemCount.Value = newCount;
-                       OnCurrentItemChanged(buff[CurrentItemIdx.Value]);
+                       OnCurrentItemChanged(newData);
                        IncrementalVersion++;
                    }));
             }
@@ -253,13 +260,14 @@ namespace BelzontWE
 
             if (IsValidEditingItem())
             {
-                m_executionQueue.Enqueue(() => DoWithBuffer<WESimulationTextComponent>((buff) =>
+                m_executionQueue.Enqueue(() => DoWithBuffer<WESubTextRef>((buff) =>
                 {
+                    EntityManager.DestroyEntity(buff[CurrentItemIdx.Value].m_weTextData);
                     buff.RemoveAt(CurrentItemIdx.Value);
                     var buffLen = buff.Length;
                     CurrentItemIdx.Value = buffLen == 0 ? 0 : (CurrentItemIdx.Value + buffLen - 1) % buffLen;
                     CurrentItemCount.Value = buffLen;
-                    if (buffLen > 0) OnCurrentItemChanged(buff[CurrentItemIdx.Value]);
+                    if (buffLen > 0) OnCurrentItemChanged(EntityManager.TryGetComponent<WETextData>(buff[CurrentItemIdx.Value].m_weTextData, out var res) ? res : default);
                     IncrementalVersion++;
                 }));
             }
@@ -271,7 +279,7 @@ namespace BelzontWE
             OnCurrentItemChanged(currentItem);
         }
 
-        private void OnCurrentItemChanged(WESimulationTextComponent currentItem)
+        private void OnCurrentItemChanged(WETextData currentItem)
         {
             CurrentPosition.Value = currentItem.offsetPosition;
             CurrentRotation.Value = KMathUtils.UnityQuaternionToEuler(currentItem.offsetRotation);
@@ -297,6 +305,7 @@ namespace BelzontWE
         {
             m_EndBarrier = World.GetExistingSystemManaged<ModificationEndBarrier>();
             m_AtlasLibrary = World.GetOrCreateSystemManaged<WEAtlasesLibrary>();
+            m_SimulationSystem = World.GetExistingSystemManaged<SimulationSystem>();
 
             GameManager.instance.userInterface.view.Listener.BindingsReleased += () => m_initialized = false;
         }

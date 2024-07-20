@@ -19,15 +19,16 @@ using UnityEngine;
 namespace BelzontWE
 {
 
-    public struct WESimulationTextComponent : IBufferElementData, ISerializable, IDisposable
+    public struct WETextData : ISerializable, IDisposable, IComponentData
     {
-        public const uint CURRENT_VERSION = 4;
-        public unsafe static int Size => sizeof(WESimulationTextComponent);
+        public const uint CURRENT_VERSION = 0;
+        public unsafe static int Size => sizeof(WETextData);
 
-        public static WESimulationTextComponent CreateDefault()
+        public static WETextData CreateDefault(Entity parent)
         {
-            return new WESimulationTextComponent
+            return new WETextData
             {
+                TargetEntity = parent,
                 offsetPosition = new(0, 1, 0),
                 offsetRotation = new(),
                 scale = new(1, 1, 1),
@@ -44,8 +45,7 @@ namespace BelzontWE
             };
         }
 
-        public Entity targetEntity;
-        public WEPropertyDescription targetProperty;
+        public Entity TargetEntity { get => targetEntity; private set => targetEntity = value; }
 
         public Entity Font
         {
@@ -228,18 +228,18 @@ namespace BelzontWE
 
         public bool HasFormulae => formulaeHandlerFn.IsAllocated;
 
-        public static WESimulationTextComponent From(WEWaitingRenderingComponent src, BasicRenderInformation bri, string text)
+        public WETextData UpdateBRI(BasicRenderInformation bri, string text)
         {
-            src.src.dirty = true;
-            if (src.src.basicRenderInformation.IsAllocated) src.src.basicRenderInformation.Free();
-            src.src.basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
-            src.src.BriOffsetScaleX = bri.m_offsetScaleX;
-            src.src.BriPixelDensity = bri.m_pixelDensityMeters;
+            dirty = true;
+            if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
+            basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
+            BriOffsetScaleX = bri.m_offsetScaleX;
+            BriPixelDensity = bri.m_pixelDensityMeters;
             if (bri.m_isError)
             {
-                src.src.LastErrorStr = text;
+                LastErrorStr = text;
             }
-            return src.src;
+            return this;
         }
 
         public void Dispose()
@@ -251,8 +251,7 @@ namespace BelzontWE
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
             writer.Write(CURRENT_VERSION);
-            writer.Write(targetEntity);
-            writer.Write((uint)targetProperty);
+            writer.Write(TargetEntity);
             writer.Write((byte)shader);
             writer.Write(offsetPosition);
             writer.Write(offsetRotation);
@@ -280,8 +279,6 @@ namespace BelzontWE
                 return;
             }
             reader.Read(out targetEntity);
-            reader.Read(out uint targetProperty);
-            this.targetProperty = (WEPropertyDescription)targetProperty;
             reader.Read(out byte shader);
             this.shader = (WEShader)shader;
             reader.Read(out offsetPosition);
@@ -295,47 +292,22 @@ namespace BelzontWE
             reader.Read(out FixedString512Bytes txt);
             if (text.IsAllocated) text.Free();
             text = GCHandle.Alloc(txt.ToString());
-            if (version < 3)
-            {
-                reader.Read(out FixedString32Bytes _);
-            }
-            else
-            {
-                reader.Read(out font);
-            }
-            if (version >= 1)
-            {
-                reader.Read(out itemName);
-            }
-            if (version >= 2)
-            {
-                reader.Read(out coatStrength);
-                reader.Read(out string formulae);
-                Formulae = formulae.TrimToNull();
-            }
-            else
-            {
-                coatStrength = 0.5f;
-            }
-            if (version >= 4)
-            {
-                reader.Read(out short type);
-                this.type = (WESimulationTextType)type;
-                reader.Read(out string atlas);
-                Atlas = atlas;
-            }
-        }
+            reader.Read(out font);
+            reader.Read(out itemName);
+            reader.Read(out coatStrength);
+            reader.Read(out string formulae);
+            Formulae = formulae.TrimToNull();
+            reader.Read(out short type);
+            this.type = (WESimulationTextType)type;
+            reader.Read(out string atlas);
+            Atlas = atlas;
 
-        internal void MarkDirty()
-        {
-            if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
-            if (materialBlockPtr.IsAllocated) materialBlockPtr.Free();
-            dirty = true;
         }
 
         private static MethodInfo r_GetComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
             .First(x => x.Name == "GetComponentData" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 1 && pi[0].ParameterType == typeof(Entity));
         private Entity font;
+        private Entity targetEntity;
 
         public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
         {
@@ -349,7 +321,7 @@ namespace BelzontWE
             // FormulaeExample: Game.Common.Owner
             var path = newFormulae.Split("/");
             DynamicMethodDefinition dynamicMethodDefinition = new(
-                $"__WE_CS2_{nameof(WESimulationTextComponent)}_formulae_{new Regex("[^A-Za-z0-9_]").Replace(newFormulae, "_")}",
+                $"__WE_CS2_{nameof(WETextData)}_formulae_{new Regex("[^A-Za-z0-9_]").Replace(newFormulae, "_")}",
                 typeof(string),
                 new Type[] { typeof(EntityManager), typeof(Entity) }
                 );
@@ -472,7 +444,7 @@ namespace BelzontWE
         public string GetEffectiveText(EntityManager em)
         {
             return formulaeHandlerFn.IsAllocated && formulaeHandlerFn.Target is Func<EntityManager, Entity, string> fn
-                ? fn(em, targetEntity)?.ToString().Truncate(500) ?? ""
+                ? fn(em, TargetEntity)?.ToString().Truncate(500) ?? ""
                 : Text;
         }
     }

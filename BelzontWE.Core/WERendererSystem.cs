@@ -1,10 +1,10 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font.Utility;
-using Game.Common;
+using Colossal.Entities;
+using Game;
 using Game.Rendering;
 using Game.SceneFlow;
-using Game.Tools;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
@@ -21,8 +21,8 @@ namespace BelzontWE
 {
     public partial class WERendererSystem : SystemBase
     {
-        private EntityQuery m_renderInterpolatedQueueEntities;
         private EntityQuery m_renderQueueEntities;
+        private EndFrameBarrier m_endFrameBarrier;
         private CameraUpdateSystem m_CameraUpdateSystem;
         private RenderingSystem m_RenderingSystem;
         private WEWorldPickerController m_pickerController;
@@ -40,46 +40,24 @@ namespace BelzontWE
             m_pickerController = World.GetExistingSystemManaged<WEWorldPickerController>();
             m_pickerTool = World.GetExistingSystemManaged<WEWorldPickerTool>();
 
-            m_renderInterpolatedQueueEntities = GetEntityQuery(new EntityQueryDesc[]
-            {
-                new EntityQueryDesc
-                {
-                    All = new ComponentType[]
-                    {
-                        ComponentType.ReadOnly<CullingInfo>(),
-                        ComponentType.ReadOnly<InterpolatedTransform>(),
-                        ComponentType.ReadWrite<WEWaitingRenderingComponent>(),
-                        ComponentType.ReadWrite<WESimulationTextComponent>(),
-                    },
-                    None = new ComponentType[]
-                    {
-                        ComponentType.ReadOnly<Temp>(),
-                        ComponentType.ReadOnly<Deleted>(),
-                    }
-                }
-            });
             m_renderQueueEntities = GetEntityQuery(new EntityQueryDesc[]
             {
-                new EntityQueryDesc
+                new ()
                 {
                     All = new ComponentType[]
                     {
-                        ComponentType.ReadOnly<CullingInfo>(),
-                        ComponentType.ReadOnly<Game.Objects.Transform>(),
-                        ComponentType.ReadWrite<WEWaitingRenderingComponent>(),
-                        ComponentType.ReadWrite<WESimulationTextComponent>(),
+                        ComponentType.ReadOnly<WETextData>(),
                     },
                     None = new ComponentType[]
                     {
-                        ComponentType.ReadOnly<InterpolatedTransform>(),
-                        ComponentType.ReadOnly<Temp>(),
-                        ComponentType.ReadOnly<Deleted>(),
+                        ComponentType.ReadOnly<WEWaitingRenderingComponent>()
                     }
                 }
             });
 
+            m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
-            RequireAnyForUpdate(m_renderQueueEntities, m_renderInterpolatedQueueEntities);
+            RequireAnyForUpdate(m_renderQueueEntities);
         }
 #if BURST
         [Preserve]
@@ -98,7 +76,6 @@ namespace BelzontWE
                 m_CameraPosition = LodParametersStr.cameraPosition;
                 m_CameraDirection = m_CameraUpdateSystem.activeViewer.forward;
             }
-            CheckInterpolated(m_LodParameters, m_CameraPosition, m_CameraDirection);
             CheckRenderQueue(m_LodParameters, m_CameraPosition, m_CameraDirection);
             Render_Impl();
 
@@ -119,7 +96,7 @@ namespace BelzontWE
         private void Render_Impl()
         {
             var checkUpdates = (++counter & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal;
-            if (!m_renderQueueEntities.IsEmptyIgnoreFilter || !m_renderInterpolatedQueueEntities.IsEmptyIgnoreFilter)
+            if (!m_renderQueueEntities.IsEmptyIgnoreFilter)
             {
                 while (availToDraw.TryDequeue(out var item))
                 {
@@ -127,13 +104,29 @@ namespace BelzontWE
                     {
                         continue;
                     }
-                    if (m_pickerTool.Enabled && item.refEntity == m_pickerController.CurrentEntity.Value && m_pickerController.CurrentItemIdx.Value == item.index)
+                    DynamicBuffer<WESubTextRef> buffer = default;
+                    if (checkUpdates && item.weComponent.GetEffectiveText(EntityManager) != (bri.m_isError ? item.weComponent.LastErrorStr : bri.m_refText))
+                    {
+                        EntityManager.AddComponent<WEWaitingRenderingComponent>(item.textDataEntity);
+                    }
+                    else if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
+                        && item.weComponent.TargetEntity == m_pickerController.CurrentEntity.Value
+                        && EntityManager.TryGetBuffer<WESubTextRef>(m_pickerController.CurrentEntity.Value, true, out buffer)
+                        && buffer[m_pickerController.CurrentItemIdx.Value].m_weTextData == item.textDataEntity
+                        && item.weComponent.RenderInformation != null
+                        && item.transformMatrix.ValidTRS())
                     {
                         m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
                     }
-                    if (checkUpdates && item.weComponent.GetEffectiveText(EntityManager) != (bri.m_isError ? item.weComponent.LastErrorStr : bri.m_refText))
+                    else if (BasicIMod.TraceMode && m_pickerTool.Enabled && m_pickerController.CameraLocked.Value)
                     {
-                        item.weComponent.MarkDirty();
+                        LogUtils.DoTraceLog($"NOT UPDATE TRANSFORM!");
+                        LogUtils.DoTraceLog($"item.weComponent.TargetEntity == m_pickerController.CurrentEntity.Value => {item.weComponent.TargetEntity} == {m_pickerController.CurrentEntity.Value}");
+                        LogUtils.DoTraceLog($"buffer = {buffer.IsCreated}");
+                        if (buffer.IsCreated)
+                        {
+                            LogUtils.DoTraceLog($"buffer[m_pickerController.CurrentItemIdx.Value].m_weTextData == item.textDataEntity => {(buffer.Length > m_pickerController.CurrentItemIdx.Value ? buffer[m_pickerController.CurrentItemIdx.Value].m_weTextData : default)} == {item.textDataEntity}");
+                        }
                     }
                     Graphics.DrawMesh(bri.m_mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
                 }
@@ -145,56 +138,30 @@ namespace BelzontWE
 #endif
         private void CheckRenderQueue(float4 m_LodParameters, float3 m_CameraPosition, float3 m_CameraDirection)
         {
-            if (!m_renderQueueEntities.IsEmptyIgnoreFilter)
+            if (!GameManager.instance.isGameLoading && !GameManager.instance.isLoading && !m_renderQueueEntities.IsEmptyIgnoreFilter)
             {
                 var job2 = new WERenderingJob
                 {
                     m_EntityType = GetEntityTypeHandle(),
-                    m_cullingInfo = GetComponentTypeHandle<CullingInfo>(true),
-                    m_transform = GetComponentTypeHandle<Game.Objects.Transform>(true),
-                    m_weData = GetBufferTypeHandle<WESimulationTextComponent>(false),
-                    m_weDataPendingLookup = GetBufferLookup<WEWaitingRenderingComponent>(false),
-                    m_weDataPending = GetBufferTypeHandle<WEWaitingRenderingComponent>(false),
+                    m_cullingInfo = GetComponentLookup<CullingInfo>(true),
+                    m_transform = GetComponentLookup<Game.Objects.Transform>(true),
+                    m_iTransform = GetComponentLookup<InterpolatedTransform>(true),
+                    m_weData = GetComponentTypeHandle<WETextData>(false),
+                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
                     m_LodParameters = m_LodParameters,
                     m_CameraPosition = m_CameraPosition,
                     m_CameraDirection = m_CameraDirection,
-                    availToDraw = availToDraw,
-                    isInterpolated = false
+                    availToDraw = availToDraw
                 };
                 job2.Schedule(m_renderQueueEntities, Dependency).Complete();
-            }
-        }
-
-#if BURST
-        [BurstCompile]
-#endif
-        private void CheckInterpolated(float4 m_LodParameters, float3 m_CameraPosition, float3 m_CameraDirection)
-        {
-            if (!m_renderInterpolatedQueueEntities.IsEmptyIgnoreFilter)
-            {
-                var job = new WERenderingJob
-                {
-                    m_EntityType = GetEntityTypeHandle(),
-                    m_cullingInfo = GetComponentTypeHandle<CullingInfo>(true),
-                    m_iTransform = GetComponentTypeHandle<InterpolatedTransform>(true),
-                    m_weData = GetBufferTypeHandle<WESimulationTextComponent>(false),
-                    m_weDataPendingLookup = GetBufferLookup<WEWaitingRenderingComponent>(false),
-                    m_weDataPending = GetBufferTypeHandle<WEWaitingRenderingComponent>(false),
-                    m_LodParameters = m_LodParameters,
-                    m_CameraPosition = m_CameraPosition,
-                    m_CameraDirection = m_CameraDirection,
-                    availToDraw = availToDraw,
-                    isInterpolated = true
-                };
-                job.Schedule(m_renderInterpolatedQueueEntities, Dependency).Complete();
             }
         }
 
         private struct WERenderData
         {
             public Entity refEntity;
-            public int index;
-            public WESimulationTextComponent weComponent;
+            public Entity textDataEntity;
+            public WETextData weComponent;
             public Matrix4x4 transformMatrix;
         }
 #if BURST
@@ -213,86 +180,79 @@ namespace BelzontWE
 #endif
         private struct WERenderingJob : IJobChunk
         {
-            public ComponentTypeHandle<CullingInfo> m_cullingInfo;
-            public BufferTypeHandle<WESimulationTextComponent> m_weData;
-            public BufferTypeHandle<WEWaitingRenderingComponent> m_weDataPending;
-            public ComponentTypeHandle<InterpolatedTransform> m_iTransform;
+            public ComponentLookup<CullingInfo> m_cullingInfo;
+            public ComponentTypeHandle<WETextData> m_weData;
+            public ComponentLookup<InterpolatedTransform> m_iTransform;
+            public ComponentLookup<Game.Objects.Transform> m_transform;
             public float4 m_LodParameters;
             public float3 m_CameraPosition;
             public float3 m_CameraDirection;
             public EntityTypeHandle m_EntityType;
             public NativeQueue<WERenderData> availToDraw;
-            public BufferLookup<WEWaitingRenderingComponent> m_weDataPendingLookup;
-            internal ComponentTypeHandle<Game.Objects.Transform> m_transform;
-            public bool isInterpolated;
+            public EntityCommandBuffer m_CommandBuffer;
 
             public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
-                NativeArray<Game.Objects.Transform> transforms = default;
-                NativeArray<InterpolatedTransform> i_transforms = default;
-
-
                 var entities = chunk.GetNativeArray(m_EntityType);
-                var cullings = chunk.GetNativeArray(ref m_cullingInfo);
-                if (isInterpolated)
-                {
-                    i_transforms = chunk.GetNativeArray(ref m_iTransform);
-                }
-                else
-                {
-                    transforms = chunk.GetNativeArray(ref m_transform);
-                }
-                var weDatas = chunk.GetBufferAccessor(ref m_weData);
-                var weDataPendings = chunk.GetBufferAccessor(ref m_weDataPending);
+                var weDatas = chunk.GetNativeArray(ref m_weData);
 
                 for (int i = 0; i < entities.Length; i++)
                 {
-                    var cullInfo = cullings[i];
+                    var entity = entities[i];
                     var weCustomData = weDatas[i];
-                    var wePending = weDataPendings[i];
+
+                    if (weCustomData.TargetEntity == Entity.Null)
+                    {
+                        m_CommandBuffer.DestroyEntity(entity);
+                        continue;
+                    }
 
                     float3 positionRef;
                     quaternion rotationRef;
 
-                    if (isInterpolated)
+                    if (!m_cullingInfo.TryGetComponent(weCustomData.TargetEntity, out var cullInfo))
                     {
-                        var transform = i_transforms[i];
+                        m_CommandBuffer.DestroyEntity(entity);
+                        continue;
+                    }
+
+                    if (m_iTransform.TryGetComponent(weCustomData.TargetEntity, out var transform))
+                    {
                         positionRef = transform.m_Position;
                         rotationRef = transform.m_Rotation;
+                    }
+                    else if (m_transform.TryGetComponent(weCustomData.TargetEntity, out var transform2))
+                    {
+                        positionRef = transform2.m_Position;
+                        rotationRef = transform2.m_Rotation;
                     }
                     else
                     {
-                        var transform = transforms[i];
-                        positionRef = transform.m_Position;
-                        rotationRef = transform.m_Rotation;
+                        m_CommandBuffer.DestroyEntity(entity);
+                        continue;
                     }
 
-                    for (int j = 0; j < weCustomData.Length; j++)
+                    if (weCustomData.RenderInformation == null)
                     {
-                        if (weCustomData[j].RenderInformation == null)
-                        {
-                            wePending.Add(WEWaitingRenderingComponent.From(weCustomData[j]));
-                            weCustomData.RemoveAt(j);
-                            j--;
-                            continue;
-                        }
+                        m_CommandBuffer.AddComponent<WEWaitingRenderingComponent>(entity);
+                        continue;
+                    }
 
-                        float minDist = RenderingUtils.CalculateMinDistance(cullInfo.m_Bounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
-                        int num7 = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
-                        if (num7 >= cullInfo.m_MinLod)
+                    float minDist = RenderingUtils.CalculateMinDistance(cullInfo.m_Bounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
+                    int num7 = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
+                    if (num7 >= cullInfo.m_MinLod)
+                    {
+                        availToDraw.Enqueue(new WERenderData
                         {
-                            availToDraw.Enqueue(new WERenderData
-                            {
-                                index = j,
-                                refEntity = *chunk.GetEntityDataPtrRO(m_EntityType),
-                                weComponent = weCustomData[j],
-                                transformMatrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one) * Matrix4x4.TRS(weCustomData[j].offsetPosition, weCustomData[j].offsetRotation, weCustomData[j].scale * weCustomData[j].BriOffsetScaleX / weCustomData[j].BriPixelDensity)
-                            });
-                        }
-                        else if (BasicIMod.VerboseMode)
-                        {
-                            LogUtils.DoVerboseLog($"NOT RENDER: num7 < cullInfo.m_MinLod = {num7} < {cullInfo.m_MinLod}");
-                        }
+                            textDataEntity = entity,
+                            refEntity = *chunk.GetEntityDataPtrRO(m_EntityType),
+                            weComponent = weCustomData,
+                            transformMatrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one) * Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, weCustomData.scale * weCustomData.BriOffsetScaleX / weCustomData.BriPixelDensity)
+                        });
+                    }
+                    else if (BasicIMod.VerboseMode)
+                    {
+                        LogUtils.DoVerboseLog($"NOT RENDER: num7 < cullInfo.m_MinLod = {num7} < {cullInfo.m_MinLod}");
                     }
                 }
             }

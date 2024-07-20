@@ -4,6 +4,7 @@ using Belzont.Interfaces;
 using Belzont.Utils;
 using Colossal.Serialization.Entities;
 using System;
+using System.Drawing;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
@@ -78,6 +79,7 @@ namespace BelzontWE.Font
             {
                 reader.Read(zippedFontFile);
                 Font = Font.FromMemory(ZipUtils.UnzipBytes(zippedFontFile.ToArray()));
+                Font.RecalculateBasedOnHeight(FontServer.QualitySize);
             }
             finally
             {
