@@ -52,8 +52,8 @@ namespace BelzontWE
         private ProxyAction m_CameraZoomActionMouse;
         private ProxyAction m_increasePrecisionValue;
         private ProxyAction m_reducePrecisionValue;
-        private ProxyAction m_nextText;
-        private ProxyAction m_prevText;
+        //private ProxyAction m_nextText;
+        //private ProxyAction m_prevText;
         private ProxyAction m_moveLeft;
         private ProxyAction m_moveRight;
         private ProxyAction m_moveUp;
@@ -88,8 +88,8 @@ namespace BelzontWE
             m_reducePrecisionValue = WEModData.Instance.GetAction(WEModData.kActionReduceMovementStrenght);
 
 
-            m_nextText = WEModData.Instance.GetAction(WEModData.kActionNextText);
-            m_prevText = WEModData.Instance.GetAction(WEModData.kActionPreviousText);
+            //m_nextText = WEModData.Instance.GetAction(WEModData.kActionNextText);
+            //m_prevText = WEModData.Instance.GetAction(WEModData.kActionPreviousText);
 
             m_moveLeft = WEModData.Instance.GetAction(WEModData.kActionMoveLeft);
             m_moveRight = WEModData.Instance.GetAction(WEModData.kActionMoveRight);
@@ -133,17 +133,15 @@ namespace BelzontWE
         {
             m_Controller.CurrentEntity.Value = entityToSelectOnStart;
             entityToSelectOnStart = default;
-            UpdateItemCount();
             m_Controller.OnCurrentItemChanged();
-
             m_Controller.IsValidEditingItem();
 
             m_MoveAction.shouldBeEnabled = true;
             m_RotateAction.shouldBeEnabled = true;
             m_increasePrecisionValue.shouldBeEnabled = true;
             m_reducePrecisionValue.shouldBeEnabled = true;
-            m_prevText.shouldBeEnabled = true;
-            m_nextText.shouldBeEnabled = true;
+            //m_prevText.shouldBeEnabled = true;
+            //m_nextText.shouldBeEnabled = true;
             m_alternateFixedCamera.shouldBeEnabled = true;
             m_useXY.shouldBeEnabled = true;
             m_useXZ.shouldBeEnabled = true;
@@ -176,8 +174,8 @@ namespace BelzontWE
             HoveredEntity = Entity.Null;
             m_MoveAction.shouldBeEnabled = false;
             m_RotateAction.shouldBeEnabled = false;
-            m_prevText.shouldBeEnabled = false;
-            m_nextText.shouldBeEnabled = false;
+            //m_prevText.shouldBeEnabled = false;
+            //m_nextText.shouldBeEnabled = false;
             m_increasePrecisionValue.shouldBeEnabled = false;
             m_reducePrecisionValue.shouldBeEnabled = false;
             m_alternateFixedCamera.shouldBeEnabled = false;
@@ -200,7 +198,7 @@ namespace BelzontWE
             if (m_Controller.CurrentEntity.Value == default)
             {
                 m_ToolRaycastSystem.collisionMask = CollisionMask.OnGround | CollisionMask.Overground;
-                m_ToolRaycastSystem.typeMask = (TypeMask.StaticObjects);
+                m_ToolRaycastSystem.typeMask = TypeMask.StaticObjects | TypeMask.MovingObjects;
                 m_ToolRaycastSystem.raycastFlags = (RaycastFlags.SubElements | RaycastFlags.Placeholders | RaycastFlags.UpgradeIsMain | RaycastFlags.Outside | RaycastFlags.Cargo | RaycastFlags.Passenger | RaycastFlags.Decals);
                 m_ToolRaycastSystem.netLayerMask = (Layer)~0u;
                 m_ToolRaycastSystem.iconLayerMask = (IconLayerMask)~0u;
@@ -233,7 +231,7 @@ namespace BelzontWE
                 bool collide = GetRaycastResult(out Entity entity, out RaycastHit raycastHit);
 
                 LastPos = raycastHit.m_HitPosition;
-                m_Controller.CurrentItemIdx.Value = -1;
+                m_Controller.CurrentSubEntity.Value = Entity.Null;
                 if (collide)
                 {
                     Entity hoveredEntity = HoveredEntity;
@@ -243,9 +241,7 @@ namespace BelzontWE
                         ChangeHighlighting_MainThread(m_Controller.CurrentEntity.Value, ChangeMode.RemoveHighlight);
                         ChangeHighlighting_MainThread(entity, ChangeMode.AddHighlight);
                         m_Controller.CurrentEntity.Value = entity;
-                        m_Controller.CurrentItemIdx.Value = 0;
-                        UpdateItemCount();
-
+                        m_Controller.CurrentSubEntity.Value = Entity.Null;
                         m_Controller.OnCurrentItemChanged();
                     }
 
@@ -272,8 +268,8 @@ namespace BelzontWE
                 if (m_increasePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Max(m_Controller.MouseSensibility.Value - 1, 0));
                 if (m_reducePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Min(m_Controller.MouseSensibility.Value + 1, precisionIdx.Length - 1));
 
-                if (m_nextText.WasPressedThisFrame()) m_Controller.CurrentItemIdx.ChangeValueWithEffects((m_Controller.CurrentItemIdx.Value + m_Controller.CurrentItemCount.Value - 1) % m_Controller.CurrentItemCount.Value);
-                if (m_prevText.WasPressedThisFrame()) m_Controller.CurrentItemIdx.ChangeValueWithEffects((m_Controller.CurrentItemIdx.Value + 1) % m_Controller.CurrentItemCount.Value);
+                //if (m_nextText.WasPressedThisFrame()) m_Controller.CurrentItemIdx.ChangeValueWithEffects((m_Controller.CurrentItemIdx.Value + m_Controller.CurrentItemCount.Value - 1) % m_Controller.CurrentItemCount.Value);
+                //if (m_prevText.WasPressedThisFrame()) m_Controller.CurrentItemIdx.ChangeValueWithEffects((m_Controller.CurrentItemIdx.Value + 1) % m_Controller.CurrentItemCount.Value);
 
                 if (m_useXY.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)ToolEditMode.PlaneXY);
                 if (m_useXZ.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)ToolEditMode.PlaneXZ);
@@ -403,11 +399,6 @@ namespace BelzontWE
             return inputDeps;
         }
 
-        private void UpdateItemCount()
-        {
-            m_Controller.CurrentItemCount.Value = EntityManager.TryGetBuffer<WESubTextRef>(m_Controller.CurrentEntity.Value, true, out var buff) ? buff.Length : 0;
-        }
-
         private void ApplyPositionMouseRelative()
         {
             var moveMode = m_Controller.CurrentMoveMode.Value;
@@ -439,12 +430,7 @@ namespace BelzontWE
             var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value];
             var offsetWithAdjust = offsetPosition * currentPrecision;
-
-            if (!EntityManager.TryGetBuffer<WESubTextRef>(m_Controller.CurrentEntity.Value, false, out var currentBuffer))
-            {
-                currentBuffer = new DynamicBuffer<WESubTextRef>();
-            };
-            if (!EntityManager.TryGetComponent<WETextData>(currentBuffer[m_Controller.CurrentItemIdx.Value].m_weTextData, out var currentItem)) return;
+            if (!EntityManager.TryGetComponent<WETextData>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
 
             var itemAngles = m_Controller.CurrentRotation.Value;
             var isRotationLocked = m_Controller.CameraRotationLocked.Value;
@@ -456,7 +442,7 @@ namespace BelzontWE
                 ToolEditMode.PlaneZY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, 0, isRotationLocked ? -itemAngles.z : 0))).rotation, new float3(0, offsetWithAdjust.y, -offsetWithAdjust.x)),
                 _ => default
             };
-            EntityManager.SetComponentData(currentBuffer[m_Controller.CurrentItemIdx.Value].m_weTextData, currentItem);
+            EntityManager.SetComponentData(m_Controller.CurrentSubEntity.Value, currentItem);
             cmdBuff.AddComponent<BatchesUpdated>(m_Controller.CurrentEntity.Value);
         }
 
@@ -479,11 +465,7 @@ namespace BelzontWE
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value] * 10;
             var offsetWithAdjust = value * currentPrecision;
 
-            if (!EntityManager.TryGetBuffer<WESubTextRef>(m_Controller.CurrentEntity.Value, false, out var currentBuffer))
-            {
-                currentBuffer = new DynamicBuffer<WESubTextRef>();
-            };
-            if (!EntityManager.TryGetComponent<WETextData>(currentBuffer[m_Controller.CurrentItemIdx.Value].m_weTextData, out var currentItem)) return;
+            if (!EntityManager.TryGetComponent<WETextData>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
 
             m_Controller.CurrentRotation.Value = originalRotation + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {
@@ -493,7 +475,7 @@ namespace BelzontWE
                 _ => default
             };
             currentItem.offsetRotation = Quaternion.Euler(m_Controller.CurrentRotation.Value);
-            EntityManager.SetComponentData(currentBuffer[m_Controller.CurrentItemIdx.Value].m_weTextData, currentItem);
+            EntityManager.SetComponentData(m_Controller.CurrentSubEntity.Value, currentItem);
             cmdBuff.AddComponent<BatchesUpdated>(m_Controller.CurrentEntity.Value);
         }
 
@@ -501,7 +483,7 @@ namespace BelzontWE
         {
             m_ToolSystem.activeTool = m_DefaultToolSystem;
             m_Controller.CurrentEntity.Value = default;
-            m_Controller.CurrentItemIdx.Value = 0;
+            m_Controller.CurrentSubEntity.Value = default;
         }
         public void Select(Entity e = default)
         {

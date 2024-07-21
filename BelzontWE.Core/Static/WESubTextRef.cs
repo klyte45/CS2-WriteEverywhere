@@ -2,6 +2,7 @@
 //#define VERBOSE 
 using Belzont.Utils;
 using Colossal.Serialization.Entities;
+using System;
 using Unity.Entities;
 
 namespace BelzontWE
@@ -22,7 +23,6 @@ namespace BelzontWE
             reader.Read(out m_weTextData);
         }
 
-       
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
             writer.Write(CURRENT_VERSION);

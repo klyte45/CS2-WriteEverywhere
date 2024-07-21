@@ -1,5 +1,10 @@
 .k45_we_floatingSettingsPanel {
     width: 440rem;
+
+    button[disabled] {
+        background-color: silver !important;
+    }
+
 }
 
 .k45_we_actionSectionButton {

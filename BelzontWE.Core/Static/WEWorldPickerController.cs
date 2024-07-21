@@ -17,7 +17,7 @@ using WriteEverywhere.Sprites;
 
 namespace BelzontWE
 {
-    public class WEWorldPickerController : ComponentSystemBase, IBelzontBindable
+    public partial class WEWorldPickerController : ComponentSystemBase, IBelzontBindable
     {
         private const string PREFIX = "wpicker.";
 
@@ -40,6 +40,8 @@ namespace BelzontWE
             callBinder($"{PREFIX}listAvailableLibraries", ListAvailableLibraries);
             callBinder($"{PREFIX}listAtlasImages", ListAtlasImages);
             callBinder($"{PREFIX}requireFontInstallation", RequireFontInstallation);
+            callBinder($"{PREFIX}changeParent", ChangeParent);
+            callBinder($"{PREFIX}cloneAsChild", CloneAsChild);
             if (m_eventCaller != null) InitValueBindings();
         }
 
@@ -62,12 +64,11 @@ namespace BelzontWE
         private bool m_initialized = false;
         private readonly Queue<System.Action> m_executionQueue = new();
 
-        public int IncrementalVersion { get; private set; }
         public Matrix4x4 CurrentItemMatrix { get; private set; }
 
         public MultiUIValueBinding<string> CurrentItemName { get; private set; }
-        public MultiUIValueBinding<int> CurrentItemIdx { get; private set; }
-        public MultiUIValueBinding<int> CurrentItemCount { get; private set; }
+        public MultiUIValueBinding<WETextItemResume[]> CurrentTree { get; private set; }
+        public MultiUIValueBinding<Entity> CurrentSubEntity { get; private set; }
         public MultiUIValueBinding<Entity> CurrentEntity { get; private set; }
         public MultiUIValueBinding<float3, float[]> CurrentScale { get; private set; }
         public MultiUIValueBinding<float3, float[]> CurrentRotation { get; private set; }
@@ -79,8 +80,6 @@ namespace BelzontWE
         public MultiUIValueBinding<bool> CurrentItemIsValid { get; private set; }
         public MultiUIValueBinding<bool> CameraLocked { get; private set; }
         public MultiUIValueBinding<bool> CameraRotationLocked { get; private set; }
-
-
         public MultiUIValueBinding<Color, UIColorRGBA> MainColor { get; private set; }
         public MultiUIValueBinding<Color, UIColorRGBA> EmissiveColor { get; private set; }
         public MultiUIValueBinding<float> Metallic { get; private set; }
@@ -115,12 +114,101 @@ namespace BelzontWE
             return "";
         }
 
-        public bool IsValidEditingItem()
+        private bool ChangeParent(Entity target, Entity newParent)
         {
-            return CurrentItemIsValid.Value = CurrentEntity.Value != default && EntityManager.TryGetBuffer<WESubTextRef>(CurrentEntity.Value, true, out var buffer) && buffer.Length > CurrentItemIdx.Value && CurrentItemIdx.Value >= 0;
+            if (target == newParent) return false;
+            var parentCheck = newParent;
+            while (EntityManager.TryGetComponent<WETextData>(parentCheck, out var data))
+            {
+                if (data.ParentEntity == target) return false;
+                parentCheck = data.ParentEntity;
+            }
+            if (!EntityManager.TryGetComponent<WETextData>(target, out var weData)) return false;
+
+            if (weData.ParentEntity == newParent) return true;
+            if (weData.TargetEntity != newParent && (!EntityManager.TryGetComponent<WETextData>(newParent, out var weDataParent) || weDataParent.TargetEntity != weData.TargetEntity)) return false;
+            if (!EntityManager.TryGetBuffer<WESubTextRef>(weData.ParentEntity, false, out var buff)) return false;
+            if (!EntityManager.HasBuffer<WESubTextRef>(newParent))
+            {
+                EntityManager.AddBuffer<WESubTextRef>(newParent);
+            }
+            if (!RemoveSubItemRef(buff, target, weData.ParentEntity, false)) return false;
+            var newBuff = EntityManager.GetBuffer<WESubTextRef>(newParent, false);
+            newBuff.Add(new WESubTextRef
+            {
+                m_weTextData = target
+            });
+            if (weData.SetNewParent(newParent, EntityManager))
+            {
+                EntityManager.SetComponentData(target, weData);
+            }
+            ReloadTree();
+            return true;
         }
 
-        public WETextData CurrentEditingItem => EntityManager.TryGetBuffer<WESubTextRef>(CurrentEntity.Value, true, out var buffer) && buffer.Length > CurrentItemIdx.Value && CurrentItemIdx.Value >= 0 ? EntityManager.TryGetComponent<WETextData>(buffer[CurrentItemIdx.Value].m_weTextData, out var result) ? result : default : default;
+
+        private bool CloneAsChild(Entity target, Entity newParent)
+        {
+            if (!EntityManager.HasComponent<WETextData>(target)) return false;
+            if (!EntityManager.HasBuffer<WESubTextRef>(newParent))
+            {
+                EntityManager.AddBuffer<WESubTextRef>(newParent);
+            }
+            var newBuff = EntityManager.GetBuffer<WESubTextRef>(newParent, false);
+            newBuff.Add(new WESubTextRef
+            {
+                m_weTextData = DoCloneTextItem(target, newParent)
+            });
+            ReloadTree();
+            return true;
+        }
+
+        private Entity DoCloneTextItem(Entity target, Entity newParent)
+        {
+            var finalTargetEntity = EntityManager.TryGetComponent<WETextData>(newParent, out var data) ? data.TargetEntity : newParent;
+            var cloneEntity = EntityManager.Instantiate(target);
+            var weData = EntityManager.GetComponentData<WETextData>(cloneEntity);
+            weData.TargetEntity = finalTargetEntity;
+            if (weData.SetNewParent(newParent, EntityManager))
+            {
+                EntityManager.SetComponentData(cloneEntity, weData);
+            }
+            if (EntityManager.TryGetBuffer<WESubTextRef>(cloneEntity, false, out var subRefs))
+            {
+                for (int i = 0; i < subRefs.Length; i++)
+                {
+                    var subRef = subRefs[i];
+                    subRef.m_weTextData = DoCloneTextItem(subRefs[i].m_weTextData, cloneEntity);
+                    subRefs[i] = subRef;
+                }
+            }
+            return cloneEntity;
+        }
+
+        private WETextItemResume[] GetTextTreeForEntity(Entity e)
+        {
+            if (!EntityManager.TryGetBuffer<WESubTextRef>(e, true, out var refSubs)) return new WETextItemResume[0];
+            var result = new WETextItemResume[refSubs.Length];
+            for (int i = 0; i < refSubs.Length; i++)
+            {
+                if (!EntityManager.TryGetComponent<WETextData>(refSubs[i].m_weTextData, out var data)) continue;
+                result[i] = new()
+                {
+                    name = data.itemName.ToString(),
+                    id = refSubs[i].m_weTextData,
+                    type = (int)data.TextType,
+                    children = GetTextTreeForEntity(refSubs[i].m_weTextData)
+                };
+            }
+            return result;
+        }
+
+        public bool IsValidEditingItem()
+        {
+            return CurrentItemIsValid.Value = CurrentEntity.Value != default && EntityManager.HasComponent<WETextData>(CurrentSubEntity.Value);
+        }
+
+        public WETextData CurrentEditingItem => EntityManager.TryGetComponent<WETextData>(CurrentSubEntity.Value, out var item) ? item : default;
 
         private string[] GetItemsAvailable()
         {
@@ -143,9 +231,9 @@ namespace BelzontWE
         private void InitValueBindings()
         {
             if (m_initialized) return;
-            CurrentItemIdx = new(default, $"{PREFIX}{nameof(CurrentItemIdx)}", m_eventCaller, m_callBinder);
+            CurrentSubEntity = new(default, $"{PREFIX}{nameof(CurrentSubEntity)}", m_eventCaller, m_callBinder);
+            CurrentTree = new(default, $"{PREFIX}{nameof(CurrentTree)}", m_eventCaller, m_callBinder);
             CurrentEntity = new(default, $"{PREFIX}{nameof(CurrentEntity)}", m_eventCaller, m_callBinder);
-            CurrentItemCount = new(default, $"{PREFIX}{nameof(CurrentItemCount)}", m_eventCaller, m_callBinder);
 
             CurrentScale = new(default, $"{PREFIX}{nameof(CurrentScale)}", m_eventCaller, m_callBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new float3(x[0], x[1], x[2]));
             CurrentRotation = new(default, $"{PREFIX}{nameof(CurrentRotation)}", m_eventCaller, m_callBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new float3(x[0], x[1], x[2]));
@@ -182,9 +270,9 @@ namespace BelzontWE
             CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
             CurrentRotation.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.offsetRotation = KMathUtils.UnityEulerToQuaternion(x); return currentItem; });
             CurrentPosition.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.offsetPosition = x; return currentItem; });
-            CurrentItemName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.itemName = x.Truncate(24); return currentItem; });
+            CurrentItemName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.itemName = x.Truncate(24); m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
             CurrentItemText.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Text = x.Truncate(500); return currentItem; });
-            CurrentItemIdx.OnScreenValueChanged += (x) => OnCurrentItemChanged();
+            CurrentSubEntity.OnScreenValueChanged += (x) => OnCurrentItemChanged();
 
             MainColor.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Color = x; return currentItem; });
             EmissiveColor.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveColor = x; return currentItem; });
@@ -196,7 +284,7 @@ namespace BelzontWE
 
             SelectedFont.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Font = FontList.Value.TryGetValue(x, out var entity) ? entity : Entity.Null; return currentItem; });
             FormulaeStr.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { FormulaeCompileResult.Value = currentItem.SetFormulae(FormulaeStr.Value, out var cmpErr); FormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
-            TextSourceType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; return currentItem; });
+            TextSourceType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
             ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Atlas = x; return currentItem; });
 
 
@@ -207,76 +295,96 @@ namespace BelzontWE
         {
             if (IsValidEditingItem())
             {
-                m_executionQueue.Enqueue(() => DoWithBuffer<WESubTextRef>(
-                    (buff) =>
-                    {
-                        if (BasicIMod.DebugMode) LogUtils.DoLog($"CurrentItemIdx => {CurrentItemIdx.Value}\nbuff = {buff} : {buff.Length}");
-                        var currentItemRef = buff[CurrentItemIdx.Value];
-                        var currentItem = EntityManager.GetComponentData<WETextData>(currentItemRef.m_weTextData);
-                        if (BasicIMod.DebugMode) LogUtils.DoLog($"x = {x}; currentItem[{CurrentItemIdx.Value}] = {currentItem.itemName}");
-                        currentItem = x(newVal, currentItem);
-                        EntityManager.SetComponentData(currentItemRef.m_weTextData, currentItem);
-                    }));
+                var subEntity = CurrentSubEntity.Value;
+                m_executionQueue.Enqueue(() =>
+                {
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"CurrentSubEntity => {subEntity}");
+                    var currentItem = EntityManager.GetComponentData<WETextData>(subEntity);
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"x = {x}; CurrentSubEntity = {currentItem.itemName}");
+                    currentItem = x(newVal, currentItem);
+                    EntityManager.SetComponentData(subEntity, currentItem);
+                });
             }
         }
 
-        private void DoWithBuffer<T>(Action<DynamicBuffer<T>> task) where T : unmanaged, IBufferElementData
+        private void DoWithBuffer<T>(Entity parent, Action<DynamicBuffer<T>> task) where T : unmanaged, IBufferElementData
         {
-            if (!EntityManager.TryGetBuffer<T>(CurrentEntity.Value, false, out var buff))
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"!!ad  + {m_EndBarrier} | {parent}");
+            if (!EntityManager.TryGetBuffer<T>(parent, false, out var buff))
             {
-                buff = EntityManager.AddBuffer<T>(CurrentEntity.Value);
+                buff = EntityManager.AddBuffer<T>(parent);
             }
             task(buff);
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"!!ad  + {m_EndBarrier} | {CurrentEntity}");
             var cmd = m_EndBarrier.CreateCommandBuffer();
-            cmd.AddBuffer<T>(CurrentEntity.Value).CopyFrom(buff);
-            cmd.AddComponent<BatchesUpdated>(CurrentEntity.Value);
+            cmd.AddBuffer<T>(parent).CopyFrom(buff);
+            cmd.AddComponent<BatchesUpdated>(parent);
 
         }
 
-        private void AddItem()
+        private void AddItem(Entity parent)
         {
             if (CurrentEntity.Value != Entity.Null)
             {
-                m_executionQueue.Enqueue(() => DoWithBuffer<WESubTextRef>(
+                var targetParent = parent.Index == 0 ? CurrentEntity.Value : parent;
+                var currentEntity = CurrentEntity.Value;
+                m_executionQueue.Enqueue(() => DoWithBuffer<WESubTextRef>(targetParent,
                    (buff) =>
                    {
-                       var subref = new WESubTextRef();
-                       subref.m_weTextData = EntityManager.CreateEntity(typeof(WEWaitingRenderingComponent));
-                       var newData = WETextData.CreateDefault(CurrentEntity.Value);
+                       var subref = new WESubTextRef
+                       {
+                           m_weTextData = EntityManager.CreateEntity(typeof(WEWaitingRenderingComponent))
+                       };
+                       var newData = WETextData.CreateDefault(currentEntity, targetParent);
                        EntityManager.AddComponentData(subref.m_weTextData, newData);
                        buff.Add(subref);
-                       var newCount = buff.Length;
-                       CurrentItemIdx.Value = buff.Length - 1;
-                       CurrentItemCount.Value = newCount;
-                       OnCurrentItemChanged(newData);
-                       IncrementalVersion++;
+                       CurrentSubEntity.ChangeValueWithEffects(subref.m_weTextData);
+                       CurrentTree.Value = GetTextTreeForEntity(currentEntity);
                    }));
             }
         }
 
         private void RemoveItem()
         {
-
             if (IsValidEditingItem())
             {
-                m_executionQueue.Enqueue(() => DoWithBuffer<WESubTextRef>((buff) =>
-                {
-                    EntityManager.DestroyEntity(buff[CurrentItemIdx.Value].m_weTextData);
-                    buff.RemoveAt(CurrentItemIdx.Value);
-                    var buffLen = buff.Length;
-                    CurrentItemIdx.Value = buffLen == 0 ? 0 : (CurrentItemIdx.Value + buffLen - 1) % buffLen;
-                    CurrentItemCount.Value = buffLen;
-                    if (buffLen > 0) OnCurrentItemChanged(EntityManager.TryGetComponent<WETextData>(buff[CurrentItemIdx.Value].m_weTextData, out var res) ? res : default);
-                    IncrementalVersion++;
-                }));
+                var subEntity = CurrentSubEntity.Value;
+                var parent = CurrentEditingItem.ParentEntity;
+                m_executionQueue.Enqueue(() => DoWithBuffer(CurrentEditingItem.ParentEntity
+                    , (Action<DynamicBuffer<WESubTextRef>>)((buff) =>
+                    {
+                        if (RemoveSubItemRef(buff, subEntity, parent, true))
+                        {
+                            CurrentSubEntity.ChangeValueWithEffects(Entity.Null);
+                            CurrentTree.Value = GetTextTreeForEntity(CurrentEntity.Value);
+                        }
+                    })));
             }
+        }
+
+        private bool RemoveSubItemRef(DynamicBuffer<WESubTextRef> buff, Entity subEntity, Entity parent, bool destroy)
+        {
+            for (int i = 0; i < buff.Length; i++)
+            {
+                if (buff[i].m_weTextData == subEntity)
+                {
+                    if (destroy) EntityManager.DestroyEntity(subEntity);
+                    buff.RemoveAt(i);
+                    return true;
+                }
+            }
+            return false;
         }
 
         internal void OnCurrentItemChanged()
         {
             var currentItem = CurrentEditingItem;
+            ReloadTree();
             OnCurrentItemChanged(currentItem);
+        }
+
+        private void ReloadTree()
+        {
+            CurrentTree.Value = GetTextTreeForEntity(CurrentEntity.Value);
         }
 
         private void OnCurrentItemChanged(WETextData currentItem)
@@ -286,7 +394,6 @@ namespace BelzontWE
             CurrentScale.Value = currentItem.scale;
             CurrentItemText.Value = currentItem.Text.ToString();
             CurrentItemName.Value = currentItem.itemName.ToString();
-
 
             MainColor.Value = currentItem.Color;
             EmissiveColor.Value = currentItem.EmissiveColor;
@@ -320,7 +427,10 @@ namespace BelzontWE
 
         internal void SetCurrentTargetMatrix(Matrix4x4 transformMatrix)
         {
-            m_executionQueue.Enqueue(() => CurrentItemMatrix = transformMatrix);
+            if (transformMatrix.ValidTRS())
+            {
+                m_executionQueue.Enqueue(() => CurrentItemMatrix = transformMatrix);
+            }
         }
     }
 

@@ -3,6 +3,7 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font.Utility;
+using Colossal.Entities;
 using Colossal.Serialization.Entities;
 using MonoMod.Utils;
 using System;
@@ -21,15 +22,16 @@ namespace BelzontWE
 
     public struct WETextData : ISerializable, IDisposable, IComponentData
     {
-        public const uint CURRENT_VERSION = 0;
+        public const uint CURRENT_VERSION = 1;
         public unsafe static int Size => sizeof(WETextData);
 
-        public static WETextData CreateDefault(Entity parent)
+        public static WETextData CreateDefault(Entity target, Entity? parent = null)
         {
             return new WETextData
             {
-                TargetEntity = parent,
-                offsetPosition = new(0, 1, 0),
+                TargetEntity = target,
+                ParentEntity = parent ?? target,
+                offsetPosition = new(0, (parent ?? target) == target ? 1 : 0, 0),
                 offsetRotation = new(),
                 scale = new(1, 1, 1),
                 dirty = true,
@@ -45,7 +47,20 @@ namespace BelzontWE
             };
         }
 
-        public Entity TargetEntity { get => targetEntity; private set => targetEntity = value; }
+        public bool SetNewParent(Entity e, EntityManager em)
+        {
+            if (e != targetEntity && (!em.TryGetComponent<WETextData>(e, out var weData) || weData.targetEntity != targetEntity))
+            {
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"NOPE: e = {e}; weData = {weData}; targetEntity = {targetEntity}; weData.targetEntity = {weData.targetEntity}");
+                return false;
+            }
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"YEP: e = {e};  targetEntity = {targetEntity}");
+            parentEntity = e;
+            return true;
+        }
+
+        public Entity TargetEntity { readonly get => targetEntity; set => targetEntity = value; }
+        public Entity ParentEntity { readonly get => parentEntity; private set => parentEntity = value; }
 
         public Entity Font
         {
@@ -246,6 +261,9 @@ namespace BelzontWE
         {
             basicRenderInformation.Free();
             materialBlockPtr.Free();
+            formulaeHandlerFn.Free();
+            atlas.Free();
+            text.Free();
         }
 
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
@@ -268,6 +286,7 @@ namespace BelzontWE
             writer.Write(Formulae ?? "");
             writer.Write((ushort)TextType);
             writer.Write(Atlas);
+            writer.Write(parentEntity);
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -301,6 +320,14 @@ namespace BelzontWE
             this.type = (WESimulationTextType)type;
             reader.Read(out string atlas);
             Atlas = atlas;
+            if (version >= 1)
+            {
+                reader.Read(out parentEntity);
+            }
+            else
+            {
+                parentEntity = targetEntity;
+            }
 
         }
 
@@ -308,6 +335,7 @@ namespace BelzontWE
             .First(x => x.Name == "GetComponentData" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 1 && pi[0].ParameterType == typeof(Entity));
         private Entity font;
         private Entity targetEntity;
+        private Entity parentEntity;
 
         public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
         {

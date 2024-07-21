@@ -1,17 +1,10 @@
-import { VanillaComponentResolver, VanillaFnResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { LocElementType, VanillaComponentResolver, VanillaFnResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { Panel, Portal } from "cs2/ui";
 import { Component, useEffect, useState } from "react";
 import { WorldPickerService } from "services/WorldPickerService";
 import "../style/floatingPanels.scss";
 import { translate } from "utils/translate";
 
-
-enum LocElementType {
-    Bounds = "Game.UI.Localization.LocalizedBounds",
-    Fraction = "Game.UI.Localization.LocalizedFraction",
-    Number = "Game.UI.Localization.LocalizedNumber",
-    String = "Game.UI.Localization.LocalizedString"
-}
 
 const i_addFont = "coui://uil/Colored/Folder.svg";
 
@@ -37,11 +30,11 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     useEffect(() => {
         WorldPickerService.listAtlasImages(wps.ImageAtlasName.value).then(x => setImgOptions(x ?? []));
-    }, [wps.ImageAtlasName.value, wps.CurrentItemIdx.value])
+    }, [wps.ImageAtlasName.value, wps.CurrentSubEntity.value])
 
     useEffect(() => {
         WorldPickerService.listAvailableLibraries().then(x => setAtlases(x ?? []));
-    }, [wps.CurrentItemIdx.value])
+    }, [wps.CurrentSubEntity.value])
 
     const Locale = VanillaFnResolver.instance.localization.useCachedLocalization();
     const decimalsFormat = (value: number) => VanillaFnResolver.instance.localizedNumber.formatFloat(Locale, value, false, 3, true, false, Infinity);
@@ -72,13 +65,13 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     useEffect(() => {
         setHeight(wps.CurrentScale.value[1]);
         setWidthDistortion(wps.CurrentScale.value[0] / wps.CurrentScale.value[1]);
-    }, [wps.CurrentScale.value, wps.CurrentItemIdx.value])
+    }, [wps.CurrentScale.value, wps.CurrentSubEntity.value])
 
     useEffect(() => {
         setFormulaeTyping(wps.FormulaeStr.value);
         setUsingFormulae(!!wps.FormulaeStr.value);
-    }, [wps.FormulaeStr.value, wps.CurrentItemIdx.value])
-    useEffect(() => { setFixedTextTyping(wps.CurrentItemText.value); }, [wps.CurrentItemText.value, wps.CurrentItemIdx.value])
+    }, [wps.FormulaeStr.value, wps.CurrentSubEntity.value])
+    useEffect(() => { setFixedTextTyping(wps.CurrentItemText.value); }, [wps.CurrentItemText.value, wps.CurrentSubEntity.value])
 
     const saveHeight = (height: number) => {
         const scale = wps.CurrentScale.value;
@@ -93,7 +86,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
         wps.CurrentScale.set(scale);
     }
 
-    const defaultPosition = props.initialPosition ?? { x: 200 / window.innerWidth, y: 200 / window.innerHeight }
+    const defaultPosition = props.initialPosition ?? { x: 1 - 100 / window.innerWidth, y: 1 - 180 / window.innerHeight }
 
     return <Portal>
         <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >

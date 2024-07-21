@@ -1,6 +1,6 @@
 ﻿namespace BelzontWE
 {
-    public enum WESimulationTextType : short
+    public enum WESimulationTextType
     {
         Text = 0,
         Image = 1

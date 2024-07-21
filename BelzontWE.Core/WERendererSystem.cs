@@ -1,7 +1,6 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font.Utility;
-using Colossal.Entities;
 using Game;
 using Game.Rendering;
 using Game.SceneFlow;
@@ -111,8 +110,7 @@ namespace BelzontWE
                     }
                     else if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
                         && item.weComponent.TargetEntity == m_pickerController.CurrentEntity.Value
-                        && EntityManager.TryGetBuffer<WESubTextRef>(m_pickerController.CurrentEntity.Value, true, out buffer)
-                        && buffer[m_pickerController.CurrentItemIdx.Value].m_weTextData == item.textDataEntity
+                        && m_pickerController.CurrentSubEntity.Value == item.textDataEntity
                         && item.weComponent.RenderInformation != null
                         && item.transformMatrix.ValidTRS())
                     {
@@ -125,7 +123,7 @@ namespace BelzontWE
                         LogUtils.DoTraceLog($"buffer = {buffer.IsCreated}");
                         if (buffer.IsCreated)
                         {
-                            LogUtils.DoTraceLog($"buffer[m_pickerController.CurrentItemIdx.Value].m_weTextData == item.textDataEntity => {(buffer.Length > m_pickerController.CurrentItemIdx.Value ? buffer[m_pickerController.CurrentItemIdx.Value].m_weTextData : default)} == {item.textDataEntity}");
+                            LogUtils.DoTraceLog($"buffer[m_pickerController.CurrentItemIdx.Value].m_weTextData == item.textDataEntity => {m_pickerController.CurrentSubEntity.Value} == {item.textDataEntity}");
                         }
                     }
                     Graphics.DrawMesh(bri.m_mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
@@ -146,6 +144,7 @@ namespace BelzontWE
                     m_cullingInfo = GetComponentLookup<CullingInfo>(true),
                     m_transform = GetComponentLookup<Game.Objects.Transform>(true),
                     m_iTransform = GetComponentLookup<InterpolatedTransform>(true),
+                    m_weDataLookup = GetComponentLookup<WETextData>(true),
                     m_weData = GetComponentTypeHandle<WETextData>(false),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
                     m_LodParameters = m_LodParameters,
@@ -182,6 +181,7 @@ namespace BelzontWE
         {
             public ComponentLookup<CullingInfo> m_cullingInfo;
             public ComponentTypeHandle<WETextData> m_weData;
+            public ComponentLookup<WETextData> m_weDataLookup;
             public ComponentLookup<InterpolatedTransform> m_iTransform;
             public ComponentLookup<Game.Objects.Transform> m_transform;
             public float4 m_LodParameters;
@@ -201,44 +201,20 @@ namespace BelzontWE
                     var entity = entities[i];
                     var weCustomData = weDatas[i];
 
-                    if (weCustomData.TargetEntity == Entity.Null)
+                    if (weCustomData.TargetEntity == Entity.Null || weCustomData.ParentEntity == Entity.Null)
                     {
                         m_CommandBuffer.DestroyEntity(entity);
                         continue;
                     }
 
-                    float3 positionRef;
-                    quaternion rotationRef;
+                    if (!GetBaseMatrix(entity, ref weCustomData, out CullingInfo cullInfo, out var baseMatrix)) continue;
 
-                    if (!m_cullingInfo.TryGetComponent(weCustomData.TargetEntity, out var cullInfo))
-                    {
-                        m_CommandBuffer.DestroyEntity(entity);
-                        continue;
-                    }
-
-                    if (m_iTransform.TryGetComponent(weCustomData.TargetEntity, out var transform))
-                    {
-                        positionRef = transform.m_Position;
-                        rotationRef = transform.m_Rotation;
-                    }
-                    else if (m_transform.TryGetComponent(weCustomData.TargetEntity, out var transform2))
-                    {
-                        positionRef = transform2.m_Position;
-                        rotationRef = transform2.m_Rotation;
-                    }
-                    else
-                    {
-                        m_CommandBuffer.DestroyEntity(entity);
-                        continue;
-                    }
-
+                    float minDist = RenderingUtils.CalculateMinDistance(cullInfo.m_Bounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
                     if (weCustomData.RenderInformation == null)
                     {
                         m_CommandBuffer.AddComponent<WEWaitingRenderingComponent>(entity);
                         continue;
                     }
-
-                    float minDist = RenderingUtils.CalculateMinDistance(cullInfo.m_Bounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
                     int num7 = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
                     if (num7 >= cullInfo.m_MinLod)
                     {
@@ -247,14 +223,68 @@ namespace BelzontWE
                             textDataEntity = entity,
                             refEntity = *chunk.GetEntityDataPtrRO(m_EntityType),
                             weComponent = weCustomData,
-                            transformMatrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one) * Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, weCustomData.scale * weCustomData.BriOffsetScaleX / weCustomData.BriPixelDensity)
+                            transformMatrix = baseMatrix
                         });
                     }
+
+#if !BURST
                     else if (BasicIMod.VerboseMode)
                     {
                         LogUtils.DoVerboseLog($"NOT RENDER: num7 < cullInfo.m_MinLod = {num7} < {cullInfo.m_MinLod}");
                     }
+#endif
                 }
+            }
+
+            private bool GetBaseMatrix(Entity entity, ref WETextData weCustomData, out CullingInfo cullInfo, out Matrix4x4 matrix, bool scaleless = false)
+            {
+                float3 positionRef;
+                quaternion rotationRef;
+                Entity geometryRef = weCustomData.ParentEntity;
+                if (m_weDataLookup.TryGetComponent(geometryRef, out var parentData))
+                {
+                    if (!GetBaseMatrix(entity, ref parentData, out cullInfo, out matrix, true))
+                    {
+                        return false;
+                    }
+                }
+                else if (weCustomData.ParentEntity != weCustomData.TargetEntity)
+                {
+                    m_CommandBuffer.DestroyEntity(entity);
+                    cullInfo = default;
+                    matrix = default;
+                    return false;
+                }
+                else
+                {
+                    if (!m_cullingInfo.TryGetComponent(geometryRef, out cullInfo))
+                    {
+                        m_CommandBuffer.DestroyEntity(entity);
+                        matrix = default;
+                        return false;
+                    }
+                    if (m_iTransform.TryGetComponent(weCustomData.ParentEntity, out var transform))
+                    {
+                        positionRef = transform.m_Position;
+                        rotationRef = transform.m_Rotation;
+                    }
+                    else if (m_transform.TryGetComponent(weCustomData.ParentEntity, out var transform2))
+                    {
+                        positionRef = transform2.m_Position;
+                        rotationRef = transform2.m_Rotation;
+                    }
+                    else
+                    {
+                        m_CommandBuffer.DestroyEntity(entity);
+                        matrix = default;
+                        cullInfo = default;
+                        return false;
+                    }
+                    matrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one);
+                }
+                matrix *= Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, scaleless ? Vector3.one : weCustomData.scale * weCustomData.BriOffsetScaleX / weCustomData.BriPixelDensity);
+
+                return true;
             }
         }
     }

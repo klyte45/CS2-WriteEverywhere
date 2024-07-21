@@ -203,8 +203,8 @@ namespace BelzontWE
         [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad3, kActionPerspectiveXZ)] public ProxyBinding ActionPerspectiveXZ { get; set; }
         [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMultiply, kActionCycleEditAxisLock)] public ProxyBinding ActionCycleAxisLock { get; set; }
 
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadPlus, kActionNextText)] public ProxyBinding ActionNextText { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMinus, kActionPreviousText)] public ProxyBinding ActionPreviousText { get; set; }
+        //[SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadPlus, kActionNextText)] public ProxyBinding ActionNextText { get; set; }
+        //[SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMinus, kActionPreviousText)] public ProxyBinding ActionPreviousText { get; set; }
 
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad4, kActionMoveLeft)] public ProxyBinding ActionMoveLeft { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad6, kActionMoveRight)] public ProxyBinding ActionMoveRight { get; set; }

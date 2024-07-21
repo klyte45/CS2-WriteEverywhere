@@ -1,26 +1,22 @@
-import { MultiUIValueBinding, UIColorRGBA } from "@klyte45/vuio-commons"
-import { Component } from "react"
+import { Entity, MultiUIValueBinding, UIColorRGBA } from "@klyte45/vuio-commons"
+import { Component, version } from "react"
 
 type number3 = [number, number, number]
 
-type Entity = {
-    Index: number,
-    Version: number
-}
 let _instance: WorldPickerService;
 
 export class WorldPickerService {
     public static get instance(): WorldPickerService { return _instance ??= new WorldPickerService() }
 
     CurrentItemName: MultiUIValueBinding<string>
-    CurrentItemIdx: MultiUIValueBinding<number>
+    CurrentTree: MultiUIValueBinding<WETextItemResume[]>
+    CurrentSubEntity: MultiUIValueBinding<Entity | null>
     CurrentEntity: MultiUIValueBinding<Entity | null>
     CurrentScale: MultiUIValueBinding<number3>
     CurrentRotation: MultiUIValueBinding<number3>
     CurrentPosition: MultiUIValueBinding<number3>
     MouseSensibility: MultiUIValueBinding<number>
     CurrentPlaneMode: MultiUIValueBinding<number>
-    CurrentItemCount: MultiUIValueBinding<number>
     CurrentItemText: MultiUIValueBinding<string>
     CurrentItemIsValid: MultiUIValueBinding<string>
     CameraLocked: MultiUIValueBinding<boolean>
@@ -48,7 +44,8 @@ export class WorldPickerService {
 
     constructor() {
         this.CurrentItemName ??= new MultiUIValueBinding<string>("k45::we.wpicker.CurrentItemName")
-        this.CurrentItemIdx ??= new MultiUIValueBinding<number>("k45::we.wpicker.CurrentItemIdx")
+        this.CurrentTree ??= new MultiUIValueBinding<WETextItemResume[]>("k45::we.wpicker.CurrentTree")
+        this.CurrentSubEntity ??= new MultiUIValueBinding<Entity | null>("k45::we.wpicker.CurrentSubEntity")
         this.CurrentEntity ??= new MultiUIValueBinding<Entity | null>("k45::we.wpicker.CurrentEntity")
         this.CurrentScale ??= new MultiUIValueBinding<number3>("k45::we.wpicker.CurrentScale")
         this.CurrentRotation ??= new MultiUIValueBinding<number3>("k45::we.wpicker.CurrentRotation")
@@ -57,7 +54,6 @@ export class WorldPickerService {
         this.CurrentPlaneMode ??= new MultiUIValueBinding<number>("k45::we.wpicker.CurrentPlaneMode")
         this.CurrentItemText ??= new MultiUIValueBinding<string>("k45::we.wpicker.CurrentItemText")
         this.CurrentItemIsValid ??= new MultiUIValueBinding<string>("k45::we.wpicker.CurrentItemIsValid")
-        this.CurrentItemCount ??= new MultiUIValueBinding<number>("k45::we.wpicker.CurrentItemCount")
         this.CameraLocked ??= new MultiUIValueBinding<boolean>("k45::we.wpicker.CameraLocked")
         this.CameraRotationLocked ??= new MultiUIValueBinding<boolean>("k45::we.wpicker.CameraRotationLocked")
         this.CurrentMoveMode ??= new MultiUIValueBinding<number>("k45::we.wpicker.CurrentMoveMode")
@@ -77,7 +73,8 @@ export class WorldPickerService {
         this.ImageAtlasName = new MultiUIValueBinding<string>("k45::we.wpicker.ImageAtlasName")
 
         this.Bindings.push(
-            this.CurrentItemIdx,
+            this.CurrentSubEntity,
+            this.CurrentTree,
             this.CurrentScale,
             this.CurrentRotation,
             this.CurrentPosition,
@@ -87,7 +84,6 @@ export class WorldPickerService {
             this.CurrentItemIsValid,
             this.CurrentEntity,
             this.CurrentItemName,
-            this.CurrentItemCount,
             this.CameraLocked,
             this.CameraRotationLocked,
             this.CurrentMoveMode,
@@ -128,5 +124,28 @@ export class WorldPickerService {
     static async requireFontInstallation(fontName: string): Promise<string> {
         return await engine.call("k45::we.wpicker.requireFontInstallation", fontName);
     }
+    static async changeParent(target: Entity, newParent: Entity): Promise<boolean> {
+        return await engine.call("k45::we.wpicker.changeParent", target, newParent);
+    }
+    static async cloneAsChild(target: Entity, newParent: Entity) {
+        return await engine.call("k45::we.wpicker.cloneAsChild", target, newParent);
+    }
+    static async removeItem() {
+        return await engine.call("k45::we.wpicker.removeItem");
+    }
+    static async addEmpty(parent?: Entity) {
+        return await engine.call("k45::we.wpicker.addItem", parent ?? { Index: 0, Version: 0, __Type: 'Unity.Entities.Entity, Unity.Entities, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null' });
+    }
+}
 
+export type WETextItemResume = {
+    name: string;
+    type: WESimulationTextType;
+    id: Entity;
+    children: WETextItemResume[];
+}
+
+export enum WESimulationTextType {
+    Text = 0,
+    Image = 1
 }

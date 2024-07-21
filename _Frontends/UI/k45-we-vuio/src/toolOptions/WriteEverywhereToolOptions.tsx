@@ -1,4 +1,4 @@
-import { AmountValueSection, VanillaComponentResolver, VanillaFnResolver, VectorSectionEditable } from "@klyte45/vuio-commons";
+import { AmountValueSection, Entity, VanillaComponentResolver, VanillaFnResolver, VectorSectionEditable } from "@klyte45/vuio-commons";
 import { useValue } from "cs2/api";
 import { tool } from "cs2/bindings";
 import { getModule, ModuleRegistryExtend } from "cs2/modding";
@@ -7,6 +7,7 @@ import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "../utils/translate";
 import { WETextAppearenceSettings } from "./WETextAppearenceSettings";
 import { WETextValueSettings } from "./WETextValueSettings";
+import { WETextHierarchyView } from "./WETextHierarchyView";
 
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
@@ -94,37 +95,14 @@ const WEWorldPickerToolPanel = () => {
     const Locale = VanillaFnResolver.instance.localization.useCachedLocalization();
     const decimalsFormat = (value: number) => VanillaFnResolver.instance.localizedNumber.formatFloat(Locale, value, false, 3, true, false, Infinity);
 
-    const currentItemIsValid = wps.CurrentItemCount.value > 0 && wps.CurrentItemIdx.value < wps.CurrentItemCount.value && wps.CurrentItemIdx.value >= 0;
+    const currentItemIsValid = wps.CurrentSubEntity.value?.Index != 0;
+
+    const [clipboard, setClipboard] = useState(undefined as Entity | undefined | null)
 
 
     return !wps.CurrentEntity.value?.Index ?
         <VanillaComponentResolver.instance.Section title={L_selectItem} children={[]} /> :
         <>
-            <AmountValueSection
-                title={L_itemTitle}
-                valueGetter={() => `${wps.CurrentItemIdx.value + 1}/${wps.CurrentItemCount.value}`}
-                up={{
-                    onSelect: () => wps.CurrentItemIdx.set((wps.CurrentItemIdx.value + 1) % wps.CurrentItemCount.value),
-                    disabledFn: () => !wps.CurrentItemCount.value
-                }}
-                down={{
-                    onSelect: () => wps.CurrentItemIdx.set((wps.CurrentItemIdx.value + wps.CurrentItemCount.value - 1) % wps.CurrentItemCount.value),
-                    disabledFn: () => !wps.CurrentItemCount.value
-                }}
-                actions={[
-                    {
-                        icon: i_removeItemIcon,
-                        tooltip: T_removeText,
-                        onSelect: () => removeItem(),
-                        disabledFn: () => wps.CurrentItemIdx.value >= wps.CurrentItemCount.value
-                    },
-                    {
-                        icon: i_AddItemIcon,
-                        tooltip: T_addText,
-                        onSelect: () => addItem()
-                    },
-                ]}
-            />
 
             {currentItemIsValid &&
                 <>
@@ -192,6 +170,7 @@ const WEWorldPickerToolPanel = () => {
             </VanillaComponentResolver.instance.Section>
             {currentItemIsValid && displayAppearenceWindow && <WETextAppearenceSettings />}
             {currentItemIsValid && <WETextValueSettings />}
+            {<WETextHierarchyView clipboard={clipboard} setClipboard={setClipboard} />}
         </>
 
 }
