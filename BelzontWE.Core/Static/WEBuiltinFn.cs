@@ -9,10 +9,13 @@ namespace BelzontWE
         public const string LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         public const string NUMBERS = "0123456789";
         public readonly static string[] DIGITS_ORDER = { NUMBERS, NUMBERS, LETTERS[..10], NUMBERS, LETTERS, LETTERS, LETTERS };
-        public static string GetPlateContentTst(Entity entity)
+        public static string GetPlateContentTst(Entity entity) => GetPlateContentTst(entity.Index);
+        public static string GetPlateContentTst(byte refNum) => GetPlateContentTst((int)refNum);
+        public static string GetPlateContentTst(ushort refNum) => GetPlateContentTst((int)refNum);
+        public static string GetPlateContentTst(int refNum)
         {
             var output = "";
-            var idx = entity.Index + 68050000;
+            var idx = refNum + 68050000;
             for (int i = 0; i < DIGITS_ORDER.Length; i++)
             {
                 output = DIGITS_ORDER[i][idx % DIGITS_ORDER[i].Length] + output;

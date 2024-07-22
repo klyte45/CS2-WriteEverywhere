@@ -349,10 +349,10 @@ namespace BelzontWE
                 errorFmtArgs = null;
                 return 0;
             }
-            if (formulaeHandlerFn.IsAllocated) formulaeHandlerFn.Free();
             if (cachedFns.TryGetValue(newFormulae, out var handle) && handle.IsAllocated && handle.Target != null)
             {
                 Formulae = newFormulae;
+                if (formulaeHandlerFn.IsAllocated) formulaeHandlerFn.Free();
                 formulaeHandlerFn = GCHandle.Alloc(handle.Target);
                 errorFmtArgs = null;
                 return 0;
@@ -374,10 +374,6 @@ namespace BelzontWE
                 LocalBuilder localVarEntity = null;
                 for (int i = 0; i < path.Length; i++)
                 {
-                    if (currentComponentType != typeof(Entity))
-                    {
-                        return 4; // Each block on formulae path must result in an Entity, except last
-                    }
                     var codePart = path[i];
 
                     if (codePart.StartsWith("&"))
@@ -395,7 +391,7 @@ namespace BelzontWE
                                         && m.ReturnType == typeof(string)
                                         && m.GetParameters() is ParameterInfo[] p
                                         && p.Length == 1
-                                        && p[0].ParameterType == typeof(Entity)
+                                        && p[0].ParameterType == currentComponentType
                                         && !p[0].ParameterType.IsByRefLike
                                       );
                         if (candidateMethods.Count() == 0)
@@ -411,18 +407,12 @@ namespace BelzontWE
                         {
                             iLGenerator.Emit(OpCodes.Ldarg_1);
                         }
-                        else
-                        {
-                            localVarEntity ??= iLGenerator.DeclareLocal(typeof(Entity));
-                            iLGenerator.Emit(OpCodes.Stloc, localVarEntity);
-                            iLGenerator.Emit(OpCodes.Ldloc, localVarEntity);
-                        }
                         iLGenerator.EmitCall(OpCodes.Call, methodInfo, null);
                         currentComponentType = typeof(string);
                     }
                     else
                     {
-                        currentComponentType = ProcessEntityPath(iLGenerator, codePart, i == 0, ref localVarEntity, ref errorFmtArgs, out var result);
+                        var result = ProcessEntityPath(ref currentComponentType, iLGenerator, codePart, i == 0, ref localVarEntity, ref errorFmtArgs);
                         if (result != 0) return result;
                     }
                 }
@@ -451,6 +441,7 @@ namespace BelzontWE
                 if (formulaeHandlerFn.IsAllocated) formulaeHandlerFn.Free();
                 var generatedMethod = dynamicMethodDefinition.Generate();
                 Func<EntityManager, Entity, string> fn = (x, e) => generatedMethod.Invoke(null, new object[] { x, e }) as string;
+                if (formulaeHandlerFn.IsAllocated) formulaeHandlerFn.Free();
                 formulaeHandlerFn = GCHandle.Alloc(fn);
                 cachedFns[newFormulae] = GCHandle.Alloc(fn, GCHandleType.Weak);
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => (" + string.Join(", ", dynamicMethodDefinition.Definition.Parameters.Select(x => $"{(x.IsIn ? "in " : x.IsOut ? "out " : "")}{x.ParameterType} {x.Name}")) + ")");
@@ -464,14 +455,16 @@ namespace BelzontWE
             }
         }
 
-        private static Type ProcessEntityPath(ILGenerator iLGenerator, string path, bool firstLine, ref LocalBuilder localVarEntity, ref string[] errorFmtArgs, out byte result)
+        private static byte ProcessEntityPath(ref Type currentComponentType, ILGenerator iLGenerator, string path, bool firstLine, ref LocalBuilder localVarEntity, ref string[] errorFmtArgs)
         {
-            Type currentComponentType;
+            if (currentComponentType != typeof(Entity))
+            {
+                return 4; // Each block on formulae path must result in an Entity, except last
+            }
             var itemSplitted = path.Split(";");
             if (itemSplitted.Length != 2)
             {
-                result = 6; // Each entity block must be a pair of component name and field navigation, separated by a semicolon
-                return null;
+                return 6; // Each entity block must be a pair of component name and field navigation, separated by a semicolon
             }
             var entityTypeName = itemSplitted[0];
             var fieldPath = itemSplitted[1].Split(".");
@@ -480,14 +473,12 @@ namespace BelzontWE
             if (itemComponentType.Count == 0)
             {
                 errorFmtArgs = new[] { entityTypeName };
-                result = 1; // Component type not found for {0}
-                return null;
+                return 1; // Component type not found for {0}              
             }
             if (itemComponentType.Count > 1)
             {
                 errorFmtArgs = new[] { entityTypeName };
-                result = 5; // Multiple components found for name {0}
-                return null;
+                return 5; // Multiple components found for name {0}
             }
 
             if (firstLine)
@@ -529,12 +520,10 @@ namespace BelzontWE
                 else
                 {
                     errorFmtArgs = new[] { field, currentComponentType.FullName, string.Join("\n", currentComponentType.GetMembers(ReflectionUtils.allFlags).Select(x => x.Name)) };
-                    result = 3; // Member {0} not found at component type {1}; Available Members: {2}
-                    return null;
+                    return 3; // Member {0} not found at component type {1}; Available Members: {2}
                 }
             }
-            result = 0;
-            return currentComponentType;
+            return 0;
         }
 
         public string GetEffectiveText(EntityManager em)
