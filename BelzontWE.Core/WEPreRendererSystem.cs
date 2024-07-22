@@ -58,7 +58,6 @@ namespace BelzontWE
             if (!m_pendingQueueEntities.IsEmptyIgnoreFilter)
             {
                 NativeArray<Entity> entities = m_pendingQueueEntities.ToEntityArray(Allocator.TempJob);
-                var barrier = m_endFrameBarrier.CreateCommandBuffer();
                 for (var i = 0; i < entities.Length; i++)
                 {
                     var entity = entities[i];

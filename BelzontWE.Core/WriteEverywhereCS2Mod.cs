@@ -2,6 +2,8 @@
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using WriteEverywhere.Sprites;
 
 namespace BelzontWE

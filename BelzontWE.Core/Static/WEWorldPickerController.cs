@@ -169,6 +169,7 @@ namespace BelzontWE
             var cloneEntity = EntityManager.Instantiate(target);
             var weData = EntityManager.GetComponentData<WETextData>(cloneEntity);
             weData.TargetEntity = finalTargetEntity;
+            weData.OnPostInstantiate();
             if (weData.SetNewParent(newParent, EntityManager))
             {
                 EntityManager.SetComponentData(cloneEntity, weData);

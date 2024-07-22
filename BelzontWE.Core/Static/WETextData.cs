@@ -7,6 +7,7 @@ using Colossal.Entities;
 using Colossal.Serialization.Entities;
 using MonoMod.Utils;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -19,7 +20,6 @@ using UnityEngine;
 
 namespace BelzontWE
 {
-
     public struct WETextData : ISerializable, IDisposable, IComponentData
     {
         public const uint CURRENT_VERSION = 1;
@@ -134,13 +134,13 @@ namespace BelzontWE
         public FixedString32Bytes itemName;
         public WEShader shader;
         public FixedString512Bytes LastErrorStr { get; private set; }
-
         private int lastEvaluationFrame;
         private FixedString512Bytes formulaeHandlerStr;
         private GCHandle formulaeHandlerFn;
-
         public float BriOffsetScaleX { get; private set; }
         public float BriPixelDensity { get; private set; }
+
+        private bool loadingFnDone;
 
         public BasicRenderInformation RenderInformation => basicRenderInformation.IsAllocated ? basicRenderInformation.Target as BasicRenderInformation : null;
         public MaterialPropertyBlock MaterialProperties
@@ -247,6 +247,7 @@ namespace BelzontWE
         {
             dirty = true;
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
+            basicRenderInformation = default;
             basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
             BriOffsetScaleX = bri.m_offsetScaleX;
             BriPixelDensity = bri.m_pixelDensityMeters;
@@ -337,16 +338,27 @@ namespace BelzontWE
         private Entity targetEntity;
         private Entity parentEntity;
 
+
+
+        private static readonly Dictionary<string, GCHandle> cachedFns = new();
         public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
         {
             if (newFormulae == "")
             {
                 Formulae = newFormulae;
-                if (formulaeHandlerFn.IsAllocated) formulaeHandlerFn.Free();
                 errorFmtArgs = null;
                 return 0;
             }
-            // FormulaeExample: Game.Common.Owner
+            if (formulaeHandlerFn.IsAllocated) formulaeHandlerFn.Free();
+            if (cachedFns.TryGetValue(newFormulae, out var handle) && handle.IsAllocated && handle.Target != null)
+            {
+                Formulae = newFormulae;
+                formulaeHandlerFn = GCHandle.Alloc(handle.Target);
+                errorFmtArgs = null;
+                return 0;
+            }
+
+
             var path = newFormulae.Split("/");
             DynamicMethodDefinition dynamicMethodDefinition = new(
                 $"__WE_CS2_{nameof(WETextData)}_formulae_{new Regex("[^A-Za-z0-9_]").Replace(newFormulae, "_")}",
@@ -354,7 +366,6 @@ namespace BelzontWE
                 new Type[] { typeof(EntityManager), typeof(Entity) }
                 );
             ILGenerator iLGenerator = dynamicMethodDefinition.GetILGenerator();
-            var typeList = TypeManager.AllTypes;
             try
             {
                 errorFmtArgs = null;
@@ -367,69 +378,52 @@ namespace BelzontWE
                     {
                         return 4; // Each block on formulae path must result in an Entity, except last
                     }
+                    var codePart = path[i];
 
-                    var itemSplitted = path[i].Split(";");
-                    if (itemSplitted.Length != 2)
+                    if (codePart.StartsWith("&"))
                     {
-                        return 6; // Each entity block must be a pair of component name and field navigation, separated by a semicolon
-                    }
-                    var entityTypeName = itemSplitted[0];
-                    var fieldPath = itemSplitted[1].Split(".");
-
-                    var itemComponentType = typeList.Where(x => x.Type?.FullName?.EndsWith(entityTypeName) ?? false).ToList();
-                    if (itemComponentType.Count == 0)
-                    {
-                        errorFmtArgs = new[] { entityTypeName };
-                        return 1; // Component type not found for {0}
-                    }
-                    if (itemComponentType.Count > 1)
-                    {
-                        errorFmtArgs = new[] { entityTypeName };
-                        return 5; // Multiple components found for name {0}
-                    }
-
-                    if (i == 0)
-                    {
-                        iLGenerator.Emit(OpCodes.Ldarga_S, 0);
-                        iLGenerator.Emit(OpCodes.Ldarg_1);
-                    }
-                    else
-                    {
-                        localVarEntity ??= iLGenerator.DeclareLocal(typeof(Entity));
-                        iLGenerator.Emit(OpCodes.Stloc, localVarEntity);
-                        iLGenerator.Emit(OpCodes.Ldarga_S, 0);
-                        iLGenerator.Emit(OpCodes.Ldloc, localVarEntity);
-                    }
-                    iLGenerator.EmitCall(OpCodes.Call, r_GetComponent.MakeGenericMethod(itemComponentType[0].Type), null);
-
-
-                    currentComponentType = itemComponentType[0].Type;
-                    for (int j = 0; j < fieldPath.Length; j++)
-                    {
-                        string field = fieldPath[j];
-                        if (currentComponentType.GetField(field, ReflectionUtils.allFlags) is FieldInfo targetField)
+                        var parts = codePart[1..].Split(";");
+                        var className = parts[0];
+                        var method = parts[1];
+                        var candidateMethods = AppDomain.CurrentDomain.GetAssemblies()
+                                     .SelectMany(assembly => assembly.GetTypes())
+                                     .Where(t =>
+                                        (t.Name == className || t.Name.EndsWith($".{className}"))
+                                     ).SelectMany(x =>
+                                        x.GetMethods(BindingFlags.Static | BindingFlags.Public))
+                                     .Where(m => m.Name == method
+                                        && m.ReturnType == typeof(string)
+                                        && m.GetParameters() is ParameterInfo[] p
+                                        && p.Length == 1
+                                        && p[0].ParameterType == typeof(Entity)
+                                        && !p[0].ParameterType.IsByRefLike
+                                      );
+                        if (candidateMethods.Count() == 0)
                         {
-                            iLGenerator.Emit(OpCodes.Ldfld, targetField);
-                            currentComponentType = targetField.FieldType;
-                            continue;
+                            return 8; // Class or method not found.
                         }
-                        else if (currentComponentType.GetProperty(field, ReflectionUtils.allFlags) is PropertyInfo targetProperty && targetProperty.GetMethod != null)
+                        if (candidateMethods.Count() > 1)
                         {
-                            iLGenerator.EmitCall(targetProperty.GetMethod.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, targetProperty.GetMethod, null);
-                            currentComponentType = targetProperty.GetMethod.ReturnType;
-                            continue;
+                            return 9; // Class or method matches more than one result. Please be more specific.
                         }
-                        else if (currentComponentType.GetMethod(field, ReflectionUtils.allFlags, null, new Type[0], null) is MethodInfo targetMethod)
+                        var methodInfo = candidateMethods.First();
+                        if (i == 0)
                         {
-                            iLGenerator.EmitCall(targetMethod.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, targetMethod, null);
-                            currentComponentType = targetMethod.ReturnType;
-                            continue;
+                            iLGenerator.Emit(OpCodes.Ldarg_1);
                         }
                         else
                         {
-                            errorFmtArgs = new[] { field, currentComponentType.FullName, string.Join("\n", currentComponentType.GetMembers(ReflectionUtils.allFlags).Select(x => x.Name)) };
-                            return 3; // Member {0} not found at component type {1}; Available Members: {2}
+                            localVarEntity ??= iLGenerator.DeclareLocal(typeof(Entity));
+                            iLGenerator.Emit(OpCodes.Stloc, localVarEntity);
+                            iLGenerator.Emit(OpCodes.Ldloc, localVarEntity);
                         }
+                        iLGenerator.EmitCall(OpCodes.Call, methodInfo, null);
+                        currentComponentType = typeof(string);
+                    }
+                    else
+                    {
+                        currentComponentType = ProcessEntityPath(iLGenerator, codePart, i == 0, ref localVarEntity, ref errorFmtArgs, out var result);
+                        if (result != 0) return result;
                     }
                 }
                 if (currentComponentType.IsEnum)
@@ -458,6 +452,7 @@ namespace BelzontWE
                 var generatedMethod = dynamicMethodDefinition.Generate();
                 Func<EntityManager, Entity, string> fn = (x, e) => generatedMethod.Invoke(null, new object[] { x, e }) as string;
                 formulaeHandlerFn = GCHandle.Alloc(fn);
+                cachedFns[newFormulae] = GCHandle.Alloc(fn, GCHandleType.Weak);
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => (" + string.Join(", ", dynamicMethodDefinition.Definition.Parameters.Select(x => $"{(x.IsIn ? "in " : x.IsOut ? "out " : "")}{x.ParameterType} {x.Name}")) + ")");
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => \n" + string.Join("\n", dynamicMethodDefinition.Definition.Body.Instructions.Select(x => x.ToString())));
 
@@ -469,11 +464,98 @@ namespace BelzontWE
             }
         }
 
+        private static Type ProcessEntityPath(ILGenerator iLGenerator, string path, bool firstLine, ref LocalBuilder localVarEntity, ref string[] errorFmtArgs, out byte result)
+        {
+            Type currentComponentType;
+            var itemSplitted = path.Split(";");
+            if (itemSplitted.Length != 2)
+            {
+                result = 6; // Each entity block must be a pair of component name and field navigation, separated by a semicolon
+                return null;
+            }
+            var entityTypeName = itemSplitted[0];
+            var fieldPath = itemSplitted[1].Split(".");
+
+            var itemComponentType = TypeManager.AllTypes.Where(x => x.Type?.FullName?.EndsWith(entityTypeName) ?? false).ToList();
+            if (itemComponentType.Count == 0)
+            {
+                errorFmtArgs = new[] { entityTypeName };
+                result = 1; // Component type not found for {0}
+                return null;
+            }
+            if (itemComponentType.Count > 1)
+            {
+                errorFmtArgs = new[] { entityTypeName };
+                result = 5; // Multiple components found for name {0}
+                return null;
+            }
+
+            if (firstLine)
+            {
+                iLGenerator.Emit(OpCodes.Ldarga_S, 0);
+                iLGenerator.Emit(OpCodes.Ldarg_1);
+            }
+            else
+            {
+                localVarEntity ??= iLGenerator.DeclareLocal(typeof(Entity));
+                iLGenerator.Emit(OpCodes.Stloc, localVarEntity);
+                iLGenerator.Emit(OpCodes.Ldarga_S, 0);
+                iLGenerator.Emit(OpCodes.Ldloc, localVarEntity);
+            }
+            iLGenerator.EmitCall(OpCodes.Call, r_GetComponent.MakeGenericMethod(itemComponentType[0].Type), null);
+
+            currentComponentType = itemComponentType[0].Type;
+            for (int j = 0; j < fieldPath.Length; j++)
+            {
+                string field = fieldPath[j];
+                if (currentComponentType.GetField(field, ReflectionUtils.allFlags) is FieldInfo targetField)
+                {
+                    iLGenerator.Emit(OpCodes.Ldfld, targetField);
+                    currentComponentType = targetField.FieldType;
+                    continue;
+                }
+                else if (currentComponentType.GetProperty(field, ReflectionUtils.allFlags) is PropertyInfo targetProperty && targetProperty.GetMethod != null)
+                {
+                    iLGenerator.EmitCall(targetProperty.GetMethod.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, targetProperty.GetMethod, null);
+                    currentComponentType = targetProperty.GetMethod.ReturnType;
+                    continue;
+                }
+                else if (currentComponentType.GetMethod(field, ReflectionUtils.allFlags, null, new Type[0], null) is MethodInfo targetMethod)
+                {
+                    iLGenerator.EmitCall(targetMethod.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, targetMethod, null);
+                    currentComponentType = targetMethod.ReturnType;
+                    continue;
+                }
+                else
+                {
+                    errorFmtArgs = new[] { field, currentComponentType.FullName, string.Join("\n", currentComponentType.GetMembers(ReflectionUtils.allFlags).Select(x => x.Name)) };
+                    result = 3; // Member {0} not found at component type {1}; Available Members: {2}
+                    return null;
+                }
+            }
+            result = 0;
+            return currentComponentType;
+        }
+
         public string GetEffectiveText(EntityManager em)
         {
+            if (!loadingFnDone)
+            {
+                if (formulaeHandlerStr.Length > 0) SetFormulae(formulaeHandlerStr.ToString(), out _);
+                loadingFnDone = true;
+            }
             return formulaeHandlerFn.IsAllocated && formulaeHandlerFn.Target is Func<EntityManager, Entity, string> fn
-                ? fn(em, TargetEntity)?.ToString().Truncate(500) ?? ""
-                : Text;
+                ? fn(em, TargetEntity)?.ToString().Truncate(500) ?? "<InvlidFn>"
+                : formulaeHandlerStr.Length > 0 ? "<InvalidFn>" : Text;
+        }
+
+        public void OnPostInstantiate()
+        {
+            formulaeHandlerFn = formulaeHandlerFn.IsAllocated ? GCHandle.Alloc(formulaeHandlerFn.Target) : default;
+            text = text.IsAllocated ? GCHandle.Alloc(text.Target) : default;
+            atlas = atlas.IsAllocated ? GCHandle.Alloc(atlas.Target) : default;
+            basicRenderInformation = default;
+            materialBlockPtr = default;
         }
     }
 
