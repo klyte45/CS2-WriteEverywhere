@@ -2,14 +2,14 @@
 using Belzont.Utils;
 using BelzontWE.Font;
 using Colossal.Entities;
+using Colossal.IO.AssetDatabase;
 using Game.Common;
-using Game.Input;
 using Game.SceneFlow;
-using Game.Simulation;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -17,6 +17,96 @@ using WriteEverywhere.Sprites;
 
 namespace BelzontWE
 {
+    public enum WEMethodSource
+    {
+        Game,
+        Unity,
+        CoUI,
+        System,
+        Mod,
+        Unknown
+    }
+
+    public enum WEMemberType
+    {
+        Field,
+        Property,
+        ParameterlessMethod
+    }
+
+    public struct WEComponentMemberDesc
+    {
+        public readonly string WEDescType => "MEMBER";
+        public string memberName;
+        public string memberTypeDllName;
+        public string memberTypeClassName;
+        public WEMemberType type;
+    }
+    public struct WEComponentTypeDesc
+    {
+        public readonly string WEDescType => "COMPONENT";
+        public string dllName;
+        public string className;
+    }
+
+    public struct WEFormulaeMethodDesc
+    {
+        public readonly string WEDescType => "STATIC_METHOD";
+        public string dllName;
+        public string className;
+        public string methodName;
+        public WEMethodSource source;
+        public string modUrl;
+        public string modName;
+        public string returnType;
+        public readonly string FormulaeString => $"&{className};{methodName}";
+
+        public static WEFormulaeMethodDesc From(MethodInfo mi)
+        {
+            WEMethodSource source = WEMethodSource.Mod;
+            string modUrl = null;
+            string modName = null;
+            string dllName = mi.DeclaringType.Assembly.GetName().Name;
+            if (dllName.StartsWith("Unity"))
+            {
+                source = WEMethodSource.Unity;
+            }
+            else if (dllName.ToLower().StartsWith("cohtml"))
+            {
+                source = WEMethodSource.CoUI;
+            }
+            else if (mi.DeclaringType.Assembly.Location.Contains($"Cities2_Data{Path.DirectorySeparatorChar}Managed"))
+            {
+                source = WEMethodSource.Game;
+            }
+            else
+            {
+                var thisFullName = mi.DeclaringType.Assembly.FullName;
+                ExecutableAsset modInfo = AssetDatabase.global.GetAsset(SearchFilter<ExecutableAsset>.ByCondition(x => x.definition?.FullName == thisFullName));
+                if (modInfo == null)
+                {
+                    modUrl = modName = "??????";
+                }
+                else
+                {
+                    modName = modInfo.GetMeta().displayName;
+                    modUrl = modInfo.GetMeta().remoteStorageSourceName;
+                }
+            }
+
+            return new WEFormulaeMethodDesc
+            {
+                dllName = dllName,
+                className = mi.DeclaringType.FullName,
+                methodName = mi.Name,
+                returnType = mi.ReturnType.FullName,
+                source = source,
+                modUrl = modUrl,
+                modName = modName
+            };
+        }
+    }
+
     public partial class WEWorldPickerController : ComponentSystemBase, IBelzontBindable
     {
         private const string PREFIX = "wpicker.";
@@ -25,9 +115,6 @@ namespace BelzontWE
         Action<string, Delegate> m_callBinder;
         private ModificationEndBarrier m_EndBarrier;
         private WEAtlasesLibrary m_AtlasLibrary;
-        private WEWorldPickerTool m_pickerTool;
-        private ProxyAction m_enableToolAction;
-        private SimulationSystem m_SimulationSystem;
 
         public void SetupCallBinder(Action<string, Delegate> callBinder)
         {
@@ -42,6 +129,8 @@ namespace BelzontWE
             callBinder($"{PREFIX}requireFontInstallation", RequireFontInstallation);
             callBinder($"{PREFIX}changeParent", ChangeParent);
             callBinder($"{PREFIX}cloneAsChild", CloneAsChild);
+            callBinder($"{PREFIX}listAvailableMethodsForType", ListAvailableMethodsForType);
+            callBinder($"{PREFIX}formulaeToPathObjects", FormulaeToPathObjects);
             if (m_eventCaller != null) InitValueBindings();
         }
 
@@ -94,6 +183,98 @@ namespace BelzontWE
         public MultiUIValueBinding<string[]> FormulaeCompileResultErrorArgs { get; private set; }
         public MultiUIValueBinding<int> TextSourceType { get; private set; }
         public MultiUIValueBinding<string> ImageAtlasName { get; private set; }
+
+        private WEFormulaeMethodDesc[] ListAvailableMethodsForType(string typeFullName)
+        {
+            var type = AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes()).Where(t => t.FullName == typeFullName).FirstOrDefault();
+            return type == null ? null : WETextData.FilterAvailableMethodsForFormulae(type).Select(x => WEFormulaeMethodDesc.From(x)).ToArray();
+        }
+
+        private List<object> FormulaeToPathObjects(string formulae)
+        {
+            var result = new List<object>();
+            var pathParts = WETextData.GetPathParts(formulae);
+            var currentType = typeof(Entity);
+            foreach (var part in pathParts)
+            {
+                if (part.StartsWith("&"))
+                {
+                    var kv = part[1..].Split(";");
+                    if (kv.Length != 2) break;
+                    var parts = kv[1].Split(".");
+                    var methodName = parts[0];
+                    var fieldPath = parts.Length > 1 ? parts[1..] : new string[0];
+                    var methodQuery = WETextData.FilterAvailableMethodsForFormulae(currentType, kv[0], methodName);
+                    if (methodQuery.Count() != 1) break;
+                    var resultMethod = methodQuery.FirstOrDefault();
+                    result.Add(WEFormulaeMethodDesc.From(resultMethod));
+                    currentType = resultMethod.ReturnType;
+                    if (!IterateFieldPath(result, ref currentType, fieldPath)) break;
+                }
+                else
+                {
+                    if (WETextData.ParseComponentEntryType(ref currentType, part, out _, out var fieldPath) != 0) break;
+                    result.Add(new WEComponentTypeDesc
+                    {
+                        dllName = currentType.Assembly.GetName().Name,
+                        className = currentType.FullName,
+                    });
+                    if (!IterateFieldPath(result, ref currentType, fieldPath)) break;
+                }
+            }
+            return result;
+        }
+
+        private static bool IterateFieldPath(List<object> result, ref Type currentType, string[] fieldPath)
+        {
+            for (int j = 0; j < fieldPath.Length; j++)
+            {
+                string field = fieldPath[j];
+                if (currentType.GetField(field, ReflectionUtils.allFlags) is FieldInfo targetField)
+                {
+                    currentType = targetField.FieldType;
+                    result.Add(new WEComponentMemberDesc
+                    {
+                        memberTypeDllName = currentType.Assembly.GetName().Name,
+                        memberTypeClassName = currentType.FullName,
+                        memberName = targetField.Name,
+                        type = WEMemberType.Field
+                    });
+                    continue;
+                }
+                else if (currentType.GetProperty(field, ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly) is PropertyInfo targetProperty && targetProperty.GetMethod != null)
+                {
+                    currentType = targetProperty.GetMethod.ReturnType;
+                    result.Add(new WEComponentMemberDesc
+                    {
+                        memberTypeDllName = currentType.Assembly.GetName().Name,
+                        memberTypeClassName = currentType.FullName,
+                        memberName = targetProperty.Name,
+                        type = WEMemberType.Property
+                    });
+                    continue;
+                }
+                else if (currentType.GetMethod(field, ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly, null, new Type[0], null) is MethodInfo targetMethod && targetMethod.ReturnType != typeof(void))
+                {
+                    currentType = targetMethod.ReturnType;
+                    result.Add(new WEComponentMemberDesc
+                    {
+                        memberTypeDllName = currentType.Assembly.GetName().Name,
+                        memberTypeClassName = currentType.FullName,
+                        memberName = targetMethod.Name,
+                        type = WEMemberType.ParameterlessMethod,                        
+                    });
+                    continue;
+                }
+                else
+                {
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"INVALID MEMBER: {currentType}.{field}");
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         private string[] ListAvailableLibraries()
         {
@@ -413,7 +594,6 @@ namespace BelzontWE
         {
             m_EndBarrier = World.GetExistingSystemManaged<ModificationEndBarrier>();
             m_AtlasLibrary = World.GetOrCreateSystemManaged<WEAtlasesLibrary>();
-            m_SimulationSystem = World.GetExistingSystemManaged<SimulationSystem>();
 
             GameManager.instance.userInterface.view.Listener.BindingsReleased += () => m_initialized = false;
         }
@@ -433,6 +613,7 @@ namespace BelzontWE
                 m_executionQueue.Enqueue(() => CurrentItemMatrix = transformMatrix);
             }
         }
+
     }
 
 }

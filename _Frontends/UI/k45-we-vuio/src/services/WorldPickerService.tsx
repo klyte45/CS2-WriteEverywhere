@@ -136,6 +136,12 @@ export class WorldPickerService {
     static async addEmpty(parent?: Entity) {
         return await engine.call("k45::we.wpicker.addItem", parent ?? { Index: 0, Version: 0, __Type: 'Unity.Entities.Entity, Unity.Entities, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null' });
     }
+    static async listAvailableMethodsForType(typeName: string): Promise<WEFormulaeMethodDesc[]> {
+        return await engine.call("k45::we.wpicker.listAvailableMethodsForType", typeName);
+    }
+    static async formulaeToPathObjects(formulae: string): Promise<WEFormulaeElement[]> {
+        return await engine.call("k45::we.wpicker.formulaeToPathObjects", formulae);
+    }
 }
 
 export type WETextItemResume = {
@@ -149,3 +155,52 @@ export enum WESimulationTextType {
     Text = 0,
     Image = 1
 }
+
+export type EnumWrapper<T> = { value__: T }
+
+export enum WEMemberType {
+    Field,
+    Property,
+    ParameterlessMethod
+}
+export enum WEMethodSource {
+    Game,
+    Unity,
+    CoUI,
+    System,
+    Mod,
+    Unknown
+}
+export enum WEDescType {
+    MEMBER = "MEMBER",
+    COMPONENT = "COMPONENT",
+    STATIC_METHOD = "STATIC_METHOD"
+}
+
+export type WEComponentMemberDesc = {
+    WEDescType: WEDescType.MEMBER,
+    memberName: string;
+    memberTypeDllName: string;
+    memberTypeClassName: string;
+    type: EnumWrapper<WEMemberType>
+}
+
+export type WEComponentTypeDesc = {
+    WEDescType: WEDescType.COMPONENT,
+    dllName: string;
+    className: string;
+}
+
+export type WEFormulaeMethodDesc = {
+    WEDescType: WEDescType.STATIC_METHOD,
+    dllName: string;
+    className: string;
+    methodName: string;
+    source: EnumWrapper<WEMethodSource>;
+    modUrl: string;
+    modName: string;
+    returnType: string;
+    FormulaeString: string;
+}
+
+export type WEFormulaeElement = WEComponentMemberDesc | WEComponentTypeDesc | WEFormulaeMethodDesc

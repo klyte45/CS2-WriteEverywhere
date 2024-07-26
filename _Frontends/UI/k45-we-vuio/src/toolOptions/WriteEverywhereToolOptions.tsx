@@ -8,6 +8,7 @@ import { translate } from "../utils/translate";
 import { WETextAppearenceSettings } from "./WETextAppearenceSettings";
 import { WETextValueSettings } from "./WETextValueSettings";
 import { WETextHierarchyView } from "./WETextHierarchyView";
+import { WEFormulaeEditor } from "./WEFormulaeEditor";
 
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
@@ -161,6 +162,9 @@ const WEWorldPickerToolPanel = () => {
             <VanillaComponentResolver.instance.Section title={L_actions}>
                 <>
                     {currentItemIsValid && <>
+                        <VanillaComponentResolver.instance.ToolButton onSelect={async () => console.log(await WorldPickerService.listAvailableMethodsForType("System.String"))} src={i_removeItemIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={"TST"} />
+                        <VanillaComponentResolver.instance.ToolButton onSelect={async () => console.log(await WorldPickerService.formulaeToPathObjects(wps.FormulaeStr.value))} src={i_AddItemIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={"TST"} />
+
                         <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
                         <div style={{ width: "10rem" }}></div>
                     </>

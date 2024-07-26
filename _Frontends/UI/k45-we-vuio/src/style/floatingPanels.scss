@@ -14,3 +14,189 @@
     flex: 1.000000;
     justify-content: flex-end;
 }
+
+.k45_we_formulaeEditor {
+    position: fixed;
+    top: 55rem;
+    right: 0;
+    bottom: 120rem;
+    width: 300rem;
+    background-color: var(--panelColorNormal);
+    backdrop-filter: var(--panelBlur);
+    justify-content: flex-start;
+    align-items: center;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    color: var(--textColorDim);
+
+    >* {
+        width: 100%;
+    }
+
+    .k45_we_formulaeEditor_title {
+        padding: 2rem;
+        border-bottom-width: 3px;
+        border-bottom-color: var(--panelColorNormal);
+        border-bottom-style: solid;
+        text-align: center;
+        align-items: center;
+    }
+
+    .k45_we_formulaeEditor_content {
+        position: absolute;
+        bottom: 4rem;
+        top: 30rem;
+        left: 0;
+        right: 0;
+
+        >div[class^=content] {
+            justify-content: flex-start;
+            display: flex;
+            padding: 5rem;
+            align-items: center;
+            flex-direction: column;
+
+            @mixin basic-container {
+                min-width: 15rem;
+                min-height: 25rem;
+                padding-left: 15rem;
+                padding-right: 15rem;
+                font-weight: bold;
+                border-style: solid;
+                border-width: 2px;
+                border-radius: 25rem;
+                color: white;
+                margin-top: 3rem;
+                margin-bottom: 3rem;
+                text-align: center;
+                max-width: 280rem;
+                overflow-x: hidden
+            }
+
+
+            .k45_we_formulaeEditor_initial_dot {
+                @include basic-container;
+                background-color: rgba(0, 128, 0, 1);
+                border-color: rgba(144, 238, 144, 1);
+            }
+
+            .k45_we_formulaeEditor_downArrow {
+                width: 25rem;
+                height: 25rem;
+                background-image: url("coui://uil/Colored/ArrowDown.svg");
+            }
+
+            .k45_we_formulaeEditor_returnType {
+                @include basic-container;
+                background-color: dimgray;
+                border-color: silver;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+
+            .k45_we_formulaeEditor_implicitConversion {
+                @include basic-container;
+                background-color: darkorange;
+                border-color: yellow;
+                color: black;
+            }
+
+            .k45_we_formulaeEditor_pipelineResult {
+                @include basic-container;
+                background-color: darkgreen;
+                border-color: greenyellow;
+                color: lime;
+            }
+
+            .k45_we_formulaeEditor_basicContainer {
+                @include basic-container;
+            }
+
+            @mixin advanced-container {
+                @include basic-container;
+                display: flex;
+                flex-direction: column;
+                padding-top: 5rem;
+                padding-bottom: 5rem;
+                align-items: center;
+                color: var(--textColorDim);
+            }
+
+
+            .k45_we_formulaeEditor_componentGet {
+                @include advanced-container;
+                border-color: hsl(315, 100%, 50%);
+            }
+
+            .k45_we_formulaeEditor_methodCall {
+                @include advanced-container;
+                border-color: hsl(190, 100%, 50%);
+            }
+
+            .k45_we_formulaeEditor_componentField {
+                @include advanced-container;
+                border-color: hsl(250, 80%, 30%);
+            }
+
+            .k45_we_formulaeEditor_componentMethod {
+                @include advanced-container;
+                border-color: hsl(200, 80%, 30%);
+            }
+
+            .k45_we_formulaeEditor_componentProperty {
+                @include advanced-container;
+                border-color: hsl(220, 80%, 30%);
+            }
+
+            @mixin icon-based-innerline {
+                padding-left: 25rem;
+                height: 20rem;
+                background-position: left center;
+                background-size: contain;
+                background-repeat: no-repeat;
+                align-self: flex-start;
+            }
+
+            >*> {
+
+                .k45_we_formulaeEditor_dotTitle {
+                    color: white;
+                    padding-bottom: 3rem;
+                }
+
+                .k45_we_formulaeEditor_assembly {
+                    @include icon-based-innerline;
+                    background-image: url("coui://uil/Colored/Puzzle.svg");
+                }
+
+                .k45_we_formulaeEditor_class {
+                    @include icon-based-innerline;
+                    background-image: url("coui://uil/Colored/PaperWithArrow.svg");
+                }
+
+                .k45_we_formulaeEditor_methodName {
+                    @include icon-based-innerline;
+                    background-image: url("coui://uil/Colored/ArrowRightThickStroke.svg");
+                }
+
+                .k45_we_formulaeEditor_fieldName {
+                    @include icon-based-innerline;
+                    background-image: url("coui://uil/Colored/ListViewDense.svg");
+                }
+
+                .k45_we_formulaeEditor_propertyName {
+                    @include icon-based-innerline;
+                    background-image: url("coui://uil/Colored/ArrowRightTriangleNotch.svg");
+                }
+
+                .k45_we_formulaeEditor_returnType {
+                    margin-top: 5rem;
+                    max-width: 95%;
+                }
+            }
+        }
+    }
+}
