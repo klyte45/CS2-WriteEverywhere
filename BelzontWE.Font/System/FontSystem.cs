@@ -12,7 +12,6 @@ using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using Unity.Mathematics;
 using UnityEngine;
 using Color = UnityEngine.Color;
 
@@ -36,10 +35,6 @@ namespace BelzontWE.Font
         public int FontHeight => FontServer.QualitySize;
 
         private readonly Dictionary<string, BasicRenderInformation> m_textCache = new();
-
-        private bool metricsCalculated = false;
-        public float ReferenceHeight { get; private set; }
-        public float BaselineOffset { get; private set; }
 
         public Color Color;
         public readonly int Blur;
@@ -74,7 +69,6 @@ namespace BelzontWE.Font
             Blur = 0;
             this.data = data;
             _size = new(FontServer.DefaultTextureSizeFont, FontServer.DefaultTextureSizeFont);
-            metricsCalculated = false;
             ClearState();
         }
 
@@ -85,21 +79,7 @@ namespace BelzontWE.Font
         }
 
 
-
-        private IEnumerator CalculateMetrics()
-        {
-            yield return 0;
-            var bounds = new Bounds();
-            TextBounds(0, 0, "A", 1, ref bounds);
-            yield return 0;
-            ReferenceHeight = (bounds.maxY - bounds.minY) / (FontServer.QualitySize * .01f);
-            BaselineOffset = bounds.minY / ReferenceHeight;
-            metricsCalculated = true;
-        }
-
-
-
-        public void EnsureText(float x, float y, string str, Vector3 scale, UIHorizontalAlignment alignment = UIHorizontalAlignment.Center)
+        public void EnsureText(string str, Vector3 scale, UIHorizontalAlignment alignment = UIHorizontalAlignment.Center)
         {
             if (string.IsNullOrEmpty(str))
             {
@@ -109,12 +89,11 @@ namespace BelzontWE.Font
             {
                 m_textCache[str] = default;
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Enqueued String to ensure: {str} ({data.Name})");
-                itemsQueue.Enqueue(new StringRenderingQueueItem() { x = x, y = y, text = str, scale = scale, alignment = alignment });
+                itemsQueue.Enqueue(new StringRenderingQueueItem() { text = str, scale = scale, alignment = alignment });
             }
         }
 
-        public BasicRenderInformation DrawText(string str, Vector3 scale, UIHorizontalAlignment alignment = UIHorizontalAlignment.Center) => DrawText(0, 0, str, scale, alignment);
-        public BasicRenderInformation DrawText(float x, float y, string str, Vector3 scale, UIHorizontalAlignment alignment = UIHorizontalAlignment.Center)
+        public BasicRenderInformation DrawText(string str, Vector3 scale, UIHorizontalAlignment alignment = UIHorizontalAlignment.Center)
         {
             if (GameManager.instance.isGameLoading) return null;
             BasicRenderInformation bri;
@@ -138,7 +117,7 @@ namespace BelzontWE.Font
             {
                 m_textCache[str] = default;
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Enqueued String: {str} ({data.Name})");
-                itemsQueue.Enqueue(new StringRenderingQueueItem() { x = x, y = y, text = str, scale = scale, alignment = alignment });
+                itemsQueue.Enqueue(new StringRenderingQueueItem() { text = str, scale = scale, alignment = alignment });
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"itemsQueue: {itemsQueue.Count}");
                 return default;
             }
@@ -162,97 +141,6 @@ namespace BelzontWE.Font
                 2
         };
 
-        public float TextBounds(float x, float y, string str, float charSpacingFactor, ref Bounds bounds)
-        {
-            if (string.IsNullOrEmpty(str))
-            {
-                return 0.0f;
-            }
-
-            var glyphs = GetGlyphsCollection(FontHeight);
-
-            // Determine ascent and lineHeight from first character
-            float ascent = 0, lineHeight = 0;
-            for (int i = 0; i < str.Length; i += char.IsSurrogatePair(str, i) ? 2 : 1)
-            {
-                int codepoint = char.ConvertToUtf32(str, i);
-                FontGlyph glyph = GetGlyph(glyphs, codepoint, out _);
-                if (!glyph.IsValid)
-                {
-                    continue;
-                }
-
-                ascent = glyph.Font.Ascent;
-                lineHeight = glyph.Font.LineHeight;
-                break;
-            }
-
-
-            var q = new FontGlyphBounds();
-            float startx = 0;
-            float advance = 0;
-
-            y += ascent;
-
-            float minx, maxx, miny, maxy;
-            minx = maxx = x;
-            miny = maxy = y;
-            startx = x;
-
-            FontGlyph prevGlyph = default;
-
-            for (int i = 0; i < str.Length; i += char.IsSurrogatePair(str, i) ? 2 : 1)
-            {
-                int codepoint = char.ConvertToUtf32(str, i);
-
-                if (codepoint == '\n')
-                {
-                    x = startx;
-                    y += lineHeight;
-
-                    continue;
-                }
-
-                FontGlyph glyph = GetGlyph(glyphs, codepoint, out _);
-
-                if (!glyph.IsValid)
-                {
-                    continue;
-                }
-
-                GetQuad(ref glyph, ref prevGlyph, i == str.Length - 1 ? 1f : charSpacingFactor, ref x, ref y, ref q);
-                if (q.X0 < minx)
-                {
-                    minx = q.X0;
-                }
-
-                if (x > maxx)
-                {
-                    maxx = x;
-                }
-
-                if (q.Y0 < miny)
-                {
-                    miny = q.Y0;
-                }
-
-                if (q.Y1 > maxy)
-                {
-                    maxy = q.Y1;
-                }
-
-                prevGlyph = glyph;
-            }
-
-            advance = x - startx;
-
-            bounds.minX = minx;
-            bounds.minY = miny;
-            bounds.maxX = maxx;
-            bounds.maxY = maxy;
-
-            return advance;
-        }
 
         public void Reset()
         {
@@ -402,15 +290,15 @@ namespace BelzontWE.Font
 
                 x += (int)((adv + 0) * spacingFactor + 0.5f);
             }
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"{glyph}");
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"'{char.ConvertFromUtf32(glyph.Codepoint)}' = {glyph}");
             float rx = x + glyph.XOffset;
-            float ry = y + glyph.YOffset;
+            float ry = y - glyph.YOffset - (glyph.Font.Capital * .5f);
             q.X0 = rx;
-            q.Y0 = ry;
+            q.Y1 = ry;
             q.X1 = rx + glyph.width;
-            q.Y1 = ry + glyph.height;
+            q.Y0 = ry - glyph.height;
 
-            x += (int)((glyph.XAdvance / 10.0f * spacingFactor) + 0.5f);
+            x += glyph.XAdvance * .1f * spacingFactor;
 
             if (BasicIMod.DebugMode) LogUtils.DoLog($"x={x} y={y} Q={q}");
         }
@@ -429,113 +317,6 @@ namespace BelzontWE.Font
             _glyphs[size] = result;
             return result;
         }
-        public Texture2D WriteTexture2D(string str, float charSpacingFactor)
-        {
-            if (charSpacingFactor < 0)
-            {
-                charSpacingFactor = 0;
-            }
-
-            var glyphs = GetGlyphsCollection(FontHeight);
-            // Determine ascent and lineHeight from first character
-            float ascent = 0, lineHeight = 0;
-            for (int i = 0; i < str.Length; i += char.IsSurrogatePair(str, i) ? 2 : 1)
-            {
-                int codepoint = char.ConvertToUtf32(str, i);
-
-                FontGlyph glyph = GetGlyph(glyphs, codepoint, out _);
-                if (!glyph.IsValid)
-                {
-                    continue;
-                }
-
-                ascent = glyph.Font.Ascent;
-                lineHeight = glyph.Font.LineHeight;
-                break;
-            }
-
-            var q = new FontGlyphBounds();
-
-            float originX = 0.0f;
-            float originY = 0.0f;
-
-            originY += ascent;
-
-
-            var bounds = new Bounds();
-            TextBounds(0, 0, str, charSpacingFactor, ref bounds);
-            var textureDimensions = new int2(Mathf.CeilToInt(bounds.maxX - bounds.minX), Mathf.CeilToInt(bounds.maxY - bounds.minY));
-
-            var targetTexture = new Texture2D(textureDimensions.x, textureDimensions.y, TextureFormat.ARGB32, false);
-            targetTexture.SetPixels(new Color[targetTexture.width * targetTexture.height]);
-
-            FontGlyph prevGlyph = default;
-            for (int i = 0; i < str.Length; i += char.IsSurrogatePair(str, i) ? 2 : 1)
-            {
-                int codepoint = char.ConvertToUtf32(str, i);
-
-                if (codepoint == '\n')
-                {
-                    originX = 0.0f;
-                    originY += lineHeight;
-                    prevGlyph = default;
-                    continue;
-                }
-
-                FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, ref data);
-                if (!glyph.IsValid)
-                {
-                    continue;
-                }
-
-                GetQuad(ref glyph, ref prevGlyph, charSpacingFactor, ref originX, ref originY, ref q);
-
-                q.X0 = (int)(q.X0);
-                q.X1 = (int)(q.X1);
-                q.Y0 = (int)(q.Y0);
-                q.Y1 = (int)(q.Y1);
-
-
-                Color[] arr = CurrentAtlas.GetGlyphColors(glyph);
-
-                MergeTextures(tex: targetTexture,
-                              colors: arr,
-                              startX: Mathf.RoundToInt(q.X0 - bounds.minX),
-                              startY: Mathf.RoundToInt(bounds.maxY - q.Y1),
-                              sizeX: (int)(q.X1 - q.X0),
-                              sizeY: (int)(q.Y1 - q.Y0),
-                              swapXY: false,
-                              flipVertical: true);
-
-                prevGlyph = glyph;
-            }
-
-            targetTexture.Apply();
-
-            return targetTexture;
-        }
-        internal static void MergeTextures(Texture2D tex, Color[] colors, int startX, int startY, int sizeX, int sizeY, bool swapXY = false, bool flipVertical = false, bool flipHorizontal = false, bool plain = false)
-        {
-            for (int i = 0; i < sizeX; i++)
-            {
-                for (int j = 0; j < sizeY; j++)
-                {
-                    Color orPixel = tex.GetPixel(startX + i, startY + j);
-                    Color newPixel = colors[((flipVertical ? sizeY - j - 1 : j) * (swapXY ? 1 : sizeX)) + ((flipHorizontal ? sizeX - i - 1 : i) * (swapXY ? sizeY : 1))];
-
-                    if (plain && newPixel.a != 1)
-                    {
-                        continue;
-                    }
-
-                    tex.SetPixel(startX + i, startY + j, Color.Lerp(orPixel, newPixel, newPixel.a));
-                }
-            }
-        }
-
-
-
-
         private void PrepareJob(ref StringRenderingJob job, StringRenderingQueueItem item)
         {
             if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] PrepareJob for {item.text}");
@@ -557,14 +338,10 @@ namespace BelzontWE.Font
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} since atlas changed");
                 m_textCache.Remove(originalText);
             }
-            if (!metricsCalculated)
-            {
-                CalculateMetrics();
-            }
             BasicRenderInformation result = new();
             result.Fill(jobResult.result[0], CurrentAtlas.Material);
-            result.m_refY = ReferenceHeight;
-            result.m_baselineOffset = BaselineOffset;
+            result.m_refY = data.Font.Ascent;
+            result.m_baselineOffset = -data.Font.Descent;
             result.m_materialGeneratedTick = LastUpdateAtlas;
             result.m_refText = originalText;
 
@@ -582,6 +359,7 @@ namespace BelzontWE.Font
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Failed updating material... Restarting process");
                 m_textCache.Clear();
+                runningJobs.Clear();
                 _glyphs.Clear();
                 CurrentAtlas.Reset(_size.x, _size.y);
             }
@@ -595,8 +373,6 @@ namespace BelzontWE.Font
 
         public unsafe struct StringRenderingQueueItem
         {
-            public float x;
-            public float y;
             public FixedString512Bytes text;
             public Vector3 scale;
             public UIHorizontalAlignment alignment;
@@ -619,9 +395,9 @@ namespace BelzontWE.Font
                 List<StringRenderingQueueItem> itemsStarted = itemsQueue.ToList();
                 itemsQueue.Clear();
                 var glyphs = GetGlyphsCollection(FontHeight);
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"Gliphs collection size = {glyphs.Count}");
+                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Gliphs collection size = {glyphs.Count}");
                 var charsToRender = itemsStarted.SelectMany(x => Enumerate(StringInfo.GetTextElementEnumerator(x.text.ToString())).Cast<string>()).GroupBy(x => x).Select(x => x.Key);
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"charsToRender = ['{string.Join("', '", charsToRender)}']");
+                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"charsToRender = ['{string.Join("', '", charsToRender)}']");
 
                 var countSucceeded = 0;
                 foreach (var charact in charsToRender)
@@ -639,7 +415,7 @@ namespace BelzontWE.Font
                         countSucceeded++;
                     }
                 }
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"Glyphs rendered: {countSucceeded}");
+                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Glyphs rendered: {countSucceeded}");
 
                 foreach (var item in itemsStarted)
                 {
@@ -694,11 +470,11 @@ namespace BelzontWE.Font
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"CurrentAtlasSize = {CurrentAtlasSize}");
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Input = {input}");
                 }
-                WriteTextureCoroutine(input.x, input.y, input.text, input.scale, input.alignment);
+                DrawGlyphsForString(input.text, input.scale, input.alignment);
                 if (debug) LogUtils.DoLog($"Result tris {result[0].triangles.Length} ");
             }
 
-            private void WriteTextureCoroutine(float x, float y, FixedString512Bytes strOr, Vector3 scale, UIHorizontalAlignment alignment)
+            private void DrawGlyphsForString(FixedString512Bytes strOr, Vector3 scale, UIHorizontalAlignment alignment)
             {
                 var result = new BasicRenderInformationJob();
                 result.m_YAxisOverflows = new RangeVector { min = float.MaxValue, max = float.MinValue };
@@ -734,18 +510,16 @@ namespace BelzontWE.Font
                 float originX = 0.0f;
                 float originY = 0.0f;
 
-                originY += ascent;
-
                 try
                 {
                     IList<Vector3> vertices = new List<Vector3>();
-                    IList<Vector3> normals = new List<Vector3>();
                     IList<Color32> colors = new List<Color32>();
                     IList<Vector2> uvs = new List<Vector2>();
                     IList<int> triangles = new List<int>();
 
 
                     FontGlyph prevGlyph = default;
+
                     for (int i = 0; i < str.Length; i += char.IsSurrogatePair(str, i) ? 2 : 1)
                     {
                         int codepoint = char.ConvertToUtf32(str, i);
@@ -766,18 +540,14 @@ namespace BelzontWE.Font
                         }
 
                         GetQuad(ref glyph, ref prevGlyph, 1, ref originX, ref originY, ref q);
-                        result.m_YAxisOverflows.min = Mathf.Min(result.m_YAxisOverflows.min, glyph.YOffset - glyph.Font.Descent + glyph.Font.Ascent);
-                        result.m_YAxisOverflows.max = Mathf.Max(result.m_YAxisOverflows.max, glyph.height + glyph.YOffset - glyph.Font.Ascent + glyph.Font.Descent);
+                        result.m_YAxisOverflows.min = Mathf.Min(result.m_YAxisOverflows.min, glyph.YOffset - glyph.Font.LineHeight + glyph.Font.Ascent);
+                        result.m_YAxisOverflows.max = Mathf.Max(result.m_YAxisOverflows.max, glyph.height + glyph.YOffset - glyph.Font.Ascent);
 
-                        q.X0 = (int)(q.X0 * scale.x);
-                        q.X1 = (int)(q.X1 * scale.x);
-                        q.Y0 = (int)(q.Y0 * scale.y);
-                        q.Y1 = (int)(q.Y1 * scale.y);
-
-                        var destRect = new Rect((int)(x + q.X0),
-                                                    (int)(y + q.Y0),
-                                                    (int)(q.X1 - q.X0),
-                                                    (int)(q.Y1 - q.Y0));
+                        q.X0 *= scale.x;
+                        q.X1 *= scale.x;
+                        q.Y0 *= scale.y;
+                        q.Y1 *= scale.y;
+                        var destRect = new Rect(q.X0, q.Y0, q.X1 - q.X0, q.Y1 - q.Y0);
 
                         if (debug) LogUtils.DoLog($"[Main] codepoint #{i}: destRect = {destRect} scale = {scale}");
                         DrawChar(glyph, vertices, triangles, uvs, colors, Color.black, Color.white, destRect);
@@ -787,7 +557,6 @@ namespace BelzontWE.Font
                     if (debug)
                     {
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"vertices: {vertices.Count}");
-                        if (BasicIMod.DebugMode) LogUtils.DoLog($"normals: {normals.Count}");
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"triangles: {triangles.Count}");
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"uvs: {uvs.Count}");
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"colors: {colors.Count}");
@@ -818,10 +587,10 @@ namespace BelzontWE.Font
             private void DrawChar(FontGlyph glyph, IList<Vector3> vertices, IList<int> triangles, IList<Vector2> uvs, IList<Color32> colors, Color overrideColor, Color bottomColor, Rect bounds)
             {
                 AddTriangleIndices(vertices, triangles);
-                vertices.Add(new Vector2(bounds.xMax, 1 - bounds.yMax));
-                vertices.Add(new Vector2(bounds.xMin, 1 - bounds.yMax));
-                vertices.Add(new Vector2(bounds.xMin, 1 - bounds.yMin));
-                vertices.Add(new Vector2(bounds.xMax, 1 - bounds.yMin));
+                vertices.Add(new Vector2(bounds.xMax, bounds.yMin));
+                vertices.Add(new Vector2(bounds.xMin, bounds.yMin));
+                vertices.Add(new Vector2(bounds.xMin, bounds.yMax));
+                vertices.Add(new Vector2(bounds.xMax, bounds.yMax));
                 Color32 item3 = overrideColor.linear;
                 Color32 item4 = bottomColor.linear;
                 colors.Add(item3);
@@ -837,8 +606,8 @@ namespace BelzontWE.Font
                     return points.ToArray();
                 }
 
-                var max = new Vector3(points.Select(x => x.x).Max(), points.Select(x => x.y).Max(), points.Select(x => x.z).Max());
-                var min = new Vector3(points.Select(x => x.x).Min(), points.Select(x => x.y).Min(), points.Select(x => x.z).Min());
+                var max = new Vector3(points.Select(x => x.x).Max(), 0, points.Select(x => x.z).Max());
+                var min = new Vector3(points.Select(x => x.x).Min(), 0, points.Select(x => x.z).Min());
                 Vector3 offset = default;
                 switch (alignment)
                 {

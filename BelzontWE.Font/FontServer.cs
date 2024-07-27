@@ -69,7 +69,7 @@ namespace BelzontWE
 
         #endregion
 
-        public Vector2 ScaleEffective => Vector2.one / QualitySize * 100;
+        public Vector2 ScaleEffective => Vector2.one / QualitySize * 2250;
 
         public void OnChangeSizeParam()
         {

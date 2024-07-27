@@ -33,7 +33,7 @@ namespace BelzontWE.Font.Utility
 
             m_sizeMetersUnscaled = m_mesh.bounds.size;
             //   if (BasicIMod.DebugMode) LogUtils.DoLog($"MESH: {m_mesh} {m_mesh.vertices[0]} {m_mesh.vertices[1]}...  {m_mesh.tangents[0]} {m_mesh.tangents[1]}...  {m_mesh.normals[0]} {m_mesh.normals[1]}... {m_mesh.vertices.Length} {m_mesh.triangles.Length} {m_sizeMetersUnscaled}m");
-           brij.Dispose();
+            brij.Dispose();
         }
         [XmlIgnore]
         public Mesh m_mesh;
@@ -64,8 +64,8 @@ namespace BelzontWE.Font.Utility
             //var x = (valueUI & 0xff) - 128f;
             //var y = ((valueUI >> 8) & 0xff) - 128f;
             //var z = ((valueUI >> 16) & 0xff) / 128f;
-            var max = new Vector3(points.Select(x => x.x).Max(), points.Select(x => x.y).Max(), points.Select(x => x.z).Max());
-            var min = new Vector3(points.Select(x => x.x).Min(), points.Select(x => x.y).Min(), points.Select(x => x.z).Min());
+            var max = new Vector3(points.Select(x => x.x).Max(), 0, points.Select(x => x.z).Max());
+            var min = new Vector3(points.Select(x => x.x).Min(), 0, points.Select(x => x.z).Min());
             Vector3 offset = (max + min) / 2;
             return points.Select(k => k - offset).ToArray();
         }

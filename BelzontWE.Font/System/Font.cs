@@ -2,20 +2,22 @@
 {
     public class Font
     {
-        private float AscentBase, DescentBase, LineHeightBase, FontHeight;
+        private float AscentBase, DescentBase, LineHeightBase, FontHeight, CapitalBase;
 
         public float Ascent { get; private set; }
+        public float Capital { get; private set; }
         public float Descent { get; private set; }
         public float LineHeight { get; private set; }
         public float Scale { get; private set; }
 
-        public FontInfo _font = new FontInfo();
+        public FontInfo _font = new();
 
         public void Recalculate(float size)
         {
             Ascent = AscentBase * size;
             Descent = DescentBase * size;
             LineHeight = LineHeightBase * size;
+            Capital = CapitalBase * size;
             Scale = _font.stbtt_ScaleForPixelHeight(size);
         }
         public void RecalculateBasedOnHeight(float height)
@@ -35,6 +37,7 @@
             Ascent = AscentBase * size;
             Descent = DescentBase * size;
             LineHeight = LineHeightBase * size;
+            Capital = CapitalBase * size;
             Scale = _font.stbtt_ScaleForPixelHeight(size);
         }
 
@@ -63,6 +66,11 @@
             font.AscentBase = ascent / font.FontHeight;
             font.DescentBase = descent / font.FontHeight;
             font.LineHeightBase = (font.FontHeight + lineGap) / font.FontHeight;
+
+            int x0 = 0, x1 = 0, y0 = 0, y1 = 0;
+            font._font.stbtt_GetGlyphBox(font.GetGlyphIndex(0x48), ref x0, ref y0, ref x1, ref y1);
+
+            font.CapitalBase = (y1 == 0 ? ascent : y1) / font.FontHeight;
 
             return font;
         }
