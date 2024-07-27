@@ -470,7 +470,7 @@ namespace BelzontWE
 
         public static IEnumerable<MethodInfo> FilterAvailableMethodsForFormulae(Type currentComponentType, string className = null, string method = null) => AppDomain.CurrentDomain.GetAssemblies()
                                                  .SelectMany(assembly => assembly.GetTypes())
-                                                 .Where(t => className is null || t.Name == className || t.Name.EndsWith($".{className}"))
+                                                 .Where(t => className is null || t.FullName == className || t.FullName.EndsWith($".{className}"))
                                                  .SelectMany(x => x.GetMethods(BindingFlags.Static | BindingFlags.Public))
                                                  .Where(m => (method is null || m.Name == method)
                                                     && m.GetParameters() is ParameterInfo[] p
@@ -574,7 +574,7 @@ namespace BelzontWE
                 return 6; // Each component getter block must be a pair of component name and field navigation, separated by a semicolon
             }
             var entityTypeName = itemSplitted[0];
-            fieldPath = itemSplitted[1].Split(".");
+            fieldPath = itemSplitted[1].Split(".").Where(x => x.TrimToNull() != null).ToArray();
             var itemComponentType = TypeManager.AllTypes.Where(x => x.Type?.FullName?.EndsWith(entityTypeName) ?? false).ToList();
             if (itemComponentType.Count == 0)
             {

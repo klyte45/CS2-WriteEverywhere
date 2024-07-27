@@ -1,0 +1,342 @@
+.k45_we_formulaeEditor {
+    position: fixed;
+    top: 55rem;
+    right: 0;
+    bottom: 120rem;
+    width: 300rem;
+    background-color: var(--panelColorNormal);
+    backdrop-filter: var(--panelBlur);
+    justify-content: flex-start;
+    align-items: center;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    color: var(--textColorDim);
+    overflow-y: hidden;
+
+    >* {
+        width: 100%;
+    }
+
+    .k45_we_formulaeEditor_title {
+        padding: 2rem;
+        border-bottom-width: 3px;
+        border-bottom-color: var(--panelColorNormal);
+        border-bottom-style: solid;
+        text-align: center;
+        align-items: center;
+    }
+
+    .k45_we_formulaeEditor_content {
+        position: absolute;
+        bottom: 140rem;
+        top: 30rem;
+        left: 0;
+        right: 0;
+
+        >div[class^=content] {
+            justify-content: flex-start;
+            display: flex;
+            padding: 5rem;
+            align-items: center;
+            flex-direction: column;
+
+            @mixin basic-container {
+                min-width: 15rem;
+                min-height: 25rem;
+                padding-left: 15rem;
+                padding-right: 15rem;
+                font-weight: bold;
+                border-style: solid;
+                border-width: 2px;
+                border-radius: 25rem;
+                color: white;
+                margin-top: 3rem;
+                margin-bottom: 3rem;
+                text-align: center;
+                max-width: 280rem;
+                overflow-x: hidden
+            }
+
+
+            .k45_we_formulaeEditor_initial_dot {
+                @include basic-container;
+                background-color: rgba(0, 128, 0, 1);
+                border-color: rgba(144, 238, 144, 1);
+            }
+
+            .k45_we_formulaeEditor_downArrow {
+                width: 25rem;
+                height: 25rem;
+                background-image: url("coui://uil/Colored/ArrowDown.svg");
+            }
+
+            .k45_we_formulaeEditor_returnType {
+                @include basic-container;
+                background-color: dimgray;
+                border-color: silver;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+
+            .k45_we_formulaeEditor_implicitConversion {
+                @include basic-container;
+                background-color: darkorange;
+                border-color: yellow;
+                color: black;
+            }
+
+            .k45_we_formulaeEditor_pipelineResult {
+                @include basic-container;
+                background-color: darkgreen;
+                border-color: greenyellow;
+                color: lime;
+            }
+
+            .k45_we_formulaeEditor_basicContainer {
+                @include basic-container;
+            }
+
+            @mixin advanced-container {
+                @include basic-container;
+                display: flex;
+                flex-direction: column;
+                padding-top: 5rem;
+                padding-bottom: 5rem;
+                align-items: center;
+                color: var(--textColorDim);
+            }
+
+
+            .k45_we_formulaeEditor_componentGet {
+                @include advanced-container;
+                border-color: hsl(315, 100%, 50%);
+            }
+
+            .k45_we_formulaeEditor_methodCall {
+                @include advanced-container;
+                border-color: hsl(190, 100%, 50%);
+            }
+
+            .k45_we_formulaeEditor_componentField {
+                @include advanced-container;
+                border-color: hsl(250, 80%, 30%);
+            }
+
+            .k45_we_formulaeEditor_componentMethod {
+                @include advanced-container;
+                border-color: hsl(200, 80%, 30%);
+            }
+
+            .k45_we_formulaeEditor_componentProperty {
+                @include advanced-container;
+                border-color: hsl(220, 80%, 30%);
+            }
+
+            @mixin icon-based-innerline {
+                padding-left: 25rem;
+                height: 20rem;
+                background-position: left center;
+                background-size: contain;
+                background-repeat: no-repeat;
+                align-self: flex-start;
+            }
+
+            >*> {
+
+                .k45_we_formulaeEditor_dotTitle {
+                    color: white;
+                    padding-bottom: 3rem;
+                }
+
+                .k45_we_formulaeEditor_assembly {
+                    @include icon-based-innerline;
+                    background-image: url("coui://uil/Colored/Puzzle.svg");
+                }
+
+                .k45_we_formulaeEditor_class {
+                    @include icon-based-innerline;
+                    background-image: url("coui://uil/Colored/PaperWithArrow.svg");
+                }
+
+                .k45_we_formulaeEditor_methodName {
+                    @include icon-based-innerline;
+                    background-image: url("coui://uil/Colored/ArrowRightThickStroke.svg");
+                }
+
+                .k45_we_formulaeEditor_fieldName {
+                    @include icon-based-innerline;
+                    background-image: url("coui://uil/Colored/ListViewDense.svg");
+                }
+
+                .k45_we_formulaeEditor_propertyName {
+                    @include icon-based-innerline;
+                    background-image: url("coui://uil/Colored/ArrowRightTriangleNotch.svg");
+                }
+
+                .k45_we_formulaeEditor_returnType {
+                    margin-top: 5rem;
+                    max-width: 95%;
+                }
+            }
+        }
+    }
+
+    .k45_we_formulaeEditor_actions {
+        position: absolute;
+        bottom: 5rem;
+        height: 130rem;
+        left: 0;
+        right: 0;
+
+        .k45_we_formulaeEditor_footnote {
+            padding: 8rem;
+            font-size: var(--fontSizeXS);
+            text-align: center;
+        }
+    }
+
+    button,
+    a {
+        transition-property: background-color, color;
+        transition-duration: 0.5s;
+    }
+
+    button,
+    %basicBtn {
+        padding: 5rem 5rem;
+        border-style: solid;
+        border-top-width: var(--stroke2);
+        border-left-width: var(--stroke2);
+        border-bottom-width: var(--stroke2);
+        border-right-width: var(--stroke2);
+        border-color: rgba(0, 0, 0, 0);
+        border-radius: 4rem;
+        color: rgba(0, 0, 0, .7);
+        font-size: var(--fontSizeM);
+        font-weight: bold;
+        text-transform: uppercase;
+        transition-property: background-color, color;
+        transition-duration: 0.5s;
+
+        &:focus {
+            border-color: #fff;
+            box-shadow: 0 0 20rem rgba(0, 0, 0, .5);
+        }
+
+        &[disabled],
+        &[disabled]:hover {
+            background-color: black;
+            color: silver;
+            pointer-events: none;
+        }
+    }
+
+    .positiveBtn {
+        @extend %basicBtn;
+        background-color: var(--dialogButtonYesColor);
+
+        &:hover {
+            background-color: var(--dialogButtonYesColor-hover);
+        }
+
+        &:active {
+            background-color: var(--dialogButtonYesColor-active);
+        }
+
+        &:focus {
+            background-color: var(--dialogButtonYesColor-focused)
+        }
+    }
+
+    .negativeBtn {
+        @extend %basicBtn;
+        background-color: var(--dialogButtonNoColor);
+
+        &:hover {
+            background-color: var(--dialogButtonNoColor-hover);
+        }
+
+        &:active {
+            background-color: var(--dialogButtonNoColor-active);
+        }
+
+        &:focus {
+            background-color: var(--dialogButtonNoColor-focused);
+        }
+    }
+
+    .darkestBtn {
+        @extend %basicBtn;
+        background-color: var(--accentColorDarker);
+        color: var(--menuText1Normal);
+
+        &:hover {
+            background-color: var(--accentColorDarker-hover);
+            color: var(--menuText1Disabled);
+        }
+
+        &:active {
+            background-color: var(--accentColorDarker-pressed);
+            color: var(--menuText1Disabled);
+        }
+
+        &:focus {
+            background-color: var(--accentColorDarker-pressed);
+            color: var(--menuText1Disabled);
+        }
+    }
+
+    .darkBtn {
+        @extend %basicBtn;
+        background-color: var(--accentColorDark);
+
+        &:hover {
+            background-color: var(--accentColorDark-hover);
+        }
+
+        &:active {
+            background-color: var(--accentColorDark-pressed);
+        }
+
+        &:focus {
+            background-color: var(--accentColorDark-focused)
+        }
+    }
+
+    .normalBtn {
+        @extend %basicBtn;
+        background-color: var(--accentColorNormal);
+
+        &:hover {
+            background-color: var(--accentColorNormal-hover);
+        }
+
+        &:active {
+            background-color: var(--accentColorNormal-pressed);
+        }
+
+        &:focus {
+            background-color: var(--accentColorLighter)
+        }
+    }
+
+    .neutralBtn {
+        @extend %basicBtn;
+        background-color: #1e83aa;
+
+        &:hover {
+            background-color: #26a4d5;
+        }
+
+        &:active {
+            background-color: #64c0e4;
+        }
+
+        &:focus {
+            background-color: #00c2ff
+        }
+    }
+}

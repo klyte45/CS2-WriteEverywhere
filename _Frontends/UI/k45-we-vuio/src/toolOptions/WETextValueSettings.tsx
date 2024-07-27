@@ -19,6 +19,7 @@ const T_contentType = translate("textValueSettings.contentType"); //
 const T_atlas = translate("textValueSettings.atlas"); //
 const T_image = translate("textValueSettings.image"); //
 const T_Height = translate("textValueSettings.height"); //
+const T_HeightCm = translate("textValueSettings.heightCm"); //
 const T_widthDistortion = translate("textValueSettings.widthDistortion"); //
 
 export const WETextValueSettings = (props: { initialPosition?: { x: number, y: number } }) => {
@@ -71,7 +72,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     useEffect(() => {
         setFormulaeTyping(wps.FormulaeStr.value);
     }, [wps.FormulaeStr.value, wps.CurrentSubEntity.value])
-    
+
     useEffect(() => {
         setUsingFormulae(!!wps.FormulaeStr.value);
     }, [wps.CurrentSubEntity.value])
@@ -104,7 +105,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                         style={{ flexGrow: 1, width: "inherit" }}
                     />
                 </EditorItemRow>
-                <FloatInputField label={T_Height} min={.001} max={10000000} value={height} onChange={saveHeight} onChangeEnd={() => saveHeight(height)} />
+                <FloatInputField label={wps.TextSourceType.value == 0 ? T_HeightCm : T_Height} min={.001} max={10000000} value={height * (wps.TextSourceType.value == 0 ? 100 : 1)} onChange={(x) => saveHeight(x * (wps.TextSourceType.value == 0 ? .01 : 1))} onChangeEnd={() => saveHeight(height)} />
                 <FloatInputField label={T_widthDistortion} min={.001} max={1000000} value={widthDistortion} onChange={setWidthDistortion} onChangeEnd={() => saveWidthDistortion(widthDistortion)} />
                 {wps.TextSourceType.value == 0 && <>
                     <EditorItemRow label={T_fontFieldTitle} styleContent={{ paddingLeft: "34rem" }}>

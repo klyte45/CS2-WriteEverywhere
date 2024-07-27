@@ -1,10 +1,21 @@
-import { Entity, HierarchyViewport, LocElementType, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
-import { Portal, Panel } from "cs2/ui";
+import { VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
-import { WEComponentMemberDesc, WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEFormulaeMethodDesc, WEMemberType, WEMethodSource, WESimulationTextType, WETextItemResume, WorldPickerService } from "services/WorldPickerService";
+import { WEComponentMemberDesc, WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEFormulaeMethodDesc, WEMemberType, WEMethodSource, WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
+import "../style/formulaeEditor.scss"
 
-
+const T_title = translate("formulaeEditor.title"); //Formulae stages
+const T_implicitConversionWarning = translate("formulaeEditor.implicitConversionWarning"); //Implicit conversion to String
+const T_finalPipelineAlwaysStringInfo = translate("formulaeEditor.finalPipelineAlwaysStringInfo"); //The final text will always have type String
+const T_descType_staticMethod = translate("formulaeEditor.descType.staticMethod"); //Static method call
+const T_descType_fieldGetter = translate("formulaeEditor.descType.fieldGetter"); //Load field
+const T_descType_propertyGetter = translate("formulaeEditor.descType.propertyGetter"); //Get property
+const T_descType_parameterlessInstanceMethodCall = translate("formulaeEditor.descType.parameterlessInstanceMethodCall"); //Call instance method
+const T_descType_componentGetter = translate("formulaeEditor.descType.componentGetter"); //Get component
+const T_addStageEnd = translate("formulaeEditor.addStageEnd"); //Get component
+const T_removeLastStage = translate("formulaeEditor.removeLastStage"); //Get component
+const T_editorFootnote = translate("formulaeEditor.editorFootnote"); //Get component
 
 export const WEFormulaeEditor = () => {
 
@@ -29,10 +40,11 @@ export const WEFormulaeEditor = () => {
                     break;
                 case WEDescType.STATIC_METHOD:
                     if (output.length > 0) output += '/';
-                    output += `${item.FormulaeString};`
+                    output += `${item.FormulaeString}`
                     break;
             }
         }
+        return output;
     }
 
     const requiresConvert = (x: WEFormulaeElement) => {
@@ -49,36 +61,47 @@ export const WEFormulaeEditor = () => {
     }
 
     const EditorScrollable = VanillaWidgets.instance.EditorScrollable;
+
+    const removeLastStage = () => {
+        formulaeSteps.pop();
+        wps.FormulaeStr.set(pathObjectsToFormulae(formulaeSteps))
+    }
+
     return <Portal>
         <div className="k45_we_formulaeEditor">
-            <div className="k45_we_formulaeEditor_title">Formulae stages</div>
+            <div className="k45_we_formulaeEditor_title">{T_title}</div>
             <EditorScrollable className="k45_we_formulaeEditor_content">
-                <div className="k45_we_formulaeEditor_initial_dot" >Unity.Entities.Entity</div>
+                <div className="k45_we_formulaeEditor_initial_dot" >Entity</div>
                 <div className="k45_we_formulaeEditor_downArrow" />
-                {formulaeSteps.map(x => {
+                {formulaeSteps.map((x, i) => {
                     switch (x.WEDescType) {
                         case WEDescType.COMPONENT:
-                            return <WEComponentGetterBlock {...x} />
+                            return <WEComponentGetterBlock {...x} i={i} />
                         case WEDescType.MEMBER:
-                            return <WEComponentMemberBlock {...x} />
+                            return <WEComponentMemberBlock {...x} i={i} />
                         case WEDescType.STATIC_METHOD:
-                            return <WEMethodCallBlock {...x} />
+                            return <WEMethodCallBlock {...x} i={i} />
                     }
                 })}
                 {requiresConvert(formulaeSteps[formulaeSteps.length - 1]) && <>
-                    <div className="k45_we_formulaeEditor_implicitConversion" >Implicit Conversion to String</div>
+                    <div className="k45_we_formulaeEditor_implicitConversion" >{T_implicitConversionWarning}</div>
                     <div className="k45_we_formulaeEditor_downArrow" />
                 </>}
-                <div className="k45_we_formulaeEditor_pipelineResult" >The final text will always have type System.String</div>
+                <div className="k45_we_formulaeEditor_pipelineResult" >{T_finalPipelineAlwaysStringInfo}</div>
             </EditorScrollable>
+            <div className="k45_we_formulaeEditor_actions">
+                <button className="positiveBtn">{T_addStageEnd}</button>
+                <button className="negativeBtn" onClick={() => removeLastStage()} disabled={formulaeSteps.length <= 0}>{T_removeLastStage}</button>
+                <div className="k45_we_formulaeEditor_footnote">{T_editorFootnote}</div>
+            </div>
         </div>
     </Portal>;
 };
 
-const WEMethodCallBlock = (data: WEFormulaeMethodDesc) => {
+const WEMethodCallBlock = (data: WEFormulaeMethodDesc & { i: number }) => {
     return <>
         <div className="k45_we_formulaeEditor_methodCall">
-            <div className="k45_we_formulaeEditor_dotTitle">Static Method Call</div>
+            <div className="k45_we_formulaeEditor_dotTitle">{T_descType_staticMethod}</div>
             <div className="k45_we_formulaeEditor_assembly">{`${data.dllName} [${WEMethodSource[data.source.value__]}]`}</div>
             <div className="k45_we_formulaeEditor_class">{data.className}</div>
             <div className="k45_we_formulaeEditor_methodName">{data.methodName}</div>
@@ -88,22 +111,22 @@ const WEMethodCallBlock = (data: WEFormulaeMethodDesc) => {
     </>
 }
 
-const WEComponentGetterBlock = (data: WEComponentTypeDesc) => {
+const WEComponentGetterBlock = (data: WEComponentTypeDesc & { i: number }) => {
     return <>
         <div className="k45_we_formulaeEditor_componentGet">
-            <div className="k45_we_formulaeEditor_dotTitle">Get Component</div>
+            <div className="k45_we_formulaeEditor_dotTitle">{T_descType_componentGetter}</div>
             <WEReturnType>{data.className}</WEReturnType>
         </div>
         <div className="k45_we_formulaeEditor_downArrow" />
     </>
 }
-const WEComponentMemberBlock = (data: WEComponentMemberDesc) => {
+const WEComponentMemberBlock = (data: WEComponentMemberDesc & { i: number }) => {
     let title: string;
     let className: string;
     switch (data.type.value__) {
-        case WEMemberType.Field: title = "Get Field"; className = "k45_we_formulaeEditor_componentField"; break;
-        case WEMemberType.ParameterlessMethod: title = "Run Class Method"; className = "k45_we_formulaeEditor_componentMethod"; break;
-        case WEMemberType.Property: title = "Get Property"; className = "k45_we_formulaeEditor_componentProperty"; break;
+        case WEMemberType.Field: title = T_descType_fieldGetter; className = "k45_we_formulaeEditor_componentField"; break;
+        case WEMemberType.ParameterlessMethod: title = T_descType_parameterlessInstanceMethodCall; className = "k45_we_formulaeEditor_componentMethod"; break;
+        case WEMemberType.Property: title = T_descType_propertyGetter; className = "k45_we_formulaeEditor_componentProperty"; break;
     }
     return <>
         <div className={className}>
