@@ -1,9 +1,12 @@
 import { VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
-import { Portal } from "cs2/ui";
+import { ConfirmationDialog, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
-import { WEComponentMemberDesc, WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEFormulaeMethodDesc, WEMemberType, WEMethodSource, WorldPickerService } from "services/WorldPickerService";
+import { WorldPickerService } from "services/WorldPickerService";
+import { WETypeMemberDesc, WEComponentTypeDesc, WEDescType, WEStaticMethodDesc, WEMemberType, WEMethodSource } from "services/WEFormulaeElement";
+import { WEFormulaeElement } from "services/WEFormulaeElement";
 import { translate } from "utils/translate";
 import "../style/formulaeEditor.scss"
+import { WEAddFormulaeStageDialog } from "./WEAddFormulaeStageDialog";
 
 const T_title = translate("formulaeEditor.title"); //Formulae stages
 const T_implicitConversionWarning = translate("formulaeEditor.implicitConversionWarning"); //Implicit conversion to String
@@ -67,6 +70,16 @@ export const WEFormulaeEditor = () => {
         wps.FormulaeStr.set(pathObjectsToFormulae(formulaeSteps))
     }
 
+    const onAppend = (appendItem?: WEFormulaeElement) => {
+        setAddingItem(false);
+        if (appendItem) {
+            formulaeSteps.push(appendItem);
+            wps.FormulaeStr.set(pathObjectsToFormulae(formulaeSteps))
+        }
+    }
+
+    const [addingItem, setAddingItem] = useState(false)
+
     return <Portal>
         <div className="k45_we_formulaeEditor">
             <div className="k45_we_formulaeEditor_title">{T_title}</div>
@@ -90,15 +103,16 @@ export const WEFormulaeEditor = () => {
                 <div className="k45_we_formulaeEditor_pipelineResult" >{T_finalPipelineAlwaysStringInfo}</div>
             </EditorScrollable>
             <div className="k45_we_formulaeEditor_actions">
-                <button className="positiveBtn">{T_addStageEnd}</button>
+                <button className="positiveBtn" onClick={() => setAddingItem(true)}>{T_addStageEnd}</button>
                 <button className="negativeBtn" onClick={() => removeLastStage()} disabled={formulaeSteps.length <= 0}>{T_removeLastStage}</button>
                 <div className="k45_we_formulaeEditor_footnote">{T_editorFootnote}</div>
             </div>
         </div>
+        {addingItem && <WEAddFormulaeStageDialog callback={onAppend} referenceElement={formulaeSteps[formulaeSteps.length - 1]} />}
     </Portal>;
 };
 
-const WEMethodCallBlock = (data: WEFormulaeMethodDesc & { i: number }) => {
+const WEMethodCallBlock = (data: WEStaticMethodDesc & { i: number }) => {
     return <>
         <div className="k45_we_formulaeEditor_methodCall">
             <div className="k45_we_formulaeEditor_dotTitle">{T_descType_staticMethod}</div>
@@ -120,7 +134,7 @@ const WEComponentGetterBlock = (data: WEComponentTypeDesc & { i: number }) => {
         <div className="k45_we_formulaeEditor_downArrow" />
     </>
 }
-const WEComponentMemberBlock = (data: WEComponentMemberDesc & { i: number }) => {
+const WEComponentMemberBlock = (data: WETypeMemberDesc & { i: number }) => {
     let title: string;
     let className: string;
     switch (data.type.value__) {

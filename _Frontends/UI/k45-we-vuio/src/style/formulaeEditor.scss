@@ -1,3 +1,56 @@
+@mixin icon-based-innerline {
+    padding-left: 25rem;
+    height: 20rem;
+    background-position: left center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    align-self: flex-start;
+}
+
+@mixin generate-border-color($color) {
+    border-left-color: $color;
+    border-bottom-color: $color;
+    border-right-color: $color;
+    border-top-color: $color;
+}
+
+@mixin formulae-element-type-styling {
+    --colorComponentGet: #ff00bf;
+    --colorMethodCall: #00d5ff;
+    --colorComponentField: #240f8a;
+    --colorComponentMethod: #0f618a;
+    --colorComponentProperty: #0f388a;
+    --colorAssembly: #b84b14;
+    --colorPackage: #8a610f;
+
+    --iconHome: url("coui://uil/Colored/Home.svg");
+    --iconArrowRight: url("coui://uil/Standard/ArrowRight.svg");
+
+    --iconAssembly: url("coui://uil/Colored/Puzzle.svg");
+    --iconClass: url("coui://uil/Colored/PaperWithArrow.svg");
+    --iconMethodName: url("coui://uil/Colored/ArrowRightThickStroke.svg");
+    --iconFieldName: url("coui://uil/Colored/ListViewDense.svg");
+    --iconPropertyName: url("coui://uil/Colored/ArrowRightTriangleNotch.svg");
+    --iconBwAssembly: url("coui://uil/Standard/Puzzle.svg");
+    --iconBwPackage: url("coui://uil/Standard/Boxes.svg");
+    --iconBwClass: url("coui://uil/Standard/PaperWithArrow.svg");
+    --iconBwMethodName: url("coui://uil/Standard/ArrowRightThickStroke.svg");
+    --iconBwFieldName: url("coui://uil/Standard/ListViewDense.svg");
+    --iconBwPropertyName: url("coui://uil/Standard/ArrowRightTriangleNotch.svg");
+
+    --iconBwGame: url("coui://uil/Standard/BaseGame.svg");
+    --iconBwMod: url("coui://uil/Standard/HeadCode.svg");
+    --iconBwCoUI: url("coui://uil/Standard/GearOnSheet.svg");
+    --iconBwSystem: url("coui://uil/Standard/Gear.svg");
+    --iconBwUnity: url("coui://gameui/Media/Toolchain/Unity.svg");
+
+    --colorMod: #8a6b0f;
+    --colorCoUI: #5c9900;
+    --colorSystem: #5500ff;
+    --colorUnity: #cc33bf;
+    --colorGame: #0099ff;
+}
+
 .k45_we_formulaeEditor {
     position: fixed;
     top: 55rem;
@@ -41,6 +94,8 @@
             align-items: center;
             flex-direction: column;
 
+            @include formulae-element-type-styling;
+
             @mixin basic-container {
                 min-width: 15rem;
                 min-height: 25rem;
@@ -62,7 +117,7 @@
             .k45_we_formulaeEditor_initial_dot {
                 @include basic-container;
                 background-color: rgba(0, 128, 0, 1);
-                border-color: rgba(144, 238, 144, 1);
+                @include generate-border-color(rgba(144, 238, 144, 1));
             }
 
             .k45_we_formulaeEditor_downArrow {
@@ -74,7 +129,7 @@
             .k45_we_formulaeEditor_returnType {
                 @include basic-container;
                 background-color: dimgray;
-                border-color: silver;
+                @include generate-border-color(silver);
                 display: flex;
                 flex-wrap: wrap;
                 justify-content: center;
@@ -84,14 +139,14 @@
             .k45_we_formulaeEditor_implicitConversion {
                 @include basic-container;
                 background-color: darkorange;
-                border-color: yellow;
+                @include generate-border-color(yellow);
                 color: black;
             }
 
             .k45_we_formulaeEditor_pipelineResult {
                 @include basic-container;
                 background-color: darkgreen;
-                border-color: greenyellow;
+                @include generate-border-color(greenyellow);
                 color: lime;
             }
 
@@ -112,37 +167,30 @@
 
             .k45_we_formulaeEditor_componentGet {
                 @include advanced-container;
-                border-color: hsl(315, 100%, 50%);
+                @include generate-border-color(var(--colorComponentGet));
             }
 
             .k45_we_formulaeEditor_methodCall {
                 @include advanced-container;
-                border-color: hsl(190, 100%, 50%);
+                @include generate-border-color(var(--colorMethodCall));
             }
 
             .k45_we_formulaeEditor_componentField {
                 @include advanced-container;
-                border-color: hsl(250, 80%, 30%);
+                @include generate-border-color(var(--colorComponentField));
             }
 
             .k45_we_formulaeEditor_componentMethod {
                 @include advanced-container;
-                border-color: hsl(200, 80%, 30%);
+                @include generate-border-color(var(--colorComponentMethod));
             }
 
             .k45_we_formulaeEditor_componentProperty {
                 @include advanced-container;
-                border-color: hsl(220, 80%, 30%);
+                @include generate-border-color(var(--colorComponentProperty));
             }
 
-            @mixin icon-based-innerline {
-                padding-left: 25rem;
-                height: 20rem;
-                background-position: left center;
-                background-size: contain;
-                background-repeat: no-repeat;
-                align-self: flex-start;
-            }
+
 
             >*> {
 
@@ -153,27 +201,27 @@
 
                 .k45_we_formulaeEditor_assembly {
                     @include icon-based-innerline;
-                    background-image: url("coui://uil/Colored/Puzzle.svg");
+                    background-image: var(--iconAssembly);
                 }
 
                 .k45_we_formulaeEditor_class {
                     @include icon-based-innerline;
-                    background-image: url("coui://uil/Colored/PaperWithArrow.svg");
+                    background-image: var(--iconClass);
                 }
 
                 .k45_we_formulaeEditor_methodName {
                     @include icon-based-innerline;
-                    background-image: url("coui://uil/Colored/ArrowRightThickStroke.svg");
+                    background-image: var(--iconMethodName);
                 }
 
                 .k45_we_formulaeEditor_fieldName {
                     @include icon-based-innerline;
-                    background-image: url("coui://uil/Colored/ListViewDense.svg");
+                    background-image: var(--iconFieldName);
                 }
 
                 .k45_we_formulaeEditor_propertyName {
                     @include icon-based-innerline;
-                    background-image: url("coui://uil/Colored/ArrowRightTriangleNotch.svg");
+                    background-image: var(--iconPropertyName);
                 }
 
                 .k45_we_formulaeEditor_returnType {
@@ -198,6 +246,166 @@
         }
     }
 
+
+    @extend %buttonsStyle;
+}
+
+.k45_we_formulaeDialog {
+    @extend %buttonsStyle;
+
+
+    flex-grow: 1;
+    align-content: stretch;
+    width: 100%;
+
+    .k45_we_formulaeDialog_tabRow {
+        display: flex;
+        width: 100%;
+
+        button {
+            flex-grow: 1;
+            display: flex;
+            align-self: stretch;
+            justify-content: center;
+        }
+    }
+
+}
+
+
+.k45_we_formulaeDialogBtns {
+    @extend %buttonsStyle;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+
+    button {
+        width: 160rem;
+        min-height: 40rem;
+        justify-content: center;
+    }
+}
+
+.k45_we_formulaeDialog_content {
+    @extend %buttonsStyle;
+    max-height: 350rem;
+    padding: 6rem;
+    ---selfColor: white;
+    width: 100%;
+
+    >div {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        flex-grow: 1;
+        justify-content: center;
+
+        @include formulae-element-type-styling;
+
+        button {
+            min-width: 160rem;
+            min-height: 40rem;
+            margin-left: 3rem;
+            margin-right: 3rem;
+            justify-content: center;
+            text-transform: none;
+            background-position-y: 50%;
+            background-repeat: no-repeat no-repeat;
+            background-size: contain;
+            padding-left: 41rem;
+            color: rgba(255, 255, 255, 1);
+            margin-top: 4rem;
+            margin-bottom: 4rem;
+            border: 3rem solid;
+            border-left-color: var(---selfColor);
+            border-bottom-color: var(---selfColor);
+            border-right-color: var(---selfColor);
+            border-top-color: var(---selfColor);
+            filter: brightness(70%);
+
+            &:hover {
+                filter: brightness(140%);
+            }
+
+            &.selected {
+                filter: brightness(100%);
+                background-color: var(---selfColor);
+            }
+
+            &.selected~div {
+                filter: brightness(40%);
+
+                &:hover {
+                    filter: brightness(140%);
+                }
+            }
+        }
+
+        .k45_we_formulaeDialog_btn_component {
+            ---selfColor: var(--colorComponentGet);
+            background-image: var(--iconBwClass);
+        }
+
+        .k45_we_formulaeDialog_btn_package {
+            ---selfColor: var(--colorPackage);
+            background-image: var(--iconBwPackage);
+        }
+
+        .k45_we_formulaeDialog_btn_field {
+            ---selfColor: var(--colorComponentField);
+            background-image: var(--iconBwFieldName);
+        }
+
+        .k45_we_formulaeDialog_btn_instanceMethod {
+            ---selfColor: var(--colorComponentMethod);
+            background-image: var(--iconBwMethodName);
+        }
+
+        .k45_we_formulaeDialog_btn_property {
+            ---selfColor: var(--colorComponentProperty);
+            background-image: var(--iconBwPropertyName);
+        }
+
+        .k45_we_formulaeDialog_btn_staticMethod {
+            ---selfColor: var(--colorMethodCall);
+            background-image: var(--iconBwMethodName);
+        }
+
+        .k45_we_formulaeDialog_btn_assembly {
+            ---selfColor: var(--colorAssembly);
+            background-image: var(--iconBwAssembly);
+        }
+
+        .k45_we_formulaeDialog_btn_Game {
+            ---selfColor: var(--colorGame);
+            background-image: var(--iconBwGame);
+        }
+    }
+
+    .k45_we_formulaeDialog_btn_Mod {
+        ---selfColor: var(--colorMod);
+        background-image: var(--iconBwMod);
+    }
+
+    .k45_we_formulaeDialog_btn_CoUI {
+        ---selfColor: var(--colorCoUI);
+        background-image: var(--iconBwCoUI);
+    }
+
+    .k45_we_formulaeDialog_btn_System {
+        ---selfColor: var(--colorSystem);
+        background-image: var(--iconBwSystem);
+    }
+
+    .k45_we_formulaeDialog_btn_Unity {
+        ---selfColor: var(--colorUnity);
+        background-image: var(--iconBwUnity);
+    }
+}
+
+%buttonsStyle {
+
     button,
     a {
         transition-property: background-color, color;
@@ -212,24 +420,31 @@
         border-left-width: var(--stroke2);
         border-bottom-width: var(--stroke2);
         border-right-width: var(--stroke2);
-        border-color: rgba(0, 0, 0, 0);
+        border-top-color: rgba(0, 0, 0, 0);
+        border-left-color: rgba(0, 0, 0, 0);
+        border-bottom-color: rgba(0, 0, 0, 0);
+        border-right-color: rgba(0, 0, 0, 0);
+
         border-radius: 4rem;
         color: rgba(0, 0, 0, .7);
         font-size: var(--fontSizeM);
         font-weight: bold;
         text-transform: uppercase;
-        transition-property: background-color, color;
+        transition-property: background-color, color, filter;
         transition-duration: 0.5s;
 
         &:focus {
-            border-color: #fff;
+            border-top-color: #fff;
+            border-left-color: #fff;
+            border-bottom-color: #fff;
+            border-right-color: #fff;
             box-shadow: 0 0 20rem rgba(0, 0, 0, .5);
         }
 
         &[disabled],
         &[disabled]:hover {
             background-color: black;
-            color: silver;
+            color: gray;
             pointer-events: none;
         }
     }
@@ -237,6 +452,27 @@
     .positiveBtn {
         @extend %basicBtn;
         background-color: var(--dialogButtonYesColor);
+
+        &:hover {
+            background-color: var(--dialogButtonYesColor-hover);
+        }
+
+        &:active {
+            background-color: var(--dialogButtonYesColor-active);
+        }
+
+        &:focus {
+            background-color: var(--dialogButtonYesColor-focused)
+        }
+    }
+
+    .tabBtn {
+        @extend %basicBtn;
+        background-color: var(--editorFocusedColorDark);
+
+        &.selected {
+            background-color: var(--dialogButtonYesColor)
+        }
 
         &:hover {
             background-color: var(--dialogButtonYesColor-hover);
@@ -339,4 +575,112 @@
             background-color: #00c2ff
         }
     }
+}
+
+
+.k45_we_formulaeDialog_navRow {
+    @extend %buttonsStyle;
+    @include formulae-element-type-styling;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+    ---selfColor: black;
+
+    button {
+        height: 40rem;
+        margin-left: 3rem;
+        margin-right: 3rem;
+        justify-content: center;
+        text-transform: none;
+        background-position-y: 50%;
+        background-repeat: no-repeat no-repeat;
+        background-size: contain;
+        padding-left: 41rem;
+        color: rgba(255, 255, 255, 1);
+        margin-top: 4rem;
+        margin-bottom: 4rem;
+        border: 3rem solid;
+        border-left-color: var(---selfColor);
+        border-bottom-color: var(---selfColor);
+        border-right-color: var(---selfColor);
+        border-top-color: var(---selfColor);
+        border-top-color: var(---selfColor);
+        background-color: var(---selfColor);
+        filter: brightness(70%);
+
+        &:hover {
+            filter: brightness(140%);
+        }
+
+        &.selected {
+            filter: brightness(100%);
+            background-color: var(---selfColor);
+        }
+
+        &.selected~div {
+            filter: brightness(40%);
+
+            &:hover {
+                filter: brightness(140%);
+            }
+        }
+    }
+
+    .k45_we_formulaeDialog_tabRow_navSeparator {
+        background-size: contain;
+        width: 15rem;
+        background-image: var(--iconArrowRight);
+        background-repeat: no-repeat;
+        background-position-y: 50%;
+        height: 40rem;
+    }
+
+    .k45_we_formulaeDialog_tabRow_resetNavigation {
+        ---selfColor: gray;
+        background-image: var(--iconHome);
+        background-position-x: 50%;
+    }
+
+    .k45_we_formulaeDialog_tabRow_navigationPathPart_Game {
+        ---selfColor: var(--colorGame);
+        background-image: var(--iconBwGame);
+    }
+
+    .k45_we_formulaeDialog_tabRow_navigationPathPart_Mod {
+        ---selfColor: var(--colorMod);
+        background-image: var(--iconBwMod);
+    }
+
+    .k45_we_formulaeDialog_tabRow_navigationPathPart_CoUI {
+        ---selfColor: var(--colorCoUI);
+        background-image: var(--iconBwCoUI);
+    }
+
+    .k45_we_formulaeDialog_tabRow_navigationPathPart_System {
+        ---selfColor: var(--colorSystem);
+        background-image: var(--iconBwSystem);
+    }
+
+    .k45_we_formulaeDialog_tabRow_navigationPathPart_Unity {
+        ---selfColor: var(--colorUnity);
+        background-image: var(--iconBwUnity);
+    }
+
+    .k45_we_formulaeDialog_tabRow_navigationPathPart_assembly {
+        ---selfColor: var(--colorAssembly);
+        background-image: var(--iconBwAssembly);
+    }
+
+    .k45_we_formulaeDialog_tabRow_navigationPathPart_component {
+        ---selfColor: var(--colorComponentGet);
+        background-image: var(--iconBwClass);
+    }
+
+    .k45_we_formulaeDialog_tabRow_navigationPathPart_package {
+        ---selfColor: var(--colorPackage);
+        background-image: var(--iconBwPackage);
+    }
+
 }

@@ -162,9 +162,6 @@ const WEWorldPickerToolPanel = () => {
             <VanillaComponentResolver.instance.Section title={L_actions}>
                 <>
                     {currentItemIsValid && <>
-                        <VanillaComponentResolver.instance.ToolButton onSelect={async () => console.log(await WorldPickerService.listAvailableMethodsForType("System.String"))} src={i_removeItemIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={"TST"} />
-                        <VanillaComponentResolver.instance.ToolButton onSelect={async () => console.log(await WorldPickerService.formulaeToPathObjects(wps.FormulaeStr.value))} src={i_AddItemIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={"TST"} />
-
                         <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
                         <div style={{ width: "10rem" }}></div>
                     </>

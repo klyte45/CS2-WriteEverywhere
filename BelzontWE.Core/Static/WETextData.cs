@@ -25,6 +25,8 @@ namespace BelzontWE
         public const uint CURRENT_VERSION = 1;
         public unsafe static int Size => sizeof(WETextData);
 
+        internal static readonly BindingFlags MEMBER_FLAGS = ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly;
+
         public static WETextData CreateDefault(Entity target, Entity? parent = null)
         {
             return new WETextData
@@ -524,13 +526,13 @@ namespace BelzontWE
                     iLGenerator.Emit(OpCodes.Ldloca, local0);
                 }
                 skipValueTypeVar = false;
-                if (currentComponentType.GetField(field, ReflectionUtils.allFlags) is FieldInfo targetField)
+                if (currentComponentType.GetField(field, MEMBER_FLAGS) is FieldInfo targetField)
                 {
                     iLGenerator.Emit(OpCodes.Ldfld, targetField);
                     currentComponentType = targetField.FieldType;
                     continue;
                 }
-                else if (currentComponentType.GetProperty(field, ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly) is PropertyInfo targetProperty && targetProperty.GetMethod != null)
+                else if (currentComponentType.GetProperty(field, MEMBER_FLAGS) is PropertyInfo targetProperty && targetProperty.GetMethod != null)
                 {
                     if (currentComponentType.IsValueType && (targetProperty.GetMethod.IsVirtual || currentComponentType.IsGenericType))
                     {
@@ -540,7 +542,7 @@ namespace BelzontWE
                     currentComponentType = targetProperty.GetMethod.ReturnType;
                     continue;
                 }
-                else if (currentComponentType.GetMethod(field, ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly, null, new Type[0], null) is MethodInfo targetMethod && targetMethod.ReturnType != typeof(void))
+                else if (currentComponentType.GetMethod(field, MEMBER_FLAGS, null, new Type[0], null) is MethodInfo targetMethod && targetMethod.ReturnType != typeof(void))
                 {
                     if (currentComponentType.IsValueType && (targetMethod.IsVirtual || currentComponentType.IsGenericType))
                     {

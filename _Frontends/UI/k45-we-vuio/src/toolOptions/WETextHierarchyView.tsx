@@ -1,7 +1,8 @@
 import { Entity, HierarchyViewport, LocElementType, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { Portal, Panel } from "cs2/ui";
 import { useEffect, useState } from "react";
-import { WESimulationTextType, WETextItemResume, WorldPickerService } from "services/WorldPickerService";
+import { WorldPickerService } from "services/WorldPickerService";
+import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeElement";
 import { translate } from "utils/translate";
 
 function getIconForTextType(type: WESimulationTextType) {

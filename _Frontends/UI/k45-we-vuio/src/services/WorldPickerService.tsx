@@ -1,9 +1,22 @@
-import { Entity, MultiUIValueBinding, UIColorRGBA } from "@klyte45/vuio-commons"
-import { Component, version } from "react"
+import { Entity, MultiUIValueBinding, UIColorRGBA } from "@klyte45/vuio-commons";
+import { WEComponentTypeDesc, WEFormulaeElement, WEStaticMethodDesc, WETextItemResume, WETypeMemberDesc } from "./WEFormulaeElement";
 
 type number3 = [number, number, number]
 
 let _instance: WorldPickerService;
+
+export type IndexedStaticMethodsListing = {
+    [srcType: number]: {
+        [dllName: string]: {
+            [className: string]: WEStaticMethodDesc[]
+        }
+    }
+}
+export type IndexedComponentListing = {
+    [srcType: number]: {
+        [dllName: string]:  WEComponentTypeDesc[]        
+    }
+}//Record<number, Record<string, Record<string, WEStaticMethodDesc[]>>>
 
 export class WorldPickerService {
     public static get instance(): WorldPickerService { return _instance ??= new WorldPickerService() }
@@ -136,71 +149,17 @@ export class WorldPickerService {
     static async addEmpty(parent?: Entity) {
         return await engine.call("k45::we.wpicker.addItem", parent ?? { Index: 0, Version: 0, __Type: 'Unity.Entities.Entity, Unity.Entities, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null' });
     }
-    static async listAvailableMethodsForType(typeName: string): Promise<WEFormulaeMethodDesc[]> {
-        return await engine.call("k45::we.wpicker.listAvailableMethodsForType", typeName);
+    static async listAvailableMethodsForType(dllName: string, typeName: string): Promise<IndexedStaticMethodsListing> {
+        return await engine.call("k45::we.wpicker.listAvailableMethodsForType", dllName, typeName);
+    }
+    static async listAvailableMembersForType(dllName: string, typeName: string): Promise<WETypeMemberDesc[]> {
+        return await engine.call("k45::we.wpicker.listAvailableMembersForType", dllName, typeName);
+    }
+    static async listAvailableComponents(): Promise<IndexedComponentListing> {
+        return await engine.call("k45::we.wpicker.listAvailableComponents");
     }
     static async formulaeToPathObjects(formulae: string): Promise<WEFormulaeElement[]> {
         return await engine.call("k45::we.wpicker.formulaeToPathObjects", formulae);
     }
 }
 
-export type WETextItemResume = {
-    name: string;
-    type: WESimulationTextType;
-    id: Entity;
-    children: WETextItemResume[];
-}
-
-export enum WESimulationTextType {
-    Text = 0,
-    Image = 1
-}
-
-export type EnumWrapper<T> = { value__: T }
-
-export enum WEMemberType {
-    Field,
-    Property,
-    ParameterlessMethod
-}
-export enum WEMethodSource {
-    Game,
-    Unity,
-    CoUI,
-    System,
-    Mod,
-    Unknown
-}
-export enum WEDescType {
-    MEMBER = "MEMBER",
-    COMPONENT = "COMPONENT",
-    STATIC_METHOD = "STATIC_METHOD"
-}
-
-export type WEComponentMemberDesc = {
-    WEDescType: WEDescType.MEMBER,
-    memberName: string;
-    memberTypeDllName: string;
-    memberTypeClassName: string;
-    type: EnumWrapper<WEMemberType>
-}
-
-export type WEComponentTypeDesc = {
-    WEDescType: WEDescType.COMPONENT,
-    dllName: string;
-    className: string;
-}
-
-export type WEFormulaeMethodDesc = {
-    WEDescType: WEDescType.STATIC_METHOD,
-    dllName: string;
-    className: string;
-    methodName: string;
-    source: EnumWrapper<WEMethodSource>;
-    modUrl: string;
-    modName: string;
-    returnType: string;
-    FormulaeString: string;
-}
-
-export type WEFormulaeElement = WEComponentMemberDesc | WEComponentTypeDesc | WEFormulaeMethodDesc

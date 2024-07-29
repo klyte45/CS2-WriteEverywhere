@@ -17,7 +17,7 @@ using WriteEverywhere.Sprites;
 
 namespace BelzontWE
 {
-    public enum WEMethodSource
+    public enum WEMemberSource
     {
         Game,
         Unity,
@@ -34,54 +34,33 @@ namespace BelzontWE
         ParameterlessMethod
     }
 
-    public struct WEComponentMemberDesc
+    public static class WEMemberSourceExtensions
     {
-        public readonly string WEDescType => "MEMBER";
-        public string memberName;
-        public string memberTypeDllName;
-        public string memberTypeClassName;
-        public WEMemberType type;
-    }
-    public struct WEComponentTypeDesc
-    {
-        public readonly string WEDescType => "COMPONENT";
-        public string dllName;
-        public string className;
-    }
-
-    public struct WEFormulaeMethodDesc
-    {
-        public readonly string WEDescType => "STATIC_METHOD";
-        public string dllName;
-        public string className;
-        public string methodName;
-        public WEMethodSource source;
-        public string modUrl;
-        public string modName;
-        public string returnType;
-        public readonly string FormulaeString => $"&{className};{methodName}";
-
-        public static WEFormulaeMethodDesc From(MethodInfo mi)
+        public static WEMemberSource GetSource(Assembly assembly, out string modUrl, out string modName, out string dllName)
         {
-            WEMethodSource source = WEMethodSource.Mod;
-            string modUrl = null;
-            string modName = null;
-            string dllName = mi.DeclaringType.Assembly.GetName().Name;
+            WEMemberSource source = WEMemberSource.Mod;
+            dllName = assembly?.GetName()?.Name ?? "??????";
+            modName = null;
+            modUrl = null;
             if (dllName.StartsWith("Unity"))
             {
-                source = WEMethodSource.Unity;
+                source = WEMemberSource.Unity;
             }
             else if (dllName.ToLower().StartsWith("cohtml"))
             {
-                source = WEMethodSource.CoUI;
+                source = WEMemberSource.CoUI;
             }
-            else if (mi.DeclaringType.Assembly.Location.Contains($"Cities2_Data{Path.DirectorySeparatorChar}Managed"))
+            else if (dllName.ToLower().StartsWith("System"))
             {
-                source = WEMethodSource.Game;
+                source = WEMemberSource.System;
+            }
+            else if (assembly.Location.Contains($"Cities2_Data{Path.DirectorySeparatorChar}Managed"))
+            {
+                source = WEMemberSource.Game;
             }
             else
             {
-                var thisFullName = mi.DeclaringType.Assembly.FullName;
+                var thisFullName = assembly.FullName;
                 ExecutableAsset modInfo = AssetDatabase.global.GetAsset(SearchFilter<ExecutableAsset>.ByCondition(x => x.definition?.FullName == thisFullName));
                 if (modInfo == null)
                 {
@@ -93,18 +72,100 @@ namespace BelzontWE
                     modUrl = modInfo.GetMeta().remoteStorageSourceName;
                 }
             }
+            return source;
+        }
+    }
 
-            return new WEFormulaeMethodDesc
+    public struct WETypeMemberDesc
+    {
+        public readonly string WEDescType => "MEMBER";
+        public string memberName;
+        public string memberTypeDllName;
+        public string memberTypeClassName;
+        public WEMemberType type;
+
+        public static WETypeMemberDesc FromMemberInfo(MemberInfo m) => m switch
+        {
+            MethodInfo targetMethod => new WETypeMemberDesc
+            {
+                memberTypeDllName = targetMethod.ReturnType.Assembly.GetName().Name,
+                memberTypeClassName = targetMethod.ReturnType.FullName,
+                memberName = targetMethod.Name,
+                type = WEMemberType.ParameterlessMethod,
+            },
+            PropertyInfo targetProperty => new WETypeMemberDesc
+            {
+                memberTypeDllName = targetProperty.PropertyType.Assembly.GetName().Name,
+                memberTypeClassName = targetProperty.PropertyType.FullName,
+                memberName = targetProperty.Name,
+                type = WEMemberType.Property
+            },
+            FieldInfo targetField => new WETypeMemberDesc
+            {
+                memberTypeDllName = targetField.FieldType.Assembly.GetName().Name,
+                memberTypeClassName = targetField.FieldType.FullName,
+                memberName = targetField.Name,
+                type = WEMemberType.Field
+            },
+            _ => default,
+        };
+    }
+    public struct WEComponentTypeDesc
+    {
+        public readonly string WEDescType => "COMPONENT";
+        public string dllName;
+        public string className;
+        public WEMemberSource source;
+        public string modUrl;
+        public string modName;
+
+        internal static WEComponentTypeDesc From(Type x)
+        {
+            var source = WEMemberSourceExtensions.GetSource(x.Assembly, out var modUrl, out var modName, out var dllName);
+            return new WEComponentTypeDesc
             {
                 dllName = dllName,
-                className = mi.DeclaringType.FullName,
-                methodName = mi.Name,
-                returnType = mi.ReturnType.FullName,
+                className = x.FullName,
+                modName = modName,
+                modUrl = modUrl,
+                source = source
+            };
+        }
+    }
+
+    public struct WEStaticMethodDesc
+    {
+        public readonly string WEDescType => "STATIC_METHOD";
+        public string dllName;
+        public string className;
+        public string methodName;
+        public WEMemberSource source;
+        public string modUrl;
+        public string modName;
+        public string returnTypeDll;
+        public string returnType;
+        public readonly string FormulaeString => $"&{className};{methodName}";
+
+        public static WEStaticMethodDesc From(MethodInfo mi)
+        {
+            var source = WEMemberSourceExtensions.GetSource(mi.DeclaringType.Assembly, out var modUrl, out var modName, out var dllName);
+            var className = mi.DeclaringType.FullName;
+            var methodName = mi.Name;
+            var returnType = mi.ReturnType.FullName;
+            return new WEStaticMethodDesc
+            {
+                dllName = dllName,
+                className = className,
+                methodName = methodName,
+                returnTypeDll = mi.ReturnType.Assembly?.GetName()?.Name,
+                returnType = returnType,
                 source = source,
                 modUrl = modUrl,
                 modName = modName
             };
         }
+
+
     }
 
     public partial class WEWorldPickerController : ComponentSystemBase, IBelzontBindable
@@ -131,6 +192,8 @@ namespace BelzontWE
             callBinder($"{PREFIX}cloneAsChild", CloneAsChild);
             callBinder($"{PREFIX}listAvailableMethodsForType", ListAvailableMethodsForType);
             callBinder($"{PREFIX}formulaeToPathObjects", FormulaeToPathObjects);
+            callBinder($"{PREFIX}listAvailableMembersForType", ListAvailableMembersForType);
+            callBinder($"{PREFIX}listAvailableComponents", ListAvailableComponents);
             if (m_eventCaller != null) InitValueBindings();
         }
 
@@ -184,11 +247,51 @@ namespace BelzontWE
         public MultiUIValueBinding<int> TextSourceType { get; private set; }
         public MultiUIValueBinding<string> ImageAtlasName { get; private set; }
 
-        private WEFormulaeMethodDesc[] ListAvailableMethodsForType(string typeFullName)
+        private Dictionary<int, Dictionary<string, Dictionary<string, WEStaticMethodDesc[]>>> ListAvailableMethodsForType(string assemblyName, string typeFullName)
         {
-            var type = AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes()).Where(t => t.FullName == typeFullName).FirstOrDefault();
-            return type == null ? null : WETextData.FilterAvailableMethodsForFormulae(type).Select(x => WEFormulaeMethodDesc.From(x)).ToArray();
+            var type = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.GetName().Name == assemblyName).SelectMany(assembly => assembly.GetTypes()).Where(t => t.FullName == typeFullName).FirstOrDefault();
+            return type == null ? null : WETextData.FilterAvailableMethodsForFormulae(type)
+                .Select(x => WEStaticMethodDesc.From(x))
+                .OrderBy(x => x.source)
+                .GroupBy(x => x.source)
+                .ToDictionary(
+                    srcGrouping => (int)srcGrouping.Key, srcGrouping => srcGrouping
+                    .OrderBy(x => x.dllName)
+                    .GroupBy(y => y.dllName)
+                    .ToDictionary(
+                        dllGrouping => dllGrouping.Key, dllGrouping => dllGrouping
+                        .OrderBy(x => x.className)
+                        .GroupBy(z => z.className)
+                        .ToDictionary(classGrouping => classGrouping.Key, classGrouping => classGrouping.OrderBy(x => x.methodName).ToArray()
+                        )
+                    )
+                );
         }
+
+        private WETypeMemberDesc[] ListAvailableMembersForType(string assemblyName, string typeFullName)
+        {
+            var type = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.GetName().Name == assemblyName).SelectMany(assembly => assembly.GetTypes()).Where(t => t.FullName == typeFullName).FirstOrDefault();
+            return type == null ? null : type.GetMembers(WETextData.MEMBER_FLAGS).Where(x =>
+            (x is PropertyInfo pi && pi.GetMethod != null) || x is FieldInfo || (x is MethodInfo mi && mi.GetParameters().Length == 0 && mi.ReturnType != typeof(void) && !mi.Name.StartsWith("get_"))
+            ).Select(x => WETypeMemberDesc.FromMemberInfo(x)).ToArray();
+        }
+
+        private Dictionary<int, Dictionary<string, Dictionary<string, WEComponentTypeDesc[]>>> ListAvailableComponents() =>
+            TypeManager.AllTypes.Where(x => x.Type != null)
+                .Select(x => WEComponentTypeDesc.From(x.Type))
+                .OrderBy(x => x.source)
+                .GroupBy(x => x.source)
+                .ToDictionary(
+                    srcGrouping => (int)srcGrouping.Key, srcGrouping => srcGrouping
+                    .OrderBy(x => x.dllName)
+                    .GroupBy(y => y.dllName)
+                    .ToDictionary(
+                        dllGrouping => dllGrouping.Key, dllGrouping => dllGrouping
+                        .OrderBy(x => x.className)
+                        .GroupBy(z => z.className.Contains(".") ? string.Join(".", z.className.Split(".")[..^1]) : "<ROOT>")
+                        .ToDictionary(classGrouping => classGrouping.Key, classGrouping => classGrouping.OrderBy(x => x.className).ToArray())
+                    )
+                );
 
         private List<object> FormulaeToPathObjects(string formulae)
         {
@@ -207,18 +310,14 @@ namespace BelzontWE
                     var methodQuery = WETextData.FilterAvailableMethodsForFormulae(currentType, kv[0], methodName);
                     if (methodQuery.Count() != 1) break;
                     var resultMethod = methodQuery.FirstOrDefault();
-                    result.Add(WEFormulaeMethodDesc.From(resultMethod));
+                    result.Add(WEStaticMethodDesc.From(resultMethod));
                     currentType = resultMethod.ReturnType;
                     if (!IterateFieldPath(result, ref currentType, fieldPath)) break;
                 }
                 else
                 {
                     if (WETextData.ParseComponentEntryType(ref currentType, part, out _, out var fieldPath) != 0) break;
-                    result.Add(new WEComponentTypeDesc
-                    {
-                        dllName = currentType.Assembly.GetName().Name,
-                        className = currentType.FullName,
-                    });
+                    result.Add(WEComponentTypeDesc.From(currentType));
                     if (!IterateFieldPath(result, ref currentType, fieldPath)) break;
                 }
             }
@@ -233,37 +332,19 @@ namespace BelzontWE
                 if (currentType.GetField(field, ReflectionUtils.allFlags) is FieldInfo targetField)
                 {
                     currentType = targetField.FieldType;
-                    result.Add(new WEComponentMemberDesc
-                    {
-                        memberTypeDllName = currentType.Assembly.GetName().Name,
-                        memberTypeClassName = currentType.FullName,
-                        memberName = targetField.Name,
-                        type = WEMemberType.Field
-                    });
+                    result.Add(WETypeMemberDesc.FromMemberInfo(targetField));
                     continue;
                 }
                 else if (currentType.GetProperty(field, ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly) is PropertyInfo targetProperty && targetProperty.GetMethod != null)
                 {
                     currentType = targetProperty.GetMethod.ReturnType;
-                    result.Add(new WEComponentMemberDesc
-                    {
-                        memberTypeDllName = currentType.Assembly.GetName().Name,
-                        memberTypeClassName = currentType.FullName,
-                        memberName = targetProperty.Name,
-                        type = WEMemberType.Property
-                    });
+                    result.Add(WETypeMemberDesc.FromMemberInfo(targetProperty));
                     continue;
                 }
                 else if (currentType.GetMethod(field, ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly, null, new Type[0], null) is MethodInfo targetMethod && targetMethod.ReturnType != typeof(void))
                 {
                     currentType = targetMethod.ReturnType;
-                    result.Add(new WEComponentMemberDesc
-                    {
-                        memberTypeDllName = currentType.Assembly.GetName().Name,
-                        memberTypeClassName = currentType.FullName,
-                        memberName = targetMethod.Name,
-                        type = WEMemberType.ParameterlessMethod,                        
-                    });
+                    result.Add(WETypeMemberDesc.FromMemberInfo(targetMethod));
                     continue;
                 }
                 else
@@ -275,6 +356,8 @@ namespace BelzontWE
 
             return true;
         }
+
+
 
         private string[] ListAvailableLibraries()
         {
