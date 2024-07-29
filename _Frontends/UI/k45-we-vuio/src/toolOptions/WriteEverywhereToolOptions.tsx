@@ -53,35 +53,35 @@ export const WriteEverywhereToolOptions: ModuleRegistryExtend = (Component: any)
         return result;
     };
 }
-//Labels and tooltips
-const L_itemTitle = translate("toolOption.itemTitle"); //"Text #"
-const L_itemName = translate("toolOption.itemName"); //"Name";
-const L_mousePrecision = translate("toolOption.mousePrecision"); //"Mouse precision";
-const L_editingPlane = translate("toolOption.editingPlane"); //"Editing plane";
-const L_position = translate("toolOption.position"); //"Position"
-const L_rotation = translate("toolOption.rotation"); //"Rotation"
-const L_actions = translate("toolOption.actions"); //"Actions"
-const L_selectItem = translate("toolOption.selectItem"); //"Select an Item"
-const T_mousePrecision_up = translate("toolOption.mousePrecision_up.tooltip"); //"Increment the strenght of the mouse moves when editing the text position/rotation";
-const T_mousePrecision_down = translate("toolOption.mousePrecision_down.tooltip"); //"Decrease the strenght of the mouse moves when editing the text position/rotation";
-const T_editingPlane_XY = translate("toolOption.editingPlane_XY.tooltip"); //"move in XY, rotate in Z (front)"
-const T_editingPlane_ZY = translate("toolOption.editingPlane_ZY.tooltip"); //"move in ZY, rotate in X (right)"
-const T_editingPlane_XZ = translate("toolOption.editingPlane_XZ.tooltip"); //"move in XZ, rotate in Y (top)"
-const T_picker = translate("toolOption.picker.tooltip"); //"Pick another object"
-const T_addText = translate("toolOption.addText.tooltip"); //"Add text"
-const T_removeText = translate("toolOption.removeText.tooltip"); //"Remove text"
-const T_lockCamera = translate("toolOption.lockCamera.tooltip"); //"Lock camera to editing plane area and angle"
-const T_lockRotationView = translate("toolOption.lockRotationView.tooltip"); //"Do not rotate camera along the text"
-const T_AppearenceBtn = translate("toolOption.AppearenceBtn.tooltip"); //"Appearance settings"
-
-const Tarr_moveMode = [
-    `${translate("toolOption.moveMode.tooltip")} ${translate("toolOption.moveMode.descriptionBoth")}`,// "Toggle between modes to lock/unlock a axis in current plane. Currently: Move in any direction",
-    `${translate("toolOption.moveMode.tooltip")} ${translate("toolOption.moveMode.descriptionHorizontal")}`,// "Toggle between modes to lock/unlock a axis in current plane. Currently: Move horizontally only",
-    `${translate("toolOption.moveMode.tooltip")} ${translate("toolOption.moveMode.descriptionVertical")}`,// "Toggle between modes to lock/unlock a axis in current plane. Currently: Move vertically only"
-]
-
-
 const WEWorldPickerToolPanel = () => {
+    //Labels and tooltips
+    const L_itemTitle = translate("toolOption.itemTitle"); //"Text #"
+    const L_itemName = translate("toolOption.itemName"); //"Name";
+    const L_mousePrecision = translate("toolOption.mousePrecision"); //"Mouse precision";
+    const L_editingPlane = translate("toolOption.editingPlane"); //"Editing plane";
+    const L_position = translate("toolOption.position"); //"Position"
+    const L_rotation = translate("toolOption.rotation"); //"Rotation"
+    const L_actions = translate("toolOption.actions"); //"Actions"
+    const L_selectItem = translate("toolOption.selectItem"); //"Select an Item"
+    const T_mousePrecision_up = translate("toolOption.mousePrecision_up.tooltip"); //"Increment the strenght of the mouse moves when editing the text position/rotation";
+    const T_mousePrecision_down = translate("toolOption.mousePrecision_down.tooltip"); //"Decrease the strenght of the mouse moves when editing the text position/rotation";
+    const T_editingPlane_XY = translate("toolOption.editingPlane_XY.tooltip"); //"move in XY, rotate in Z (front)"
+    const T_editingPlane_ZY = translate("toolOption.editingPlane_ZY.tooltip"); //"move in ZY, rotate in X (right)"
+    const T_editingPlane_XZ = translate("toolOption.editingPlane_XZ.tooltip"); //"move in XZ, rotate in Y (top)"
+    const T_picker = translate("toolOption.picker.tooltip"); //"Pick another object"
+    const T_addText = translate("toolOption.addText.tooltip"); //"Add text"
+    const T_removeText = translate("toolOption.removeText.tooltip"); //"Remove text"
+    const T_lockCamera = translate("toolOption.lockCamera.tooltip"); //"Lock camera to editing plane area and angle"
+    const T_lockRotationView = translate("toolOption.lockRotationView.tooltip"); //"Do not rotate camera along the text"
+    const T_AppearenceBtn = translate("toolOption.AppearenceBtn.tooltip"); //"Appearance settings"
+
+    const Tarr_moveMode = [
+        `${translate("toolOption.moveMode.tooltip")} ${translate("toolOption.moveMode.descriptionBoth")}`,// "Toggle between modes to lock/unlock a axis in current plane. Currently: Move in any direction",
+        `${translate("toolOption.moveMode.tooltip")} ${translate("toolOption.moveMode.descriptionHorizontal")}`,// "Toggle between modes to lock/unlock a axis in current plane. Currently: Move horizontally only",
+        `${translate("toolOption.moveMode.tooltip")} ${translate("toolOption.moveMode.descriptionVertical")}`,// "Toggle between modes to lock/unlock a axis in current plane. Currently: Move vertically only"
+    ]
+
+
 
     const [buildIdx, setBuild] = useState(0);
     useEffect(() => {

@@ -95,36 +95,27 @@ namespace BelzontWE
         private void Render_Impl()
         {
             var checkUpdates = (++counter & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal;
+            EntityCommandBuffer cmd = default;
             if (!m_renderQueueEntities.IsEmptyIgnoreFilter)
             {
                 while (availToDraw.TryDequeue(out var item))
                 {
-                    if (item.weComponent.RenderInformation is not BasicRenderInformation bri)
-                    {
-                        continue;
-                    }
-                    DynamicBuffer<WESubTextRef> buffer = default;
-                    if (checkUpdates && item.weComponent.GetEffectiveText(EntityManager) != (bri.m_isError ? item.weComponent.LastErrorStr : bri.m_refText))
-                    {
-                        EntityManager.AddComponent<WEWaitingRenderingComponent>(item.textDataEntity);
-                    }
-                    else if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
+                    if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
                         && item.weComponent.TargetEntity == m_pickerController.CurrentEntity.Value
                         && m_pickerController.CurrentSubEntity.Value == item.textDataEntity
-                        && item.weComponent.RenderInformation != null
                         && item.transformMatrix.ValidTRS())
                     {
                         m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
                     }
-                    else if (BasicIMod.TraceMode && m_pickerTool.Enabled && m_pickerController.CameraLocked.Value)
+
+                    if (item.weComponent.RenderInformation is not BasicRenderInformation bri)
                     {
-                        LogUtils.DoTraceLog($"NOT UPDATE TRANSFORM!");
-                        LogUtils.DoTraceLog($"item.weComponent.TargetEntity == m_pickerController.CurrentEntity.Value => {item.weComponent.TargetEntity} == {m_pickerController.CurrentEntity.Value}");
-                        LogUtils.DoTraceLog($"buffer = {buffer.IsCreated}");
-                        if (buffer.IsCreated)
-                        {
-                            LogUtils.DoTraceLog($"buffer[m_pickerController.CurrentItemIdx.Value].m_weTextData == item.textDataEntity => {m_pickerController.CurrentSubEntity.Value} == {item.textDataEntity}");
-                        }
+                        continue;
+                    }
+                    if (checkUpdates && item.weComponent.GetEffectiveText(EntityManager) != (bri.m_isError ? item.weComponent.LastErrorStr : bri.m_refText))
+                    {
+                        if (!cmd.IsCreated) cmd = m_endFrameBarrier.CreateCommandBuffer();
+                        cmd.AddComponent<WEWaitingRenderingComponent>(item.textDataEntity);
                     }
                     Graphics.DrawMesh(bri.m_mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
                 }

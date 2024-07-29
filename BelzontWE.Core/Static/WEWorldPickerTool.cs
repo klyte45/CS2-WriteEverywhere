@@ -377,8 +377,7 @@ namespace BelzontWE
                         m_cameraSystem.cinematicCameraController.pivot = m_Controller.CurrentItemMatrix.GetPosition() + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));
 
 
-                        m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;
-
+                        m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;                        
 
                     }
 

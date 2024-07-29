@@ -159,7 +159,7 @@ export class WorldPickerService {
         return await engine.call("k45::we.wpicker.listAvailableComponents");
     }
     static async formulaeToPathObjects(formulae: string): Promise<WEFormulaeElement[]> {
-        return await engine.call("k45::we.wpicker.formulaeToPathObjects", formulae);
+        return engine.call("k45::we.wpicker.formulaeToPathObjects", formulae);
     }
 }
 

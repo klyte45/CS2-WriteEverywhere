@@ -1,20 +1,18 @@
 import { replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
-import { ConfirmationDialog, Portal } from "cs2/ui";
-import { ReactNode, useEffect, useState } from "react";
-import { WorldPickerService, IndexedStaticMethodsListing, IndexedComponentListing } from "services/WorldPickerService";
-import { WETypeMemberDesc, WEComponentTypeDesc, WEDescType, WEStaticMethodDesc, WEMemberType, WEMethodSource, getClassNameFrom, getDllNameFrom } from "services/WEFormulaeElement";
-import { WEFormulaeElement } from "services/WEFormulaeElement";
-import { translate } from "utils/translate";
+import { useEffect, useState } from "react";
+import { getClassNameFrom, getDllNameFrom, WEDescType, WEFormulaeElement, WEMemberType } from "services/WEFormulaeElement";
+import { IndexedComponentListing, IndexedStaticMethodsListing, WorldPickerService } from "services/WorldPickerService";
 import { breakIntoFlexComponents } from "utils/breakIntoFlexComponents";
+import { translate } from "utils/translate";
 
 type Props = {
     callback: (appendResult?: WEFormulaeElement) => any,
     referenceElement: WEFormulaeElement,
 }
 
-const T_addItemDialogTitle = translate("formulaeEditor.addDialog.title")
 
 export const WEAddFormulaeStageDialog = ({ callback, referenceElement }: Props) => {
+    const T_addItemDialogTitle = translate("formulaeEditor.addDialog.title")
     const Dialog = VanillaComponentResolver.instance.Dialog;
     const EditorScrollable = VanillaWidgets.instance.EditorScrollable;
     const [ready, setReady] = useState(false)
@@ -46,21 +44,20 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement }: Props) 
 
     useEffect(() => setSelectedElement(undefined), [selectedTab])
 
-    const buttons = <div className="k45_we_formulaeDialogBtns">
-        <button className="positiveBtn" onClick={() => callback(selectedElement)} disabled={!selectedElement}>Select</button>
-        <button className="negativeBtn" onClick={() => callback()}>Back</button>
-    </div>
 
     return <Dialog
         onClose={() => callback()}
         wide={true}
         title={T_addItemDialogTitle}
-        buttons={buttons}
+        buttons={<div className="k45_we_formulaeDialogBtns">
+            {(optionsMembers || optionsStaticMethods || optionsComponentGetter) && <button className="positiveBtn" onClick={() => callback(selectedElement)} disabled={!selectedElement}>Select</button>}
+            <button className="negativeBtn" onClick={() => callback()}>Back</button>
+        </div>}
     >
         {!ready
             ? "Loading data... Please wait"
             : !optionsMembers && !optionsStaticMethods && !optionsComponentGetter
-                ? <div className="k45_we_formulaeDialog">There are no way to go from here!</div>
+                ? <div className="k45_we_formulaeDialog"><div className="k45_we_formulaeDialog_content">There are no way to go from here!</div></div>
                 : <div className="k45_we_formulaeDialog">
                     <div className="k45_we_formulaeDialog_tabRow">
                         {!!optionsMembers?.length && <button onClick={() => setSelectedTab(WEDescType.MEMBER)} className={["tabBtn", selectedTab == WEDescType.MEMBER ? "selected" : ""].join(" ").trim()}>Navigate through</button>}

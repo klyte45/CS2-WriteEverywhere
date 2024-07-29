@@ -8,26 +8,20 @@ import { translate } from "utils/translate";
 import "../style/formulaeEditor.scss"
 import { WEAddFormulaeStageDialog } from "./WEAddFormulaeStageDialog";
 
-const T_title = translate("formulaeEditor.title"); //Formulae stages
-const T_implicitConversionWarning = translate("formulaeEditor.implicitConversionWarning"); //Implicit conversion to String
-const T_finalPipelineAlwaysStringInfo = translate("formulaeEditor.finalPipelineAlwaysStringInfo"); //The final text will always have type String
-const T_descType_staticMethod = translate("formulaeEditor.descType.staticMethod"); //Static method call
-const T_descType_fieldGetter = translate("formulaeEditor.descType.fieldGetter"); //Load field
-const T_descType_propertyGetter = translate("formulaeEditor.descType.propertyGetter"); //Get property
-const T_descType_parameterlessInstanceMethodCall = translate("formulaeEditor.descType.parameterlessInstanceMethodCall"); //Call instance method
-const T_descType_componentGetter = translate("formulaeEditor.descType.componentGetter"); //Get component
-const T_addStageEnd = translate("formulaeEditor.addStageEnd"); //Get component
-const T_removeLastStage = translate("formulaeEditor.removeLastStage"); //Get component
-const T_editorFootnote = translate("formulaeEditor.editorFootnote"); //Get component
-
 export const WEFormulaeEditor = () => {
+    const T_title = translate("formulaeEditor.title"); //Formulae stages
+    const T_implicitConversionWarning = translate("formulaeEditor.implicitConversionWarning"); //Implicit conversion to String
+    const T_finalPipelineAlwaysStringInfo = translate("formulaeEditor.finalPipelineAlwaysStringInfo"); //The final text will always have type String
+    const T_addStageEnd = translate("formulaeEditor.addStageEnd"); //Get component
+    const T_removeLastStage = translate("formulaeEditor.removeLastStage"); //Get component
+    const T_editorFootnote = translate("formulaeEditor.editorFootnote"); //Get component
+
 
     const wps = WorldPickerService.instance;
     const [formulaeSteps, setFormulaeSteps] = useState([] as WEFormulaeElement[])
 
     useEffect(() => {
         WorldPickerService.formulaeToPathObjects(wps.FormulaeStr.value).then(x => setFormulaeSteps(x))
-        return;
     }, [wps.FormulaeStr.value])
 
     const pathObjectsToFormulae = (arr: WEFormulaeElement[]) => {
@@ -113,6 +107,7 @@ export const WEFormulaeEditor = () => {
 };
 
 const WEMethodCallBlock = (data: WEStaticMethodDesc & { i: number }) => {
+    const T_descType_staticMethod = translate("formulaeEditor.descType.staticMethod"); //Static method call
     return <>
         <div className="k45_we_formulaeEditor_methodCall">
             <div className="k45_we_formulaeEditor_dotTitle">{T_descType_staticMethod}</div>
@@ -126,6 +121,7 @@ const WEMethodCallBlock = (data: WEStaticMethodDesc & { i: number }) => {
 }
 
 const WEComponentGetterBlock = (data: WEComponentTypeDesc & { i: number }) => {
+    const T_descType_componentGetter = translate("formulaeEditor.descType.componentGetter"); //Get component
     return <>
         <div className="k45_we_formulaeEditor_componentGet">
             <div className="k45_we_formulaeEditor_dotTitle">{T_descType_componentGetter}</div>
@@ -137,6 +133,10 @@ const WEComponentGetterBlock = (data: WEComponentTypeDesc & { i: number }) => {
 const WEComponentMemberBlock = (data: WETypeMemberDesc & { i: number }) => {
     let title: string;
     let className: string;
+    
+    const T_descType_fieldGetter = translate("formulaeEditor.descType.fieldGetter"); //Load field
+    const T_descType_propertyGetter = translate("formulaeEditor.descType.propertyGetter"); //Get property
+    const T_descType_parameterlessInstanceMethodCall = translate("formulaeEditor.descType.parameterlessInstanceMethodCall"); //Call instance method
     switch (data.type.value__) {
         case WEMemberType.Field: title = T_descType_fieldGetter; className = "k45_we_formulaeEditor_componentField"; break;
         case WEMemberType.ParameterlessMethod: title = T_descType_parameterlessInstanceMethodCall; className = "k45_we_formulaeEditor_componentMethod"; break;

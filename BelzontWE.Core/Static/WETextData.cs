@@ -390,15 +390,16 @@ namespace BelzontWE
                         var method = pathNav[0];
                         var navFields = pathNav.Length > 1 ? pathNav[1..] : new string[0];
                         var candidateMethods = FilterAvailableMethodsForFormulae(currentComponentType, className, method);
-                        if (candidateMethods.Count() == 0)
+                        var resultQuery = candidateMethods.ToList();
+                        if (resultQuery.Count == 0)
                         {
                             return 8; // Class or method not found.
                         }
-                        if (candidateMethods.Count() > 1)
+                        if (resultQuery.Count() > 1)
                         {
                             return 9; // Class or method matches more than one result. Please be more specific.
                         }
-                        var methodInfo = candidateMethods.First();
+                        var methodInfo = resultQuery[0];
                         if (i == 0)
                         {
                             iLGenerator.Emit(OpCodes.Ldarg_1);
@@ -470,17 +471,24 @@ namespace BelzontWE
 
         public static string[] GetPathParts(string newFormulae) => newFormulae.Split("/");
 
-        public static IEnumerable<MethodInfo> FilterAvailableMethodsForFormulae(Type currentComponentType, string className = null, string method = null) => AppDomain.CurrentDomain.GetAssemblies()
+        private static List<MethodInfo> CACHED_AVAILABLE_STATIC_METHODS;
+
+        public static IEnumerable<MethodInfo> FilterAvailableMethodsForFormulae(Type currentComponentType, string className = null, string method = null)
+        {
+            CACHED_AVAILABLE_STATIC_METHODS ??= AppDomain.CurrentDomain.GetAssemblies()
                                                  .SelectMany(assembly => assembly.GetTypes())
-                                                 .Where(t => className is null || t.FullName == className || t.FullName.EndsWith($".{className}"))
                                                  .SelectMany(x => x.GetMethods(BindingFlags.Static | BindingFlags.Public))
-                                                 .Where(m => (method is null || m.Name == method)
-                                                    && m.GetParameters() is ParameterInfo[] p
+                                                 .Where(m => m.GetParameters() is ParameterInfo[] p
                                                     && p.Length == 1
-                                                    && p[0].ParameterType == currentComponentType
                                                     && !p[0].ParameterType.IsByRefLike
                                                     && m.ReturnType != typeof(void)
+                                                 ).ToList();
+
+            return CACHED_AVAILABLE_STATIC_METHODS.Where(m => (className is null || m.DeclaringType.FullName == className || m.DeclaringType.FullName.EndsWith($".{className}"))
+                                                    && (method is null || m.Name == method)
+                                                    && m.GetParameters()[0].ParameterType == currentComponentType
                                                   );
+        }
 
         private static byte ProcessEntityPath(ref Type currentComponentType, ILGenerator iLGenerator, string path, int blockId, ref LocalBuilder localVarEntity, ref string[] errorFmtArgs, ref bool skipValueTypeVar)
         {

@@ -13,16 +13,16 @@ function getIconForTextType(type: WESimulationTextType) {
             return "coui://uil/Standard/PencilPaper.svg";
     }
 }
-const i_cut = "coui://uil/Standard/DottedLinesMarkers.svg";
-const i_copy = "coui://uil/Standard/RectangleCopy.svg";
-const i_paste = "coui://uil/Standard/RectanglePaste.svg";
-const i_pasteAtRoot = "coui://uil/Standard/ArrowUpTriangleNotch.svg";
-const i_delete = "coui://uil/Standard/Trash.svg";
-const i_addRoot = "coui://uil/Standard/ArrowLeftTriangleNotch.svg";
-const i_addChild = "coui://uil/Standard/Plus.svg";
 
 
 export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: Entity | undefined | null, setClipboard: (c: Entity | undefined | null) => any }) => {
+    const i_cut = "coui://uil/Standard/DottedLinesMarkers.svg";
+    const i_copy = "coui://uil/Standard/RectangleCopy.svg";
+    const i_paste = "coui://uil/Standard/RectanglePaste.svg";
+    const i_pasteAtRoot = "coui://uil/Standard/ArrowUpTriangleNotch.svg";
+    const i_delete = "coui://uil/Standard/Trash.svg";
+    const i_addRoot = "coui://uil/Standard/ArrowLeftTriangleNotch.svg";
+    const i_addChild = "coui://uil/Standard/Plus.svg";
     const wps = WorldPickerService.instance;
     const T_title = translate("textHierarchyWindow.title"); //"Appearance Settings"
     const T_cut = translate("textHierarchyWindow.cut"); //"Appearance Settings"

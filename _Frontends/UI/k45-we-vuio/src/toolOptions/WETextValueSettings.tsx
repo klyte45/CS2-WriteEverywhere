@@ -9,20 +9,20 @@ import { WEFormulaeEditor } from "./WEFormulaeEditor";
 
 const i_addFont = "coui://uil/Colored/Folder.svg";
 
-const T_title = translate("textValueSettings.title"); //"Appearance Settings"
-const T_uploadNewFont = translate("textValueSettings.importNewFont"); //
-const T_fontFieldTitle = translate("textValueSettings.fontFieldTitle"); //
-const T_useFormulae = translate("textValueSettings.useFormulae"); //
-const T_formulae = translate("textValueSettings.formulae"); //
-const T_fixedText = translate("textValueSettings.fixedText"); //
-const T_contentType = translate("textValueSettings.contentType"); //
-const T_atlas = translate("textValueSettings.atlas"); //
-const T_image = translate("textValueSettings.image"); //
-const T_Height = translate("textValueSettings.height"); //
-const T_HeightCm = translate("textValueSettings.heightCm"); //
-const T_widthDistortion = translate("textValueSettings.widthDistortion"); //
-
 export const WETextValueSettings = (props: { initialPosition?: { x: number, y: number } }) => {
+    const T_title = translate("textValueSettings.title"); //"Appearance Settings"
+    const T_uploadNewFont = translate("textValueSettings.importNewFont"); //
+    const T_fontFieldTitle = translate("textValueSettings.fontFieldTitle"); //
+    const T_useFormulae = translate("textValueSettings.useFormulae"); //
+    const T_formulae = translate("textValueSettings.formulae"); //
+    const T_fixedText = translate("textValueSettings.fixedText"); //
+    const T_contentType = translate("textValueSettings.contentType"); //
+    const T_atlas = translate("textValueSettings.atlas"); //
+    const T_image = translate("textValueSettings.image"); //
+    const T_Height = translate("textValueSettings.height"); //
+    const T_HeightCm = translate("textValueSettings.heightCm"); //
+    const T_widthDistortion = translate("textValueSettings.widthDistortion"); //
+
     const wps = WorldPickerService.instance;
     const [buildIdx, setBuild] = useState(0);
 

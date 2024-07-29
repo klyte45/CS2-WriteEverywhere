@@ -7,6 +7,7 @@ using Game.Common;
 using Game.SceneFlow;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -165,7 +166,6 @@ namespace BelzontWE
             };
         }
 
-
     }
 
     public partial class WEWorldPickerController : ComponentSystemBase, IBelzontBindable
@@ -249,7 +249,7 @@ namespace BelzontWE
 
         private Dictionary<int, Dictionary<string, Dictionary<string, WEStaticMethodDesc[]>>> ListAvailableMethodsForType(string assemblyName, string typeFullName)
         {
-            var type = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.GetName().Name == assemblyName).SelectMany(assembly => assembly.GetTypes()).Where(t => t.FullName == typeFullName).FirstOrDefault();
+            var type = Type.GetType($"{typeFullName}, {assemblyName}");
             return type == null ? null : WETextData.FilterAvailableMethodsForFormulae(type)
                 .Select(x => WEStaticMethodDesc.From(x))
                 .OrderBy(x => x.source)
@@ -306,10 +306,10 @@ namespace BelzontWE
                     if (kv.Length != 2) break;
                     var parts = kv[1].Split(".");
                     var methodName = parts[0];
-                    var fieldPath = parts.Length > 1 ? parts[1..] : new string[0];
-                    var methodQuery = WETextData.FilterAvailableMethodsForFormulae(currentType, kv[0], methodName);
-                    if (methodQuery.Count() != 1) break;
-                    var resultMethod = methodQuery.FirstOrDefault();
+                    var fieldPath = parts.Length > 1 ? parts[1..] : Array.Empty<string>();
+                    var methodQuery = WETextData.FilterAvailableMethodsForFormulae(currentType, kv[0], methodName).ToList();
+                    if (methodQuery.Count != 1) break;
+                    var resultMethod = methodQuery[0];
                     result.Add(WEStaticMethodDesc.From(resultMethod));
                     currentType = resultMethod.ReturnType;
                     if (!IterateFieldPath(result, ref currentType, fieldPath)) break;
