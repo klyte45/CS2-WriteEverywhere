@@ -67,7 +67,7 @@ namespace BelzontWE
             string[] result = new string[buffer.Length];
             for (int i = 0; i < result.Length; i++)
             {
-                result[i] = $"{EntityManager.GetComponentData<WETextData>(buffer[i].m_weTextData).itemName.ToString().TrimToNull() ?? "N/A"}";
+                result[i] = $"{EntityManager.GetComponentData<WETextData>(buffer[i].m_weTextData).ItemName.ToString().TrimToNull() ?? "N/A"}";
             }
             return result;
         }
@@ -219,7 +219,7 @@ namespace BelzontWE
             CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
             CurrentRotation.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.offsetRotation = KMathUtils.UnityEulerToQuaternion(x); return currentItem; });
             CurrentPosition.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.offsetPosition = x; return currentItem; });
-            CurrentItemName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.itemName = x.Truncate(24); m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
+            CurrentItemName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.ItemName = x.Truncate(24); m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
             CurrentItemText.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Text = x.Truncate(500); return currentItem; });
             CurrentSubEntity.OnScreenValueChanged += (x) => OnCurrentItemChanged();
             MaxWidth.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.maxWidthMeters = x; return currentItem; });
@@ -247,7 +247,7 @@ namespace BelzontWE
             CurrentRotation.Value = KMathUtils.UnityQuaternionToEuler(currentItem.offsetRotation);
             CurrentScale.Value = currentItem.scale;
             CurrentItemText.Value = currentItem.Text.ToString();
-            CurrentItemName.Value = currentItem.itemName.ToString();
+            CurrentItemName.Value = currentItem.ItemName.ToString();
             MaxWidth.Value = currentItem.maxWidthMeters;
 
             MainColor.Value = currentItem.Color;
@@ -280,7 +280,7 @@ namespace BelzontWE
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"CurrentSubEntity => {subEntity}");
                     var currentItem = EntityManager.GetComponentData<WETextData>(subEntity);
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"x = {x}; CurrentSubEntity = {currentItem.itemName}");
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"x = {x}; CurrentSubEntity = {currentItem.ItemName}");
                     currentItem = x(newVal, currentItem);
                     EntityManager.SetComponentData(subEntity, currentItem);
                 });
@@ -357,7 +357,7 @@ namespace BelzontWE
                 if (!EntityManager.TryGetComponent<WETextData>(refSubs[i].m_weTextData, out var data)) continue;
                 result[i] = new()
                 {
-                    name = data.itemName.ToString(),
+                    name = data.ItemName.ToString(),
                     id = refSubs[i].m_weTextData,
                     type = (int)data.TextType,
                     children = GetTextTreeForEntity(refSubs[i].m_weTextData)

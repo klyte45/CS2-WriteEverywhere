@@ -45,6 +45,8 @@ namespace BelzontWE
         }
 
         private UnsafeParallelHashMap<FixedString32Bytes, Entity> RegisteredTemplates;
+        private NativeList<Entity> m_obsoleteTemplateList;
+        private EntityQuery m_templateBasedEntities;
 
         public Entity this[FixedString32Bytes idx]
         {
@@ -56,7 +58,11 @@ namespace BelzontWE
             }
             set
             {
-                if (RegisteredTemplates.ContainsKey(idx)) { RegisteredTemplates.Remove(idx); }
+                if (RegisteredTemplates.TryGetValue(idx, out var obsoleteTemplate))
+                {
+                    m_obsoleteTemplateList.Add(obsoleteTemplate);
+                    RegisteredTemplates.Remove(idx);
+                }
                 LogUtils.DoLog($"Saved {value} @ {idx}");
                 RegisteredTemplates.Add(idx, value);
             }
@@ -65,6 +71,21 @@ namespace BelzontWE
         protected override void OnCreate()
         {
             RegisteredTemplates = new UnsafeParallelHashMap<FixedString32Bytes, Entity>(0, Allocator.Persistent);
+            m_obsoleteTemplateList = new NativeList<Entity>(Allocator.Persistent);
+            m_templateBasedEntities = GetEntityQuery(new EntityQueryDesc[]
+              {
+                    new ()
+                    {
+                        All = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<WETemplateUpdater>(),
+                        },
+                        None = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<WEWaitingRendering>(),
+                        }
+                    }
+              });
         }
 
         protected override void OnDestroy()
@@ -74,6 +95,22 @@ namespace BelzontWE
 
         protected override void OnUpdate()
         {
+            if (m_obsoleteTemplateList.IsEmpty) return;
+            if (!m_templateBasedEntities.IsEmpty)
+            {
+                var entities = m_templateBasedEntities.ToEntityArray(Allocator.Temp);
+                var updaters = m_templateBasedEntities.ToComponentDataArray<WETemplateUpdater>(Allocator.Temp);
+                for (int i = 0; i < updaters.Length; i++)
+                {
+                    if (m_obsoleteTemplateList.Contains(updaters[i].templateEntity))
+                    {
+                        EntityManager.AddComponent<WEWaitingRendering>(entities[i]);
+                    }
+                }
+                m_obsoleteTemplateList.Clear();
+                entities.Dispose();
+                updaters.Dispose();
+            }
         }
 
         public JobHandle SetDefaults(Context context)

@@ -91,7 +91,7 @@ namespace BelzontWE
         {
             if (!SetupTemplateComponent(e, ref weCustomData))
             {
-                var targetTemplate = m_templateManager[weCustomData.itemName.ToString()];
+                var targetTemplate = m_templateManager[weCustomData.ItemName.ToString()];
                 if (EntityManager.TryGetComponent<WETemplateUpdater>(e, out var templateUpdated) && templateUpdated.childEntity != Entity.Null)
                 {
                     LogUtils.DoLog($"Destroy Entity! {templateUpdated.childEntity} - Target outdated child");
@@ -103,7 +103,7 @@ namespace BelzontWE
                     templateEntity = targetTemplate,
                     childEntity = targetTemplate == Entity.Null ? Entity.Null : WELayoutUtility.DoCloneTextItem(targetTemplate, e, EntityManager, Entity.Null)
                 };
-                LogUtils.DoLog($"Cloned info! {weCustomData.itemName} => {targetTemplate}");
+                LogUtils.DoLog($"Cloned info! {weCustomData.ItemName} => {targetTemplate}");
 
                 if (EntityManager.HasComponent<WETemplateUpdater>(e))
                 {

@@ -24,6 +24,7 @@ namespace BelzontWE
         private GCHandle basicRenderInformation;
         private GCHandle materialBlockPtr;
         private bool dirty;
+        private bool templateDirty;
         private Color32 color;
         private Color32 emissiveColor;
         private float metallic;
@@ -44,7 +45,7 @@ namespace BelzontWE
         public float3 offsetPosition;
         public quaternion offsetRotation;
         public float3 scale;
-        public FixedString32Bytes itemName;
+        private FixedString32Bytes itemName;
         public WEShader shader;
         public float maxWidthMeters;
 
@@ -240,6 +241,18 @@ namespace BelzontWE
             }
         }
 
+        public FixedString32Bytes ItemName
+        {
+            readonly get => itemName; set
+            {
+                if (itemName != value && TextType == WESimulationTextType.Placeholder)
+                {
+                    templateDirty = true;
+                }
+                itemName = value;
+            }
+        }
+
         public static WETextData CreateDefault(Entity target, Entity? parent = null)
         {
             return new WETextData
@@ -257,7 +270,7 @@ namespace BelzontWE
                 emissiveIntensity = 0,
                 coatStrength = 0.5f,
                 text = GCHandle.Alloc("NEW TEXT"),
-                itemName = "New item",
+                ItemName = "New item",
                 shader = WEShader.Default
             };
         }
@@ -275,6 +288,8 @@ namespace BelzontWE
         }
 
         public readonly bool IsDirty() => dirty;
+        public readonly bool IsTemplateDirty() => templateDirty;
+        public void ClearTemplateDirty() => templateDirty = false;
         public WETextData UpdateBRI(BasicRenderInformation bri, string text)
         {
             dirty = true;
@@ -298,6 +313,56 @@ namespace BelzontWE
             atlas.Free();
             text.Free();
         }
+
+
+        public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
+        {
+            var result = WEFormulaeHelper.SetFormulae(newFormulae, out errorFmtArgs, out var formulaeStr, out var resultFormulaeFn);
+            if (result == 0)
+            {
+                Formulae = formulaeStr;
+                FormulaeFn = resultFormulaeFn;
+            }
+            return result;
+        }
+
+        public string GetEffectiveText(EntityManager em)
+        {
+            if (!loadingFnDone)
+            {
+                if (formulaeHandlerStr.Length > 0)
+                {
+                    SetFormulae(formulaeHandlerStr.ToString(), out _);
+                }
+
+                loadingFnDone = true;
+            }
+            return formulaeHandlerFn.IsAllocated && FormulaeFn is Func<EntityManager, Entity, string> fn
+                ? fn(em, GetTargetEntityEffective(TargetEntity, em))?.ToString().Truncate(500) ?? "<InvlidFn>"
+                : formulaeHandlerStr.Length > 0 ? "<InvalidFn>" : Text;
+        }
+
+        private static Entity GetTargetEntityEffective(Entity target, EntityManager em)
+        {
+            if (em.TryGetComponent<WETextData>(target, out var weData))
+            {
+
+                if (weData.TargetEntity == target && weData.ParentEntity != target) return GetTargetEntityEffective(weData.ParentEntity, em);
+                return weData.TargetEntity;
+            }
+            return target;
+        }
+
+        public void OnPostInstantiate()
+        {
+            formulaeHandlerFn = formulaeHandlerFn.IsAllocated ? GCHandle.Alloc(formulaeHandlerFn.Target) : default;
+            text = text.IsAllocated ? GCHandle.Alloc(text.Target) : default;
+            atlas = atlas.IsAllocated ? GCHandle.Alloc(atlas.Target) : default;
+            basicRenderInformation = default;
+            materialBlockPtr = default;
+        }
+
+        #region Serialize
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
             writer.Write(CURRENT_VERSION);
@@ -313,7 +378,7 @@ namespace BelzontWE
             writer.Write(smoothness);
             writer.Write(text.IsAllocated ? new FixedString512Bytes(text.Target as string ?? "") : "");
             writer.Write(font);
-            writer.Write(itemName);
+            writer.Write(ItemName);
             writer.Write(coatStrength);
             writer.Write(Formulae ?? "");
             writer.Write((ushort)TextType);
@@ -372,53 +437,6 @@ namespace BelzontWE
             }
         }
 
-        public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
-        {
-            var result = WEFormulaeHelper.SetFormulae(newFormulae, out errorFmtArgs, out var formulaeStr, out var resultFormulaeFn);
-            if (result == 0)
-            {
-                Formulae = formulaeStr;
-                FormulaeFn = resultFormulaeFn;
-            }
-            return result;
-        }
-
-        public string GetEffectiveText(EntityManager em)
-        {
-            if (!loadingFnDone)
-            {
-                if (formulaeHandlerStr.Length > 0)
-                {
-                    SetFormulae(formulaeHandlerStr.ToString(), out _);
-                }
-
-                loadingFnDone = true;
-            }
-            return formulaeHandlerFn.IsAllocated && FormulaeFn is Func<EntityManager, Entity, string> fn
-                ? fn(em, GetTargetEntityEffective(TargetEntity, em))?.ToString().Truncate(500) ?? "<InvlidFn>"
-                : formulaeHandlerStr.Length > 0 ? "<InvalidFn>" : Text;
-        }
-
-        private static Entity GetTargetEntityEffective(Entity target, EntityManager em)
-        {
-            if (em.TryGetComponent<WETextData>(target, out var weData))
-            {
-
-                if (weData.TargetEntity == target && weData.ParentEntity != target) return GetTargetEntityEffective(weData.ParentEntity, em);
-                return weData.TargetEntity;
-            }
-            return target;
-        }
-
-        public void OnPostInstantiate()
-        {
-            formulaeHandlerFn = formulaeHandlerFn.IsAllocated ? GCHandle.Alloc(formulaeHandlerFn.Target) : default;
-            text = text.IsAllocated ? GCHandle.Alloc(text.Target) : default;
-            atlas = atlas.IsAllocated ? GCHandle.Alloc(atlas.Target) : default;
-            basicRenderInformation = default;
-            materialBlockPtr = default;
-        }
-
         public WETextDataXml ToDataXml(EntityManager em)
         {
             return new WETextDataXml
@@ -426,7 +444,7 @@ namespace BelzontWE
                 offsetPosition = (Vector3Xml)offsetPosition,
                 offsetRotation = (Vector3Xml)((Quaternion)offsetRotation).eulerAngles,
                 scale = (Vector3Xml)scale,
-                itemName = itemName.ToString(),
+                itemName = ItemName.ToString(),
                 shader = shader,
                 atlas = Atlas,
                 formulae = Formulae,
@@ -466,7 +484,7 @@ namespace BelzontWE
                 offsetPosition = (float3)xml.offsetPosition,
                 offsetRotation = quaternion.Euler(xml.offsetRotation),
                 scale = (float3)xml.scale,
-                itemName = xml.itemName,
+                ItemName = xml.itemName,
                 shader = xml.shader,
                 Atlas = xml.atlas,
                 Formulae = xml.formulae,
@@ -483,5 +501,6 @@ namespace BelzontWE
                 maxWidthMeters = xml.maxWidthMeters
             };
         }
+        #endregion
     }
 }

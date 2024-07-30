@@ -12,6 +12,7 @@ using WriteEverywhere.Sprites;
 
 
 
+
 #if BURST
 using UnityEngine.Scripting;
 using Unity.Burst;
@@ -100,9 +101,10 @@ namespace BelzontWE
         private void Render_Impl()
         {
             ++counter;
-            EntityCommandBuffer cmd = default;
+            EntityCommandBuffer cmd;
             if (!m_renderQueueEntities.IsEmptyIgnoreFilter)
             {
+                cmd = m_endFrameBarrier.CreateCommandBuffer();
                 while (availToDraw.TryDequeue(out var item))
                 {
                     if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
@@ -112,6 +114,13 @@ namespace BelzontWE
                     {
                         m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
                     }
+                    if (item.weComponent.IsTemplateDirty())
+                    {
+                        item.weComponent.ClearTemplateDirty();
+                        cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                        cmd.SetComponent(item.textDataEntity, item.weComponent);
+                        continue;
+                    }
 
                     if (!item.weComponent.HasBRI)
                     {
@@ -119,13 +128,14 @@ namespace BelzontWE
                     }
                     var bri = item.weComponent.HasBRI ? item.weComponent.RenderInformation : WEAtlasesLibrary.GetWhiteTextureBRI();
                     if ((((counter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
-                        && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity)
-                        && item.weComponent.GetEffectiveText(EntityManager) != (bri.m_isError ? item.weComponent.LastErrorStr : bri.m_refText))
+                            && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity)
+                            && item.weComponent.GetEffectiveText(EntityManager) != (bri.m_isError ? item.weComponent.LastErrorStr : bri.m_refText))
                     {
-                        if (!cmd.IsCreated) cmd = m_endFrameBarrier.CreateCommandBuffer();
                         cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
                     }
+                    var wasDirty = item.weComponent.IsDirty();
                     Graphics.DrawMesh(bri.m_mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
+                    if (wasDirty) cmd.SetComponent(item.textDataEntity, item.weComponent);
                 }
             }
         }
@@ -260,10 +270,18 @@ namespace BelzontWE
                 WETextData refWeData = weCustomData;
 
 
-                if (m_weTemplateUpdaterLookup.HasComponent(parentRef))
+                if (m_weTemplateUpdaterLookup.TryGetComponent(parentRef, out var updater))
                 {
                     if (!m_weDataLookup.TryGetComponent(parentRef, out var templateUpdaterWEdata))
                     {
+                        cullInfo = default;
+                        matrix = default;
+                        return false;
+                    }
+                    if (updater.childEntity != weCustomData.TargetEntity)
+                    {
+                        LogUtils.DoLog($"Destroy Entity! {entity} childEntity {updater.childEntity} != weCustomData.TargetEntity {weCustomData.TargetEntity} (I)");
+                        m_CommandBuffer.DestroyEntity(entity);
                         cullInfo = default;
                         matrix = default;
                         return false;
@@ -272,10 +290,18 @@ namespace BelzontWE
                     targetRef = templateUpdaterWEdata.TargetEntity;
                     refWeData = templateUpdaterWEdata;
                 }
-                else if (m_weTemplateUpdaterLookup.HasComponent(targetRef))
+                else if (m_weTemplateUpdaterLookup.TryGetComponent(targetRef, out updater))
                 {
                     if (!m_weDataLookup.TryGetComponent(targetRef, out var templateUpdaterWEdata))
                     {
+                        cullInfo = default;
+                        matrix = default;
+                        return false;
+                    }
+                    if (updater.childEntity != weCustomData.TargetEntity)
+                    {
+                        LogUtils.DoLog($"Destroy Entity! {entity} childEntity {updater.childEntity} != weCustomData.TargetEntity {weCustomData.TargetEntity} (II)");
+                        m_CommandBuffer.DestroyEntity(entity);
                         cullInfo = default;
                         matrix = default;
                         return false;
