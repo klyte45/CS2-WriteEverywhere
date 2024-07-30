@@ -109,10 +109,11 @@ namespace BelzontWE
                         m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
                     }
 
-                    if (item.weComponent.RenderInformation is not BasicRenderInformation bri)
+                    if (!item.weComponent.HasBRI)
                     {
                         continue;
                     }
+                    var bri = item.weComponent.RenderInformation;
                     if ((((counter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
                         && !EntityManager.HasComponent<WEWaitingRenderingComponent>(item.textDataEntity)
                         && item.weComponent.GetEffectiveText(EntityManager) != (bri.m_isError ? item.weComponent.LastErrorStr : bri.m_refText))

@@ -27,20 +27,9 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const wps = WorldPickerService.instance;
     const [buildIdx, setBuild] = useState(0);
 
-    useEffect(() => {
-        WorldPickerService.instance.registerBindings(() => setBuild(buildIdx + 1))
-    }, [buildIdx])
-
-    useEffect(() => {
-        WorldPickerService.listAtlasImages(wps.ImageAtlasName.value).then(x => setImgOptions(x ?? []));
-    }, [wps.ImageAtlasName.value, wps.CurrentSubEntity.value])
-
-    useEffect(() => {
-        WorldPickerService.listAvailableLibraries().then(x => setAtlases(x ?? []));
-    }, [wps.CurrentSubEntity.value])
-
-    const Locale = VanillaFnResolver.instance.localization.useCachedLocalization();
-    const decimalsFormat = (value: number) => VanillaFnResolver.instance.localizedNumber.formatFloat(Locale, value, false, 3, true, false, Infinity);
+    useEffect(() => { WorldPickerService.instance.registerBindings(() => setBuild(buildIdx + 1)) }, [buildIdx])
+    useEffect(() => { WorldPickerService.listAtlasImages(wps.ImageAtlasName.value).then(x => setImgOptions(x ?? [])); }, [wps.ImageAtlasName.value, wps.CurrentSubEntity.value])
+    useEffect(() => { WorldPickerService.listAvailableLibraries().then(x => setAtlases(x ?? [])); }, [wps.CurrentSubEntity.value])
 
     const EditorItemRow = VanillaWidgets.instance.EditorItemRow;
     const DropdownField = VanillaWidgets.instance.DropdownField<string>();
@@ -72,14 +61,9 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     }, [wps.CurrentScale.value, wps.CurrentSubEntity.value])
 
 
-    useEffect(() => setMaxWidth(wps.MaxWidth.value * 100), [wps.MaxWidth.value])
-    useEffect(() => {
-        setFormulaeTyping(wps.FormulaeStr.value);
-    }, [wps.FormulaeStr.value, wps.CurrentSubEntity.value])
-
-    useEffect(() => {
-        setUsingFormulae(!!wps.FormulaeStr.value);
-    }, [wps.CurrentSubEntity.value])
+    useEffect(() => { setMaxWidth(wps.MaxWidth.value * 100) }, [wps.MaxWidth.value])
+    useEffect(() => { setFormulaeTyping(wps.FormulaeStr.value); }, [wps.FormulaeStr.value, wps.CurrentSubEntity.value])
+    useEffect(() => { setUsingFormulae(!!wps.FormulaeStr.value); }, [wps.CurrentSubEntity.value])
 
     useEffect(() => { setFixedTextTyping(wps.CurrentItemText.value); }, [wps.CurrentItemText.value, wps.CurrentSubEntity.value])
 

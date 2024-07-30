@@ -1,5 +1,4 @@
-﻿using BelzontWE.Font;
-using Colossal.Entities;
+﻿using Colossal.Entities;
 using Game.Common;
 using Game.Input;
 using Game.Net;
@@ -8,7 +7,6 @@ using Game.Prefabs;
 using Game.Rendering;
 using Game.Tools;
 using System;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -192,9 +190,7 @@ namespace BelzontWE
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
-        {          
-
-
+        {
             bool cameraDisabledThisFrame = false;
             if (m_Controller.CurrentEntity.Value == default)
             {
@@ -347,7 +343,7 @@ namespace BelzontWE
                         m_cameraSystem.cinematicCameraController.pivot = m_Controller.CurrentItemMatrix.GetPosition() + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));
 
 
-                        m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;                        
+                        m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;
 
                     }
 

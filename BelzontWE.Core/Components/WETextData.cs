@@ -436,10 +436,22 @@ namespace BelzontWE
             };
         }
 
-        public static WETextData FromDataXml(WETextDataXml xml, EntityManager em)
+        public static WETextData FromDataXml(WETextDataXml xml, Entity parent, EntityManager em)
         {
+            Entity target;
+            if(em.TryGetComponent(parent, out WETextData parentData))
+            {
+                target = parentData.targetEntity;
+            }
+            else
+            {
+                target = parent;
+            }
+
             return new WETextData
             {
+                targetEntity = target,
+                parentEntity = parent,
                 offsetPosition = (float3)xml.offsetPosition,
                 offsetRotation = quaternion.Euler(xml.offsetRotation),
                 scale = (float3)xml.scale,

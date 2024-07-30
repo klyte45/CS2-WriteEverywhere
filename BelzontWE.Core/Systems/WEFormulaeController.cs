@@ -1,5 +1,6 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
+using Game;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,8 +13,6 @@ namespace BelzontWE
     public partial class WEFormulaeController : SystemBase, IBelzontBindable
     {
         private const string PREFIX = "formulae.";
-        private const string PREFAB_EXTENSION = "welayout.xml";
-        private readonly string SAVED_PREFABS_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "prefabs");
 
         public void SetupCallBinder(Action<string, Delegate> callBinder)
         {
@@ -21,27 +20,13 @@ namespace BelzontWE
             callBinder($"{PREFIX}formulaeToPathObjects", FormulaeToPathObjects);
             callBinder($"{PREFIX}listAvailableMembersForType", ListAvailableMembersForType);
             callBinder($"{PREFIX}listAvailableComponents", ListAvailableComponents);
-            callBinder($"{PREFIX}exportComponentAsJson", ExportComponentAsJson);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
 
         public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
 
-        private string ExportComponentAsJson(Entity e, string name)
-        {
-            KFileUtils.EnsureFolderCreation(SAVED_PREFABS_FOLDER);
-            var targetFilename = Path.Combine(SAVED_PREFABS_FOLDER, $"{name}.{PREFAB_EXTENSION}");
-            if (File.Exists(targetFilename))
-            {
-                for (int i = 1; File.Exists(targetFilename); i++)
-                {
-                    targetFilename = Path.Combine(SAVED_PREFABS_FOLDER, $"{name}_{i}.{PREFAB_EXTENSION}");
-                }
-            }
-            File.WriteAllText(targetFilename, WETextDataTree.FromEntity(e, EntityManager).ToXML());
-            return targetFilename;
-        }
+
 
         private Dictionary<int, Dictionary<string, Dictionary<string, WEStaticMethodDesc[]>>> ListAvailableMethodsForType(string assemblyName, string typeFullName)
         {
@@ -153,6 +138,8 @@ namespace BelzontWE
             return true;
         }
 
-        protected override void OnUpdate() { }
+        protected override void OnUpdate()
+        {
+        }
     }
 }

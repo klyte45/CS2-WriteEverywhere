@@ -19,7 +19,7 @@ namespace BelzontWE
             updateSystem.UpdateAt<WERendererSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WEWorldPickerController>(SystemUpdatePhase.ModificationEnd);
             updateSystem.UpdateAt<WEUISystem>(SystemUpdatePhase.UIUpdate);
-            updateSystem.UpdateAt<WEFormulaeController>(SystemUpdatePhase.UIUpdate);
+            updateSystem.UpdateAt<WELayoutController>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<WEAtlasesLibrary>(SystemUpdatePhase.Rendering);
 #if !ENABLE_EUIS
             SelfRegiterUIEvents("we");

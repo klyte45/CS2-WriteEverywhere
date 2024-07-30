@@ -30,5 +30,13 @@ namespace BelzontWE
         }
 
         public string ToXML(bool pretty = true) => XmlUtils.DefaultXmlSerialize(this, pretty);
+        public static WETextDataTree FromXML(string text)
+        {
+            try
+            {
+                return XmlUtils.DefaultXmlDeserialize<WETextDataTree>(text);
+            }
+            catch { return null; }
+        }
     }
 }

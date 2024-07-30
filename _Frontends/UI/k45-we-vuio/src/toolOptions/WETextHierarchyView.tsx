@@ -1,10 +1,10 @@
 import { Entity, HierarchyViewport, LocElementType, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
-import { Portal, Panel } from "cs2/ui";
+import { Panel, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
-import { WorldPickerService } from "services/WorldPickerService";
+import { LayoutsService } from "services/LayoutsService";
 import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeElement";
+import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
-import { FormulaeService } from "services/FormulaeService";
 
 function getIconForTextType(type: WESimulationTextType) {
     switch (type) {
@@ -95,7 +95,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 <Button onSelect={() => WorldPickerService.addEmpty()} src={i_addRoot} tooltip={T_addEmptyRoot} focusKey={FocusDisabled} className={buttonClass} />
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.addEmpty(wps.CurrentSubEntity.value!)} src={i_addChild} tooltip={T_addEmptyChild} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ flexGrow: 1 }}></div>
-                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { FormulaeService.exportComponentAsJson(wps.CurrentSubEntity.value!, "teste"); }} src={i_copy} tooltip={"????"} focusKey={FocusDisabled} className={buttonClass} />
+                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.exportComponentAsXml(wps.CurrentSubEntity.value!, "teste"); }} src={i_copy} tooltip={"????"} focusKey={FocusDisabled} className={buttonClass} />
+                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.loadAsChildFromXml(wps.CurrentEntity.value!, "teste"); }} src={i_paste} tooltip={"!!!!"} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ width: "10rem" }}></div>
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(true); }} src={i_cut} tooltip={T_cut} focusKey={FocusDisabled} className={buttonClass} />
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(false); }} src={i_copy} tooltip={T_copy} focusKey={FocusDisabled} className={buttonClass} />
