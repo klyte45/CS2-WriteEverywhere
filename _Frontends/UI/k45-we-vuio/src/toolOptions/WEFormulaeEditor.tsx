@@ -1,11 +1,11 @@
 import { VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
-import { ConfirmationDialog, Portal } from "cs2/ui";
+import { Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
+import { FormulaeService } from "services/FormulaeService";
+import { WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEMemberType, WEMethodSource, WEStaticMethodDesc, WETypeMemberDesc } from "services/WEFormulaeElement";
 import { WorldPickerService } from "services/WorldPickerService";
-import { WETypeMemberDesc, WEComponentTypeDesc, WEDescType, WEStaticMethodDesc, WEMemberType, WEMethodSource } from "services/WEFormulaeElement";
-import { WEFormulaeElement } from "services/WEFormulaeElement";
 import { translate } from "utils/translate";
-import "../style/formulaeEditor.scss"
+import "../style/formulaeEditor.scss";
 import { WEAddFormulaeStageDialog } from "./WEAddFormulaeStageDialog";
 
 export const WEFormulaeEditor = () => {
@@ -21,7 +21,7 @@ export const WEFormulaeEditor = () => {
     const [formulaeSteps, setFormulaeSteps] = useState([] as WEFormulaeElement[])
 
     useEffect(() => {
-        WorldPickerService.formulaeToPathObjects(wps.FormulaeStr.value).then(x => setFormulaeSteps(x))
+        FormulaeService.formulaeToPathObjects(wps.FormulaeStr.value).then(x => setFormulaeSteps(x))
     }, [wps.FormulaeStr.value])
 
     const pathObjectsToFormulae = (arr: WEFormulaeElement[]) => {

@@ -4,7 +4,6 @@ using Belzont.Interfaces;
 using Belzont.Utils;
 using Colossal.Serialization.Entities;
 using System;
-using System.Drawing;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
@@ -40,6 +39,8 @@ namespace BelzontWE.Font
 
         private FixedString32Bytes name;
         public string Name => name.ToString();
+
+        public bool IsWeak { get; private set; }
 
         public void Dispose()
         {
@@ -88,7 +89,7 @@ namespace BelzontWE.Font
             FontSystem = new FontSystem(this);
         }
 
-        public static FontSystemData From(byte[] fontData, string name)
+        public static FontSystemData From(byte[] fontData, string name, bool isWeak = false)
         {
             var data = new FontSystemData();
             var font = Font.FromMemory(fontData);
@@ -96,6 +97,7 @@ namespace BelzontWE.Font
             data.Font = font;
             data.name = name;
             data.FontSystem = new FontSystem(data);
+            data.IsWeak = isWeak;
 
             return data;
         }

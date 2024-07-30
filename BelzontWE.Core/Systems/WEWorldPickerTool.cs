@@ -25,7 +25,6 @@ namespace BelzontWE
         public float3 LastPos;
         public Entity HoveredEntity;
         private CameraUpdateSystem m_cameraSystem;
-        private EntityQuery m_loadedFontsQuery;
         private IGameCameraController m_oldController;
         private float m_cameraDistance = 5f;
         private bool m_cameraDisabledHere;
@@ -113,20 +112,7 @@ namespace BelzontWE
             m_cameraSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
 
 
-            m_loadedFontsQuery = GetEntityQuery(new EntityQueryDesc[]{
-                new() {
-                    All = new ComponentType[]
-                    {
-                        ComponentType.ReadOnly<FontSystemData>(),
-                    },
-                    None = new ComponentType[]
-                    {
-                        ComponentType.ReadOnly<Temp>(),
-                        ComponentType.ReadOnly<Deleted>(),
-                    }
-                }
-            });
-            m_loadedFontsQuery.AddChangedVersionFilter(ComponentType.ReadOnly<FontSystemData>());
+
             base.OnCreate();
         }
         protected override void OnStartRunning()
@@ -206,23 +192,7 @@ namespace BelzontWE
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
-        {
-            if (!m_loadedFontsQuery.IsEmpty || m_Controller.FontList.Value.Count == 0)
-            {
-                var results = m_loadedFontsQuery.ToComponentDataArray<FontSystemData>(Allocator.Temp);
-                var entities = m_loadedFontsQuery.ToEntityArray(Allocator.Temp);
-                var resultsStr = m_Controller.FontList.Value;
-                resultsStr.Clear();
-                resultsStr["<DEFAULT>"] = Entity.Null;
-                for (int i = 0; i < results.Length; i++)
-                {
-                    resultsStr[results[i].Name] = entities[i];
-                }
-                results.Dispose();
-                entities.Dispose();
-                m_Controller.FontList.Value = resultsStr;
-                m_Controller.FontList.UpdateUIs();
-            }
+        {          
 
 
             bool cameraDisabledThisFrame = false;

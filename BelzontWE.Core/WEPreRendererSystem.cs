@@ -4,7 +4,6 @@ using BelzontWE.Font;
 using Colossal.Entities;
 using Game;
 using Game.Common;
-using Game.Rendering;
 using Game.SceneFlow;
 using Game.Tools;
 using Unity.Collections;
@@ -50,8 +49,6 @@ namespace BelzontWE
             CheckPendingQueue();
 
         }
-
-
 
         private void CheckPendingQueue()
         {

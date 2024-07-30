@@ -2,8 +2,6 @@
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using WriteEverywhere.Sprites;
 
 namespace BelzontWE
@@ -21,6 +19,7 @@ namespace BelzontWE
             updateSystem.UpdateAt<WERendererSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WEWorldPickerController>(SystemUpdatePhase.ModificationEnd);
             updateSystem.UpdateAt<WEUISystem>(SystemUpdatePhase.UIUpdate);
+            updateSystem.UpdateAt<WEFormulaeController>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<WEAtlasesLibrary>(SystemUpdatePhase.Rendering);
 #if !ENABLE_EUIS
             SelfRegiterUIEvents("we");

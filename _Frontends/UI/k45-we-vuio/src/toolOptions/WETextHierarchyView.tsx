@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { WorldPickerService } from "services/WorldPickerService";
 import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeElement";
 import { translate } from "utils/translate";
+import { FormulaeService } from "services/FormulaeService";
 
 function getIconForTextType(type: WESimulationTextType) {
     switch (type) {
@@ -94,6 +95,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 <Button onSelect={() => WorldPickerService.addEmpty()} src={i_addRoot} tooltip={T_addEmptyRoot} focusKey={FocusDisabled} className={buttonClass} />
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.addEmpty(wps.CurrentSubEntity.value!)} src={i_addChild} tooltip={T_addEmptyChild} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ flexGrow: 1 }}></div>
+                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { FormulaeService.exportComponentAsJson(wps.CurrentSubEntity.value!, "teste"); }} src={i_copy} tooltip={"????"} focusKey={FocusDisabled} className={buttonClass} />
+                <div style={{ width: "10rem" }}></div>
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(true); }} src={i_cut} tooltip={T_cut} focusKey={FocusDisabled} className={buttonClass} />
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(false); }} src={i_copy} tooltip={T_copy} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ width: "10rem" }}></div>

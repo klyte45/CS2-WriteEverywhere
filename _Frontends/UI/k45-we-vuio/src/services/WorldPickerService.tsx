@@ -1,5 +1,5 @@
 import { Entity, MultiUIValueBinding, UIColorRGBA } from "@klyte45/vuio-commons";
-import { WEComponentTypeDesc, WEFormulaeElement, WEStaticMethodDesc, WETextItemResume, WETypeMemberDesc } from "./WEFormulaeElement";
+import { WEComponentTypeDesc, WEStaticMethodDesc, WETextItemResume } from "./WEFormulaeElement";
 
 type number3 = [number, number, number]
 
@@ -14,7 +14,7 @@ export type IndexedStaticMethodsListing = {
 }
 export type IndexedComponentListing = {
     [srcType: number]: {
-        [dllName: string]:  WEComponentTypeDesc[]        
+        [dllName: string]: WEComponentTypeDesc[]
     }
 }//Record<number, Record<string, Record<string, WEStaticMethodDesc[]>>>
 
@@ -26,6 +26,7 @@ export class WorldPickerService {
     CurrentSubEntity: MultiUIValueBinding<Entity | null>
     CurrentEntity: MultiUIValueBinding<Entity | null>
     CurrentScale: MultiUIValueBinding<number3>
+    MaxWidth: MultiUIValueBinding<number>
     CurrentRotation: MultiUIValueBinding<number3>
     CurrentPosition: MultiUIValueBinding<number3>
     MouseSensibility: MultiUIValueBinding<number>
@@ -61,6 +62,7 @@ export class WorldPickerService {
         this.CurrentSubEntity ??= new MultiUIValueBinding<Entity | null>("k45::we.wpicker.CurrentSubEntity")
         this.CurrentEntity ??= new MultiUIValueBinding<Entity | null>("k45::we.wpicker.CurrentEntity")
         this.CurrentScale ??= new MultiUIValueBinding<number3>("k45::we.wpicker.CurrentScale")
+        this.MaxWidth ??= new MultiUIValueBinding<number>("k45::we.wpicker.MaxWidth")
         this.CurrentRotation ??= new MultiUIValueBinding<number3>("k45::we.wpicker.CurrentRotation")
         this.CurrentPosition ??= new MultiUIValueBinding<number3>("k45::we.wpicker.CurrentPosition")
         this.MouseSensibility ??= new MultiUIValueBinding<number>("k45::we.wpicker.MouseSensibility")
@@ -89,6 +91,7 @@ export class WorldPickerService {
             this.CurrentSubEntity,
             this.CurrentTree,
             this.CurrentScale,
+            this.MaxWidth,
             this.CurrentRotation,
             this.CurrentPosition,
             this.MouseSensibility,
@@ -149,17 +152,7 @@ export class WorldPickerService {
     static async addEmpty(parent?: Entity) {
         return await engine.call("k45::we.wpicker.addItem", parent ?? { Index: 0, Version: 0, __Type: 'Unity.Entities.Entity, Unity.Entities, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null' });
     }
-    static async listAvailableMethodsForType(dllName: string, typeName: string): Promise<IndexedStaticMethodsListing> {
-        return await engine.call("k45::we.wpicker.listAvailableMethodsForType", dllName, typeName);
-    }
-    static async listAvailableMembersForType(dllName: string, typeName: string): Promise<WETypeMemberDesc[]> {
-        return await engine.call("k45::we.wpicker.listAvailableMembersForType", dllName, typeName);
-    }
-    static async listAvailableComponents(): Promise<IndexedComponentListing> {
-        return await engine.call("k45::we.wpicker.listAvailableComponents");
-    }
-    static async formulaeToPathObjects(formulae: string): Promise<WEFormulaeElement[]> {
-        return engine.call("k45::we.wpicker.formulaeToPathObjects", formulae);
-    }
+
+
 }
 

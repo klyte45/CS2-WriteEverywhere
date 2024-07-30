@@ -94,7 +94,7 @@ namespace BelzontWE
 #endif
         private void Render_Impl()
         {
-            var checkUpdates = (++counter & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal;
+            ++counter;
             EntityCommandBuffer cmd = default;
             if (!m_renderQueueEntities.IsEmptyIgnoreFilter)
             {
@@ -112,7 +112,9 @@ namespace BelzontWE
                     {
                         continue;
                     }
-                    if (checkUpdates && item.weComponent.GetEffectiveText(EntityManager) != (bri.m_isError ? item.weComponent.LastErrorStr : bri.m_refText))
+                    if ((((counter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
+                        && !EntityManager.HasComponent<WEWaitingRenderingComponent>(item.textDataEntity)
+                        && item.weComponent.GetEffectiveText(EntityManager) != (bri.m_isError ? item.weComponent.LastErrorStr : bri.m_refText))
                     {
                         if (!cmd.IsCreated) cmd = m_endFrameBarrier.CreateCommandBuffer();
                         cmd.AddComponent<WEWaitingRenderingComponent>(item.textDataEntity);
@@ -273,7 +275,16 @@ namespace BelzontWE
                     }
                     matrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one);
                 }
-                matrix *= Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, scaleless ? Vector3.one : weCustomData.scale * weCustomData.BriOffsetScaleX / weCustomData.BriPixelDensity);
+                var scale = Vector3.one;
+                if (!scaleless && weCustomData.HasBRI)
+                {
+                    scale = weCustomData.scale * weCustomData.BriOffsetScaleX / weCustomData.BriPixelDensity;
+                    if (weCustomData.TextType == WESimulationTextType.Text && weCustomData.maxWidthMeters > 0 && weCustomData.BriWidthMetersUnscaled * scale.x > weCustomData.maxWidthMeters)
+                    {
+                        scale.x = weCustomData.maxWidthMeters / weCustomData.BriWidthMetersUnscaled;
+                    }
+                }
+                matrix *= Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, scale);
 
                 return true;
             }

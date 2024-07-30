@@ -22,6 +22,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const T_Height = translate("textValueSettings.height"); //
     const T_HeightCm = translate("textValueSettings.heightCm"); //
     const T_widthDistortion = translate("textValueSettings.widthDistortion"); //
+    const T_maxWidth = translate("textValueSettings.maxWidth"); //
 
     const wps = WorldPickerService.instance;
     const [buildIdx, setBuild] = useState(0);
@@ -62,6 +63,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     const [height, setHeight] = useState(wps.CurrentScale.value[1]);
     const [widthDistortion, setWidthDistortion] = useState(wps.CurrentScale.value[0] / wps.CurrentScale.value[1]);
+    const [maxWidth, setMaxWidth] = useState(wps.MaxWidth.value * 100);
 
 
     useEffect(() => {
@@ -69,6 +71,8 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
         setWidthDistortion(wps.CurrentScale.value[0] / wps.CurrentScale.value[1]);
     }, [wps.CurrentScale.value, wps.CurrentSubEntity.value])
 
+
+    useEffect(() => setMaxWidth(wps.MaxWidth.value * 100), [wps.MaxWidth.value])
     useEffect(() => {
         setFormulaeTyping(wps.FormulaeStr.value);
     }, [wps.FormulaeStr.value, wps.CurrentSubEntity.value])
@@ -92,6 +96,8 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
         wps.CurrentScale.set(scale);
     }
 
+    const saveMaxWidth = (value: number) => wps.MaxWidth.set(value > 0 ? value * .01 : 0)
+
     const defaultPosition = props.initialPosition ?? { x: 1 - 400 / window.innerWidth, y: 1 - 180 / window.innerHeight }
 
     return <>
@@ -108,10 +114,11 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                 <FloatInputField label={wps.TextSourceType.value == 0 ? T_HeightCm : T_Height} min={.001} max={10000000} value={height * (wps.TextSourceType.value == 0 ? 100 : 1)} onChange={(x) => saveHeight(x * (wps.TextSourceType.value == 0 ? .01 : 1))} onChangeEnd={() => saveHeight(height)} />
                 <FloatInputField label={T_widthDistortion} min={.001} max={1000000} value={widthDistortion} onChange={setWidthDistortion} onChangeEnd={() => saveWidthDistortion(widthDistortion)} />
                 {wps.TextSourceType.value == 0 && <>
+                    <FloatInputField label={T_maxWidth} min={.001} max={1000000} value={maxWidth} onChange={setMaxWidth} onChangeEnd={() => saveMaxWidth(maxWidth)} />
                     <EditorItemRow label={T_fontFieldTitle} styleContent={{ paddingLeft: "34rem" }}>
                         <DropdownField
-                            value={wps.FontList.value.includes(wps.SelectedFont.value) ? wps.SelectedFont.value : wps.FontList.value[0]}
-                            items={wps.FontList.value.map(x => { return { displayName: { __Type: LocElementType.String, value: x }, value: x } })}
+                            value={wps.FontList.value.includes(wps.SelectedFont.value) ? wps.SelectedFont.value : "<DEFAULT>"}
+                            items={["<DEFAULT>"].concat(wps.FontList.value).map(x => { return { displayName: { __Type: LocElementType.String, value: x }, value: x } })}
                             onChange={(x) => wps.SelectedFont.set(x)}
                             style={{ flexGrow: 1, width: "inherit" }}
                         />

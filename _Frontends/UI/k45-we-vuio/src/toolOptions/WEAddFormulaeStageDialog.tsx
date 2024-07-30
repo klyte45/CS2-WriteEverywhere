@@ -1,5 +1,6 @@
 import { replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { useEffect, useState } from "react";
+import { FormulaeService } from "services/FormulaeService";
 import { getClassNameFrom, getDllNameFrom, WEDescType, WEFormulaeElement, WEMemberType } from "services/WEFormulaeElement";
 import { IndexedComponentListing, IndexedStaticMethodsListing, WorldPickerService } from "services/WorldPickerService";
 import { breakIntoFlexComponents } from "utils/breakIntoFlexComponents";
@@ -29,16 +30,16 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement }: Props) 
         const effectiveRef = referenceElement ?? { WEDescType: WEDescType.MEMBER, memberTypeClassName: "Unity.Entities.Entity", memberTypeDllName: "Unity.Entities" }
         if (!referenceElement || (effectiveRef.WEDescType == WEDescType.STATIC_METHOD && effectiveRef.returnType == "Unity.Entities.Entity")
             || (effectiveRef.WEDescType == WEDescType.MEMBER && effectiveRef.memberTypeClassName == "Unity.Entities.Entity")) {
-            runners.push(WorldPickerService.listAvailableComponents().then(x => setOptionsComponentGetter(x)));
+            runners.push(FormulaeService.listAvailableComponents().then(x => setOptionsComponentGetter(x)));
         } else {
             setOptionsComponentGetter(null);
         }
         if (referenceElement) {
-            runners.push(WorldPickerService.listAvailableMembersForType(getDllNameFrom(effectiveRef), getClassNameFrom(effectiveRef)).then(x => setOptionsMembers(x)));
+            runners.push(FormulaeService.listAvailableMembersForType(getDllNameFrom(effectiveRef), getClassNameFrom(effectiveRef)).then(x => setOptionsMembers(x)));
         } else {
             setOptionsMembers([]);
         }
-        runners.push(WorldPickerService.listAvailableMethodsForType(getDllNameFrom(effectiveRef), getClassNameFrom(effectiveRef)).then(x => setOptionsStaticMethods(x)));
+        runners.push(FormulaeService.listAvailableMethodsForType(getDllNameFrom(effectiveRef), getClassNameFrom(effectiveRef)).then(x => setOptionsStaticMethods(x)));
         Promise.all(runners).then(() => setReady(true))
     }, [referenceElement?.WEDescType])
 

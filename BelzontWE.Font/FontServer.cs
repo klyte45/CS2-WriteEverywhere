@@ -9,6 +9,7 @@ using Game.SceneFlow;
 using Game.Tools;
 using Kwytto.Utils;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Unity.Collections;
 using Unity.Entities;
@@ -42,8 +43,22 @@ namespace BelzontWE
         private static int qualitySize = 100;
 
         public static FontServer Instance { get; private set; }
-
         public static int DecalLayerMask { get; private set; }
+        public Dictionary<string, Entity> LoadedFonts { get; } = new();
+
+        private EndFrameBarrier m_endFrameBarrier;
+
+        public Entity this[string name] => LoadedFonts.TryGetValue(name, out var e) ? e : Entity.Null;
+
+        public Entity GetOrCreateFontAsDefault(string name)
+        {
+            if (LoadedFonts.TryGetValue(name, out var e)) return e;
+            var fontEntity = EntityManager.CreateEntity();
+            var defaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Font.Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY);
+            EntityManager.AddComponent<Created>(fontEntity);
+            EntityManager.AddComponentData(fontEntity, defaultFont);
+            return fontEntity;
+        }
 
         protected override void OnCreate()
         {
@@ -64,7 +79,8 @@ namespace BelzontWE
                     }
                 }
            });
-            DefaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Font.Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY);
+            DefaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Font.Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY, true);
+            m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
         }
 
         #endregion
@@ -86,9 +102,16 @@ namespace BelzontWE
                     LogUtils.DoErrorLog($"RegisterFont: FONT NAME CANNOT BE NULL!!");
                     return false;
                 }
-                var fontEntity = EntityManager.CreateEntity();
-                EntityManager.AddComponent<Created>(fontEntity);
-                EntityManager.AddComponentData(fontEntity, fontSystemData);
+                if (LoadedFonts.TryGetValue(name, out var e))
+                {
+                    EntityManager.SetComponentData(e, fontSystemData);
+                }
+                else
+                {
+                    var fontEntity = EntityManager.CreateEntity();
+                    EntityManager.AddComponent<Created>(fontEntity);
+                    EntityManager.AddComponentData(fontEntity, fontSystemData);
+                }
             }
             catch (FontCreationException)
             {
@@ -101,6 +124,7 @@ namespace BelzontWE
         protected override void OnUpdate()
         {
             if (GameManager.instance.isLoading) return;
+            EntityCommandBuffer cmd = default;
             if (!m_fontEntitiesQuery.IsEmpty)
             {
                 var entities = m_fontEntitiesQuery.ToEntityArray(Allocator.Temp);
@@ -109,6 +133,28 @@ namespace BelzontWE
                     var entity = entities[i];
                     if (EntityManager.TryGetComponent(entity, out FontSystemData data))
                     {
+                        if (LoadedFonts.TryGetValue(data.Name, out var otherEntity))
+                        {
+                            if (otherEntity != entity)
+                            {
+                                if (!EntityManager.TryGetComponent(otherEntity, out FontSystemData otherData) || otherData.IsWeak)
+                                {
+                                    LoadedFonts[data.Name] = entity;
+                                    if (!cmd.IsCreated) cmd = m_endFrameBarrier.CreateCommandBuffer();
+                                    cmd.DestroyEntity(otherEntity);
+                                }
+                                else
+                                {
+                                    if (!cmd.IsCreated) cmd = m_endFrameBarrier.CreateCommandBuffer();
+                                    cmd.DestroyEntity(entity);
+                                    continue;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            LoadedFonts[data.Name] = entity;
+                        }
                         UpdateFontSystem(data);
                     }
                 }
