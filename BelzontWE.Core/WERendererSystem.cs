@@ -1,6 +1,4 @@
-﻿using Belzont.Interfaces;
-using Belzont.Utils;
-using BelzontWE.Font.Utility;
+﻿using BelzontWE.Font.Utility;
 using Game;
 using Game.Rendering;
 using Game.SceneFlow;
@@ -14,6 +12,9 @@ using UnityEngine.Rendering;
 #if BURST
 using UnityEngine.Scripting;
 using Unity.Burst;
+#else
+using Belzont.Interfaces;
+using Belzont.Utils;
 #endif
 
 namespace BelzontWE
@@ -203,7 +204,7 @@ namespace BelzontWE
                     if (!GetBaseMatrix(entity, ref weCustomData, out CullingInfo cullInfo, out var baseMatrix)) continue;
 
                     float minDist = RenderingUtils.CalculateMinDistance(cullInfo.m_Bounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
-                    if (weCustomData.RenderInformation == null)
+                    if (!weCustomData.HasBRI)
                     {
                         m_CommandBuffer.AddComponent<WEWaitingRenderingComponent>(entity);
                         continue;

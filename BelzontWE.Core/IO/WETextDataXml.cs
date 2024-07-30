@@ -1,4 +1,5 @@
 ﻿using Belzont.Utils;
+#pragma warning disable IDE1006 
 using System.Xml.Serialization;
 using UnityEngine;
 
@@ -11,24 +12,25 @@ namespace BelzontWE
         public Vector3Xml scale;
         [XmlAttribute] public string itemName;
         [XmlAttribute] public WEShader shader;
-        [XmlAttribute] public string Text;
-        [XmlAttribute] public string Atlas;
-        [XmlAttribute] public WESimulationTextType TextType;
+        [XmlAttribute] public string text;
+        [XmlAttribute] public string atlas;
+        [XmlAttribute] public WESimulationTextType textType;
         public WETextDataStyleXml style;
-        [XmlAttribute] public string Formulae;
-        [XmlAttribute] public string FontName;
+        [XmlAttribute] public string formulae;
+        [XmlAttribute] public string fontName;
+        internal float maxWidthMeters;
 
         public class WETextDataStyleXml
         {
-            [XmlIgnore] public Color32 Color;
-            [XmlIgnore] public Color32 EmissiveColor;
-            [XmlAttribute] public string ColorRGBA { get => Color.ToRGBA(); set => Color = ColorExtensions.FromRGBA(value); }
-            [XmlAttribute] public string EmissiveColorRGBA { get => EmissiveColor.ToRGBA(); set => EmissiveColor = ColorExtensions.FromRGBA(value); }
-            [XmlAttribute] public float Metallic;
-            [XmlAttribute] public float Smoothness;
-            [XmlAttribute] public float EmissiveIntensity;
-            [XmlAttribute] public float EmissiveExposureWeight;
-            [XmlAttribute] public float CoatStrength;
+            [XmlIgnore] public Color32 color;
+            [XmlIgnore] public Color32 emissiveColor;
+            [XmlAttribute] public string colorRGBA { get => color.ToRGBA(); set => color = ColorExtensions.FromRGBA(value); }
+            [XmlAttribute] public string emissiveColorRGBA { get => emissiveColor.ToRGBA(); set => emissiveColor = ColorExtensions.FromRGBA(value); }
+            [XmlAttribute] public float metallic;
+            [XmlAttribute] public float smoothness;
+            [XmlAttribute] public float emissiveIntensity;
+            [XmlAttribute] public float emissiveExposureWeight;
+            [XmlAttribute] public float coatStrength;
         }
     }
 }

@@ -9,6 +9,7 @@
     <DebugSymbols Condition="'$(Configuration)'=='Release'">False</DebugSymbols>
     <DebugSymbols Condition="'$(Configuration)'=='Debug'">True</DebugSymbols>
     <DebugType Condition="'$(Configuration)'=='Debug'">Embedded</DebugType>
+    <Bursted>false</Bursted>
     <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
     <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
     <RootNamespace>BelzontWE</RootNamespace>
