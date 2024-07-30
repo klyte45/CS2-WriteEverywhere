@@ -297,8 +297,8 @@ namespace WriteEverywhere.Sprites
         //    }
         //}
 
-        private BasicRenderInformation m_bgTexture;
-        public BasicRenderInformation GetWhiteTextureBRI()
+        private static BasicRenderInformation m_bgTexture;
+        public static BasicRenderInformation GetWhiteTextureBRI()
         {
             if (m_bgTexture == null)
             {

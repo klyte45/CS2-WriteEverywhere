@@ -12,18 +12,32 @@ namespace BelzontWE
         private const string PREFIX = "layouts.";
         private const string PREFAB_EXTENSION = "welayout.xml";
         private readonly string SAVED_PREFABS_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "prefabs");
+        private WETemplateManager m_templateManager;
 
         public void SetupCallBinder(Action<string, Delegate> callBinder)
         {
             callBinder($"{PREFIX}exportComponentAsXml", ExportComponentAsXml);
             callBinder($"{PREFIX}loadAsChildFromXml", LoadAsChildFromXml);
+            callBinder($"{PREFIX}saveAsCityTemplate", SaveAsCityTemplate);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
 
         public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
 
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+            m_templateManager = World.GetOrCreateSystemManaged<WETemplateManager>();
+        }
+
         protected override void OnUpdate() { }
+        private void SaveAsCityTemplate(Entity e, string name)
+        {
+            var templateEntity = WELayoutUtility.DoCloneTextItem(e, default, EntityManager, default);
+            if(!EntityManager.HasComponent<WETemplateData>(templateEntity)) EntityManager.AddComponent<WETemplateData>(templateEntity);
+            m_templateManager[name] = templateEntity;
+        }
 
         private string ExportComponentAsXml(Entity e, string name)
         {

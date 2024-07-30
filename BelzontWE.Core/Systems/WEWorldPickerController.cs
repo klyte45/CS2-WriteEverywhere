@@ -127,34 +127,13 @@ namespace BelzontWE
             var newBuff = EntityManager.GetBuffer<WESubTextRef>(newParent, false);
             newBuff.Add(new WESubTextRef
             {
-                m_weTextData = DoCloneTextItem(target, newParent)
+                m_weTextData = WELayoutUtility.DoCloneTextItem(target, newParent, EntityManager)
             });
             ReloadTree();
             return true;
         }
 
-        private Entity DoCloneTextItem(Entity target, Entity newParent)
-        {
-            var finalTargetEntity = EntityManager.TryGetComponent<WETextData>(newParent, out var data) ? data.TargetEntity : newParent;
-            var cloneEntity = EntityManager.Instantiate(target);
-            var weData = EntityManager.GetComponentData<WETextData>(cloneEntity);
-            weData.TargetEntity = finalTargetEntity;
-            weData.OnPostInstantiate();
-            if (weData.SetNewParent(newParent, EntityManager))
-            {
-                EntityManager.SetComponentData(cloneEntity, weData);
-            }
-            if (EntityManager.TryGetBuffer<WESubTextRef>(cloneEntity, false, out var subRefs))
-            {
-                for (int i = 0; i < subRefs.Length; i++)
-                {
-                    var subRef = subRefs[i];
-                    subRef.m_weTextData = DoCloneTextItem(subRefs[i].m_weTextData, cloneEntity);
-                    subRefs[i] = subRef;
-                }
-            }
-            return cloneEntity;
-        }
+
 
 
         private void OnEnableTool(Entity e)
@@ -334,7 +313,7 @@ namespace BelzontWE
                    {
                        var subref = new WESubTextRef
                        {
-                           m_weTextData = EntityManager.CreateEntity(typeof(WEWaitingRenderingComponent))
+                           m_weTextData = EntityManager.CreateEntity(typeof(WEWaitingRendering))
                        };
                        var newData = WETextData.CreateDefault(currentEntity, targetParent);
                        EntityManager.AddComponentData(subref.m_weTextData, newData);
@@ -392,7 +371,12 @@ namespace BelzontWE
             {
                 if (buff[i].m_weTextData == subEntity)
                 {
-                    if (destroy) EntityManager.DestroyEntity(subEntity);
+                    if (destroy)
+                    {
+                        LogUtils.DoLog($"Destroy Entity! {subEntity} - subEntity");
+                        EntityManager.DestroyEntity(subEntity); 
+                    }
+
                     buff.RemoveAt(i);
                     return true;
                 }

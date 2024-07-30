@@ -7,4 +7,7 @@ export class LayoutsService {
     static async loadAsChildFromXml(parent: Entity, name: string): Promise<string> {
         return engine.call("k45::we.layouts.loadAsChildFromXml", parent, name);
     }
+    static async saveAsCityTemplate(parent: Entity, name: string): Promise<string> {
+        return engine.call("k45::we.layouts.saveAsCityTemplate", parent, name);
+    }
 }

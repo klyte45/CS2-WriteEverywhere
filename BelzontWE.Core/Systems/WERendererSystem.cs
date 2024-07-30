@@ -1,5 +1,4 @@
-﻿using BelzontWE.Font.Utility;
-using Game;
+﻿using Game;
 using Game.Rendering;
 using Game.SceneFlow;
 using Unity.Burst.Intrinsics;
@@ -9,6 +8,10 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
+using WriteEverywhere.Sprites;
+
+
+
 #if BURST
 using UnityEngine.Scripting;
 using Unity.Burst;
@@ -50,7 +53,8 @@ namespace BelzontWE
                     },
                     None = new ComponentType[]
                     {
-                        ComponentType.ReadOnly<WEWaitingRenderingComponent>()
+                        ComponentType.ReadOnly<WEWaitingRendering>(),
+                        ComponentType.ReadOnly<WETemplateData>(),
                     }
                 }
             });
@@ -113,13 +117,13 @@ namespace BelzontWE
                     {
                         continue;
                     }
-                    var bri = item.weComponent.RenderInformation;
+                    var bri = item.weComponent.HasBRI ? item.weComponent.RenderInformation : WEAtlasesLibrary.GetWhiteTextureBRI();
                     if ((((counter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
-                        && !EntityManager.HasComponent<WEWaitingRenderingComponent>(item.textDataEntity)
+                        && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity)
                         && item.weComponent.GetEffectiveText(EntityManager) != (bri.m_isError ? item.weComponent.LastErrorStr : bri.m_refText))
                     {
                         if (!cmd.IsCreated) cmd = m_endFrameBarrier.CreateCommandBuffer();
-                        cmd.AddComponent<WEWaitingRenderingComponent>(item.textDataEntity);
+                        cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
                     }
                     Graphics.DrawMesh(bri.m_mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
                 }
@@ -141,11 +145,14 @@ namespace BelzontWE
                     m_iTransform = GetComponentLookup<InterpolatedTransform>(true),
                     m_weDataLookup = GetComponentLookup<WETextData>(true),
                     m_weData = GetComponentTypeHandle<WETextData>(false),
+                    m_weTemplateUpdaterLookup = GetComponentLookup<WETemplateUpdater>(true),
+                    m_weTemplateDataLookup = GetComponentLookup<WETemplateData>(true),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
                     m_LodParameters = m_LodParameters,
                     m_CameraPosition = m_CameraPosition,
                     m_CameraDirection = m_CameraDirection,
-                    availToDraw = availToDraw
+                    availToDraw = availToDraw,
+                    isAtWeEditor = m_pickerTool.IsSelected
                 };
                 job2.Schedule(m_renderQueueEntities, Dependency).Complete();
             }
@@ -177,6 +184,8 @@ namespace BelzontWE
             public ComponentLookup<CullingInfo> m_cullingInfo;
             public ComponentTypeHandle<WETextData> m_weData;
             public ComponentLookup<WETextData> m_weDataLookup;
+            public ComponentLookup<WETemplateUpdater> m_weTemplateUpdaterLookup;
+            public ComponentLookup<WETemplateData> m_weTemplateDataLookup;
             public ComponentLookup<InterpolatedTransform> m_iTransform;
             public ComponentLookup<Game.Objects.Transform> m_transform;
             public float4 m_LodParameters;
@@ -185,6 +194,7 @@ namespace BelzontWE
             public EntityTypeHandle m_EntityType;
             public NativeQueue<WERenderData> availToDraw;
             public EntityCommandBuffer m_CommandBuffer;
+            public bool isAtWeEditor;
 
             public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -196,18 +206,28 @@ namespace BelzontWE
                     var entity = entities[i];
                     var weCustomData = weDatas[i];
 
-                    if (weCustomData.TargetEntity == Entity.Null || weCustomData.ParentEntity == Entity.Null)
+
+
+                    if (weCustomData.TextType == WESimulationTextType.Placeholder != m_weTemplateUpdaterLookup.HasComponent(entity))
                     {
-                        m_CommandBuffer.DestroyEntity(entity);
+                        m_CommandBuffer.AddComponent<WEWaitingRendering>(entity);
                         continue;
                     }
 
-                    if (!GetBaseMatrix(entity, ref weCustomData, out CullingInfo cullInfo, out var baseMatrix)) continue;
-
-                    float minDist = RenderingUtils.CalculateMinDistance(cullInfo.m_Bounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
-                    if (!weCustomData.HasBRI)
+                    if (!m_weTemplateDataLookup.HasComponent(weCustomData.TargetEntity) && (weCustomData.TargetEntity == Entity.Null || weCustomData.ParentEntity == Entity.Null))
                     {
-                        m_CommandBuffer.AddComponent<WEWaitingRenderingComponent>(entity);
+                        LogUtils.DoLog($"Destroy Entity! {entity} any target or parent are null");
+                        m_CommandBuffer.DestroyEntity(entity);
+                        continue;
+                    }
+                    if (weCustomData.TextType == WESimulationTextType.Placeholder && !isAtWeEditor) continue;
+
+                    if (!GetBaseMatrix(entity, ref weCustomData, out CullingInfo cullInfo, out var baseMatrix)) continue;
+                    float minDist = RenderingUtils.CalculateMinDistance(cullInfo.m_Bounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
+
+                    if (!weCustomData.HasBRI && weCustomData.TextType != WESimulationTextType.Placeholder)
+                    {
+                        m_CommandBuffer.AddComponent<WEWaitingRendering>(entity);
                         continue;
                     }
                     int num7 = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
@@ -235,41 +255,78 @@ namespace BelzontWE
             {
                 float3 positionRef;
                 quaternion rotationRef;
-                Entity geometryRef = weCustomData.ParentEntity;
-                if (m_weDataLookup.TryGetComponent(geometryRef, out var parentData))
+                Entity parentRef = weCustomData.ParentEntity;
+                Entity targetRef = weCustomData.TargetEntity;
+                WETextData refWeData = weCustomData;
+
+
+                if (m_weTemplateUpdaterLookup.HasComponent(parentRef))
+                {
+                    if (!m_weDataLookup.TryGetComponent(parentRef, out var templateUpdaterWEdata))
+                    {
+                        cullInfo = default;
+                        matrix = default;
+                        return false;
+                    }
+                    parentRef = templateUpdaterWEdata.ParentEntity;
+                    targetRef = templateUpdaterWEdata.TargetEntity;
+                    refWeData = templateUpdaterWEdata;
+                }
+                else if (m_weTemplateUpdaterLookup.HasComponent(targetRef))
+                {
+                    if (!m_weDataLookup.TryGetComponent(targetRef, out var templateUpdaterWEdata))
+                    {
+                        cullInfo = default;
+                        matrix = default;
+                        return false;
+                    }
+                    targetRef = templateUpdaterWEdata.TargetEntity;
+                }
+
+                if (m_weDataLookup.TryGetComponent(parentRef, out var parentData))
                 {
                     if (!GetBaseMatrix(entity, ref parentData, out cullInfo, out matrix, true))
                     {
                         return false;
                     }
                 }
-                else if (weCustomData.ParentEntity != weCustomData.TargetEntity)
+                else if (m_weTemplateDataLookup.HasComponent(parentRef))
                 {
-                    m_CommandBuffer.DestroyEntity(entity);
+                    cullInfo = default;
+                    matrix = Matrix4x4.TRS(m_CameraPosition, quaternion.identity, Vector3.one) * Matrix4x4.TRS(Vector3.back, quaternion.Euler(m_CameraDirection), Vector3.one);
+                    return true;
+                }
+                else if (parentRef != targetRef)
+                {
                     cullInfo = default;
                     matrix = default;
+                    if (m_weTemplateDataLookup.HasComponent(targetRef)) return false;
+                    LogUtils.DoLog($"Destroy Entity! {entity} parentRef {parentRef} != targetRef {targetRef}");
+                    m_CommandBuffer.DestroyEntity(entity);
                     return false;
                 }
                 else
                 {
-                    if (!m_cullingInfo.TryGetComponent(geometryRef, out cullInfo))
+                    if (!m_cullingInfo.TryGetComponent(parentRef, out cullInfo))
                     {
+                        LogUtils.DoLog($"Destroy Entity! {entity} no cull info on parent ref");
                         m_CommandBuffer.DestroyEntity(entity);
                         matrix = default;
                         return false;
                     }
-                    if (m_iTransform.TryGetComponent(weCustomData.ParentEntity, out var transform))
+                    if (m_iTransform.TryGetComponent(parentRef, out var transform))
                     {
                         positionRef = transform.m_Position;
                         rotationRef = transform.m_Rotation;
                     }
-                    else if (m_transform.TryGetComponent(weCustomData.ParentEntity, out var transform2))
+                    else if (m_transform.TryGetComponent(parentRef, out var transform2))
                     {
                         positionRef = transform2.m_Position;
                         rotationRef = transform2.m_Rotation;
                     }
                     else
                     {
+                        LogUtils.DoLog($"Destroy Entity! {entity} no transform! ({parentRef})");
                         m_CommandBuffer.DestroyEntity(entity);
                         matrix = default;
                         cullInfo = default;
@@ -286,7 +343,9 @@ namespace BelzontWE
                         scale.x = weCustomData.maxWidthMeters / weCustomData.BriWidthMetersUnscaled;
                     }
                 }
-                matrix *= Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, scale);
+
+                matrix *= Matrix4x4.TRS(refWeData.offsetPosition, refWeData.offsetRotation, scale);
+
 
                 return true;
             }

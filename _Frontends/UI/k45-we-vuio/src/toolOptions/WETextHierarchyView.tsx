@@ -6,14 +6,7 @@ import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeEleme
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
 
-function getIconForTextType(type: WESimulationTextType) {
-    switch (type) {
-        case WESimulationTextType.Image:
-            return "coui://uil/Standard/Image.svg";
-        case WESimulationTextType.Text:
-            return "coui://uil/Standard/PencilPaper.svg";
-    }
-}
+
 
 
 export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: Entity | undefined | null, setClipboard: (c: Entity | undefined | null) => any }) => {
@@ -49,6 +42,17 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
 
     const getDisplayName = (x: WETextItemResume) => x.id.Index == clipboard?.Index ? `${x.name} <${clipboardIsCut ? T_cuttedInfo : T_copiedInfo}>` : x.name
 
+    function getIconForTextType(type: WESimulationTextType) {
+        switch (type) {
+            case WESimulationTextType.Image:
+                return "coui://uil/Standard/Image.svg";
+            case WESimulationTextType.Text:
+                return "coui://uil/Standard/PencilPaper.svg";
+            case WESimulationTextType.Placeholder:
+                return "coui://uil/Standard/RotateAngleRelative.svg";
+        }
+    }
+
     function ResumeToViewPort(x: WETextItemResume, level: number = 0): (HierarchyViewport & WETextItemResume)[] {
         const isExpanded = expandedViewports.some(y => y.Index == x.id.Index);
         return [{
@@ -56,7 +60,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             displayName: { value: getDisplayName(x), __Type: LocElementType.String },
             icon: getIconForTextType(x.type),
             level,
-            expandable: x.children.length > 0,
+            expandable: x.children?.length > 0,
             expanded: isExpanded,
             selectable: true,
             selected: x.id.Index == wps.CurrentSubEntity.value?.Index
@@ -95,6 +99,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 <Button onSelect={() => WorldPickerService.addEmpty()} src={i_addRoot} tooltip={T_addEmptyRoot} focusKey={FocusDisabled} className={buttonClass} />
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.addEmpty(wps.CurrentSubEntity.value!)} src={i_addChild} tooltip={T_addEmptyChild} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ flexGrow: 1 }}></div>
+                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.saveAsCityTemplate(wps.CurrentSubEntity.value!, "teste"); }} src={i_paste} tooltip={";;;;;"} focusKey={FocusDisabled} className={buttonClass} />
+                <div style={{ width: "10rem" }}></div>
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.exportComponentAsXml(wps.CurrentSubEntity.value!, "teste"); }} src={i_copy} tooltip={"????"} focusKey={FocusDisabled} className={buttonClass} />
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.loadAsChildFromXml(wps.CurrentEntity.value!, "teste"); }} src={i_paste} tooltip={"!!!!"} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ width: "10rem" }}></div>

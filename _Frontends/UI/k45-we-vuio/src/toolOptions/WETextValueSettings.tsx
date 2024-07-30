@@ -90,7 +90,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                 <EditorItemRow label={T_contentType}>
                     <NumberDropdownField
                         value={wps.TextSourceType.value}
-                        items={[0, 1].map(x => { return { displayName: { __Type: LocElementType.String, value: translate(`textValueSettings.contentType.${x}`) }, value: x } })}
+                        items={[0, 1, 2].map(x => { return { displayName: { __Type: LocElementType.String, value: translate(`textValueSettings.contentType.${x}`) }, value: x } })}
                         onChange={(x) => wps.TextSourceType.set(x)}
                         style={{ flexGrow: 1, width: "inherit" }}
                     />

@@ -1,5 +1,5 @@
-﻿#define BURST
-//#define VERBOSE 
+﻿
+
 using Belzont.Interfaces;
 using Belzont.Utils;
 using MonoMod.Utils;

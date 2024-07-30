@@ -1,5 +1,5 @@
-﻿#define BURST
-//#define VERBOSE 
+﻿
+
 using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font;
@@ -262,9 +262,9 @@ namespace BelzontWE
             };
         }
 
-        public bool SetNewParent(Entity e, EntityManager em)
+        public bool SetNewParent(Entity e, EntityManager em, bool force = false)
         {
-            if (e != targetEntity && (!em.TryGetComponent<WETextData>(e, out var weData) || weData.targetEntity != targetEntity))
+            if (!force && e != targetEntity && e != Entity.Null && (!em.TryGetComponent<WETextData>(e, out var weData) || (weData.targetEntity != Entity.Null && weData.targetEntity != targetEntity)))
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"NOPE: e = {e}; weData = {weData}; targetEntity = {targetEntity}; weData.targetEntity = {weData.targetEntity}");
                 return false;
@@ -395,8 +395,19 @@ namespace BelzontWE
                 loadingFnDone = true;
             }
             return formulaeHandlerFn.IsAllocated && FormulaeFn is Func<EntityManager, Entity, string> fn
-                ? fn(em, TargetEntity)?.ToString().Truncate(500) ?? "<InvlidFn>"
+                ? fn(em, GetTargetEntityEffective(TargetEntity, em))?.ToString().Truncate(500) ?? "<InvlidFn>"
                 : formulaeHandlerStr.Length > 0 ? "<InvalidFn>" : Text;
+        }
+
+        private static Entity GetTargetEntityEffective(Entity target, EntityManager em)
+        {
+            if (em.TryGetComponent<WETextData>(target, out var weData))
+            {
+
+                if (weData.TargetEntity == target && weData.ParentEntity != target) return GetTargetEntityEffective(weData.ParentEntity, em);
+                return weData.TargetEntity;
+            }
+            return target;
         }
 
         public void OnPostInstantiate()
@@ -439,7 +450,7 @@ namespace BelzontWE
         public static WETextData FromDataXml(WETextDataXml xml, Entity parent, EntityManager em)
         {
             Entity target;
-            if(em.TryGetComponent(parent, out WETextData parentData))
+            if (em.TryGetComponent(parent, out WETextData parentData))
             {
                 target = parentData.targetEntity;
             }

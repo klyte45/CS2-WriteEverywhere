@@ -17,6 +17,7 @@ namespace BelzontWE
         private EntityQuery m_pendingQueueEntities;
         private EndFrameBarrier m_endFrameBarrier;
         private WEAtlasesLibrary m_atlasesLibrary;
+        private WETemplateManager m_templateManager;
 
         protected override void OnCreate()
         {
@@ -31,7 +32,7 @@ namespace BelzontWE
                     All = new ComponentType[]
                     {
                         ComponentType.ReadWrite<WETextData>(),
-                        ComponentType.ReadOnly<WEWaitingRenderingComponent>(),
+                        ComponentType.ReadOnly<WEWaitingRendering>(),
                     },
                     None = new ComponentType[]
                     {
@@ -41,6 +42,7 @@ namespace BelzontWE
                 }
             }); ;
 
+            m_templateManager = World.GetOrCreateSystemManaged<WETemplateManager>();
             RequireAnyForUpdate(m_pendingQueueEntities);
         }
         protected override void OnUpdate()
@@ -59,25 +61,64 @@ namespace BelzontWE
                 {
                     var entity = entities[i];
                     var weCustomData = EntityManager.GetComponentData<WETextData>(entity);
-
-                    var text = weCustomData.GetEffectiveText(EntityManager);
+                    if (!EntityManager.Exists(weCustomData.TargetEntity) || (weCustomData.TargetEntity == Entity.Null && !EntityManager.HasComponent<WETemplateData>(entity)))
+                    {
+                        LogUtils.DoLog($"Destroy Entity! {entity} - Target doesntExists");
+                        EntityManager.DestroyEntity(entity);
+                        continue;
+                    }
                     if (weCustomData.TextType == WESimulationTextType.Text)
                     {
-                        UpdateTextMesh(ref weCustomData, text);
+                        var text = weCustomData.GetEffectiveText(EntityManager);
+                        UpdateTextMesh(entity, ref weCustomData, text);
                     }
                     else if (weCustomData.TextType == WESimulationTextType.Image)
                     {
-                        UpdateImageMesh(ref weCustomData, text);
+                        var text = weCustomData.GetEffectiveText(EntityManager);
+                        UpdateImageMesh(entity, ref weCustomData, text);
+                    }
+                    else if (weCustomData.TextType == WESimulationTextType.Placeholder)
+                    {
+                        UpdatePlaceholder(entity, ref weCustomData);
                     }
                     EntityManager.SetComponentData(entity, weCustomData);
-                    EntityManager.RemoveComponent<WEWaitingRenderingComponent>(entity);
+                    EntityManager.RemoveComponent<WEWaitingRendering>(entity);
                 }
                 entities.Dispose();
             }
         }
-
-        private void UpdateImageMesh(ref WETextData weCustomData, string text)
+        private void UpdatePlaceholder(Entity e, ref WETextData weCustomData)
         {
+            if (!SetupTemplateComponent(e, ref weCustomData))
+            {
+                var targetTemplate = m_templateManager[weCustomData.itemName.ToString()];
+                if (EntityManager.TryGetComponent<WETemplateUpdater>(e, out var templateUpdated) && templateUpdated.childEntity != Entity.Null)
+                {
+                    LogUtils.DoLog($"Destroy Entity! {templateUpdated.childEntity} - Target outdated child");
+                    EntityManager.DestroyEntity(templateUpdated.childEntity);
+                }
+
+                var newData = new WETemplateUpdater()
+                {
+                    templateEntity = targetTemplate,
+                    childEntity = targetTemplate == Entity.Null ? Entity.Null : WELayoutUtility.DoCloneTextItem(targetTemplate, e, EntityManager, Entity.Null)
+                };
+                LogUtils.DoLog($"Cloned info! {weCustomData.itemName} => {targetTemplate}");
+
+                if (EntityManager.HasComponent<WETemplateUpdater>(e))
+                {
+                    EntityManager.SetComponentData(e, newData);
+                }
+                else
+                {
+                    EntityManager.AddComponentData(e, newData);
+                }
+            }
+        }
+        private void UpdateImageMesh(Entity e, ref WETextData weCustomData, string text)
+        {
+            if (EntityManager.HasComponent<WETemplateUpdater>(e)) EntityManager.RemoveComponent<WETemplateUpdater>(e);
+            SetupTemplateComponent(e, ref weCustomData);
             var bri = m_atlasesLibrary.GetFromLocalAtlases(weCustomData.Atlas, text, true);
             if (bri == null)
             {
@@ -87,8 +128,11 @@ namespace BelzontWE
             weCustomData.UpdateBRI(bri, text);
         }
 
-        private void UpdateTextMesh(ref WETextData weCustomData, string text)
+
+        private void UpdateTextMesh(Entity e, ref WETextData weCustomData, string text)
         {
+            if (EntityManager.HasComponent<WETemplateUpdater>(e)) EntityManager.RemoveComponent<WETemplateUpdater>(e);
+            SetupTemplateComponent(e, ref weCustomData);
             var font = EntityManager.TryGetComponent<FontSystemData>(weCustomData.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
             if (font.Font == null)
             {
@@ -103,6 +147,18 @@ namespace BelzontWE
                 return;
             }
             weCustomData.UpdateBRI(bri, text);
+
+        }
+
+        private bool SetupTemplateComponent(Entity e, ref WETextData weCustomData)
+        {
+            if (EntityManager.HasComponent<WETemplateData>(weCustomData.TargetEntity))
+            {
+                if (!EntityManager.HasComponent<WETemplateData>(e)) EntityManager.AddComponent<WETemplateData>(e);
+                return true;
+            }
+            if (EntityManager.HasComponent<WETemplateData>(e)) EntityManager.RemoveComponent<WETemplateData>(e);
+            return false;
         }
     }
 

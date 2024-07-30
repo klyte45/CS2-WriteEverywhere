@@ -1,5 +1,5 @@
-﻿#define BURST
-//#define VERBOSE 
+﻿
+
 using Unity.Entities;
 
 namespace BelzontWE
