@@ -42,7 +42,7 @@ namespace WriteEverywhere.Sprites
         //        if (asset.Second is string str)
         //        {
         //            var filePath = Path.Combine(str, WEMainController.EXTRA_SPRITES_FILES_FOLDER_ASSETS);
-        //            LogUtils.DoLog($"Trying load path: {filePath}");
+        //            if (BasicIMod.DebugMode) LogUtils.DoLog($"Trying load path: {filePath}");
         //            if (Directory.Exists(filePath))
         //                CreateAtlasEntry(AssetAtlases, AssetEntryNameFromData(asset.First.Value), filePath, asset.First.Value.Info);
         //        }

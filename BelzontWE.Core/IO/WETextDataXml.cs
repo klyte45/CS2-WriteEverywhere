@@ -9,13 +9,13 @@ namespace BelzontWE
     {
         public Vector3Xml offsetPosition;
         public Vector3Xml offsetRotation;
-        public Vector3Xml scale;
+        public Vector3Xml scale = (Vector3Xml)Vector3.one;
         [XmlAttribute] public string itemName;
         [XmlAttribute] public WEShader shader;
         [XmlAttribute] public string text;
         [XmlAttribute] public string atlas;
         [XmlAttribute] public WESimulationTextType textType;
-        public WETextDataStyleXml style;
+        public WETextDataStyleXml style = new();
         [XmlAttribute] public string formulae;
         [XmlAttribute] public string fontName;
         internal float maxWidthMeters;

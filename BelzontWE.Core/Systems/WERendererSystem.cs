@@ -13,6 +13,8 @@ using WriteEverywhere.Sprites;
 
 
 
+
+
 #if BURST
 using UnityEngine.Scripting;
 using Unity.Burst;
@@ -156,6 +158,7 @@ namespace BelzontWE
                     m_weDataLookup = GetComponentLookup<WETextData>(true),
                     m_weData = GetComponentTypeHandle<WETextData>(false),
                     m_weTemplateUpdaterLookup = GetComponentLookup<WETemplateUpdater>(true),
+                    m_weTemplateForPrefabLookup = GetComponentLookup<WETemplateForPrefab>(true),
                     m_weTemplateDataLookup = GetComponentLookup<WETemplateData>(true),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
                     m_LodParameters = m_LodParameters,
@@ -195,6 +198,7 @@ namespace BelzontWE
             public ComponentTypeHandle<WETextData> m_weData;
             public ComponentLookup<WETextData> m_weDataLookup;
             public ComponentLookup<WETemplateUpdater> m_weTemplateUpdaterLookup;
+            public ComponentLookup<WETemplateForPrefab> m_weTemplateForPrefabLookup;
             public ComponentLookup<WETemplateData> m_weTemplateDataLookup;
             public ComponentLookup<InterpolatedTransform> m_iTransform;
             public ComponentLookup<Game.Objects.Transform> m_transform;
@@ -216,7 +220,20 @@ namespace BelzontWE
                     var entity = entities[i];
                     var weCustomData = weDatas[i];
 
-
+                    if (weCustomData.TextType == WESimulationTextType.Archetype)
+                    {
+                        if (m_weTemplateForPrefabLookup.TryGetComponent(weCustomData.TargetEntity, out var prefabForLookup))
+                        {
+                            if (prefabForLookup.childEntity != entity)
+                            {
+#if !BURST
+                                if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} childEntity {prefabForLookup.childEntity} != weCustomData.TargetEntity {weCustomData.TargetEntity} (prefabForLookup I)");
+#endif
+                                m_CommandBuffer.DestroyEntity(entity);
+                            }
+                        }
+                        continue;
+                    }
 
                     if (weCustomData.TextType == WESimulationTextType.Placeholder != m_weTemplateUpdaterLookup.HasComponent(entity))
                     {
@@ -226,11 +243,13 @@ namespace BelzontWE
 
                     if (!m_weTemplateDataLookup.HasComponent(weCustomData.TargetEntity) && (weCustomData.TargetEntity == Entity.Null || weCustomData.ParentEntity == Entity.Null))
                     {
-                        LogUtils.DoLog($"Destroy Entity! {entity} any target or parent are null");
+#if !BURST
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} any target or parent are null");
+#endif
                         m_CommandBuffer.DestroyEntity(entity);
                         continue;
                     }
-                    if (weCustomData.TextType == WESimulationTextType.Placeholder && !isAtWeEditor) continue;
+                    if ((weCustomData.TextType == WESimulationTextType.Placeholder && !isAtWeEditor)) continue;
 
                     if (!GetBaseMatrix(entity, ref weCustomData, out CullingInfo cullInfo, out var baseMatrix)) continue;
                     float minDist = RenderingUtils.CalculateMinDistance(cullInfo.m_Bounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
@@ -255,7 +274,7 @@ namespace BelzontWE
 #if !BURST
                     else if (BasicIMod.VerboseMode)
                     {
-                        LogUtils.DoVerboseLog($"NOT RENDER: num7 < cullInfo.m_MinLod = {num7} < {cullInfo.m_MinLod}");
+                        LogUtils.DoVerboseLog($"NOT RENDER {entity}: num7 < cullInfo.m_MinLod = {num7} < {cullInfo.m_MinLod}");
                     }
 #endif
                 }
@@ -280,7 +299,10 @@ namespace BelzontWE
                     }
                     if (updater.childEntity != weCustomData.TargetEntity)
                     {
-                        LogUtils.DoLog($"Destroy Entity! {entity} childEntity {updater.childEntity} != weCustomData.TargetEntity {weCustomData.TargetEntity} (I)");
+
+#if !BURST
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} childEntity {updater.childEntity} != weCustomData.TargetEntity {weCustomData.TargetEntity} (I)");
+#endif
                         m_CommandBuffer.DestroyEntity(entity);
                         cullInfo = default;
                         matrix = default;
@@ -300,7 +322,9 @@ namespace BelzontWE
                     }
                     if (updater.childEntity != weCustomData.TargetEntity)
                     {
-                        LogUtils.DoLog($"Destroy Entity! {entity} childEntity {updater.childEntity} != weCustomData.TargetEntity {weCustomData.TargetEntity} (II)");
+#if !BURST
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} childEntity {updater.childEntity} != weCustomData.TargetEntity {weCustomData.TargetEntity} (II)");
+#endif
                         m_CommandBuffer.DestroyEntity(entity);
                         cullInfo = default;
                         matrix = default;
@@ -308,6 +332,13 @@ namespace BelzontWE
                     }
                     targetRef = templateUpdaterWEdata.TargetEntity;
                 }
+
+
+                if (m_weDataLookup.TryGetComponent(targetRef, out var archetypeWeData) && archetypeWeData.TextType == WESimulationTextType.Archetype)
+                {
+                    targetRef = archetypeWeData.TargetEntity;
+                }
+
 
                 if (m_weDataLookup.TryGetComponent(parentRef, out var parentData))
                 {
@@ -327,7 +358,9 @@ namespace BelzontWE
                     cullInfo = default;
                     matrix = default;
                     if (m_weTemplateDataLookup.HasComponent(targetRef)) return false;
-                    LogUtils.DoLog($"Destroy Entity! {entity} parentRef {parentRef} != targetRef {targetRef}");
+#if !BURST
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} parentRef {parentRef} != targetRef {targetRef}");
+#endif
                     m_CommandBuffer.DestroyEntity(entity);
                     return false;
                 }
@@ -335,7 +368,9 @@ namespace BelzontWE
                 {
                     if (!m_cullingInfo.TryGetComponent(parentRef, out cullInfo))
                     {
-                        LogUtils.DoLog($"Destroy Entity! {entity} no cull info on parent ref");
+#if !BURST
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} no cull info on parent ref");
+#endif
                         m_CommandBuffer.DestroyEntity(entity);
                         matrix = default;
                         return false;
@@ -352,7 +387,9 @@ namespace BelzontWE
                     }
                     else
                     {
-                        LogUtils.DoLog($"Destroy Entity! {entity} no transform! ({parentRef})");
+#if !BURST
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} no transform! ({parentRef})");
+#endif
                         m_CommandBuffer.DestroyEntity(entity);
                         matrix = default;
                         cullInfo = default;

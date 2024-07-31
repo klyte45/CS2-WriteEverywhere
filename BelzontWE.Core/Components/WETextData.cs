@@ -241,15 +241,15 @@ namespace BelzontWE
             }
         }
 
-        public FixedString32Bytes ItemName
+        public string ItemName
         {
-            readonly get => itemName; set
+            readonly get => itemName.ToString(); set
             {
                 if (itemName != value && TextType == WESimulationTextType.Placeholder)
                 {
                     templateDirty = true;
                 }
-                itemName = value;
+                itemName = value ?? null;
             }
         }
 
@@ -476,21 +476,22 @@ namespace BelzontWE
             {
                 target = parent;
             }
+            var font = FontServer.Instance.GetOrCreateFontAsDefault(xml.fontName);
 
             return new WETextData
             {
                 targetEntity = target,
                 parentEntity = parent,
                 offsetPosition = (float3)xml.offsetPosition,
-                offsetRotation = quaternion.Euler(xml.offsetRotation),
+                offsetRotation = Quaternion.Euler(xml.offsetRotation),
                 scale = (float3)xml.scale,
-                ItemName = xml.itemName,
+                ItemName = xml.itemName ?? "",
                 shader = xml.shader,
-                Atlas = xml.atlas,
-                Formulae = xml.formulae,
-                Text = xml.text,
+                Atlas = xml.atlas ?? "",
+                Formulae = xml.formulae ?? "",
+                Text = xml.text ?? "",
                 TextType = xml.textType,
-                Font = FontServer.Instance.GetOrCreateFontAsDefault(xml.fontName),
+                font = font,
                 CoatStrength = xml.style.coatStrength,
                 Color = xml.style.color,
                 EmissiveColor = xml.style.emissiveColor,
@@ -498,7 +499,7 @@ namespace BelzontWE
                 EmissiveIntensity = xml.style.emissiveIntensity,
                 Metallic = xml.style.metallic,
                 Smoothness = xml.style.smoothness,
-                maxWidthMeters = xml.maxWidthMeters
+                maxWidthMeters = xml.maxWidthMeters,
             };
         }
         #endregion

@@ -52,6 +52,7 @@ namespace BelzontWE
 
         public Entity GetOrCreateFontAsDefault(string name)
         {
+            if (name.TrimToNull() == null) return Entity.Null;
             if (LoadedFonts.TryGetValue(name, out var e)) return e;
             var fontEntity = EntityManager.CreateEntity();
             var defaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Font.Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY);

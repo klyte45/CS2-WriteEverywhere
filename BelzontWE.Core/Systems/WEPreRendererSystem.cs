@@ -63,7 +63,7 @@ namespace BelzontWE
                     var weCustomData = EntityManager.GetComponentData<WETextData>(entity);
                     if (!EntityManager.Exists(weCustomData.TargetEntity) || (weCustomData.TargetEntity == Entity.Null && !EntityManager.HasComponent<WETemplateData>(entity)))
                     {
-                        LogUtils.DoLog($"Destroy Entity! {entity} - Target doesntExists");
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} - Target doesntExists");
                         EntityManager.DestroyEntity(entity);
                         continue;
                     }
@@ -94,16 +94,16 @@ namespace BelzontWE
                 var targetTemplate = m_templateManager[weCustomData.ItemName.ToString()];
                 if (EntityManager.TryGetComponent<WETemplateUpdater>(e, out var templateUpdated) && templateUpdated.childEntity != Entity.Null)
                 {
-                    LogUtils.DoLog($"Destroy Entity! {templateUpdated.childEntity} - Target outdated child");
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {templateUpdated.childEntity} - Target outdated child");
                     EntityManager.DestroyEntity(templateUpdated.childEntity);
                 }
 
                 var newData = new WETemplateUpdater()
                 {
                     templateEntity = targetTemplate,
-                    childEntity = targetTemplate == Entity.Null ? Entity.Null : WELayoutUtility.DoCloneTextItem(targetTemplate, e, EntityManager, Entity.Null)
+                    childEntity = targetTemplate == Entity.Null ? Entity.Null : WELayoutUtility.DoCloneTextItemReferenceSelf(targetTemplate, e, EntityManager)
                 };
-                LogUtils.DoLog($"Cloned info! {weCustomData.ItemName} => {targetTemplate}");
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Cloned info! {weCustomData.ItemName} => {targetTemplate}");
 
                 if (EntityManager.HasComponent<WETemplateUpdater>(e))
                 {

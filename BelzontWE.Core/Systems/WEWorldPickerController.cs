@@ -373,7 +373,7 @@ namespace BelzontWE
                 {
                     if (destroy)
                     {
-                        LogUtils.DoLog($"Destroy Entity! {subEntity} - subEntity");
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {subEntity} - subEntity");
                         EntityManager.DestroyEntity(subEntity); 
                     }
 
