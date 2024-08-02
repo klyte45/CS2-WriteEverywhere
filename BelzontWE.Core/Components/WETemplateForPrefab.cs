@@ -8,6 +8,7 @@ namespace BelzontWE
     {
         public static int CURRENT_VERSION = 0;
 
+        public Entity templateRef;
         public Entity childEntity;
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -27,4 +28,6 @@ namespace BelzontWE
             writer.Write(childEntity);
         }
     }
+    public struct WETemplateForPrefabDirty : ICleanupComponentData, IQueryTypeParameter { }
+    public struct WETemplateForPrefabEmpty : ICleanupComponentData, IQueryTypeParameter { }
 }

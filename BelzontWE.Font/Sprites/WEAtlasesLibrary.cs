@@ -304,7 +304,7 @@ namespace WriteEverywhere.Sprites
             {
                 m_bgTexture = new BasicRenderInformation
                 {
-                    m_mesh = WERenderingHelper.basicMesh,
+                    Mesh = WERenderingHelper.basicMesh,
                     m_fontBaseLimits = new RangeVector { min = 0, max = 1 },
                     m_YAxisOverflows = new RangeVector { min = -.5f, max = .5f },
                     m_sizeMetersUnscaled = new Vector2(1, 1),
@@ -316,9 +316,9 @@ namespace WriteEverywhere.Sprites
                     m_expandXIfAlone = true
                 };
                 m_bgTexture.m_generatedMaterial.mainTexture = Texture2D.whiteTexture;
-                m_bgTexture.m_mesh.RecalculateBounds();
-                m_bgTexture.m_mesh.RecalculateNormals();
-                m_bgTexture.m_mesh.RecalculateTangents();
+                m_bgTexture.Mesh.RecalculateBounds();
+                m_bgTexture.Mesh.RecalculateNormals();
+                m_bgTexture.Mesh.RecalculateTangents();
             }
             return m_bgTexture;
         }

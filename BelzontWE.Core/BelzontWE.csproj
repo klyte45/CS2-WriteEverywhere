@@ -8,8 +8,9 @@
     <DebugType Condition="'$(Configuration)'=='Release'">None</DebugType>
     <DebugSymbols Condition="'$(Configuration)'=='Release'">False</DebugSymbols>
     <DebugSymbols Condition="'$(Configuration)'=='Debug'">True</DebugSymbols>
-    <DebugType Condition="'$(Configuration)'=='Debug'">Embedded</DebugType>
+    <DebugType Condition="'$(Configuration)'=='Debug'">embedded</DebugType>
     <Bursted>false</Bursted>
+    <DebuggerMode Condition="'$(Configuration)'=='Debug'">true</DebuggerMode>
     <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
     <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
     <RootNamespace>BelzontWE</RootNamespace>
@@ -18,7 +19,7 @@
   <!--Imports must be after PropertyGroup block-->
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
-  <Import Project="$(SolutionDir)\_Build\belzont_public.targets" />
+  <Import Project="$(SolutionDir)\_Build\belzont_public.targets" /> 
 
   <!--Mod data-->
   <PropertyGroup>
@@ -37,7 +38,7 @@
     <ModTag Include="Code Mod" />
     <Screenshots Include="Screenshots/*.jpg" />
     <!--<Dependency Include="EUIS">
-      <ModId>74151</ModId>
+      <ModId>74151</ModId> 
       <DisplayName>Extra UI Screens</DisplayName>
     </Dependency>-->
     <Dependency Include="UnifiedIconLibrary">
@@ -174,8 +175,12 @@
       <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.Collections.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.ImageConversionModule.dll">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.ImageConversionModule.dll.dll</HintPath>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestModule">
+      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.UnityWebRequestModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
@@ -226,6 +231,7 @@
 
   </ItemGroup>
   <ItemGroup>
+    <None Remove="Resources\SourceSansPro-Regular.ttf" />
     <None Remove="UI\Images\FrameBorder.png" />
     <None Remove="UI\Images\FrameParamsFolderRequired.png" />
     <None Remove="UI\Images\FrameParamsImageRequired.png" />
@@ -239,6 +245,7 @@
     <Resource Remove="longDescription.md" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\SourceSansPro-Regular.ttf" />
     <EmbeddedResource Include="UI\Images\FrameBorder.png" />
     <EmbeddedResource Include="UI\Images\FrameParamsFolderRequired.png" />
     <EmbeddedResource Include="UI\Images\FrameParamsImageRequired.png" />

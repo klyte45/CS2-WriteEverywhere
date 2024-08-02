@@ -16,6 +16,7 @@ namespace BelzontWE
             updateSystem.UpdateAt<WEWorldPickerTool>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<WEWorldPickerTooltip>(SystemUpdatePhase.UITooltip);
             updateSystem.UpdateBefore<WEPreRendererSystem>(SystemUpdatePhase.Rendering);
+            updateSystem.UpdateAfter<WEPostRendererSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WERendererSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WEWorldPickerController>(SystemUpdatePhase.ModificationEnd);
             updateSystem.UpdateAt<WEUISystem>(SystemUpdatePhase.UIUpdate);

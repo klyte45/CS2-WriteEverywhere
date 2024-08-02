@@ -8,13 +8,8 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
+using BelzontWE.Font.Utility;
 using WriteEverywhere.Sprites;
-
-
-
-
-
-
 #if BURST
 using UnityEngine.Scripting;
 using Unity.Burst;
@@ -123,21 +118,33 @@ namespace BelzontWE
                         cmd.SetComponent(item.textDataEntity, item.weComponent);
                         continue;
                     }
-
-                    if (!item.weComponent.HasBRI)
+                    BasicRenderInformation bri;
+                    if ((bri = item.weComponent.RenderInformation) == null && !m_pickerTool.IsSelected)
                     {
+                        if ((item.weComponent.TextType == WESimulationTextType.Text || item.weComponent.TextType == WESimulationTextType.Image) && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
+                        {
+                            cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                        }
                         continue;
                     }
-                    var bri = item.weComponent.HasBRI ? item.weComponent.RenderInformation : WEAtlasesLibrary.GetWhiteTextureBRI();
-                    if ((((counter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
-                            && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity)
-                            && item.weComponent.GetEffectiveText(EntityManager) != (bri.m_isError ? item.weComponent.LastErrorStr : bri.m_refText))
+                    bool wasDirty = false;
+                    if (bri is null)
                     {
-                        cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                        bri = WEAtlasesLibrary.GetWhiteTextureBRI();
                     }
-                    var wasDirty = item.weComponent.IsDirty();
-                    Graphics.DrawMesh(bri.m_mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
-                    if (wasDirty) cmd.SetComponent(item.textDataEntity, item.weComponent);
+                    else
+                    {
+                        if ((((counter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
+                             && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity)
+                             && item.weComponent.UpdateEffectiveText(EntityManager))
+                        {
+                            wasDirty = true;
+                            cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                        }
+                        wasDirty |= item.weComponent.IsDirty();
+                    }
+                    Graphics.DrawMesh(bri.Mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
+                    if (wasDirty) EntityManager.SetComponentData(item.textDataEntity, item.weComponent);
                 }
             }
         }
@@ -369,7 +376,7 @@ namespace BelzontWE
                     if (!m_cullingInfo.TryGetComponent(parentRef, out cullInfo))
                     {
 #if !BURST
-                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} no cull info on parent ref");
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} no cull info on parent ref ({parentRef})");
 #endif
                         m_CommandBuffer.DestroyEntity(entity);
                         matrix = default;

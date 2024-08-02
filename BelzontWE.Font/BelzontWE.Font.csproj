@@ -7,6 +7,7 @@
     <LangVersion>10.0</LangVersion>
     <DebugType Condition="'$(Configuration)'=='Release'">None</DebugType>
     <DebugSymbols Condition="'$(Configuration)'=='Release'">False</DebugSymbols>
+    <DebugType Condition="'$(Configuration)'=='Debug'">embedded</DebugType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -148,9 +149,6 @@
     </None>
     <Resource Include="*.md" />
 
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\SourceSansPro-Regular.ttf" />
   </ItemGroup>
 
 </Project>

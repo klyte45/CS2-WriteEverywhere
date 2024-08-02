@@ -47,7 +47,7 @@ namespace WriteEverywhere.Sprites
             var proportion = tex.width / (float)tex.height;
             var bri = new BasicRenderInformation
             {
-                m_mesh = new()
+                Mesh = new()
                 {
                     vertices = new[]
                     {
@@ -76,9 +76,9 @@ namespace WriteEverywhere.Sprites
                 m_expandXIfAlone = true
             };
 
-            bri.m_mesh.RecalculateNormals();
-            bri.m_mesh.RecalculateTangents();
-            bri.m_mesh.RecalculateBounds();
+            bri.Mesh.RecalculateNormals();
+            bri.Mesh.RecalculateTangents();
+            bri.Mesh.RecalculateBounds();
 
             bri.m_generatedMaterial.mainTexture = tex;
             bri.m_generatedMaterial.SetTexture(FontAtlas._BaseColorMap, tex);

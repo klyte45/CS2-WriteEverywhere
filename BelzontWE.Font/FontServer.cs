@@ -55,7 +55,7 @@ namespace BelzontWE
             if (name.TrimToNull() == null) return Entity.Null;
             if (LoadedFonts.TryGetValue(name, out var e)) return e;
             var fontEntity = EntityManager.CreateEntity();
-            var defaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Font.Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY);
+            var defaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY);
             EntityManager.AddComponent<Created>(fontEntity);
             EntityManager.AddComponentData(fontEntity, defaultFont);
             return fontEntity;
@@ -80,7 +80,7 @@ namespace BelzontWE
                     }
                 }
            });
-            DefaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Font.Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY, true);
+            DefaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY, true);
             m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
         }
 

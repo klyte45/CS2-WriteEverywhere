@@ -11,7 +11,7 @@ namespace BelzontWE
             var weData = em.GetComponentData<WETextData>(cloneEntity);
             weData.TargetEntity = cloneEntity;
             weData.OnPostInstantiate();
-            weData.SetNewParent(newParent, em, true);
+            weData.SetNewParentForced(newParent);
             em.SetComponentData(cloneEntity, weData);
             if (em.TryGetBuffer<WESubTextRef>(cloneEntity, false, out var subRefs))
             {
@@ -82,6 +82,122 @@ namespace BelzontWE
                 em.SetComponentData(selfEntity, selfComponent);
             }
             return selfEntity;
+        }
+
+
+
+
+
+        public static Entity DoCloneTextItemReferenceSelf(Entity toCopy, Entity newParent, EntityManager em, EntityCommandBuffer cmd, bool parentAsTargetAtTheEnd = false)
+        {
+            var cloneEntity = cmd.Instantiate(toCopy);
+            var weData = em.GetComponentData<WETextData>(toCopy);
+            weData.TargetEntity = cloneEntity;
+            weData.OnPostInstantiate();
+            weData.SetNewParentForced(newParent);
+            cmd.SetComponent(cloneEntity, weData);
+            if (em.TryGetBuffer<WESubTextRef>(toCopy, true, out var subRefs))
+            {
+                cmd.RemoveComponent<WESubTextRef>(cloneEntity);
+                DynamicBuffer<WESubTextRef> newBuff = cmd.AddBuffer<WESubTextRef>(cloneEntity);
+                newBuff.Length = subRefs.Length;
+                for (int i = 0; i < subRefs.Length; i++)
+                {
+                    var subRef = subRefs[i];
+                    subRef.m_weTextData = DoCloneTextItemForCommandBuffer(subRefs[i].m_weTextData, cloneEntity, weData, em, cmd);
+                    newBuff[i] = subRef;
+                }
+               ;
+            }
+            if (parentAsTargetAtTheEnd)
+            {
+                weData.TargetEntity = newParent;
+                cmd.SetComponent(cloneEntity, weData);
+            }
+            return cloneEntity;
+        }
+
+
+        private static Entity DoCloneTextItemForCommandBuffer(Entity toCopy, Entity newParent, WETextData refTextData, EntityManager em, EntityCommandBuffer cmd)
+        {
+            var finalTargetEntity = refTextData.TargetEntity;
+            var cloneEntity = cmd.Instantiate(toCopy);
+            var weData = em.GetComponentData<WETextData>(toCopy);
+            weData.TargetEntity = finalTargetEntity;
+            weData.OnPostInstantiate();
+            weData.SetNewParentForced(newParent);
+            cmd.SetComponent(cloneEntity, weData);
+            if (em.TryGetBuffer<WESubTextRef>(toCopy, true, out var subRefs))
+            {
+                cmd.RemoveComponent<WESubTextRef>(cloneEntity);
+                DynamicBuffer<WESubTextRef> newBuff = cmd.AddBuffer<WESubTextRef>(cloneEntity);
+                newBuff.Length = subRefs.Length;
+                for (int i = 0; i < subRefs.Length; i++)
+                {
+                    var subRef = subRefs[i];
+                    subRef.m_weTextData = DoCloneTextItemForCommandBuffer(subRefs[i].m_weTextData, cloneEntity, weData, em, cmd);
+                    newBuff[i] = subRef;
+                }
+            }
+            return cloneEntity;
+        }
+
+
+
+
+
+        public static Entity DoCloneTextItemReferenceSelf(Entity toCopy, Entity newParent, ref ComponentLookup<WETextData> tdLookup, ref BufferLookup<WESubTextRef> subTextLookup, EntityCommandBuffer cmd, bool parentAsTargetAtTheEnd = false)
+        {
+            var cloneEntity = cmd.Instantiate(toCopy);
+            tdLookup.TryGetComponent(toCopy, out var weData);
+            weData.TargetEntity = cloneEntity;
+            weData.SetNewParentForced(newParent);
+            cmd.SetComponent(cloneEntity, weData);
+            cmd.AddComponent<WEWaitingPostInstantiation>(cloneEntity);
+            if (subTextLookup.TryGetBuffer(toCopy, out var subRefs))
+            {
+                cmd.RemoveComponent<WESubTextRef>(cloneEntity);
+                DynamicBuffer<WESubTextRef> newBuff = cmd.AddBuffer<WESubTextRef>(cloneEntity);
+                newBuff.Length = subRefs.Length;
+                for (int i = 0; i < subRefs.Length; i++)
+                {
+                    var subRef = subRefs[i];
+                    subRef.m_weTextData = DoCloneTextItemForCommandBuffer(subRefs[i].m_weTextData, cloneEntity, weData, ref tdLookup, ref subTextLookup, cmd);
+                    newBuff[i] = subRef;
+                }
+               ;
+            }
+            if (parentAsTargetAtTheEnd)
+            {
+                weData.TargetEntity = newParent;
+                cmd.SetComponent(cloneEntity, weData);
+            }
+            return cloneEntity;
+        }
+
+
+        private static Entity DoCloneTextItemForCommandBuffer(Entity toCopy, Entity newParent, WETextData refTextData, ref ComponentLookup<WETextData> tdLookup, ref BufferLookup<WESubTextRef> subTextLookup, EntityCommandBuffer cmd)
+        {
+            var finalTargetEntity = refTextData.TargetEntity;
+            var cloneEntity = cmd.Instantiate(toCopy);
+            tdLookup.TryGetComponent(toCopy, out var weData);
+            weData.TargetEntity = finalTargetEntity;
+            weData.SetNewParentForced(newParent);
+            cmd.SetComponent(cloneEntity, weData);
+            cmd.AddComponent<WEWaitingPostInstantiation>(cloneEntity);
+            if (subTextLookup.TryGetBuffer(toCopy, out var subRefs))
+            {
+                cmd.RemoveComponent<WESubTextRef>(cloneEntity);
+                DynamicBuffer<WESubTextRef> newBuff = cmd.AddBuffer<WESubTextRef>(cloneEntity);
+                newBuff.Length = subRefs.Length;
+                for (int i = 0; i < subRefs.Length; i++)
+                {
+                    var subRef = subRefs[i];
+                    subRef.m_weTextData = DoCloneTextItemForCommandBuffer(subRefs[i].m_weTextData, cloneEntity, weData, ref tdLookup, ref subTextLookup, cmd);
+                    newBuff[i] = subRef;
+                }
+            }
+            return cloneEntity;
         }
     }
 }

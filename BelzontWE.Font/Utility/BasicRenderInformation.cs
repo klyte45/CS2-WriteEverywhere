@@ -19,25 +19,56 @@ namespace BelzontWE.Font.Utility
             m_generatedMaterial = targetAtlas;
             m_pixelDensityMeters = 1000f;
 
+            m_vertices = AlignVertices(brij.vertices.ToList());
+            m_triangles = brij.triangles.ToArray();
+            m_colors32 = brij.colors.ToArray();
+            m_uv = brij.uv1.ToArray();
 
-            m_mesh = new Mesh
-            {
-                vertices = AlignVertices(brij.vertices.ToList()),
-                triangles = brij.triangles.ToArray(),
-                colors32 = brij.colors.ToArray(),
-                uv = brij.uv1.ToArray(),
-            };
-            m_mesh.RecalculateBounds();
-            m_mesh.RecalculateNormals();
-            m_mesh.RecalculateTangents();
-
-            m_sizeMetersUnscaled = m_mesh.bounds.size;
+            m_sizeMetersUnscaled = Mesh.bounds.size;
             //   if (BasicIMod.DebugMode) LogUtils.DoLog($"MESH: {m_mesh} {m_mesh.vertices[0]} {m_mesh.vertices[1]}...  {m_mesh.tangents[0]} {m_mesh.tangents[1]}...  {m_mesh.normals[0]} {m_mesh.normals[1]}... {m_mesh.vertices.Length} {m_mesh.triangles.Length} {m_sizeMetersUnscaled}m");
             brij.Dispose();
         }
+
+        private Vector3[] m_vertices;
+        private int[] m_triangles;
+        private Color32[] m_colors32;
+        private Vector2[] m_uv;
+        private Mesh m_mesh;
         [XmlIgnore]
-        public Mesh m_mesh;
-        public int MeshSize { get => m_mesh.vertices.Length; set { } }
+        public Mesh Mesh
+        {
+            get
+            {
+                if (m_mesh is null)
+                {
+                    m_mesh = new Mesh
+                    {
+                        vertices = m_vertices,
+                        triangles = m_triangles,
+                        colors32 = m_colors32,
+                        uv = m_uv,
+                    };
+                    m_mesh.RecalculateBounds();
+                    m_mesh.RecalculateNormals();
+                    m_mesh.RecalculateTangents();
+                }
+                return m_mesh;
+            }
+            set
+            {
+                if (value != null)
+                {
+                    m_vertices = value.vertices;
+                    m_triangles = value.triangles;
+                    m_colors32 = value.colors32;
+                    m_uv = value.uv;
+                    m_mesh = null;
+                }
+            }
+        }
+        public int MeshSize { get => Mesh.vertices.Length; set { } }
+
+
         public Vector2 m_sizeMetersUnscaled;
         public long m_materialGeneratedTick;
         [XmlIgnore]
@@ -70,7 +101,7 @@ namespace BelzontWE.Font.Utility
             return points.Select(k => k - offset).ToArray();
         }
 
-        public override string ToString() => $"BRI [m={m_mesh?.bounds};sz={m_sizeMetersUnscaled}]";
+        public override string ToString() => $"BRI [m={Mesh?.bounds};sz={m_sizeMetersUnscaled}]";
 
         internal long GetSize() => GetMeshSize();
 
@@ -79,20 +110,20 @@ namespace BelzontWE.Font.Utility
             unsafe
             {
                 return
-                    sizeof(Color32) * (m_mesh.colors32?.Length ?? 0)
+                    sizeof(Color32) * (Mesh.colors32?.Length ?? 0)
                     + sizeof(int) * 4
                     + sizeof(Bounds)
-                    + sizeof(BoneWeight) * (m_mesh.boneWeights?.Length ?? 0)
-                    + sizeof(Matrix4x4) * (m_mesh.bindposes?.Length ?? 0)
-                    + sizeof(Vector3) * (m_mesh.vertices?.Length ?? 0)
-                    + sizeof(Vector3) * (m_mesh.normals?.Length ?? 0)
-                    + sizeof(Vector4) * (m_mesh.tangents?.Length ?? 0)
-                    + sizeof(Vector2) * (m_mesh.uv?.Length ?? 0)
-                    + sizeof(Vector2) * (m_mesh.uv2?.Length ?? 0)
-                    + sizeof(Vector2) * (m_mesh.uv3?.Length ?? 0)
-                    + sizeof(Vector2) * (m_mesh.uv4?.Length ?? 0)
-                    + sizeof(Color) * (m_mesh.colors?.Length ?? 0)
-                    + sizeof(int) * (m_mesh.triangles?.Length ?? 0)
+                    + sizeof(BoneWeight) * (Mesh.boneWeights?.Length ?? 0)
+                    + sizeof(Matrix4x4) * (Mesh.bindposes?.Length ?? 0)
+                    + sizeof(Vector3) * (Mesh.vertices?.Length ?? 0)
+                    + sizeof(Vector3) * (Mesh.normals?.Length ?? 0)
+                    + sizeof(Vector4) * (Mesh.tangents?.Length ?? 0)
+                    + sizeof(Vector2) * (Mesh.uv?.Length ?? 0)
+                    + sizeof(Vector2) * (Mesh.uv2?.Length ?? 0)
+                    + sizeof(Vector2) * (Mesh.uv3?.Length ?? 0)
+                    + sizeof(Vector2) * (Mesh.uv4?.Length ?? 0)
+                    + sizeof(Color) * (Mesh.colors?.Length ?? 0)
+                    + sizeof(int) * (Mesh.triangles?.Length ?? 0)
                     + sizeof(bool)
                     ;
             }

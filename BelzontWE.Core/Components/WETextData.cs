@@ -90,7 +90,22 @@ namespace BelzontWE
                 }
             }
         }
-        public BasicRenderInformation RenderInformation => basicRenderInformation.IsAllocated ? basicRenderInformation.Target as BasicRenderInformation : null;
+        public BasicRenderInformation RenderInformation
+        {
+            get
+            {
+                if (basicRenderInformation.IsAllocated && basicRenderInformation.Target is BasicRenderInformation bri)
+                {
+                    return bri;
+                }
+                else
+                {
+                    if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
+                    return null;
+                }
+            }
+        }
+
         public float BriWidthMetersUnscaled { get; private set; }
         public MaterialPropertyBlock MaterialProperties
         {
@@ -241,15 +256,15 @@ namespace BelzontWE
             }
         }
 
-        public string ItemName
+        public FixedString32Bytes ItemName
         {
-            readonly get => itemName.ToString(); set
+            readonly get => itemName; set
             {
                 if (itemName != value && TextType == WESimulationTextType.Placeholder)
                 {
                     templateDirty = true;
                 }
-                itemName = value ?? null;
+                itemName = value;
             }
         }
 
@@ -275,9 +290,9 @@ namespace BelzontWE
             };
         }
 
-        public bool SetNewParent(Entity e, EntityManager em, bool force = false)
+        public bool SetNewParent(Entity e, EntityManager em)
         {
-            if (!force && e != targetEntity && e != Entity.Null && (!em.TryGetComponent<WETextData>(e, out var weData) || (weData.targetEntity != Entity.Null && weData.targetEntity != targetEntity)))
+            if (e != targetEntity && e != Entity.Null && (!em.TryGetComponent<WETextData>(e, out var weData) || (weData.targetEntity != Entity.Null && weData.targetEntity != targetEntity)))
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"NOPE: e = {e}; weData = {weData}; targetEntity = {targetEntity}; weData.targetEntity = {weData.targetEntity}");
                 return false;
@@ -285,6 +300,10 @@ namespace BelzontWE
             if (BasicIMod.DebugMode) LogUtils.DoLog($"YEP: e = {e};  targetEntity = {targetEntity}");
             parentEntity = e;
             return true;
+        }
+        public void SetNewParentForced(Entity e)
+        {
+            parentEntity = e;
         }
 
         public readonly bool IsDirty() => dirty;
@@ -326,7 +345,7 @@ namespace BelzontWE
             return result;
         }
 
-        public string GetEffectiveText(EntityManager em)
+        public bool UpdateEffectiveText(EntityManager em)
         {
             if (!loadingFnDone)
             {
@@ -337,21 +356,27 @@ namespace BelzontWE
 
                 loadingFnDone = true;
             }
-            return formulaeHandlerFn.IsAllocated && FormulaeFn is Func<EntityManager, Entity, string> fn
+            var oldEffText = EffectiveText;
+            EffectiveText = FormulaeFn is Func<EntityManager, Entity, string> fn
                 ? fn(em, GetTargetEntityEffective(TargetEntity, em))?.ToString().Truncate(500) ?? "<InvlidFn>"
                 : formulaeHandlerStr.Length > 0 ? "<InvalidFn>" : Text;
+            return EffectiveText != oldEffText;
         }
 
         private static Entity GetTargetEntityEffective(Entity target, EntityManager em)
         {
-            if (em.TryGetComponent<WETextData>(target, out var weData))
-            {
-
-                if (weData.TargetEntity == target && weData.ParentEntity != target) return GetTargetEntityEffective(weData.ParentEntity, em);
-                return weData.TargetEntity;
-            }
-            return target;
+            return em.TryGetComponent<WETextData>(target, out var weData)
+                ? (weData.TextType == WESimulationTextType.Archetype) && weData.TargetEntity != target
+                    ? GetTargetEntityEffective(weData.TargetEntity, em)
+                    : weData.TextType == WESimulationTextType.Placeholder && weData.ParentEntity != target
+                    ? GetTargetEntityEffective(weData.ParentEntity, em)
+                    : weData.TargetEntity
+                : target;
         }
+
+        public FixedString512Bytes EffectiveText { get; private set; }
+
+
 
         public void OnPostInstantiate()
         {
@@ -502,6 +527,7 @@ namespace BelzontWE
                 maxWidthMeters = xml.maxWidthMeters,
             };
         }
+
         #endregion
     }
 }
