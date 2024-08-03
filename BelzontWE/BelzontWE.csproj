@@ -184,6 +184,14 @@
       <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.UnityWebRequestModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Unity.RenderPipelines.HighDefinition.Runtime">
+      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Unity.RenderPipelines.HighDefinition.Runtime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.InputSystem.dll">
+      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Unity.InputSystem.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -215,7 +223,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BelzontWE.Commons\BelzontWE.Commons.csproj" />
-    <ProjectReference Include="..\BelzontWE.Font\BelzontWE.Font.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\_Frontends\_Frontends.csproj">

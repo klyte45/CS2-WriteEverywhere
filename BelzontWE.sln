@@ -3,9 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BelzontWE", "BelzontWE.Core\BelzontWE.csproj", "{8861032F-DE0F-4BFA-AFA3-D910ED8282FD}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BelzontWE.Font", "BelzontWE.Font\BelzontWE.Font.csproj", "{560C395E-18D9-44F3-9B3C-D6E5ED455720}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BelzontWE", "BelzontWE\BelzontWE.csproj", "{8861032F-DE0F-4BFA-AFA3-D910ED8282FD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BelzontWE.Commons", "BelzontWE.Commons\BelzontWE.Commons.csproj", "{5B42993F-EDAA-4729-982E-552EAA26DC85}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -14,7 +12,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BelzontWE.Commons", "Belzon
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WE_EUIS", "WE_EUIS\WE_EUIS.csproj", "{721000B2-FADC-4F9F-9200-726C7357EE5E}"
 	ProjectSection(ProjectDependencies) = postProject
-		{560C395E-18D9-44F3-9B3C-D6E5ED455720} = {560C395E-18D9-44F3-9B3C-D6E5ED455720}
 		{5B42993F-EDAA-4729-982E-552EAA26DC85} = {5B42993F-EDAA-4729-982E-552EAA26DC85}
 		{8861032F-DE0F-4BFA-AFA3-D910ED8282FD} = {8861032F-DE0F-4BFA-AFA3-D910ED8282FD}
 	EndProjectSection
@@ -31,10 +28,6 @@ Global
 		{8861032F-DE0F-4BFA-AFA3-D910ED8282FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8861032F-DE0F-4BFA-AFA3-D910ED8282FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8861032F-DE0F-4BFA-AFA3-D910ED8282FD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{560C395E-18D9-44F3-9B3C-D6E5ED455720}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{560C395E-18D9-44F3-9B3C-D6E5ED455720}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{560C395E-18D9-44F3-9B3C-D6E5ED455720}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{560C395E-18D9-44F3-9B3C-D6E5ED455720}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5B42993F-EDAA-4729-982E-552EAA26DC85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5B42993F-EDAA-4729-982E-552EAA26DC85}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5B42993F-EDAA-4729-982E-552EAA26DC85}.Release|Any CPU.ActiveCfg = Release|Any CPU
