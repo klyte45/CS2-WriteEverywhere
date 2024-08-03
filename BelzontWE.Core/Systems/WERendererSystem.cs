@@ -167,14 +167,14 @@ namespace BelzontWE
                     m_weTemplateUpdaterLookup = GetComponentLookup<WETemplateUpdater>(true),
                     m_weTemplateForPrefabLookup = GetComponentLookup<WETemplateForPrefab>(true),
                     m_weTemplateDataLookup = GetComponentLookup<WETemplateData>(true),
-                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
+                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                     m_LodParameters = m_LodParameters,
                     m_CameraPosition = m_CameraPosition,
                     m_CameraDirection = m_CameraDirection,
-                    availToDraw = availToDraw,
+                    availToDraw = availToDraw.AsParallelWriter(),
                     isAtWeEditor = m_pickerTool.IsSelected
                 };
-                job2.Schedule(m_renderQueueEntities, Dependency).Complete();
+                job2.ScheduleParallel(m_renderQueueEntities, Dependency).Complete();
             }
         }
 
@@ -213,8 +213,8 @@ namespace BelzontWE
             public float3 m_CameraPosition;
             public float3 m_CameraDirection;
             public EntityTypeHandle m_EntityType;
-            public NativeQueue<WERenderData> availToDraw;
-            public EntityCommandBuffer m_CommandBuffer;
+            public NativeQueue<WERenderData>.ParallelWriter availToDraw;
+            public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
             public bool isAtWeEditor;
 
             public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
@@ -236,7 +236,7 @@ namespace BelzontWE
 #if !BURST
                                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} childEntity {prefabForLookup.childEntity} != weCustomData.TargetEntity {weCustomData.TargetEntity} (prefabForLookup I)");
 #endif
-                                m_CommandBuffer.DestroyEntity(entity);
+                                m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, entity);
                             }
                         }
                         continue;
@@ -244,7 +244,7 @@ namespace BelzontWE
 
                     if (weCustomData.TextType == WESimulationTextType.Placeholder != m_weTemplateUpdaterLookup.HasComponent(entity))
                     {
-                        m_CommandBuffer.AddComponent<WEWaitingRendering>(entity);
+                        m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                         continue;
                     }
 
@@ -253,17 +253,17 @@ namespace BelzontWE
 #if !BURST
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} any target or parent are null");
 #endif
-                        m_CommandBuffer.DestroyEntity(entity);
+                        m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, entity);
                         continue;
                     }
                     if ((weCustomData.TextType == WESimulationTextType.Placeholder && !isAtWeEditor)) continue;
 
-                    if (!GetBaseMatrix(entity, ref weCustomData, out CullingInfo cullInfo, out var baseMatrix)) continue;
+                    if (!GetBaseMatrix(entity, ref weCustomData, out CullingInfo cullInfo, out var baseMatrix, unfilteredChunkIndex)) continue;
                     float minDist = RenderingUtils.CalculateMinDistance(cullInfo.m_Bounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
 
                     if (!weCustomData.HasBRI && weCustomData.TextType != WESimulationTextType.Placeholder)
                     {
-                        m_CommandBuffer.AddComponent<WEWaitingRendering>(entity);
+                        m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                         continue;
                     }
                     int num7 = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
@@ -287,7 +287,7 @@ namespace BelzontWE
                 }
             }
 
-            private bool GetBaseMatrix(Entity entity, ref WETextData weCustomData, out CullingInfo cullInfo, out Matrix4x4 matrix, bool scaleless = false)
+            private bool GetBaseMatrix(Entity entity, ref WETextData weCustomData, out CullingInfo cullInfo, out Matrix4x4 matrix, int unfilteredChunkIndex, bool scaleless = false)
             {
                 float3 positionRef;
                 quaternion rotationRef;
@@ -310,7 +310,7 @@ namespace BelzontWE
 #if !BURST
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} childEntity {updater.childEntity} != weCustomData.TargetEntity {weCustomData.TargetEntity} (I)");
 #endif
-                        m_CommandBuffer.DestroyEntity(entity);
+                        m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, entity);
                         cullInfo = default;
                         matrix = default;
                         return false;
@@ -332,7 +332,7 @@ namespace BelzontWE
 #if !BURST
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} childEntity {updater.childEntity} != weCustomData.TargetEntity {weCustomData.TargetEntity} (II)");
 #endif
-                        m_CommandBuffer.DestroyEntity(entity);
+                        m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, entity);
                         cullInfo = default;
                         matrix = default;
                         return false;
@@ -349,7 +349,7 @@ namespace BelzontWE
 
                 if (m_weDataLookup.TryGetComponent(parentRef, out var parentData))
                 {
-                    if (!GetBaseMatrix(entity, ref parentData, out cullInfo, out matrix, true))
+                    if (!GetBaseMatrix(entity, ref parentData, out cullInfo, out matrix, unfilteredChunkIndex, true))
                     {
                         return false;
                     }
@@ -368,7 +368,7 @@ namespace BelzontWE
 #if !BURST
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} parentRef {parentRef} != targetRef {targetRef}");
 #endif
-                    m_CommandBuffer.DestroyEntity(entity);
+                    m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, entity);
                     return false;
                 }
                 else
@@ -378,7 +378,12 @@ namespace BelzontWE
 #if !BURST
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} no cull info on parent ref ({parentRef})");
 #endif
-                        m_CommandBuffer.DestroyEntity(entity);
+                        m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, entity);
+                        matrix = default;
+                        return false;
+                    }
+                    if (cullInfo.m_PassedCulling != 1)
+                    {
                         matrix = default;
                         return false;
                     }
@@ -397,7 +402,7 @@ namespace BelzontWE
 #if !BURST
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} no transform! ({parentRef})");
 #endif
-                        m_CommandBuffer.DestroyEntity(entity);
+                        m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, entity);
                         matrix = default;
                         cullInfo = default;
                         return false;

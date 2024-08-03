@@ -79,6 +79,8 @@ namespace BelzontWE
             var name = Path.GetFileNameWithoutExtension(path);
             if (FontServer.Instance.RegisterFont(name, File.ReadAllBytes(path)))
             {
+                FontList.Value = FontServer.Instance.LoadedFonts;
+                FontList.UpdateUIs();
                 return name;
             }
             return "";
@@ -263,6 +265,7 @@ namespace BelzontWE
             ImageAtlasName.Value = currentItem.Atlas;
 
             FontList.Value = FontServer.Instance.LoadedFonts;
+            FontList.UpdateUIs();
         }
 
         #endregion

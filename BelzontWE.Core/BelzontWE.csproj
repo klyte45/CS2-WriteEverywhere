@@ -9,7 +9,8 @@
     <DebugSymbols Condition="'$(Configuration)'=='Release'">False</DebugSymbols>
     <DebugSymbols Condition="'$(Configuration)'=='Debug'">True</DebugSymbols>
     <DebugType Condition="'$(Configuration)'=='Debug'">embedded</DebugType>
-    <Bursted>false</Bursted>
+    <Bursted Condition="'$(Configuration)'=='Release'">true</Bursted>
+    <Bursted Condition="'$(Configuration)'=='Debug'">true</Bursted>
     <DebuggerMode Condition="'$(Configuration)'=='Debug'">true</DebuggerMode>
     <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
     <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>

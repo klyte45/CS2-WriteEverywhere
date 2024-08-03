@@ -300,7 +300,7 @@ namespace BelzontWE.Font
 
             Material.mainTexture = Texture;
             Material.SetTexture(_BaseColorMap, Texture);
-#if DEBUG
+#if DEBUG && false
             byte[] bytes = UnityEngine.ImageConversion.EncodeToPNG(Texture);
             // For testing purposes, also write to a file in the project folder
             File.WriteAllBytes(Path.Combine(BasicIMod.ModSettingsRootFolder, $"Texture_.png"), bytes);

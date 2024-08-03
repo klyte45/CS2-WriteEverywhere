@@ -41,7 +41,11 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const FloatInputField = VanillaWidgets.instance.FloatInputField;
     const editorTheme = VanillaWidgets.instance.editorItemModule;
     const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
-    const onFontSelectWindow = async () => wps.SelectedFont.set(await WorldPickerService.requireFontInstallation(""))
+    const onFontSelectWindow = async () => {
+        const res = await WorldPickerService.requireFontInstallation("");
+        console.log(res);
+        return wps.SelectedFont.set(res);
+    }
 
     const [formulaeTyping, setFormulaeTyping] = useState(wps.FormulaeStr.value);
     const [fixedTextTyping, setFixedTextTyping] = useState(wps.CurrentItemText.value);

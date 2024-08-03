@@ -174,6 +174,9 @@ namespace BelzontWE
             m_moveDown.shouldBeEnabled = false;
             m_rotateClockwise.shouldBeEnabled = false;
             m_rotateCounterClockwise.shouldBeEnabled = false;
+
+            m_cameraSystem.cinematicCameraController.collisionsEnabled = true;
+            m_cameraSystem.cinematicCameraController.inputEnabled = true;
         }
 
         public override void InitializeRaycast()
