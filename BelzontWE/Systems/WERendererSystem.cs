@@ -158,7 +158,7 @@ namespace BelzontWE
                     }
                     if (dumpNextFrame)
                     {
-                        LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType}\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length}");
+                        LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType}\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length} | M= {item.transformMatrix}");
 
                     }
                     Graphics.DrawMesh(bri.Mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
@@ -429,10 +429,10 @@ namespace BelzontWE
                     matrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one);
                 }
                 var scale = Vector3.one;
-                if (!scaleless && weCustomData.HasBRI)
+                if (!scaleless)
                 {
                     scale = weCustomData.scale * weCustomData.BriOffsetScaleX / weCustomData.BriPixelDensity;
-                    if (weCustomData.TextType == WESimulationTextType.Text && weCustomData.maxWidthMeters > 0 && weCustomData.BriWidthMetersUnscaled * scale.x > weCustomData.maxWidthMeters)
+                    if (weCustomData.HasBRI && weCustomData.TextType == WESimulationTextType.Text && weCustomData.maxWidthMeters > 0 && weCustomData.BriWidthMetersUnscaled * scale.x > weCustomData.maxWidthMeters)
                     {
                         scale.x = weCustomData.maxWidthMeters / weCustomData.BriWidthMetersUnscaled;
                     }

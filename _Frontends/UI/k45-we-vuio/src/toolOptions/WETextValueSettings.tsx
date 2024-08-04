@@ -5,6 +5,7 @@ import { WorldPickerService } from "services/WorldPickerService";
 import "../style/floatingPanels.scss";
 import { translate } from "utils/translate";
 import { WEFormulaeEditor } from "./WEFormulaeEditor";
+import { WESimulationTextType } from "services/WEFormulaeElement";
 
 
 const i_addFont = "coui://uil/Colored/Folder.svg";
@@ -21,6 +22,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const T_image = translate("textValueSettings.image"); //
     const T_Height = translate("textValueSettings.height"); //
     const T_HeightCm = translate("textValueSettings.heightCm"); //
+    const T_WidthCm = translate("textValueSettings.widthCm"); //
     const T_widthDistortion = translate("textValueSettings.widthDistortion"); //
     const T_maxWidth = translate("textValueSettings.maxWidth"); //
 
@@ -56,12 +58,14 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     const [height, setHeight] = useState(wps.CurrentScale.value[1]);
     const [widthDistortion, setWidthDistortion] = useState(wps.CurrentScale.value[0] / wps.CurrentScale.value[1]);
+    const [width, setWidth] = useState(wps.CurrentScale.value[0]);
     const [maxWidth, setMaxWidth] = useState(wps.MaxWidth.value * 100);
 
 
     useEffect(() => {
         setHeight(wps.CurrentScale.value[1]);
         setWidthDistortion(wps.CurrentScale.value[0] / wps.CurrentScale.value[1]);
+        setWidth(wps.CurrentScale.value[0]);
     }, [wps.CurrentScale.value, wps.CurrentSubEntity.value])
 
 
@@ -73,14 +77,21 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     const saveHeight = (height: number) => {
         const scale = wps.CurrentScale.value;
-        const proportion = wps.CurrentScale.value[0] / wps.CurrentScale.value[1];
+        if ([WESimulationTextType.Text, WESimulationTextType.Image].includes(wps.TextSourceType.value)) {
+            const proportion = wps.CurrentScale.value[0] / wps.CurrentScale.value[1];
+            scale[0] = height * proportion;
+        }
         scale[1] = height;
-        scale[0] = height * proportion;
         wps.CurrentScale.set(scale);
     }
     const saveWidthDistortion = (proportion: number) => {
         const scale = wps.CurrentScale.value;
         scale[0] = scale[1] * proportion;
+        wps.CurrentScale.set(scale);
+    }
+    const saveWidth = (width: number) => {
+        const scale = wps.CurrentScale.value;
+        scale[0] = width;
         wps.CurrentScale.set(scale);
     }
 
@@ -99,9 +110,10 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                         style={{ flexGrow: 1, width: "inherit" }}
                     />
                 </EditorItemRow>
-                <FloatInputField label={wps.TextSourceType.value == 0 ? T_HeightCm : T_Height} min={.001} max={10000000} value={height * (wps.TextSourceType.value == 0 ? 100 : 1)} onChange={(x) => saveHeight(x * (wps.TextSourceType.value == 0 ? .01 : 1))} onChangeEnd={() => saveHeight(height)} />
-                <FloatInputField label={T_widthDistortion} min={.001} max={1000000} value={widthDistortion} onChange={setWidthDistortion} onChangeEnd={() => saveWidthDistortion(widthDistortion)} />
-                {wps.TextSourceType.value == 0 && <>
+                <FloatInputField label={T_HeightCm} min={.001} max={10000000} value={height * 100} onChange={(x) => saveHeight(x * .01)} onChangeEnd={() => saveHeight(height)} />
+                {[WESimulationTextType.Text, WESimulationTextType.Image].includes(wps.TextSourceType.value) && <FloatInputField label={T_widthDistortion} min={.001} max={1000000} value={widthDistortion} onChange={setWidthDistortion} onChangeEnd={() => saveWidthDistortion(widthDistortion)} />}
+                {[WESimulationTextType.Placeholder].includes(wps.TextSourceType.value) && <FloatInputField label={T_WidthCm} min={.001} max={1000000} value={width * 100} onChange={(x) => saveWidth(x * .01)} onChangeEnd={() => saveWidth(width)} />}
+                {wps.TextSourceType.value == WESimulationTextType.Text && <>
                     <FloatInputField label={T_maxWidth} min={.001} max={1000000} value={maxWidth} onChange={setMaxWidth} onChangeEnd={() => saveMaxWidth(maxWidth)} />
                     <EditorItemRow label={T_fontFieldTitle} styleContent={{ paddingLeft: "34rem" }}>
                         <DropdownField
@@ -143,7 +155,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                         </EditorItemRow>
                     }
                 </>}
-                {wps.TextSourceType.value == 1 && <>
+                {wps.TextSourceType.value == WESimulationTextType.Image && <>
                     <EditorItemRow label={T_atlas}>
                         <DropdownField
                             value={wps.ImageAtlasName.value}

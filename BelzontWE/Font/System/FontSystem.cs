@@ -9,7 +9,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -36,7 +35,6 @@ namespace BelzontWE.Font
         public int FontHeight => FontServer.QualitySize;
 
         private readonly Dictionary<string, BasicRenderInformation> m_textCache = new();
-        
 
         public Color Color;
         public readonly int Blur;
@@ -122,7 +120,7 @@ namespace BelzontWE.Font
             }
             else
             {
-                var result = m_textCache.TryAdd(str, default);
+                var result = m_textCache[str] = null;
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Enqueued String: {str} ({data.Name}) {result}");
                 itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = str, scale = scale, alignment = alignment });
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"itemsQueue: {itemsQueue.Count}");
@@ -130,13 +128,12 @@ namespace BelzontWE.Font
             }
         }
 
-        private static void AddTriangleIndices(IList<Vector3> verts, IList<int> triangles)
+        private static void AddTriangleIndices(IList<int> triangles)
         {
-            int count = verts.Count;
-            int[] array = kTriangleIndices;
-            for (int i = 0; i < array.Length; i++)
+            int count = triangles.Count * 2 / 3;
+            for (int i = 0; i < kTriangleIndices.Length; i++)
             {
-                triangles.Add(count + array[i]);
+                triangles.Add(count + kTriangleIndices[i]);
             }
         }
         private static int[] kTriangleIndices = new int[]{
@@ -159,7 +156,7 @@ namespace BelzontWE.Font
 
 
             if (_glyphs.IsCreated) _glyphs.Clear();
-          
+
             m_textCache.Clear();
 
             if (width == _size.x && height == _size.y)
@@ -387,6 +384,14 @@ namespace BelzontWE.Font
         }
         public JobHandle RunJobs(JobHandle dependency)
         {
+            if (!m_textCache.ContainsKey(""))
+            {
+                m_textCache[""] = new BasicRenderInformation(null, null, null)
+                {
+                    m_refText = ""
+                };
+            }
+
             if (itemsQueue.Count != 0)
             {
                 NativeArray<StringRenderingQueueItem> itemsStarted = itemsQueue.ToArray(Allocator.TempJob);
@@ -584,7 +589,7 @@ namespace BelzontWE.Font
 
             private void DrawChar(FontGlyph glyph, IList<Vector3> vertices, IList<int> triangles, IList<Vector2> uvs, IList<Color32> colors, Color overrideColor, Color bottomColor, Rect bounds)
             {
-                AddTriangleIndices(vertices, triangles);
+                AddTriangleIndices(triangles);
                 vertices.Add(new Vector2(bounds.xMax, bounds.yMin));
                 vertices.Add(new Vector2(bounds.xMin, bounds.yMin));
                 vertices.Add(new Vector2(bounds.xMin, bounds.yMax));

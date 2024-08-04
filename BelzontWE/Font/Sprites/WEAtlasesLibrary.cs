@@ -1,6 +1,5 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
-using BelzontWE;
 using BelzontWE.Font.Utility;
 using Colossal.OdinSerializer.Utilities;
 using Game;
@@ -304,33 +303,7 @@ namespace WriteEverywhere.Sprites
         {
             if (m_bgTexture == null)
             {
-                m_bgTexture = new BasicRenderInformation(vertices: new[]
-            {
-                new Vector3(-.5f, -.5f, 0f),
-                new Vector3(0.5f, -.5f, 0f),
-                new Vector3(0.5f, 0.5f, 0f),
-                new Vector3(-.5f, 0.5f, 0f),
-            },
-            uv: new[]
-            {
-                new Vector2(1, 0),
-                new Vector2(0, 0),
-                new Vector2(0, 1),
-                new Vector2(1, 1)
-            },
-            triangles: WERenderingHelper.kTriangleIndices)
-                {
-                    m_fontBaseLimits = new RangeVector { min = 0, max = 1 },
-                    m_YAxisOverflows = new RangeVector { min = -.5f, max = .5f },
-                    m_sizeMetersUnscaled = new Vector2(1, 1),
-                    m_offsetScaleX = 1,
-                    m_generatedMaterial = FontServer.CreateDefaultFontMaterial(),
-                    m_borders = default,
-                    m_pixelDensityMeters = 100f,
-                    m_lineOffset = .5f,
-                    m_expandXIfAlone = true
-                };
-                m_bgTexture.m_generatedMaterial.mainTexture = Texture2D.whiteTexture;
+                m_bgTexture = WERenderingHelper.GenerateBri(Texture2D.whiteTexture, default, 100);
             }
             return m_bgTexture;
         }
