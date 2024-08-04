@@ -48,6 +48,7 @@ namespace BelzontWE
         private FixedString32Bytes itemName;
         public WEShader shader;
         public float maxWidthMeters;
+        public bool InitializedEffectiveText { get; private set; }
 
         public FixedString512Bytes LastErrorStr { get; private set; }
         public float BriOffsetScaleX { get; private set; }
@@ -94,7 +95,7 @@ namespace BelzontWE
         {
             get
             {
-                if (basicRenderInformation.IsAllocated && basicRenderInformation.Target is BasicRenderInformation bri)
+                if (basicRenderInformation.IsAllocated && basicRenderInformation.Target is BasicRenderInformation bri && bri.Mesh != null)
                 {
                     return bri;
                 }
@@ -347,6 +348,7 @@ namespace BelzontWE
 
         public bool UpdateEffectiveText(EntityManager em)
         {
+            InitializedEffectiveText = true;
             if (!loadingFnDone)
             {
                 if (formulaeHandlerStr.Length > 0)

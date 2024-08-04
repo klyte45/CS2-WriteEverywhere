@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -35,6 +36,7 @@ namespace BelzontWE.Font
         public int FontHeight => FontServer.QualitySize;
 
         private readonly Dictionary<string, BasicRenderInformation> m_textCache = new();
+        
 
         public Color Color;
         public readonly int Blur;
@@ -63,6 +65,9 @@ namespace BelzontWE.Font
 
         public event Action CurrentAtlasFull;
 
+        private readonly NativeQueue<StringRenderingQueueItem> itemsQueue = new(Allocator.Persistent);
+        private readonly NativeQueue<BasicRenderInformationJob> results = new(Allocator.Persistent);
+        private readonly NativeQueue<StringRenderingQueueItem>.ParallelWriter itemsQueueWriter;
 
         public FontSystem(FontSystemData data)
         {
@@ -70,6 +75,7 @@ namespace BelzontWE.Font
             this.data = data;
             _size = new(FontServer.DefaultTextureSizeFont, FontServer.DefaultTextureSizeFont);
             ClearState();
+            itemsQueueWriter = itemsQueue.AsParallelWriter();
         }
 
         public void ClearState()
@@ -81,7 +87,7 @@ namespace BelzontWE.Font
 
         public void EnsureText(string str, Vector3 scale, UIHorizontalAlignment alignment = UIHorizontalAlignment.Center)
         {
-            if (string.IsNullOrEmpty(str))
+            if (str.TrimToNull() == null)
             {
                 return;
             }
@@ -101,11 +107,12 @@ namespace BelzontWE.Font
             {
                 if (!m_textCache.TryGetValue("", out bri))
                 {
-                    bri = new BasicRenderInformation
+                    bri = new BasicRenderInformation(null, null, null)
                     {
                         m_refText = str
                     };
-                    m_textCache[""] = bri;
+                    m_textCache.TryAdd("", bri);
+                    return bri;
                 }
                 return bri;
             }
@@ -115,9 +122,9 @@ namespace BelzontWE.Font
             }
             else
             {
-                m_textCache[str] = default;
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"Enqueued String: {str} ({data.Name})");
-                itemsQueue.Enqueue(new StringRenderingQueueItem() { text = str, scale = scale, alignment = alignment });
+                var result = m_textCache.TryAdd(str, default);
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Enqueued String: {str} ({data.Name}) {result}");
+                itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = str, scale = scale, alignment = alignment });
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"itemsQueue: {itemsQueue.Count}");
                 return default;
             }
@@ -144,6 +151,7 @@ namespace BelzontWE.Font
 
         public void Reset()
         {
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"Resetting font cache for {Data.Name} => {FontServer.DefaultTextureSizeFont}");
             var width = FontServer.DefaultTextureSizeFont;
             var height = width;
             data.Font.RecalculateBasedOnHeight(FontServer.QualitySize);
@@ -151,7 +159,7 @@ namespace BelzontWE.Font
 
 
             if (_glyphs.IsCreated) _glyphs.Clear();
-
+          
             m_textCache.Clear();
 
             if (width == _size.x && height == _size.y)
@@ -317,29 +325,20 @@ namespace BelzontWE.Font
             _glyphs[size] = result;
             return result;
         }
-        private void PrepareJob(ref StringRenderingJob job, StringRenderingQueueItem item)
-        {
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] PrepareJob for {item.text}");
-            job.data = data;
-            job.CurrentAtlasSize = new Vector3(CurrentAtlas.Width, CurrentAtlas.Height);
-            job.input = item;
-            job.glyphs = GetGlyphsCollection(FontHeight);
-            job.result = new NativeArray<BasicRenderInformationJob>(1, Allocator.Persistent);
-            job.AtlasVersion = CurrentAtlas.Version;
-        }
 
-        private void PostJob(StringRenderingJob jobResult)
+
+        private void PostJob(BasicRenderInformationJob brij)
         {
 
-            var originalText = jobResult.input.text.ToString();
+            var originalText = brij.originalText.ToString();
             if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] Post job for {originalText} ");
-            if (jobResult.AtlasVersion != CurrentAtlas.Version)
+            if (brij.AtlasVersion != CurrentAtlas.Version)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} since atlas changed");
                 m_textCache.Remove(originalText);
+                return;
             }
-            BasicRenderInformation result = new();
-            result.Fill(jobResult.result[0], CurrentAtlas.Material);
+            BasicRenderInformation result = BasicRenderInformation.Fill(brij, CurrentAtlas.Material);
             result.m_refY = data.Font.Ascent;
             result.m_baselineOffset = -data.Font.Descent;
             result.m_materialGeneratedTick = LastUpdateAtlas;
@@ -359,7 +358,6 @@ namespace BelzontWE.Font
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Failed updating material... Restarting process");
                 m_textCache.Clear();
-                runningJobs.Clear();
                 _glyphs.Clear();
                 CurrentAtlas.Reset(_size.x, _size.y);
             }
@@ -369,6 +367,8 @@ namespace BelzontWE.Font
         {
             data.Dispose();
             _glyphs.Dispose();
+            itemsQueue.Dispose();
+            results.Dispose();
         }
 
         public unsafe struct StringRenderingQueueItem
@@ -378,9 +378,6 @@ namespace BelzontWE.Font
             public UIHorizontalAlignment alignment;
         }
 
-        private Queue<StringRenderingQueueItem> itemsQueue = new();
-        private readonly Dictionary<StringRenderingJob, JobHandle> runningJobs = new();
-
         private static IEnumerable Enumerate(IEnumerator enumerator)
         {
             while (enumerator.MoveNext())
@@ -388,15 +385,15 @@ namespace BelzontWE.Font
                 yield return enumerator.Current;
             };
         }
-        public void RunJobs()
+        public JobHandle RunJobs(JobHandle dependency)
         {
             if (itemsQueue.Count != 0)
             {
-                List<StringRenderingQueueItem> itemsStarted = itemsQueue.ToList();
+                NativeArray<StringRenderingQueueItem> itemsStarted = itemsQueue.ToArray(Allocator.TempJob);
                 itemsQueue.Clear();
                 var glyphs = GetGlyphsCollection(FontHeight);
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Gliphs collection size = {glyphs.Count}");
-                var charsToRender = itemsStarted.SelectMany(x => Enumerate(StringInfo.GetTextElementEnumerator(x.text.ToString())).Cast<string>()).GroupBy(x => x).Select(x => x.Key);
+                var charsToRender = itemsStarted.ToArray().SelectMany(x => Enumerate(StringInfo.GetTextElementEnumerator(x.text.ToString())).Cast<string>()).GroupBy(x => x).Select(x => x.Key);
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"charsToRender = ['{string.Join("', '", charsToRender)}']");
 
                 var countSucceeded = 0;
@@ -416,53 +413,44 @@ namespace BelzontWE.Font
                     }
                 }
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Glyphs rendered: {countSucceeded}");
-
-                foreach (var item in itemsStarted)
+                var job = new StringRenderingJob
                 {
-                    var job = new StringRenderingJob();
-                    PrepareJob(ref job, item);
-                    runningJobs[job] = job.Schedule();
-                }
+                    data = data,
+                    CurrentAtlasSize = new Vector3(CurrentAtlas.Width, CurrentAtlas.Height),
+                    inputArray = itemsStarted.AsReadOnly(),
+                    glyphs = GetGlyphsCollection(FontHeight),
+                    output = results.AsParallelWriter(),
+                    AtlasVersion = CurrentAtlas.Version,
+                };
+                dependency = job.Schedule(itemsStarted.Length, 32, dependency);
+                itemsStarted.Dispose(dependency);
             }
-            if (runningJobs.Count > 0)
+            while (results.TryDequeue(out var result))
             {
-                var originalList = runningJobs.ToArray();
-                foreach (var jobRan in originalList)
-                {
-                    if (jobRan.Value.IsCompleted)
-                    {
-                        PostJob(jobRan.Key);
-                        runningJobs.Remove(jobRan.Key);
-                    }
-                    else
-                    {
-                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Job not completed: {jobRan.Key.input.text}");
-                    }
-                }
+                PostJob(result);
             }
+            return dependency;
         }
 
-        private unsafe struct StringRenderingJob : IJob
+        private unsafe struct StringRenderingJob : IJobParallelFor
         {
             public int Size => sizeof(StringRenderingJob);
             public int Size2 => sizeof(FontSystemData);
 
-            public StringRenderingQueueItem input;
-            public NativeArray<BasicRenderInformationJob> result;
+
+            public NativeQueue<BasicRenderInformationJob>.ParallelWriter output;
+            public NativeArray<StringRenderingQueueItem>.ReadOnly inputArray;
 
             public FontSystemData data;
             public NativeHashMap<int, FontGlyph> glyphs;
             public Vector3 CurrentAtlasSize;
             public uint AtlasVersion;
-#if JOBS_DEBUG
-            const bool debug = true;
-#else
-            const bool debug = false;
-#endif
 
-            public void Execute()
+            public void Execute(int idx)
             {
-                if (debug)
+                StringRenderingQueueItem input = inputArray[idx];
+
+#if JOBS_DEBUG
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Rendering text {input.text} ");
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"data = {data}");
@@ -470,16 +458,21 @@ namespace BelzontWE.Font
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"CurrentAtlasSize = {CurrentAtlasSize}");
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Input = {input}");
                 }
+#endif
                 DrawGlyphsForString(input.text, input.scale, input.alignment);
-                if (debug) LogUtils.DoLog($"Result tris {result[0].triangles.Length} ");
+
+#if JOBS_DEBUG
+                LogUtils.DoLog($"Result tris {result[0].triangles.Length} ");
+#endif
             }
 
             private void DrawGlyphsForString(FixedString512Bytes strOr, Vector3 scale, UIHorizontalAlignment alignment)
             {
                 var result = new BasicRenderInformationJob();
                 result.m_YAxisOverflows = new RangeVector { min = float.MaxValue, max = float.MinValue };
-
-                if (debug) LogUtils.DoLog($"Result created");
+#if JOBS_DEBUG
+                LogUtils.DoLog($"Result created");
+#endif
 
                 var str = ToFilteredString(strOr.ConvertToString());
                 if (string.IsNullOrEmpty(str))
@@ -492,8 +485,9 @@ namespace BelzontWE.Font
                 for (int i = 0; i < str.Length; i += char.IsSurrogatePair(str, i) ? 2 : 1)
                 {
                     int codepoint = char.ConvertToUtf32(str, i);
-
-                    if (debug) LogUtils.DoLog($"codepoint #{i}: {codepoint}");
+#if JOBS_DEBUG
+                LogUtils.DoLog($"codepoint #{i}: {codepoint}");
+#endif
                     FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, ref data);
                     if (!glyph.IsValid)
                     {
@@ -523,8 +517,9 @@ namespace BelzontWE.Font
                     for (int i = 0; i < str.Length; i += char.IsSurrogatePair(str, i) ? 2 : 1)
                     {
                         int codepoint = char.ConvertToUtf32(str, i);
-
-                        if (debug) LogUtils.DoLog($"[Main] codepoint #{i}: {codepoint}");
+#if JOBS_DEBUG
+                 LogUtils.DoLog($"[Main] codepoint #{i}: {codepoint}");
+#endif
                         if (codepoint == '\n')
                         {
                             originX = 0.0f;
@@ -548,19 +543,20 @@ namespace BelzontWE.Font
                         q.Y0 *= scale.y;
                         q.Y1 *= scale.y;
                         var destRect = new Rect(q.X0, q.Y0, q.X1 - q.X0, q.Y1 - q.Y0);
-
-                        if (debug) LogUtils.DoLog($"[Main] codepoint #{i}: destRect = {destRect} scale = {scale}");
+#if JOBS_DEBUG
+                LogUtils.DoLog($"[Main] codepoint #{i}: destRect = {destRect} scale = {scale}");
+#endif
                         DrawChar(glyph, vertices, triangles, uvs, colors, Color.black, Color.white, destRect);
 
                         prevGlyph = glyph;
                     }
-                    if (debug)
-                    {
+#if JOBS_DEBUG
+                
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"vertices: {vertices.Count}");
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"triangles: {triangles.Count}");
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"uvs: {uvs.Count}");
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"colors: {colors.Count}");
-                    }
+#endif
                     result.m_YAxisOverflows.min *= scale.y;
                     result.m_YAxisOverflows.max *= scale.y;
                     result.vertices = new NativeArray<Vector3>(AlignVertices(vertices, alignment), Allocator.Persistent);
@@ -568,15 +564,17 @@ namespace BelzontWE.Font
                     result.uv1 = new(uvs.ToArray(), Allocator.Persistent);
                     result.triangles = new(triangles.ToArray(), Allocator.Persistent);
                     result.m_fontBaseLimits = new RangeVector { min = prevGlyph.Font.Descent, max = prevGlyph.Font.Ascent };
-                    if (debug)
-                    {
+                    result.AtlasVersion = AtlasVersion;
+                    result.originalText = strOr;
+#if JOBS_DEBUG
+                
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"result.m_YAxisOverflows.min: {result.m_YAxisOverflows.min}");
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"result.m_YAxisOverflows.max: {result.m_YAxisOverflows.max}");
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"result.vertices: {result.vertices.Count()}");
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"uvs: {uvs.Count}");
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"colors: {colors.Count}");
-                    }
-                    this.result[0] = result;
+#endif
+                    output.Enqueue(result);
                 }
                 finally
                 {

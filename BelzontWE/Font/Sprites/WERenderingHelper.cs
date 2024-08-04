@@ -16,55 +16,25 @@ namespace WriteEverywhere.Sprites
             1,
         };
 
-        public static readonly Mesh basicMesh = new()
-        {
-            vertices = new[]
-            {
-                new Vector3(-.5f, -.5f, 0f),
-                new Vector3(0.5f, -.5f, 0f),
-                new Vector3(0.5f, 0.5f, 0f),
-                new Vector3(-.5f, 0.5f, 0f),
-            },
-            uv = new[]
-            {
-                new Vector2(1, 0),
-                new Vector2(0, 0),
-                new Vector2(0, 1),
-                new Vector2(1, 1)
-            },
-            triangles = kTriangleIndices
-        };
-
-        static WERenderingHelper()
-        {
-            basicMesh.RecalculateNormals();
-            basicMesh.RecalculateTangents();
-            basicMesh.RecalculateBounds();
-        }
-
         public static BasicRenderInformation GenerateBri(Texture2D tex, Vector4 borders = default, float pixelDensity = 1000)
         {
             var proportion = tex.width / (float)tex.height;
-            var bri = new BasicRenderInformation
-            {
-                Mesh = new()
-                {
-                    vertices = new[]
+            var bri = new BasicRenderInformation(new[]
                     {
                         new Vector3(50f * proportion, -50f, 0f),
                         new Vector3(50f * proportion, 50f, 0f),
                         new Vector3(-50f * proportion, 50f, 0f),
                         new Vector3(-50f * proportion, -50f, 0f),
                     },
-                    uv = new[]
+                uv: new[]
                     {
                         new Vector2(1, 0),
                         new Vector2(1, 1),
                         new Vector2(0, 1),
                         new Vector2(0, 0),
                     },
-                    triangles = kTriangleIndices
-                },
+                triangles: kTriangleIndices)
+            {
                 m_fontBaseLimits = new RangeVector { min = 0, max = 1 },
                 m_YAxisOverflows = new RangeVector { min = -.5f, max = .5f },
                 m_sizeMetersUnscaled = new Vector2(proportion, 1),
@@ -75,11 +45,6 @@ namespace WriteEverywhere.Sprites
                 m_lineOffset = .5f,
                 m_expandXIfAlone = true
             };
-
-            bri.Mesh.RecalculateNormals();
-            bri.Mesh.RecalculateTangents();
-            bri.Mesh.RecalculateBounds();
-
             bri.m_generatedMaterial.mainTexture = tex;
             bri.m_generatedMaterial.SetTexture(FontAtlas._BaseColorMap, tex);
             return bri;

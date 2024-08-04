@@ -1,7 +1,6 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font;
-using Colossal.Entities;
 using Game;
 using Game.Common;
 using Game.SceneFlow;
@@ -11,6 +10,10 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using WriteEverywhere.Sprites;
+using Unity.Jobs;
+
+
+
 #if BURST
 using Unity.Burst;
 #endif
@@ -73,10 +76,22 @@ namespace BelzontWE
         protected override void OnUpdate()
         {
             if (GameManager.instance.isGameLoading) return;
-            CheckPendingQueue();
-            if (!m_pendingQueuePlaceholders.IsEmpty)
+            if (!m_pendingQueueEntities.IsEmptyIgnoreFilter)
             {
-                Dependency = new WEPlaceholderTemplateFilterJob
+                Dependency = new WETextImageDataUpdateJob
+                {
+                    m_EntityType = GetEntityTypeHandle(),
+                    m_WETextDataHdl = GetComponentTypeHandle<WETextData>(true),
+                    m_templateDataLkp = GetComponentLookup<WETemplateData>(true),
+                    m_entityLookup = GetEntityStorageInfoLookup(),
+                    m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
+                    m_FontDataLkp = GetComponentLookup<FontSystemData>(true),
+                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter()
+                }.Schedule(m_pendingQueueEntities, Dependency);
+            }
+            if (!m_pendingQueuePlaceholders.IsEmptyIgnoreFilter)
+            {
+                Dependency = JobHandle.CombineDependencies(Dependency, new WEPlaceholderTemplateFilterJob
                 {
                     m_EntityType = GetEntityTypeHandle(),
                     m_WETextDataHdl = GetComponentTypeHandle<WETextData>(true),
@@ -86,93 +101,108 @@ namespace BelzontWE
                     m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
                     m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
                     m_TextDataLkp = GetComponentLookup<WETextData>(true),
-                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
-                }.Schedule(m_pendingQueuePlaceholders, Dependency);
+                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter()
+                }.Schedule(m_pendingQueuePlaceholders, Dependency));
             }
-
         }
 
-        private void CheckPendingQueue()
+
+        private unsafe struct WETextImageDataUpdateJob : IJobChunk
         {
-            if (!m_pendingQueueEntities.IsEmptyIgnoreFilter)
+            public EntityTypeHandle m_EntityType;
+            public ComponentTypeHandle<WETextData> m_WETextDataHdl;
+            public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
+            public ComponentLookup<FontSystemData> m_FontDataLkp;
+            public EntityStorageInfoLookup m_entityLookup;
+            public ComponentLookup<WETemplateData> m_templateDataLkp;
+            public ComponentLookup<WETemplateUpdater> m_templateUpdaterLkp;
+
+            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
-                var cmd = m_endFrameBarrier.CreateCommandBuffer();
-                NativeArray<Entity> entities = m_pendingQueueEntities.ToEntityArray(Allocator.Temp);
-                for (var i = 0; i < entities.Length && i < 100; i++)
+                var entities = chunk.GetNativeArray(m_EntityType);
+                var weTextDatas = chunk.GetNativeArray(ref m_WETextDataHdl);
+
+                for (var i = 0; i < entities.Length; i++)
                 {
                     var entity = entities[i];
-                    var weCustomData = EntityManager.GetComponentData<WETextData>(entity);
-                    if (!EntityManager.Exists(weCustomData.TargetEntity) || (weCustomData.TargetEntity == Entity.Null && !EntityManager.HasComponent<WETemplateData>(entity)))
+                    var weCustomData = weTextDatas[i];
+                    if (!m_entityLookup.Exists(weCustomData.TargetEntity) || (weCustomData.TargetEntity == Entity.Null && !m_templateDataLkp.HasComponent(entity)))
                     {
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} - Target doesntExists");
-                        cmd.DestroyEntity(entity);
-                        continue;
+                        m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, entity);
+                        return;
                     }
-                    if (weCustomData.TextType == WESimulationTextType.Text)
+
+                    switch (weCustomData.TextType)
                     {
-                        UpdateTextMesh(entity, ref weCustomData, weCustomData.EffectiveText.ToString(), cmd);
+                        case WESimulationTextType.Text:
+                            if (UpdateTextMesh(entity, ref weCustomData, weCustomData.EffectiveText.ToString(), unfilteredChunkIndex, m_CommandBuffer))
+                            {
+                                m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
+                                m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
+                            }
+                            break;
+                        case WESimulationTextType.Image:
+                            if (UpdateImageMesh(entity, ref weCustomData, weCustomData.EffectiveText.ToString(), unfilteredChunkIndex, m_CommandBuffer))
+                            {
+                                m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
+                                m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
+                            }
+                            break;
+                        case WESimulationTextType.Placeholder:
+                            m_CommandBuffer.AddComponent<WEWaitingRenderingPlaceholder>(unfilteredChunkIndex, entity);
+                            m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
+                            break;
+
                     }
-                    else if (weCustomData.TextType == WESimulationTextType.Image)
-                    {
-                        UpdateImageMesh(entity, ref weCustomData, weCustomData.EffectiveText.ToString(), cmd);
-                    }
-                    else if (weCustomData.TextType == WESimulationTextType.Placeholder)
-                    {
-                        cmd.AddComponent<WEWaitingRenderingPlaceholder>(entity);
-                        cmd.RemoveComponent<WEWaitingRendering>(entity);
-                        continue;
-                    }
-                    cmd.SetComponent(entity, weCustomData);
-                    cmd.RemoveComponent<WEWaitingRendering>(entity);
                 }
-                entities.Dispose();
             }
-        }
-
-        private void UpdateImageMesh(Entity e, ref WETextData weCustomData, string text, EntityCommandBuffer cmd)
-        {
-            if (EntityManager.HasComponent<WETemplateUpdater>(e)) cmd.RemoveComponent<WETemplateUpdater>(e);
-            SetupTemplateComponent(e, ref weCustomData, cmd);
-            var bri = m_atlasesLibrary.GetFromLocalAtlases(weCustomData.Atlas, text, true);
-            if (bri == null)
+            private bool UpdateImageMesh(Entity e, ref WETextData weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
             {
-                LogUtils.DoWarnLog("IMAGE BRI STILL NULL!!!");
-                return;
-            }
-            weCustomData.UpdateBRI(bri, text);
-        }
-
-
-        private void UpdateTextMesh(Entity e, ref WETextData weCustomData, string text, EntityCommandBuffer cmd)
-        {
-            if (EntityManager.HasComponent<WETemplateUpdater>(e)) cmd.RemoveComponent<WETemplateUpdater>(e);
-            SetupTemplateComponent(e, ref weCustomData, cmd);
-            var font = EntityManager.TryGetComponent<FontSystemData>(weCustomData.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
-            if (font.Font == null)
-            {
-                if (BasicIMod.DebugMode) LogUtils.DoLog("Font not initialized!!!");
-                return;
-            }
-
-            var bri = font.FontSystem.DrawText(text, FontServer.Instance.ScaleEffective);
-            if (bri == null)
-            {
-                if (BasicIMod.TraceMode) LogUtils.DoTraceLog("BRI STILL NULL!!!");
-                return;
-            }
-            weCustomData.UpdateBRI(bri, text);
-
-        }
-
-        private bool SetupTemplateComponent(Entity e, ref WETextData weCustomData, EntityCommandBuffer cmd)
-        {
-            if (EntityManager.HasComponent<WETemplateData>(weCustomData.TargetEntity))
-            {
-                if (!EntityManager.HasComponent<WETemplateData>(e)) cmd.AddComponent<WETemplateData>(e);
+                if (m_templateUpdaterLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
+                SetupTemplateComponent(e, ref weCustomData, unfilteredChunkIndex, cmd);
+                var bri = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<WEAtlasesLibrary>().GetFromLocalAtlases(weCustomData.Atlas, text, true);
+                if (bri == null)
+                {
+                    if (BasicIMod.TraceMode) LogUtils.DoTraceLog("IMAGE BRI STILL NULL!!!");
+                    return false;
+                }
+                weCustomData.UpdateBRI(bri, text);
                 return true;
             }
-            if (EntityManager.HasComponent<WETemplateData>(e)) cmd.RemoveComponent<WETemplateData>(e);
-            return false;
+
+
+            private bool UpdateTextMesh(Entity e, ref WETextData weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+            {
+                if (m_templateUpdaterLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
+                SetupTemplateComponent(e, ref weCustomData, unfilteredChunkIndex, cmd);
+                var font = m_FontDataLkp.TryGetComponent(weCustomData.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
+                if (font.Font == null)
+                {
+                    if (BasicIMod.DebugMode) LogUtils.DoLog("Font not initialized!!!");
+                    return false;
+                }
+                var bri = font.FontSystem.DrawText(text, FontServer.Instance.ScaleEffective);
+                if (bri == null)
+                {
+                    if (BasicIMod.TraceMode) LogUtils.DoTraceLog("BRI STILL NULL!!!");
+                    return false;
+                }
+                weCustomData.UpdateBRI(bri, text);
+                return true;
+
+            }
+
+            private bool SetupTemplateComponent(Entity e, ref WETextData weCustomData, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+            {
+                if (m_templateDataLkp.HasComponent(weCustomData.TargetEntity))
+                {
+                    if (!m_templateDataLkp.HasComponent(e)) cmd.AddComponent<WETemplateData>(unfilteredChunkIndex, e);
+                    return true;
+                }
+                if (m_templateDataLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateData>(unfilteredChunkIndex, e);
+                return false;
+            }
         }
 
 #if BURST
@@ -182,7 +212,7 @@ namespace BelzontWE
         {
             public EntityTypeHandle m_EntityType;
             public ComponentTypeHandle<WETextData> m_WETextDataHdl;
-            public EntityCommandBuffer m_CommandBuffer;
+            public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
             public ComponentLookup<WETextData> m_TextDataLkp;
             public BufferLookup<WESubTextRef> m_subRefLkp;
             public EntityStorageInfoLookup m_entityLookup;
@@ -203,17 +233,17 @@ namespace BelzontWE
 #if !BURST
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} - Target doesntExists");
 #endif
-                        m_CommandBuffer.DestroyEntity(entity);
+                        m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, entity);
                         continue;
                     }
-                    UpdatePlaceholder(entity, ref weCustomData, m_CommandBuffer);
-                    m_CommandBuffer.SetComponent(entity, weCustomData);
-                    m_CommandBuffer.RemoveComponent<WEWaitingRenderingPlaceholder>(entity);
+                    UpdatePlaceholder(entity, ref weCustomData, unfilteredChunkIndex, m_CommandBuffer);
+                    m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
+                    m_CommandBuffer.RemoveComponent<WEWaitingRenderingPlaceholder>(unfilteredChunkIndex, entity);
                 }
             }
-            private void UpdatePlaceholder(Entity e, ref WETextData weCustomData, EntityCommandBuffer cmd)
+            private void UpdatePlaceholder(Entity e, ref WETextData weCustomData, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
             {
-                if (!SetupTemplateComponent(e, ref weCustomData, cmd))
+                if (!SetupTemplateComponent(e, ref weCustomData, unfilteredChunkIndex, cmd))
                 {
                     var targetTemplate = m_templateManager[weCustomData.ItemName];
                     if (m_templateUpdaterLkp.TryGetComponent(e, out var templateUpdated) && templateUpdated.childEntity != Entity.Null)
@@ -221,35 +251,35 @@ namespace BelzontWE
 #if !BURST
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {templateUpdated.childEntity} - Target outdated child");
 #endif
-                        cmd.DestroyEntity(templateUpdated.childEntity);
+                        cmd.DestroyEntity(unfilteredChunkIndex, templateUpdated.childEntity);
                     }
 
                     var newData = new WETemplateUpdater()
                     {
                         templateEntity = targetTemplate,
-                        childEntity = targetTemplate == Entity.Null ? Entity.Null : WELayoutUtility.DoCloneTextItemReferenceSelf(targetTemplate, e, ref m_TextDataLkp, ref m_subRefLkp, cmd)
+                        childEntity = targetTemplate == Entity.Null ? Entity.Null : WELayoutUtility.DoCloneTextItemReferenceSelf(targetTemplate, e, ref m_TextDataLkp, ref m_subRefLkp, unfilteredChunkIndex, cmd)
                     };
 #if !BURST
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Cloned info! {weCustomData.ItemName} => {targetTemplate}");
 #endif
                     if (m_templateUpdaterLkp.HasComponent(e))
                     {
-                        cmd.SetComponent(e, newData);
+                        cmd.SetComponent(unfilteredChunkIndex, e, newData);
                     }
                     else
                     {
-                        cmd.AddComponent(e, newData);
+                        cmd.AddComponent(unfilteredChunkIndex, e, newData);
                     }
                 }
             }
-            private bool SetupTemplateComponent(Entity e, ref WETextData weCustomData, EntityCommandBuffer cmd)
+            private bool SetupTemplateComponent(Entity e, ref WETextData weCustomData, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
             {
                 if (m_templateDataLkp.HasComponent(weCustomData.TargetEntity))
                 {
-                    if (!m_templateDataLkp.HasComponent(e)) cmd.AddComponent<WETemplateData>(e);
+                    if (!m_templateDataLkp.HasComponent(e)) cmd.AddComponent<WETemplateData>(unfilteredChunkIndex, e);
                     return true;
                 }
-                if (m_templateDataLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateData>(e);
+                if (m_templateDataLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateData>(unfilteredChunkIndex, e);
                 return false;
             }
         }

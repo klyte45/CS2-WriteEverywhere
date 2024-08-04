@@ -37,7 +37,13 @@ namespace BelzontWE
             callBinder($"{PREFIX}requireFontInstallation", RequireFontInstallation);
             callBinder($"{PREFIX}changeParent", ChangeParent);
             callBinder($"{PREFIX}cloneAsChild", CloneAsChild);
+            callBinder($"{PREFIX}dumpBris", DumpBris);
             if (m_eventCaller != null) InitValueBindings();
+        }
+
+        private void DumpBris()
+        {
+            World.GetExistingSystemManaged<WERendererSystem>().dumpNextFrame = true;
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller)
@@ -377,7 +383,7 @@ namespace BelzontWE
                     if (destroy)
                     {
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {subEntity} - subEntity");
-                        EntityManager.DestroyEntity(subEntity); 
+                        EntityManager.DestroyEntity(subEntity);
                     }
 
                     buff.RemoveAt(i);

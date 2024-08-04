@@ -10,6 +10,8 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using BelzontWE.Font.Utility;
 using WriteEverywhere.Sprites;
+using Belzont.Utils;
+
 #if BURST
 using UnityEngine.Scripting;
 using Unity.Burst;
@@ -29,6 +31,7 @@ namespace BelzontWE
         private WEWorldPickerController m_pickerController;
         private WEWorldPickerTool m_pickerTool;
         private NativeQueue<WERenderData> availToDraw = new(Allocator.Persistent);
+        internal bool dumpNextFrame;
 #if BURST
         [Preserve]
 #endif
@@ -116,16 +119,26 @@ namespace BelzontWE
                         item.weComponent.ClearTemplateDirty();
                         cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
                         cmd.SetComponent(item.textDataEntity, item.weComponent);
+                        if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType}\nTEMPLATE DIRTY");
                         continue;
                     }
                     BasicRenderInformation bri;
-                    if ((bri = item.weComponent.RenderInformation) == null && !m_pickerTool.IsSelected)
+                    if ((bri = item.weComponent.RenderInformation) == null)
                     {
+                        if (!item.weComponent.InitializedEffectiveText)
+                        {
+                            item.weComponent.UpdateEffectiveText(EntityManager);
+                        }
                         if ((item.weComponent.TextType == WESimulationTextType.Text || item.weComponent.TextType == WESimulationTextType.Image) && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
                         {
+                            cmd.SetComponent(item.textDataEntity, item.weComponent);
                             cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
                         }
-                        continue;
+                        if (dumpNextFrame)
+                        {
+                            LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType}\nMARKED TO RE-RENDER");
+                        }
+                        if (!m_pickerTool.IsSelected) continue;
                     }
                     bool wasDirty = false;
                     if (bri is null)
@@ -143,9 +156,15 @@ namespace BelzontWE
                         }
                         wasDirty |= item.weComponent.IsDirty();
                     }
+                    if (dumpNextFrame)
+                    {
+                        LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType}\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length}");
+
+                    }
                     Graphics.DrawMesh(bri.Mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
-                    if (wasDirty) EntityManager.SetComponentData(item.textDataEntity, item.weComponent);
+                    if (wasDirty) cmd.SetComponent(item.textDataEntity, item.weComponent);
                 }
+                dumpNextFrame = false;
             }
         }
 

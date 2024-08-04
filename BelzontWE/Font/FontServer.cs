@@ -173,7 +173,7 @@ namespace BelzontWE
                     if (BasicIMod.DebugMode) LogUtils.DoLog("Resetting font system!");
                     data.FontSystem.Reset();
                 }
-                data.FontSystem.RunJobs();
+                Dependency = data.FontSystem.RunJobs(Dependency);
             }
             catch (Exception e)
             {

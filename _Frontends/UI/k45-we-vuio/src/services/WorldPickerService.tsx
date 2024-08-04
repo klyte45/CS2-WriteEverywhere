@@ -149,6 +149,9 @@ export class WorldPickerService {
     static async removeItem() {
         return await engine.call("k45::we.wpicker.removeItem");
     }
+    static async dumpBris() {
+        return await engine.call("k45::we.wpicker.dumpBris");
+    }
     static async addEmpty(parent?: Entity) {
         return await engine.call("k45::we.wpicker.addItem", parent ?? { Index: 0, Version: 0, __Type: 'Unity.Entities.Entity, Unity.Entities, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null' });
     }

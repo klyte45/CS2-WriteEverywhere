@@ -99,6 +99,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 <Button onSelect={() => WorldPickerService.addEmpty()} src={i_addRoot} tooltip={T_addEmptyRoot} focusKey={FocusDisabled} className={buttonClass} />
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.addEmpty(wps.CurrentSubEntity.value!)} src={i_addChild} tooltip={T_addEmptyChild} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ flexGrow: 1 }}></div>
+                <Button onSelect={() => { WorldPickerService.dumpBris(); }} src={i_delete} tooltip={"DUMP!"} focusKey={FocusDisabled} className={buttonClass} />
+                <div style={{ width: "10rem" }}></div>
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.saveAsCityTemplate(wps.CurrentSubEntity.value!, "teste"); }} src={i_paste} tooltip={";;;;;"} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ width: "10rem" }}></div>
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.exportComponentAsXml(wps.CurrentSubEntity.value!, "teste"); }} src={i_copy} tooltip={"????"} focusKey={FocusDisabled} className={buttonClass} />

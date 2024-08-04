@@ -192,7 +192,12 @@ namespace BelzontWE
 
         protected override void OnUpdate()
         {
-            if (GameManager.instance.isLoading || GameManager.instance.isGameLoading) return;
+            if (GameManager.instance.isLoading || GameManager.instance.isGameLoading)
+            {
+                EntityManager.AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty);
+                return;
+            }
+
             UpdatePrefabIndexDictionary();
             if (!m_obsoleteTemplateList.IsEmpty)
             {
@@ -222,9 +227,9 @@ namespace BelzontWE
                     m_prefabLayoutLkp = GetComponentLookup<WETemplateForPrefab>(true),
                     m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
                     m_TextDataLkp = GetComponentLookup<WETextData>(true),
-                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
+                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                     m_indexesWithLayout = PrefabTemplates,
-                }.Schedule(m_uncheckedWePrefabLayoutQuery, Dependency);
+                }.ScheduleParallel(m_uncheckedWePrefabLayoutQuery, Dependency);
             }
             if (!m_dirtyWePrefabLayoutQuery.IsEmpty)
             {
@@ -238,9 +243,9 @@ namespace BelzontWE
                     m_prefabLayoutLkp = GetComponentLookup<WETemplateForPrefab>(true),
                     m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
                     m_TextDataLkp = GetComponentLookup<WETextData>(true),
-                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
+                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                     m_indexesWithLayout = PrefabTemplates,
-                }.Schedule(m_dirtyWePrefabLayoutQuery, Dependency);
+                }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
             }
         }
 
@@ -316,7 +321,7 @@ namespace BelzontWE
             public ComponentLookup<WETemplateForPrefab> m_prefabLayoutLkp;
             public ComponentLookup<WETextData> m_TextDataLkp;
             public BufferLookup<WESubTextRef> m_subRefLkp;
-            public EntityCommandBuffer m_CommandBuffer;
+            public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
             public UnsafeParallelHashMap<long, Entity> m_indexesWithLayout;
             public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -331,12 +336,12 @@ namespace BelzontWE
                     {
                         if (!m_prefabLayoutLkp.TryGetComponent(newTemplate, out var layoutData) || layoutData.templateRef != newTemplate)
                         {
-                            var childEntity = WELayoutUtility.DoCloneTextItemReferenceSelf(newTemplate, entities[i], ref m_TextDataLkp, ref m_subRefLkp, m_CommandBuffer, true);
+                            var childEntity = WELayoutUtility.DoCloneTextItemReferenceSelf(newTemplate, entities[i], ref m_TextDataLkp, ref m_subRefLkp, unfilteredChunkIndex, m_CommandBuffer, true);
                             if (m_prefabLayoutLkp.HasComponent(newTemplate))
                             {
-                                m_CommandBuffer.RemoveComponent<WETemplateForPrefab>(entities[i]);
+                                m_CommandBuffer.RemoveComponent<WETemplateForPrefab>(unfilteredChunkIndex, entities[i]);
                             }
-                            m_CommandBuffer.AddComponent<WETemplateForPrefab>(entities[i], new()
+                            m_CommandBuffer.AddComponent<WETemplateForPrefab>(unfilteredChunkIndex, entities[i], new()
                             {
                                 templateRef = newTemplate,
                                 childEntity = childEntity
@@ -345,11 +350,11 @@ namespace BelzontWE
                     }
                     else if (!m_prefabEmptyLkp.HasComponent(entity))
                     {
-                        m_CommandBuffer.AddComponent<WETemplateForPrefabEmpty>(entity);
+                        m_CommandBuffer.AddComponent<WETemplateForPrefabEmpty>(unfilteredChunkIndex, entity);
                     }
                     if (m_prefabDirtyLkp.HasComponent(entity))
                     {
-                        m_CommandBuffer.RemoveComponent<WETemplateForPrefabDirty>(entity);
+                        m_CommandBuffer.RemoveComponent<WETemplateForPrefabDirty>(unfilteredChunkIndex, entity);
                     }
                 }
             }

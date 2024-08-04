@@ -103,6 +103,7 @@ namespace BelzontWE
             {
                 fontQualityIdx = value;
                 FontServer.QualitySize = m_qualityArray[value];
+                FontServer.Instance?.OnChangeSizeParam();
             }
         }
         private DropdownItem<int>[] FontQualityValues() => m_qualityArray.Select((x, i) => new DropdownItem<int> { value = i, displayName = $"{x:0}%{(x >= 200 ? $" ({new string('!', x / 200)})" : "")}" }).ToArray();

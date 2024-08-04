@@ -12,21 +12,30 @@ namespace BelzontWE.Font.Utility
 {
     public class BasicRenderInformation
     {
-        public void Fill(BasicRenderInformationJob brij, Material targetAtlas)
+        private BasicRenderInformation() { }
+        public BasicRenderInformation(Vector3[] vertices, int[] triangles,  Vector2[] uv)
         {
-            m_YAxisOverflows = brij.m_YAxisOverflows;
-            m_fontBaseLimits = brij.m_fontBaseLimits;
-            m_generatedMaterial = targetAtlas;
-            m_pixelDensityMeters = 1000f;
+            m_vertices = vertices;
+            m_triangles = triangles;
+            m_uv = uv;
+        }
+        public static BasicRenderInformation Fill(BasicRenderInformationJob brij, Material targetAtlas)
+        {
+            var bri = new BasicRenderInformation();
+            bri.m_YAxisOverflows = brij.m_YAxisOverflows;
+            bri.m_fontBaseLimits = brij.m_fontBaseLimits;
+            bri.m_generatedMaterial = targetAtlas;
+            bri.m_pixelDensityMeters = 1000f;
 
-            m_vertices = AlignVertices(brij.vertices.ToList());
-            m_triangles = brij.triangles.ToArray();
-            m_colors32 = brij.colors.ToArray();
-            m_uv = brij.uv1.ToArray();
+            bri.m_vertices = AlignVertices(brij.vertices.ToList());
+            bri.m_triangles = brij.triangles.ToArray();
+            bri.m_colors32 = brij.colors.ToArray();
+            bri.m_uv = brij.uv1.ToArray();
 
-            m_sizeMetersUnscaled = Mesh.bounds.size;
+            bri.m_sizeMetersUnscaled = bri.Mesh.bounds.size;
             //   if (BasicIMod.DebugMode) LogUtils.DoLog($"MESH: {m_mesh} {m_mesh.vertices[0]} {m_mesh.vertices[1]}...  {m_mesh.tangents[0]} {m_mesh.tangents[1]}...  {m_mesh.normals[0]} {m_mesh.normals[1]}... {m_mesh.vertices.Length} {m_mesh.triangles.Length} {m_sizeMetersUnscaled}m");
             brij.Dispose();
+            return bri;
         }
 
         private Vector3[] m_vertices;
@@ -39,7 +48,7 @@ namespace BelzontWE.Font.Utility
         {
             get
             {
-                if (m_mesh is null)
+                if (m_mesh is null && m_vertices?.Length > 0)
                 {
                     m_mesh = new Mesh
                     {
@@ -54,7 +63,7 @@ namespace BelzontWE.Font.Utility
                 }
                 return m_mesh;
             }
-            set
+            private set
             {
                 if (value != null)
                 {
@@ -139,6 +148,8 @@ namespace BelzontWE.Font.Utility
         public NativeArray<Vector2> uv1;
         public RangeVector m_YAxisOverflows;
         public RangeVector m_fontBaseLimits;
+        public uint AtlasVersion;
+        public FixedString512Bytes originalText;
 
         public void Dispose()
         {
