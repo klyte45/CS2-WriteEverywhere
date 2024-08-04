@@ -11,6 +11,10 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using WriteEverywhere.Sprites;
 using Unity.Jobs;
+using System;
+using BelzontWE.Font.Utility;
+
+
 
 
 
@@ -138,21 +142,19 @@ namespace BelzontWE
                         case WESimulationTextType.Text:
                             if (UpdateTextMesh(entity, ref weCustomData, weCustomData.EffectiveText.ToString(), unfilteredChunkIndex, m_CommandBuffer))
                             {
-                                m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
+                                m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             }
                             break;
                         case WESimulationTextType.Image:
                             if (UpdateImageMesh(entity, ref weCustomData, weCustomData.EffectiveText.ToString(), unfilteredChunkIndex, m_CommandBuffer))
-                            {
-                                m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
+                            {                                
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
+                                m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             }
                             break;
                         case WESimulationTextType.Placeholder:
-                            m_CommandBuffer.AddComponent<WEWaitingRenderingPlaceholder>(unfilteredChunkIndex, entity);
-                            m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
-                            break;
+                            throw new Exception("INVALID PLACEHOLDER TYPE!");
 
                     }
                 }
@@ -167,7 +169,8 @@ namespace BelzontWE
                     if (BasicIMod.TraceMode) LogUtils.DoTraceLog("IMAGE BRI STILL NULL!!!");
                     return false;
                 }
-                weCustomData.UpdateBRI(bri, text);
+                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Image returned: {bri} {text} (a={weCustomData.Atlas})");
+                weCustomData = weCustomData.UpdateBRI(bri, text);
                 return true;
             }
 
@@ -176,6 +179,11 @@ namespace BelzontWE
             {
                 if (m_templateUpdaterLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
                 SetupTemplateComponent(e, ref weCustomData, unfilteredChunkIndex, cmd);
+                if (text == "")
+                {
+                    weCustomData = weCustomData.UpdateBRI(new BasicRenderInformation(null, null, null) { m_refText = "" }, "");
+                    return true;
+                }
                 var font = m_FontDataLkp.TryGetComponent(weCustomData.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
                 if (font.Font == null)
                 {
@@ -185,10 +193,10 @@ namespace BelzontWE
                 var bri = font.FontSystem.DrawText(text, FontServer.Instance.ScaleEffective);
                 if (bri == null)
                 {
-                    if (BasicIMod.TraceMode) LogUtils.DoTraceLog("BRI STILL NULL!!!");
+                    if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"BRI STILL NULL!!! ({text})");
                     return false;
                 }
-                weCustomData.UpdateBRI(bri, text);
+                weCustomData = weCustomData.UpdateBRI(bri, text);
                 return true;
 
             }

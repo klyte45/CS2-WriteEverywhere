@@ -10,4 +10,7 @@ export class LayoutsService {
     static async saveAsCityTemplate(parent: Entity, name: string): Promise<string> {
         return engine.call("k45::we.layouts.saveAsCityTemplate", parent, name);
     }
+    static async exportComponentAsPrefabDefault(layout: Entity, force: boolean = false): Promise<string> {
+        return engine.call("k45::we.layouts.exportComponentAsPrefabDefault", layout,force);
+    }
 }

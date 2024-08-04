@@ -1,7 +1,6 @@
-﻿
-using Belzont.Interfaces;
-using System;
+﻿using System;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 namespace BelzontWE.Font
@@ -246,8 +245,8 @@ namespace BelzontWE.Font
             if (Texture == null)
             {
                 Texture = new Texture2D(Width, Height, TextureFormat.ARGB32, false);
-                //    Texture.SetPixels(new Color[Width * Height].Select(x => Color.clear).ToArray());
-                //     Texture.Apply();
+                Texture.SetPixels(new Color[Width * Height].Select(x => Color.clear).ToArray());
+                Texture.Apply();
                 wasRecreated = true;
             }
 

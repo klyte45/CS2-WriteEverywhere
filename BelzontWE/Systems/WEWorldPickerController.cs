@@ -43,7 +43,7 @@ namespace BelzontWE
 
         private void DumpBris()
         {
-            World.GetExistingSystemManaged<WERendererSystem>().dumpNextFrame = true;
+          WERendererSystem.dumpNextFrame = true;
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller)

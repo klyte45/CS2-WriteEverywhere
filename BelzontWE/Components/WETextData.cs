@@ -152,6 +152,7 @@ namespace BelzontWE
                     basicRenderInformation.Free();
                     basicRenderInformation = default;
                 }
+                EffectiveText = value;
             }
         }
         public string Atlas
@@ -275,7 +276,7 @@ namespace BelzontWE
             {
                 TargetEntity = target,
                 ParentEntity = parent ?? target,
-                offsetPosition = new(0, (parent ?? target) == target ? 1 : 0, 0),
+                offsetPosition = new(0, 0, 0),
                 offsetRotation = new(),
                 scale = new(1, 1, 1),
                 dirty = true,
@@ -315,7 +316,7 @@ namespace BelzontWE
             dirty = true;
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             basicRenderInformation = default;
-            basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
+            basicRenderInformation = GCHandle.Alloc(bri, bri.m_refText == "" ? GCHandleType.Normal : GCHandleType.Weak);
             BriOffsetScaleX = bri.m_offsetScaleX;
             BriPixelDensity = bri.m_pixelDensityMeters;
             BriWidthMetersUnscaled = bri.m_sizeMetersUnscaled.x;
@@ -355,23 +356,35 @@ namespace BelzontWE
                 {
                     SetFormulae(formulaeHandlerStr.ToString(), out _);
                 }
-
                 loadingFnDone = true;
             }
-            var oldEffText = EffectiveText;
+            string oldEffText = (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText;
             EffectiveText = FormulaeFn is Func<EntityManager, Entity, string> fn
-                ? fn(em, GetTargetEntityEffective(TargetEntity, em))?.ToString().Truncate(500) ?? "<InvlidFn>"
+                ? fn(em, GetTargetEntityEffective(TargetEntity, em))?.ToString().Trim().Truncate(500) ?? "<InvlidFn>"
                 : formulaeHandlerStr.Length > 0 ? "<InvalidFn>" : Text;
-            return EffectiveText != oldEffText;
+            return EffectiveText.ToString() != oldEffText;
         }
 
-        private static Entity GetTargetEntityEffective(Entity target, EntityManager em)
+        //public static Entity GetTargetEntityEffective2(Entity target, EntityManager em, bool fullRecursive = false)
+        //{
+        //    var result = em.TryGetComponent<WETextData>(target, out var weData)
+        //        ? weData.TargetEntity == target && weData.ParentEntity != target
+        //            ? GetTargetEntityEffective(weData.ParentEntity, em)
+        //            : weData.TargetEntity != target && weData.TargetEntity != Entity.Null
+        //            ? GetTargetEntityEffective(weData.TargetEntity, em)
+        //            : target
+        //        : target;
+
+        //    LogUtils.DoLog($"PARENT FOR {target} => {result}");
+        //    return result;
+        //}
+        public static Entity GetTargetEntityEffective(Entity target, EntityManager em, bool fullRecursive = false)
         {
             return em.TryGetComponent<WETextData>(target, out var weData)
-                ? (weData.TextType == WESimulationTextType.Archetype) && weData.TargetEntity != target
+                ? (fullRecursive || weData.TextType == WESimulationTextType.Archetype) && weData.TargetEntity != target
                     ? GetTargetEntityEffective(weData.TargetEntity, em)
-                    : weData.TextType == WESimulationTextType.Placeholder && weData.ParentEntity != target
-                    ? GetTargetEntityEffective(weData.ParentEntity, em)
+                    : em.TryGetComponent<WETextData>(weData.ParentEntity, out var weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder
+                    ? GetTargetEntityEffective(weDataParent.targetEntity, em)
                     : weData.TargetEntity
                 : target;
         }

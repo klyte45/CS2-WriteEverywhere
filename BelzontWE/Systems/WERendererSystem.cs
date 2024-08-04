@@ -31,7 +31,7 @@ namespace BelzontWE
         private WEWorldPickerController m_pickerController;
         private WEWorldPickerTool m_pickerTool;
         private NativeQueue<WERenderData> availToDraw = new(Allocator.Persistent);
-        internal bool dumpNextFrame;
+        internal static bool dumpNextFrame;
 #if BURST
         [Preserve]
 #endif
@@ -117,7 +117,7 @@ namespace BelzontWE
                     if (item.weComponent.IsTemplateDirty())
                     {
                         item.weComponent.ClearTemplateDirty();
-                        cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                        cmd.AddComponent<WEWaitingRenderingPlaceholder>(item.textDataEntity);
                         cmd.SetComponent(item.textDataEntity, item.weComponent);
                         if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType}\nTEMPLATE DIRTY");
                         continue;
@@ -128,15 +128,16 @@ namespace BelzontWE
                         if (!item.weComponent.InitializedEffectiveText)
                         {
                             item.weComponent.UpdateEffectiveText(EntityManager);
+                            cmd.SetComponent(item.textDataEntity, item.weComponent);
                         }
-                        if ((item.weComponent.TextType == WESimulationTextType.Text || item.weComponent.TextType == WESimulationTextType.Image) && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
+                        else if ((item.weComponent.TextType == WESimulationTextType.Text || item.weComponent.TextType == WESimulationTextType.Image) && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
                         {
                             cmd.SetComponent(item.textDataEntity, item.weComponent);
                             cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
-                        }
-                        if (dumpNextFrame)
-                        {
-                            LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType}\nMARKED TO RE-RENDER");
+                            if (dumpNextFrame)
+                            {
+                                LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nMARKED TO RE-RENDER");
+                            }
                         }
                         if (!m_pickerTool.IsSelected) continue;
                     }
@@ -145,11 +146,12 @@ namespace BelzontWE
                     {
                         bri = WEAtlasesLibrary.GetWhiteTextureBRI();
                     }
-                    else
+                    else if (item.weComponent.TextType == WESimulationTextType.Text || item.weComponent.TextType == WESimulationTextType.Image)
                     {
                         if ((((counter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
-                             && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity)
-                             && item.weComponent.UpdateEffectiveText(EntityManager))
+                              && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity)
+                              && item.weComponent.UpdateEffectiveText(EntityManager)
+                              )
                         {
                             wasDirty = true;
                             cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
@@ -158,10 +160,10 @@ namespace BelzontWE
                     }
                     if (dumpNextFrame)
                     {
-                        LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType}\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length} | M= {item.transformMatrix}");
+                        LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length} | M= {item.transformMatrix}");
 
                     }
-                    Graphics.DrawMesh(bri.Mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
+                    if (bri.m_refText != "") Graphics.DrawMesh(bri.Mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
                     if (wasDirty) cmd.SetComponent(item.textDataEntity, item.weComponent);
                 }
                 dumpNextFrame = false;
@@ -263,7 +265,14 @@ namespace BelzontWE
 
                     if (weCustomData.TextType == WESimulationTextType.Placeholder != m_weTemplateUpdaterLookup.HasComponent(entity))
                     {
-                        m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
+                        if (weCustomData.TextType != WESimulationTextType.Placeholder)
+                        {
+                            m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
+                        }
+                        else
+                        {
+                            m_CommandBuffer.AddComponent<WEWaitingRenderingPlaceholder>(unfilteredChunkIndex, entity);
+                        }
                         continue;
                     }
 

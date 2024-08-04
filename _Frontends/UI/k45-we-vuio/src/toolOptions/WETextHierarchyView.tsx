@@ -10,13 +10,26 @@ import { translate } from "utils/translate";
 
 
 export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: Entity | undefined | null, setClipboard: (c: Entity | undefined | null) => any }) => {
-    const i_cut = "coui://uil/Standard/DottedLinesMarkers.svg";
+    /**/const i_cut = "coui://uil/Standard/DottedLinesMarkers.svg";
     const i_copy = "coui://uil/Standard/RectangleCopy.svg";
     const i_paste = "coui://uil/Standard/RectanglePaste.svg";
-    const i_pasteAtRoot = "coui://uil/Standard/ArrowUpTriangleNotch.svg";
+    /**/const i_pasteAtRoot = "coui://uil/Standard/ArrowUpTriangleNotch.svg";
     const i_delete = "coui://uil/Standard/Trash.svg";
-    const i_addRoot = "coui://uil/Standard/ArrowLeftTriangleNotch.svg";
-    const i_addChild = "coui://uil/Standard/Plus.svg";
+    /**/const i_addRoot = "coui://uil/Standard/ArrowLeftTriangleNotch.svg";
+    /**/const i_addChild = "coui://uil/Standard/Plus.svg";
+
+    /**/const i_exportAsPrefabLayout = "coui://uil/Standard/Cube.svg";
+    /**/const i_saveAsCityTemplate = "coui://uil/Standard/Building Themes.svg";
+
+    /**/const i_exportLayout = "coui://uil/Standard/DiskSave.svg";
+    /**/const i_importLayout = "coui://uil/Standard/Folder.svg";
+
+
+    const i_typeText = "coui://uil/Standard/PencilPaper.svg";
+    const i_typeImage = "coui://uil/Standard/Image.svg";
+    /**/const i_typePlaceholder = "coui://uil/Standard/RotateAngleRelative.svg";
+
+
     const wps = WorldPickerService.instance;
     const T_title = translate("textHierarchyWindow.title"); //"Appearance Settings"
     const T_cut = translate("textHierarchyWindow.cut"); //"Appearance Settings"
@@ -28,6 +41,13 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const T_cuttedInfo = translate("textHierarchyWindow.cuttedInfoSuffix"); //"Appearance Settings"
     const T_addEmptyChild = translate("textHierarchyWindow.addEmptyChild"); //"Appearance Settings"
     const T_addEmptyRoot = translate("textHierarchyWindow.addEmptyRoot"); //"Appearance Settings"
+
+
+    const T_exportLayout = translate("textHierarchyWindow.exportLayoutToLib"); //"Appearance Settings"
+    const T_importLayoutAtRoot = translate("textHierarchyWindow.importLayout"); //"Appearance Settings"
+    const T_exportLayoutAsPrefab = translate("textHierarchyWindow.exportLayoutAsDefault"); //"Appearance Settings"
+    const T_saveAsCityTemplate = translate("textHierarchyWindow.saveAsCityTemplate"); //"Appearance Settings"
+
     const defaultPosition = { x: 20 / window.innerWidth, y: 100 / window.innerHeight }
 
     const HierarchyMenu = VanillaWidgets.instance.HierarchyMenu;
@@ -45,11 +65,11 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     function getIconForTextType(type: WESimulationTextType) {
         switch (type) {
             case WESimulationTextType.Image:
-                return "coui://uil/Standard/Image.svg";
+                return i_typeImage;
             case WESimulationTextType.Text:
-                return "coui://uil/Standard/PencilPaper.svg";
+                return i_typeText;
             case WESimulationTextType.Placeholder:
-                return "coui://uil/Standard/RotateAngleRelative.svg";
+                return i_typePlaceholder;
         }
     }
 
@@ -101,11 +121,12 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 <div style={{ flexGrow: 1 }}></div>
                 <Button onSelect={() => { WorldPickerService.dumpBris(); }} src={i_delete} tooltip={"DUMP!"} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ width: "10rem" }}></div>
-                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.saveAsCityTemplate(wps.CurrentSubEntity.value!, "teste"); }} src={i_paste} tooltip={";;;;;"} focusKey={FocusDisabled} className={buttonClass} />
+                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.exportComponentAsPrefabDefault(wps.CurrentSubEntity.value!, true); }} src={i_exportAsPrefabLayout} tooltip={T_exportLayoutAsPrefab} focusKey={FocusDisabled} className={buttonClass} />
+                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.saveAsCityTemplate(wps.CurrentSubEntity.value!, "teste"); }} src={i_saveAsCityTemplate} tooltip={T_saveAsCityTemplate} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ width: "10rem" }}></div>
-                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.exportComponentAsXml(wps.CurrentSubEntity.value!, "teste"); }} src={i_copy} tooltip={"????"} focusKey={FocusDisabled} className={buttonClass} />
-                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.loadAsChildFromXml(wps.CurrentEntity.value!, "teste"); }} src={i_paste} tooltip={"!!!!"} focusKey={FocusDisabled} className={buttonClass} />
-                <div style={{ width: "10rem" }}></div>
+                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.exportComponentAsXml(wps.CurrentSubEntity.value!, "teste"); }} src={i_exportLayout} tooltip={T_exportLayout} focusKey={FocusDisabled} className={buttonClass} />
+                <Button onSelect={() => { LayoutsService.loadAsChildFromXml(wps.CurrentEntity.value!, "teste"); }} src={i_importLayout} tooltip={T_importLayoutAtRoot} focusKey={FocusDisabled} className={buttonClass} />
+                <div style={{ flexGrow: 1 }}></div>
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(true); }} src={i_cut} tooltip={T_cut} focusKey={FocusDisabled} className={buttonClass} />
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(false); }} src={i_copy} tooltip={T_copy} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ width: "10rem" }}></div>

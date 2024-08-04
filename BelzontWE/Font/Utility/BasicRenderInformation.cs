@@ -13,7 +13,7 @@ namespace BelzontWE.Font.Utility
     public class BasicRenderInformation
     {
         private BasicRenderInformation() { }
-        public BasicRenderInformation(Vector3[] vertices, int[] triangles,  Vector2[] uv)
+        public BasicRenderInformation(Vector3[] vertices, int[] triangles, Vector2[] uv)
         {
             m_vertices = vertices;
             m_triangles = triangles;
@@ -50,6 +50,14 @@ namespace BelzontWE.Font.Utility
             {
                 if (m_mesh is null && m_vertices?.Length > 0)
                 {
+                    if (m_triangles.Any(x => x > m_vertices.Length))
+                    {
+                        m_triangles = null;
+                        m_vertices = null;
+                        m_colors32 = null;
+                        m_uv = null;
+                        return null;
+                    }
                     m_mesh = new Mesh
                     {
                         vertices = m_vertices,
@@ -110,7 +118,7 @@ namespace BelzontWE.Font.Utility
             return points.Select(k => k - offset).ToArray();
         }
 
-        public override string ToString() => $"BRI [m={Mesh?.bounds};sz={m_sizeMetersUnscaled}]";
+        public override string ToString() => $"BRI [r={m_refText};v={m_vertices?.Length};sz={m_sizeMetersUnscaled}]";
 
         internal long GetSize() => GetMeshSize();
 

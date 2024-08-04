@@ -1,5 +1,7 @@
 ﻿using Belzont.Utils;
-#pragma warning disable IDE1006 
+using System.ComponentModel;
+
+#pragma warning disable IDE1006
 using System.Xml.Serialization;
 using UnityEngine;
 
@@ -18,19 +20,26 @@ namespace BelzontWE
         public WETextDataStyleXml style = new();
         [XmlAttribute] public string formulae;
         [XmlAttribute] public string fontName;
-        internal float maxWidthMeters;
+        [DefaultValue(0f)] internal float maxWidthMeters;
+
+        public bool ShouldSerializeshader() => textType != WESimulationTextType.Placeholder;
+        public bool ShouldSerializetext() => textType != WESimulationTextType.Placeholder;
+        public bool ShouldSerializeatlas() => textType == WESimulationTextType.Image;
+        public bool ShouldSerializeformulae() => textType != WESimulationTextType.Placeholder;
+        public bool ShouldSerializefontName() => textType == WESimulationTextType.Text;
+        public bool ShouldSerializemaxWidthMeters() => textType == WESimulationTextType.Text;
 
         public class WETextDataStyleXml
         {
             [XmlIgnore] public Color32 color;
             [XmlIgnore] public Color32 emissiveColor;
-            [XmlAttribute] public string colorRGBA { get => color.ToRGBA(); set => color = ColorExtensions.FromRGBA(value); }
-            [XmlAttribute] public string emissiveColorRGBA { get => emissiveColor.ToRGBA(); set => emissiveColor = ColorExtensions.FromRGBA(value); }
-            [XmlAttribute] public float metallic;
-            [XmlAttribute] public float smoothness;
-            [XmlAttribute] public float emissiveIntensity;
-            [XmlAttribute] public float emissiveExposureWeight;
-            [XmlAttribute] public float coatStrength;
+            [XmlAttribute][DefaultValue("FFFFFFFF")] public string colorRGBA { get => color.ToRGBA(); set => color = ColorExtensions.FromRGBA(value); }
+            [XmlAttribute][DefaultValue("FFFFFFFF")] public string emissiveColorRGBA { get => emissiveColor.ToRGBA(); set => emissiveColor = ColorExtensions.FromRGBA(value); }
+            [XmlAttribute][DefaultValue(0f)] public float metallic;
+            [XmlAttribute][DefaultValue(0f)] public float smoothness;
+            [XmlAttribute][DefaultValue(0f)] public float emissiveIntensity;
+            [XmlAttribute][DefaultValue(0f)] public float emissiveExposureWeight;
+            [XmlAttribute][DefaultValue(0f)] public float coatStrength;
         }
     }
 }

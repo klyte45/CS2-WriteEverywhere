@@ -386,7 +386,7 @@ namespace BelzontWE.Font
         {
             if (!m_textCache.ContainsKey(""))
             {
-                m_textCache[""] = new BasicRenderInformation(null, null, null)
+                m_textCache[""] = new BasicRenderInformation(new Vector3[0], new int[0], new Vector2[0])
                 {
                     m_refText = ""
                 };

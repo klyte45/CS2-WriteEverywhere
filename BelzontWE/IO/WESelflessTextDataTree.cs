@@ -6,36 +6,32 @@ using Unity.Entities;
 namespace BelzontWE
 {
     [XmlRoot("WELayout")]
-    public class WETextDataTree
+    public class WESelflessTextDataTree
     {
-        public WETextDataXml self;
         [XmlElement("children")]
         public WETextDataTree[] children;
 
-        public static WETextDataTree FromEntity(Entity e, EntityManager em)
+        public static WESelflessTextDataTree FromEntity(Entity e, EntityManager em)
         {
             if (!em.TryGetComponent<WETextData>(e, out var weTextData)) return default;
-            var result = new WETextDataTree
-            {
-                self = weTextData.ToDataXml(em)
-            };
+            var result = new WESelflessTextDataTree();
             if (em.TryGetBuffer<WESubTextRef>(e, true, out var subTextData))
             {
                 result.children = new WETextDataTree[subTextData.Length];
                 for (int i = 0; i < subTextData.Length; i++)
                 {
-                    result.children[i] = FromEntity(subTextData[i].m_weTextData, em);
+                    result.children[i] = WETextDataTree.FromEntity(subTextData[i].m_weTextData, em);
                 }
             }
             return result;
         }
 
         public string ToXML(bool pretty = true) => XmlUtils.DefaultXmlSerialize(this, pretty);
-        public static WETextDataTree FromXML(string text)
+        public static WESelflessTextDataTree FromXML(string text)
         {
             try
             {
-                return XmlUtils.DefaultXmlDeserialize<WETextDataTree>(text);
+                return XmlUtils.DefaultXmlDeserialize<WESelflessTextDataTree>(text);
             }
             catch { return null; }
         }

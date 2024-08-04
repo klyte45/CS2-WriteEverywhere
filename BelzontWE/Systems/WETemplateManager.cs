@@ -327,7 +327,7 @@ namespace BelzontWE
             {
                 var entities = chunk.GetNativeArray(m_EntityType);
                 var prefabRefs = chunk.GetNativeArray(ref m_prefabRefHdl);
-
+            //    UnityEngine.Debug.Log($"WEPrefabTemplateFilterJob SIZE: {entities.Length}");
                 for (int i = 0; i < entities.Length; i++)
                 {
                     var entity = entities[i];
