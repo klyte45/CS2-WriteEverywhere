@@ -13,7 +13,7 @@ namespace BelzontWE
             weData.OnPostInstantiate();
             weData.SetNewParentForced(newParent);
             em.SetComponentData(cloneEntity, weData);
-            if (em.TryGetBuffer<WESubTextRef>(cloneEntity, false, out var subRefs))
+            if (weData.TextType != WESimulationTextType.Placeholder && em.TryGetBuffer<WESubTextRef>(cloneEntity, false, out var subRefs))
             {
                 for (int i = 0; i < subRefs.Length; i++)
                 {
@@ -40,7 +40,7 @@ namespace BelzontWE
             {
                 em.SetComponentData(cloneEntity, weData);
             }
-            if (em.TryGetBuffer<WESubTextRef>(cloneEntity, false, out var subRefs))
+            if (weData.TextType != WESimulationTextType.Placeholder && em.TryGetBuffer<WESubTextRef>(cloneEntity, false, out var subRefs))
             {
                 for (int i = 0; i < subRefs.Length; i++)
                 {
@@ -96,7 +96,7 @@ namespace BelzontWE
             weData.OnPostInstantiate();
             weData.SetNewParentForced(newParent);
             cmd.SetComponent(cloneEntity, weData);
-            if (em.TryGetBuffer<WESubTextRef>(toCopy, true, out var subRefs))
+            if (weData.TextType != WESimulationTextType.Placeholder && em.TryGetBuffer<WESubTextRef>(toCopy, true, out var subRefs))
             {
                 cmd.RemoveComponent<WESubTextRef>(cloneEntity);
                 DynamicBuffer<WESubTextRef> newBuff = cmd.AddBuffer<WESubTextRef>(cloneEntity);
@@ -127,7 +127,7 @@ namespace BelzontWE
             weData.OnPostInstantiate();
             weData.SetNewParentForced(newParent);
             cmd.SetComponent(cloneEntity, weData);
-            if (em.TryGetBuffer<WESubTextRef>(toCopy, true, out var subRefs))
+            if (weData.TextType != WESimulationTextType.Placeholder && em.TryGetBuffer<WESubTextRef>(toCopy, true, out var subRefs))
             {
                 cmd.RemoveComponent<WESubTextRef>(cloneEntity);
                 DynamicBuffer<WESubTextRef> newBuff = cmd.AddBuffer<WESubTextRef>(cloneEntity);
@@ -154,7 +154,7 @@ namespace BelzontWE
             weData.SetNewParentForced(newParent);
             cmd.SetComponent(unfilteredChunkIndex, cloneEntity, weData);
             cmd.AddComponent<WEWaitingPostInstantiation>(unfilteredChunkIndex, cloneEntity);
-            if (subTextLookup.TryGetBuffer(toCopy, out var subRefs))
+            if (weData.TextType != WESimulationTextType.Placeholder && subTextLookup.TryGetBuffer(toCopy, out var subRefs))
             {
                 cmd.RemoveComponent<WESubTextRef>(unfilteredChunkIndex, cloneEntity);
                 DynamicBuffer<WESubTextRef> newBuff = cmd.AddBuffer<WESubTextRef>(unfilteredChunkIndex, cloneEntity);
@@ -185,7 +185,7 @@ namespace BelzontWE
             weData.SetNewParentForced(newParent);
             cmd.SetComponent(unfilteredChunkIndex, cloneEntity, weData);
             cmd.AddComponent<WEWaitingPostInstantiation>(unfilteredChunkIndex, cloneEntity);
-            if (subTextLookup.TryGetBuffer(toCopy, out var subRefs))
+            if (weData.TextType != WESimulationTextType.Placeholder && subTextLookup.TryGetBuffer(toCopy, out var subRefs))
             {
                 cmd.RemoveComponent<WESubTextRef>(unfilteredChunkIndex, cloneEntity);
                 DynamicBuffer<WESubTextRef> newBuff = cmd.AddBuffer<WESubTextRef>(unfilteredChunkIndex, cloneEntity);

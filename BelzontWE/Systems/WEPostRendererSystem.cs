@@ -148,7 +148,7 @@ namespace BelzontWE
                             break;
                         case WESimulationTextType.Image:
                             if (UpdateImageMesh(entity, ref weCustomData, weCustomData.EffectiveText.ToString(), unfilteredChunkIndex, m_CommandBuffer))
-                            {                                
+                            {
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
                                 m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             }
@@ -236,7 +236,10 @@ namespace BelzontWE
                 {
                     var entity = entities[i];
                     var weCustomData = weTextDatas[i];
-                    if (!m_entityLookup.Exists(weCustomData.TargetEntity) || (weCustomData.TargetEntity == Entity.Null && !m_templateDataLkp.HasComponent(entity)))
+                    if (!m_entityLookup.Exists(weCustomData.TargetEntity) 
+                        || (m_TextDataLkp.TryGetComponent(weCustomData.ParentEntity, out var weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder)
+                        || (m_TextDataLkp.TryGetComponent(weCustomData.TargetEntity, out weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder) 
+                        || (weCustomData.TargetEntity == Entity.Null && !m_templateDataLkp.HasComponent(entity)))
                     {
 #if !BURST
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} - Target doesntExists");

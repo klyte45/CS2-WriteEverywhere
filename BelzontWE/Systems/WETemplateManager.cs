@@ -377,7 +377,7 @@ namespace BelzontWE
                 {
                     if (m_obsoleteTemplateList.Contains(updaters[i].templateEntity))
                     {
-                        m_CommandBuffer.AddComponent<WEWaitingRendering>(entities[i]);
+                        m_CommandBuffer.AddComponent<WEWaitingRenderingPlaceholder>(entities[i]);
                     }
                 }
             }

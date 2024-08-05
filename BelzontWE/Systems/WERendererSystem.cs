@@ -108,7 +108,6 @@ namespace BelzontWE
                 while (availToDraw.TryDequeue(out var item))
                 {
                     if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
-                        && item.weComponent.TargetEntity == m_pickerController.CurrentEntity.Value
                         && m_pickerController.CurrentSubEntity.Value == item.textDataEntity
                         && item.transformMatrix.ValidTRS())
                     {
@@ -193,7 +192,8 @@ namespace BelzontWE
                     m_CameraPosition = m_CameraPosition,
                     m_CameraDirection = m_CameraDirection,
                     availToDraw = availToDraw.AsParallelWriter(),
-                    isAtWeEditor = m_pickerTool.IsSelected
+                    isAtWeEditor = m_pickerTool.IsSelected,
+                    m_selectedSubEntity = m_pickerController.CurrentSubEntity.Value
                 };
                 job2.ScheduleParallel(m_renderQueueEntities, Dependency).Complete();
             }
@@ -236,6 +236,7 @@ namespace BelzontWE
             public EntityTypeHandle m_EntityType;
             public NativeQueue<WERenderData>.ParallelWriter availToDraw;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
+            public Entity m_selectedSubEntity;
             public bool isAtWeEditor;
 
             public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
@@ -250,9 +251,9 @@ namespace BelzontWE
 
                     if (weCustomData.TextType == WESimulationTextType.Archetype)
                     {
-                        if (m_weTemplateForPrefabLookup.TryGetComponent(weCustomData.TargetEntity, out var prefabForLookup))
+                        if (m_weTemplateForPrefabLookup.HasComponent(weCustomData.TargetEntity))
                         {
-                            if (prefabForLookup.childEntity != entity)
+                            if (m_weTemplateForPrefabLookup[weCustomData.TargetEntity].childEntity != entity)
                             {
 #if !BURST
                                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} childEntity {prefabForLookup.childEntity} != weCustomData.TargetEntity {weCustomData.TargetEntity} (prefabForLookup I)");
@@ -295,7 +296,7 @@ namespace BelzontWE
                         continue;
                     }
                     int num7 = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
-                    if (num7 >= cullInfo.m_MinLod)
+                    if (num7 >= cullInfo.m_MinLod || (isAtWeEditor && entity == m_selectedSubEntity))
                     {
                         availToDraw.Enqueue(new WERenderData
                         {
@@ -316,7 +317,7 @@ namespace BelzontWE
             }
 
             private bool GetBaseMatrix(Entity entity, ref WETextData weCustomData, out CullingInfo cullInfo, out Matrix4x4 matrix, int unfilteredChunkIndex, bool scaleless = false)
-            {
+            {   
                 float3 positionRef;
                 quaternion rotationRef;
                 Entity parentRef = weCustomData.ParentEntity;
@@ -410,7 +411,7 @@ namespace BelzontWE
                         matrix = default;
                         return false;
                     }
-                    if (cullInfo.m_PassedCulling != 1)
+                    if (cullInfo.m_PassedCulling != 1 && (!isAtWeEditor || entity != m_selectedSubEntity))
                     {
                         matrix = default;
                         return false;
