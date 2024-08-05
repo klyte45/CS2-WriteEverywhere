@@ -190,7 +190,7 @@ namespace BelzontWE
                     if (BasicIMod.DebugMode) LogUtils.DoLog("Font not initialized!!!");
                     return false;
                 }
-                var bri = font.FontSystem.DrawText(text, FontServer.Instance.ScaleEffective);
+                var bri = font.FontSystem.DrawText(text);
                 if (bri == null)
                 {
                     if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"BRI STILL NULL!!! ({text})");

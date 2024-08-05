@@ -83,7 +83,7 @@ namespace BelzontWE.Font
         }
 
 
-        public void EnsureText(string str, Vector3 scale, UIHorizontalAlignment alignment = UIHorizontalAlignment.Center)
+        public void EnsureText(string str, Vector3 scale)
         {
             if (str.TrimToNull() == null)
             {
@@ -93,11 +93,11 @@ namespace BelzontWE.Font
             {
                 m_textCache[str] = default;
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Enqueued String to ensure: {str} ({data.Name})");
-                itemsQueue.Enqueue(new StringRenderingQueueItem() { text = str, scale = scale, alignment = alignment });
+                itemsQueue.Enqueue(new StringRenderingQueueItem() { text = str });
             }
         }
 
-        public BasicRenderInformation DrawText(string str, Vector3 scale, UIHorizontalAlignment alignment = UIHorizontalAlignment.Center)
+        public BasicRenderInformation DrawText(string str)
         {
             if (GameManager.instance.isGameLoading) return null;
             BasicRenderInformation bri;
@@ -122,7 +122,7 @@ namespace BelzontWE.Font
             {
                 var result = m_textCache[str] = null;
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Enqueued String: {str} ({data.Name}) {result}");
-                itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = str, scale = scale, alignment = alignment });
+                itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = str });
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"itemsQueue: {itemsQueue.Count}");
                 return default;
             }
@@ -332,7 +332,7 @@ namespace BelzontWE.Font
             if (brij.AtlasVersion != CurrentAtlas.Version)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} since atlas changed");
-                m_textCache.Remove(originalText);
+                itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
                 return;
             }
             BasicRenderInformation result = BasicRenderInformation.Fill(brij, CurrentAtlas.Material);
@@ -371,8 +371,6 @@ namespace BelzontWE.Font
         public unsafe struct StringRenderingQueueItem
         {
             public FixedString512Bytes text;
-            public Vector3 scale;
-            public UIHorizontalAlignment alignment;
         }
 
         private static IEnumerable Enumerate(IEnumerator enumerator)
@@ -426,6 +424,7 @@ namespace BelzontWE.Font
                     glyphs = GetGlyphsCollection(FontHeight),
                     output = results.AsParallelWriter(),
                     AtlasVersion = CurrentAtlas.Version,
+                    scale = FontServer.Instance.ScaleEffective
                 };
                 dependency = job.Schedule(itemsStarted.Length, 32, dependency);
                 itemsStarted.Dispose(dependency);
@@ -450,6 +449,7 @@ namespace BelzontWE.Font
             public NativeHashMap<int, FontGlyph> glyphs;
             public Vector3 CurrentAtlasSize;
             public uint AtlasVersion;
+            public Vector3 scale;
 
             public void Execute(int idx)
             {
@@ -464,14 +464,14 @@ namespace BelzontWE.Font
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Input = {input}");
                 }
 #endif
-                DrawGlyphsForString(input.text, input.scale, input.alignment);
+                DrawGlyphsForString(input.text);
 
 #if JOBS_DEBUG
                 LogUtils.DoLog($"Result tris {result[0].triangles.Length} ");
 #endif
             }
 
-            private void DrawGlyphsForString(FixedString512Bytes strOr, Vector3 scale, UIHorizontalAlignment alignment)
+            private void DrawGlyphsForString(FixedString512Bytes strOr)
             {
                 var result = new BasicRenderInformationJob();
                 result.m_YAxisOverflows = new RangeVector { min = float.MaxValue, max = float.MinValue };
@@ -564,7 +564,7 @@ namespace BelzontWE.Font
 #endif
                     result.m_YAxisOverflows.min *= scale.y;
                     result.m_YAxisOverflows.max *= scale.y;
-                    result.vertices = new NativeArray<Vector3>(AlignVertices(vertices, alignment), Allocator.Persistent);
+                    result.vertices = new NativeArray<Vector3>(AlignVertices(vertices), Allocator.Persistent);
                     result.colors = new NativeArray<Color32>(colors.ToArray(), Allocator.Persistent);
                     result.uv1 = new(uvs.ToArray(), Allocator.Persistent);
                     result.triangles = new(triangles.ToArray(), Allocator.Persistent);
@@ -602,7 +602,7 @@ namespace BelzontWE.Font
                 colors.Add(item4);
                 AddUVCoords(uvs, glyph);
             }
-            private Vector3[] AlignVertices(IList<Vector3> points, UIHorizontalAlignment alignment)
+            private Vector3[] AlignVertices(IList<Vector3> points)
             {
                 if (points.Count == 0)
                 {
@@ -611,19 +611,7 @@ namespace BelzontWE.Font
 
                 var max = new Vector3(points.Select(x => x.x).Max(), 0, points.Select(x => x.z).Max());
                 var min = new Vector3(points.Select(x => x.x).Min(), 0, points.Select(x => x.z).Min());
-                Vector3 offset = default;
-                switch (alignment)
-                {
-                    case UIHorizontalAlignment.Left:
-                        offset = min;
-                        break;
-                    case UIHorizontalAlignment.Center:
-                        offset = (max + min) / 2;
-                        break;
-                    case UIHorizontalAlignment.Right:
-                        offset = max;
-                        break;
-                }
+                Vector3 offset = (max + min) / 2;
 
                 return points.Select(x => x - offset).ToArray();
             }

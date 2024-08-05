@@ -1,7 +1,6 @@
 ﻿using Game;
 using Game.Rendering;
 using Game.SceneFlow;
-using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -11,6 +10,8 @@ using UnityEngine.Rendering;
 using BelzontWE.Font.Utility;
 using WriteEverywhere.Sprites;
 using Belzont.Utils;
+using Unity.Burst.Intrinsics;
+
 
 #if BURST
 using UnityEngine.Scripting;
@@ -118,7 +119,7 @@ namespace BelzontWE
                         item.weComponent.ClearTemplateDirty();
                         cmd.AddComponent<WEWaitingRenderingPlaceholder>(item.textDataEntity);
                         cmd.SetComponent(item.textDataEntity, item.weComponent);
-                        if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType}\nTEMPLATE DIRTY");
+                        if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! E = {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType}\nTEMPLATE DIRTY");
                         continue;
                     }
                     BasicRenderInformation bri;
@@ -135,7 +136,7 @@ namespace BelzontWE
                             cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
                             if (dumpNextFrame)
                             {
-                                LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nMARKED TO RE-RENDER");
+                                LogUtils.DoInfoLog($"DUMP! E =  {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nMARKED TO RE-RENDER");
                             }
                         }
                         if (!m_pickerTool.IsSelected) continue;
@@ -159,7 +160,7 @@ namespace BelzontWE
                     }
                     if (dumpNextFrame)
                     {
-                        LogUtils.DoInfoLog($"DUMP! E = {item.refEntity} | {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length} | M= {item.transformMatrix}");
+                        LogUtils.DoInfoLog($"DUMP! E = {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length} | M= {item.transformMatrix}");
 
                     }
                     if (bri.m_refText != "") Graphics.DrawMesh(bri.Mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
@@ -183,7 +184,7 @@ namespace BelzontWE
                     m_transform = GetComponentLookup<Game.Objects.Transform>(true),
                     m_iTransform = GetComponentLookup<InterpolatedTransform>(true),
                     m_weDataLookup = GetComponentLookup<WETextData>(true),
-                    m_weData = GetComponentTypeHandle<WETextData>(false),
+                    m_weData = GetComponentTypeHandle<WETextData>(true),
                     m_weTemplateUpdaterLookup = GetComponentLookup<WETemplateUpdater>(true),
                     m_weTemplateForPrefabLookup = GetComponentLookup<WETemplateForPrefab>(true),
                     m_weTemplateDataLookup = GetComponentLookup<WETemplateData>(true),
@@ -201,7 +202,6 @@ namespace BelzontWE
 
         private struct WERenderData
         {
-            public Entity refEntity;
             public Entity textDataEntity;
             public WETextData weComponent;
             public Matrix4x4 transformMatrix;
@@ -264,6 +264,12 @@ namespace BelzontWE
                         continue;
                     }
 
+                    if (!weCustomData.HasBRI && weCustomData.TextType != WESimulationTextType.Placeholder)
+                    {
+                        m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
+                        continue;
+                    }
+
                     if (weCustomData.TextType == WESimulationTextType.Placeholder != m_weTemplateUpdaterLookup.HasComponent(entity))
                     {
                         if (weCustomData.TextType != WESimulationTextType.Placeholder)
@@ -290,18 +296,12 @@ namespace BelzontWE
                     if (!GetBaseMatrix(entity, ref weCustomData, out CullingInfo cullInfo, out var baseMatrix, unfilteredChunkIndex)) continue;
                     float minDist = RenderingUtils.CalculateMinDistance(cullInfo.m_Bounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
 
-                    if (!weCustomData.HasBRI && weCustomData.TextType != WESimulationTextType.Placeholder)
-                    {
-                        m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
-                        continue;
-                    }
                     int num7 = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
                     if (num7 >= cullInfo.m_MinLod || (isAtWeEditor && entity == m_selectedSubEntity))
                     {
                         availToDraw.Enqueue(new WERenderData
                         {
                             textDataEntity = entity,
-                            refEntity = *chunk.GetEntityDataPtrRO(m_EntityType),
                             weComponent = weCustomData,
                             transformMatrix = baseMatrix
                         });
@@ -317,7 +317,7 @@ namespace BelzontWE
             }
 
             private bool GetBaseMatrix(Entity entity, ref WETextData weCustomData, out CullingInfo cullInfo, out Matrix4x4 matrix, int unfilteredChunkIndex, bool scaleless = false)
-            {   
+            {
                 float3 positionRef;
                 quaternion rotationRef;
                 Entity parentRef = weCustomData.ParentEntity;
