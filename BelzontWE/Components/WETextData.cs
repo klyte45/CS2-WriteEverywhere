@@ -5,6 +5,7 @@ using Belzont.Utils;
 using BelzontWE.Font;
 using BelzontWE.Font.Utility;
 using Colossal.Entities;
+using Colossal.Mathematics;
 using Colossal.Serialization.Entities;
 using System;
 using System.Runtime.InteropServices;
@@ -248,6 +249,7 @@ namespace BelzontWE
         }
         public bool HasFormulae => formulaeHandlerFn.IsAllocated;
         public bool HasBRI => basicRenderInformation.IsAllocated;
+        public Bounds3 Bounds {  get; private set; }
         private Func<EntityManager, Entity, string> FormulaeFn
         {
             get => formulaeHandlerFn.IsAllocated ? formulaeHandlerFn.Target as Func<EntityManager, Entity, string> : null;
@@ -317,6 +319,7 @@ namespace BelzontWE
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             basicRenderInformation = default;
             basicRenderInformation = GCHandle.Alloc(bri, bri.m_refText == "" ? GCHandleType.Normal : GCHandleType.Weak);
+            Bounds = bri.m_bounds;
             BriOffsetScaleX = bri.m_offsetScaleX;
             BriPixelDensity = bri.m_pixelDensityMeters;
             BriWidthMetersUnscaled = bri.m_sizeMetersUnscaled.x;
@@ -347,7 +350,7 @@ namespace BelzontWE
             return result;
         }
 
-        public bool UpdateEffectiveText(EntityManager em)
+        public bool UpdateEffectiveText(EntityManager em, Entity geometryEntity)
         {
             InitializedEffectiveText = true;
             if (!loadingFnDone)
@@ -360,7 +363,7 @@ namespace BelzontWE
             }
             string oldEffText = (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText;
             EffectiveText = FormulaeFn is Func<EntityManager, Entity, string> fn
-                ? fn(em, GetTargetEntityEffective(TargetEntity, em))?.ToString().Trim().Truncate(500) ?? "<InvlidFn>"
+                ? fn(em, geometryEntity)?.ToString().Trim().Truncate(500) ?? "<InvlidFn>"
                 : formulaeHandlerStr.Length > 0 ? "<InvalidFn>" : Text;
             return EffectiveText.ToString() != oldEffText;
         }

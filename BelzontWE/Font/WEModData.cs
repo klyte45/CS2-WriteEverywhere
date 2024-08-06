@@ -188,7 +188,6 @@ namespace BelzontWE
             }
         }
 
-
         #region Keybinding
         [SettingsUISection(kKeybindingSection, kToolControlsSection)][SettingsUIKeyboardBinding(BindingKeyboard.W, kActionEnablePicker, ctrl: true, shift: true)] public ProxyBinding EnableTool { get; set; }
 

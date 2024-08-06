@@ -319,6 +319,7 @@ namespace BelzontWE
             public ComponentLookup<WETemplateForPrefabEmpty> m_prefabEmptyLkp;
             public ComponentLookup<WETemplateForPrefabDirty> m_prefabDirtyLkp;
             public ComponentLookup<WETemplateForPrefab> m_prefabLayoutLkp;
+            public ComponentLookup<WETemplateUpdater> m_templateUpdaterLkp;
             public ComponentLookup<WETextData> m_TextDataLkp;
             public BufferLookup<WESubTextRef> m_subRefLkp;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
@@ -327,7 +328,7 @@ namespace BelzontWE
             {
                 var entities = chunk.GetNativeArray(m_EntityType);
                 var prefabRefs = chunk.GetNativeArray(ref m_prefabRefHdl);
-            //    UnityEngine.Debug.Log($"WEPrefabTemplateFilterJob SIZE: {entities.Length}");
+                //    UnityEngine.Debug.Log($"WEPrefabTemplateFilterJob SIZE: {entities.Length}");
                 for (int i = 0; i < entities.Length; i++)
                 {
                     var entity = entities[i];
@@ -336,11 +337,12 @@ namespace BelzontWE
                     {
                         if (!m_prefabLayoutLkp.TryGetComponent(newTemplate, out var layoutData) || layoutData.templateRef != newTemplate)
                         {
-                            var childEntity = WELayoutUtility.DoCloneTextItemReferenceSelf(newTemplate, entities[i], ref m_TextDataLkp, ref m_subRefLkp, unfilteredChunkIndex, m_CommandBuffer, true);
-                            if (m_prefabLayoutLkp.HasComponent(newTemplate))
+                            if (m_prefabLayoutLkp.TryGetComponent(newTemplate, out var oldComponent))
                             {
+                                DestroyRecursive(oldComponent.childEntity, unfilteredChunkIndex);
                                 m_CommandBuffer.RemoveComponent<WETemplateForPrefab>(unfilteredChunkIndex, entities[i]);
                             }
+                            var childEntity = WELayoutUtility.DoCloneTextItemReferenceSelf(newTemplate, entities[i], ref m_TextDataLkp, ref m_subRefLkp, unfilteredChunkIndex, m_CommandBuffer, true);
                             m_CommandBuffer.AddComponent<WETemplateForPrefab>(unfilteredChunkIndex, entities[i], new()
                             {
                                 templateRef = newTemplate,
@@ -357,6 +359,29 @@ namespace BelzontWE
                         m_CommandBuffer.RemoveComponent<WETemplateForPrefabDirty>(unfilteredChunkIndex, entity);
                     }
                 }
+            }
+            private void DestroyRecursive(Entity nextEntity, int unfilteredChunkIndex, Entity initialDelete = default)
+            {
+                if (nextEntity != initialDelete)
+                {
+                    if (initialDelete == default) initialDelete = nextEntity;
+                    if (m_prefabLayoutLkp.TryGetComponent(nextEntity, out var data))
+                    {
+                        DestroyRecursive(data.childEntity, unfilteredChunkIndex, initialDelete);
+                    }
+                    if (m_templateUpdaterLkp.TryGetComponent(nextEntity, out var updater))
+                    {
+                        DestroyRecursive(updater.childEntity, unfilteredChunkIndex, initialDelete);
+                    }
+                    if (m_subRefLkp.TryGetBuffer(nextEntity, out var subLayout))
+                    {
+                        for (int j = 0; j < subLayout.Length; j++)
+                        {
+                            DestroyRecursive(subLayout[j].m_weTextData, unfilteredChunkIndex, initialDelete);
+                        }
+                    }
+                }
+                m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, nextEntity);
             }
         }
 #if BURST

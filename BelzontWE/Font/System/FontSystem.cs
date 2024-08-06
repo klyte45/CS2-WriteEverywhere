@@ -336,6 +336,12 @@ namespace BelzontWE.Font
                 return;
             }
             BasicRenderInformation result = BasicRenderInformation.Fill(brij, CurrentAtlas.Material);
+            if(result is null)
+            {
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} ");
+                itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
+                return;
+            }
             result.m_refY = data.Font.Ascent;
             result.m_baselineOffset = -data.Font.Descent;
             result.m_materialGeneratedTick = LastUpdateAtlas;
