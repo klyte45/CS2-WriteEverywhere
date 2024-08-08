@@ -5,24 +5,27 @@ import { translate } from "utils/translate";
 
 type Props = {
     callback: (nameSet?: string) => any
+    title: string
+    promptText: string
+    initialValue?: string
+    validationFn?: (val: string) => boolean
 }
 
-export const WESaveAsCityTemplateDialog = ({ callback }: Props) => {
-    const T_addItemDialogTitle = translate("template.saveCityDialog.title")
+export const WEInputDialog = ({ callback, title, promptText, initialValue, validationFn }: Props) => {
     const Dialog = VanillaComponentResolver.instance.Dialog;
     const StringInputField = VanillaWidgets.instance.StringInputField;
-    const [name, setName] = useState("")
+    const [name, setName] = useState(initialValue ?? "")
 
     return <Dialog
         onClose={() => callback()}
         wide={true}
-        title={T_addItemDialogTitle}
+        title={title}
         buttons={<div className="k45_we_dialogBtns">
-            {<button className="positiveBtn" onClick={() => callback(name)} disabled={!name.trim()}>{translate("template.saveCityDialog.saveBtn")}</button>}
-            <button className="negativeBtn" onClick={() => callback()}>{translate("template.saveCityDialog.cancelBtn")}</button>
+            {<button className="positiveBtn" onClick={() => callback(name)} disabled={validationFn ? validationFn(name) : !name.trim()}>{translate("saveBtn")}</button>}
+            <button className="negativeBtn" onClick={() => callback()}>{translate("cancelBtn")}</button>
         </div>}>
         <div className="k45_we_dialogMessage">
-            <p>{translate("template.saveCityDialog.dialogText")}</p>
+            <p>{promptText}</p>
             <StringInputField onChange={setName} value={name} />
         </div>
     </Dialog>

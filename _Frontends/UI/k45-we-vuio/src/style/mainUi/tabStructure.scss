@@ -1,0 +1,99 @@
+@import "../buttonsStyles";
+
+.k45_we_tabWithPreview_content {
+    position: relative;
+    height: 100%;
+
+    .k45_we_tabWithPreview_list {
+        position: absolute;
+        width: 400rem;
+        top: 5rem;
+        left: 5rem;
+        bottom: 5rem;
+
+        button {
+            font-size: 140%;
+            color: var(--textColorDim);
+            text-align: left;
+            padding-top: 5rem;
+            padding-left: 5rem;
+            padding-right: 5rem;
+            padding-bottom: 5rem;
+
+            &:hover {
+                background-color: var(--panelColorNormal);
+            }
+
+            &.selected {
+                background-color: var(--accentColorNormal);
+                color: white;
+
+                &:hover {
+                    background-color: var(--accentColorNormal-hover);
+                }
+            }
+        }
+    }
+
+    .k45_we_tabWithPreview_body {
+        position: absolute;
+        left: 410rem;
+        top: 5rem;
+        right: 5rem;
+        bottom: 5rem;
+        display: flex;
+        flex-direction: column;
+
+        .k45_we_tabWithPreview_preview {
+            height: 60%;
+        }
+
+        .k45_we_tabWithPreview_details {
+            flex-grow: 1;
+            padding: 5rem;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-content: center;
+            flex-wrap: wrap;
+
+            .k45_we_keyValueContent {
+                max-width: 50%;
+                display: flex;
+                flex-direction: row;
+                flex-wrap: nowrap;
+                padding: 10rem;
+                align-items: center;
+
+                .key {
+                    min-width: 100rem;
+                    color: white;
+                    text-align: left;
+                }
+
+                .value {
+                    min-width: 100rem;
+                    color: var(--textColorDim);
+                    text-align: right;
+                }
+
+                &:hover{
+                    background-color: var(--panelColorNormal);
+                }
+            }
+        }
+
+        .k45_we_tabWithPreview_actions {
+            height: 60rem;    
+            display: flex;
+            flex-direction: row-reverse;
+            padding-top: 5rem;
+            padding-bottom: 5rem;
+            @extend %buttonsStyle;
+            button{
+                margin-left: 5rem;
+                margin-right: 5rem;
+            }
+        }
+    }
+}

@@ -5,7 +5,8 @@ import { LayoutsService } from "services/LayoutsService";
 import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeElement";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
-import { WESaveAsCityTemplateDialog } from "./WESaveAsCityTemplateDialog";
+import { WEInputDialog } from "../common/WEInputDialog";
+import { getOverrideCheckFn } from "utils/getOverrideCheckFn";
 
 
 
@@ -50,6 +51,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const T_saveAsCityTemplate = translate("textHierarchyWindow.saveAsCityTemplate"); //"Appearance Settings"
 
     const T_confirmOverrideSaveAsCityTemplate = translate("textHierarchyWindow.confirmOverrideCityTemplateQuestion"); //"Appearance Settings"
+    const T_addItemDialogTitle = translate("template.saveCityDialog.title")
+    const T_addItemDialogPromptText = translate("template.saveCityDialog.dialogText")
 
     const defaultPosition = { x: 20 / window.innerWidth, y: 100 / window.innerHeight }
 
@@ -112,20 +115,16 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const [savingCityTemplate, setSavingCityTemplate] = useState(false)
     const [confirmingOverrideSavingCityTemplate, setConfirmingOverrideSavingCityTemplate] = useState(false)
     const [actionOnConfirmOverrideSavingCityTemplate, setActionOnConfirmOverrideSavingCityTemplate] = useState(() => () => { })
-    const saveCityTemplateCallback = async (name?: string) => {
-        setSavingCityTemplate(false);
-        name = name?.trim();
-        const targetEntity = wps.CurrentSubEntity.value;
-        if (!name || !targetEntity) return;
-        if (await LayoutsService.checkCityTemplateExists(name)) {
-            setActionOnConfirmOverrideSavingCityTemplate(() => () => {
-                LayoutsService.saveAsCityTemplate(targetEntity, name!);
-            })
-            setConfirmingOverrideSavingCityTemplate(true);
-        } else {
-            LayoutsService.saveAsCityTemplate(targetEntity, name!);
-        }
-    }
+    const saveCityTemplateCallback = getOverrideCheckFn(
+        setSavingCityTemplate,
+        (x) => !x || !wps.CurrentSubEntity.value,
+        LayoutsService.checkCityTemplateExists,
+        setActionOnConfirmOverrideSavingCityTemplate,
+        setConfirmingOverrideSavingCityTemplate,
+        (x) => {
+            LayoutsService.saveAsCityTemplate(wps.CurrentSubEntity.value!, x!);
+        })
+
 
     return <Portal>
         <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
@@ -157,7 +156,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.removeItem()} src={i_delete} tooltip={T_delete} focusKey={FocusDisabled} className={buttonClass} />
             </EditorItemRow>
         </Panel>
-        {savingCityTemplate && <WESaveAsCityTemplateDialog callback={saveCityTemplateCallback} />}
-        {confirmingOverrideSavingCityTemplate && <ConfirmationDialog onConfirm={() => { actionOnConfirmOverrideSavingCityTemplate(); setConfirmingOverrideSavingCityTemplate(false); }} onCancel={() => setConfirmingOverrideSavingCityTemplate(false)} message={T_confirmOverrideSaveAsCityTemplate} />}
+        {savingCityTemplate && <WEInputDialog callback={saveCityTemplateCallback} title={T_addItemDialogTitle} promptText={T_addItemDialogPromptText} />}
+        {confirmingOverrideSavingCityTemplate && <ConfirmationDialog onConfirm={() => { actionOnConfirmOverrideSavingCityTemplate(); }} onCancel={() => setConfirmingOverrideSavingCityTemplate(false)} message={T_confirmOverrideSaveAsCityTemplate} />}
     </Portal>;
 };

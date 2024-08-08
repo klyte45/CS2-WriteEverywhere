@@ -11,14 +11,16 @@ using Game.SceneFlow;
 using Game.Tools;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 
+
 #if BURST
-using Unity.Burst;
 #endif
 
 namespace BelzontWE
@@ -90,12 +92,15 @@ namespace BelzontWE
                     m_obsoleteTemplateList.Add(obsoleteTemplate);
                     RegisteredTemplates.Remove(idx);
                 }
-                else
+                else if (value != Entity.Null)
                 {
                     m_obsoleteTemplateList.Add(Entity.Null);
                 }
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Saved {value} @ {idx}");
-                RegisteredTemplates.Add(idx, value);
+                if (value != Entity.Null)
+                {
+                    RegisteredTemplates.Add(idx, value);
+                }
             }
         }
 
@@ -309,110 +314,44 @@ namespace BelzontWE
             }
         }
 
-        internal bool CityTemplateExists(string name)
+        public bool CityTemplateExists(string name) => RegisteredTemplates.ContainsKey(name);
+        public Dictionary<string, Entity> ListCityTemplates()
         {
-            return RegisteredTemplates.ContainsKey(name);
+            var arr = RegisteredTemplates.GetKeyArray(Allocator.Temp);
+            var result = arr.ToArray().OrderBy(x => x).ToDictionary(x => x.ToString(), x => RegisteredTemplates[x]);
+            arr.Dispose();
+            return result;
+        }
+        public unsafe int GetCityTemplateUsageCount(string name)
+        {
+            if (m_templateBasedEntities.IsEmptyIgnoreFilter || !RegisteredTemplates.TryGetValue(name, out var templateEntity)) return 0;
+            var counterResult = 0;
+            var job = new WEPlaceholcerTemplateUsageCount
+            {
+                m_templateToCheck = templateEntity,
+                m_updaterHdl = GetComponentTypeHandle<WETemplateUpdater>(),
+                m_counter = &counterResult
+            };
+            job.Schedule(m_templateBasedEntities, Dependency).Complete();
+            return counterResult;
         }
 
-#if BURST
+
         [BurstCompile]
-#endif
-        private unsafe struct WEPrefabTemplateFilterJob : IJobChunk
+        private unsafe struct WEPlaceholcerTemplateUsageCount : IJobChunk
         {
-            public EntityTypeHandle m_EntityType;
-            public ComponentTypeHandle<PrefabRef> m_prefabRefHdl;
-            public ComponentLookup<PrefabData> m_prefabDataLkp;
-            public ComponentLookup<WETemplateForPrefabEmpty> m_prefabEmptyLkp;
-            public ComponentLookup<WETemplateForPrefabDirty> m_prefabDirtyLkp;
-            public ComponentLookup<WETemplateForPrefab> m_prefabLayoutLkp;
-            public ComponentLookup<WETemplateUpdater> m_templateUpdaterLkp;
-            public ComponentLookup<WETextData> m_TextDataLkp;
-            public BufferLookup<WESubTextRef> m_subRefLkp;
-            public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
-            public UnsafeParallelHashMap<long, Entity> m_indexesWithLayout;
-            public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
-            {
-                var entities = chunk.GetNativeArray(m_EntityType);
-                var prefabRefs = chunk.GetNativeArray(ref m_prefabRefHdl);
-                //    UnityEngine.Debug.Log($"WEPrefabTemplateFilterJob SIZE: {entities.Length}");
-                for (int i = 0; i < entities.Length; i++)
-                {
-                    var entity = entities[i];
-                    var prefabRef = prefabRefs[i];
-                    if (m_prefabDataLkp.TryGetComponent(prefabRef.m_Prefab, out var prefabData) && m_indexesWithLayout.TryGetValue(prefabData.m_Index, out Entity newTemplate))
-                    {
-                        if (!m_prefabLayoutLkp.TryGetComponent(newTemplate, out var layoutData) || layoutData.templateRef != newTemplate)
-                        {
-                            if (m_prefabLayoutLkp.TryGetComponent(newTemplate, out var oldComponent))
-                            {
-                                DestroyRecursive(oldComponent.childEntity, unfilteredChunkIndex);
-                                m_CommandBuffer.RemoveComponent<WETemplateForPrefab>(unfilteredChunkIndex, entities[i]);
-                            }
-                            var childEntity = WELayoutUtility.DoCloneTextItemReferenceSelf(newTemplate, entities[i], ref m_TextDataLkp, ref m_subRefLkp, unfilteredChunkIndex, m_CommandBuffer, true);
-                            m_CommandBuffer.AddComponent<WETemplateForPrefab>(unfilteredChunkIndex, entities[i], new()
-                            {
-                                templateRef = newTemplate,
-                                childEntity = childEntity
-                            });
-                        }
-                    }
-                    else if (!m_prefabEmptyLkp.HasComponent(entity))
-                    {
-                        m_CommandBuffer.AddComponent<WETemplateForPrefabEmpty>(unfilteredChunkIndex, entity);
-                    }
-                    if (m_prefabDirtyLkp.HasComponent(entity))
-                    {
-                        m_CommandBuffer.RemoveComponent<WETemplateForPrefabDirty>(unfilteredChunkIndex, entity);
-                    }
-                }
-            }
-            private void DestroyRecursive(Entity nextEntity, int unfilteredChunkIndex, Entity initialDelete = default)
-            {
-                if (nextEntity != initialDelete)
-                {
-                    if (initialDelete == default) initialDelete = nextEntity;
-                    if (m_prefabLayoutLkp.TryGetComponent(nextEntity, out var data))
-                    {
-                        DestroyRecursive(data.childEntity, unfilteredChunkIndex, initialDelete);
-                    }
-                    if (m_templateUpdaterLkp.TryGetComponent(nextEntity, out var updater))
-                    {
-                        DestroyRecursive(updater.childEntity, unfilteredChunkIndex, initialDelete);
-                    }
-                    if (m_subRefLkp.TryGetBuffer(nextEntity, out var subLayout))
-                    {
-                        for (int j = 0; j < subLayout.Length; j++)
-                        {
-                            DestroyRecursive(subLayout[j].m_weTextData, unfilteredChunkIndex, initialDelete);
-                        }
-                    }
-                }
-                m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, nextEntity);
-            }
-        }
-#if BURST
-        [BurstCompile]
-#endif
-        private unsafe struct WEPlaceholderTemplateUpdaterJob : IJobChunk
-        {
-            public EntityTypeHandle m_EntityType;
-            public ComponentTypeHandle<WETemplateUpdater> m_prefabUpdaterHdl;
-            public NativeHashSet<Entity> m_obsoleteTemplateList;
-            public EntityCommandBuffer m_CommandBuffer;
-            public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
-            {
-                var entities = chunk.GetNativeArray(m_EntityType);
-                var updaters = chunk.GetNativeArray(ref m_prefabUpdaterHdl);
+            public Entity m_templateToCheck;
+            public ComponentTypeHandle<WETemplateUpdater> m_updaterHdl;
+            public int* m_counter;
 
-                for (int i = 0; i < updaters.Length; i++)
+            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+            {
+                var templates = chunk.GetNativeArray(ref m_updaterHdl);
+                for (int i = 0; i < templates.Length; i++)
                 {
-                    if (m_obsoleteTemplateList.Contains(updaters[i].templateEntity))
-                    {
-                        m_CommandBuffer.AddComponent<WEWaitingRenderingPlaceholder>(entities[i]);
-                    }
+                    if (templates[i].templateEntity == m_templateToCheck) *m_counter += 1;
                 }
             }
         }
-
     }
 }

@@ -3,8 +3,9 @@ import icon from "images/WE-White.svg"
 import { Button, Panel, Tooltip } from "cs2/ui";
 import { VanillaComponentResolver } from "@klyte45/vuio-commons";
 import classNames from "classnames";
-import "style/mainUi.scss"
+import "style/mainUi/mainUi.scss"
 import { translate } from "utils/translate";
+import { CityLayoutsTab } from "./CityLayoutsTab";
 
 export const WeMainPanelId = "BelzontWE.UI.WEMainPanel";
 
@@ -45,10 +46,11 @@ export const WEMainPanel = (props: MainPanelProps) => {
     </>
 
     return <div className={classNames(VanillaComponentResolver.instance.gameMainScreenModule.centerPanelLayout, "k45_we_mainPanel")}>
-        <Panel header={header}>
-            <TabNav tabs={tabs} selectedTab={selectedTab} >
-                {props.selectedTab} {tabs[props.selectedTab]}
+        <Panel header={header} className="k45_we_mainPanel_content">
+            <TabNav tabs={tabs} selectedTab={selectedTab}>
+                {selectedTab == Tabs.CityLayouts && <CityLayoutsTab />}
             </TabNav>
         </Panel>
     </div >;
 }
+

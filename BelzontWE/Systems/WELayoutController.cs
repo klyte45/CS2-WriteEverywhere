@@ -1,8 +1,10 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
+using Colossal;
 using Colossal.Entities;
 using Game.Prefabs;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Unity.Entities;
 
@@ -21,6 +23,13 @@ namespace BelzontWE
             callBinder($"{PREFIX}saveAsCityTemplate", SaveAsCityTemplate);
             callBinder($"{PREFIX}exportComponentAsPrefabDefault", ExportComponentAsPrefabDefault);
             callBinder($"{PREFIX}checkCityTemplateExists", CheckCityTemplateExists);
+            callBinder($"{PREFIX}listCityTemplates", ListCityTemplates);
+            callBinder($"{PREFIX}getCityTemplateDetail", GetCityTemplateDetail);
+            callBinder($"{PREFIX}renameCityTemplate", RenameCityTemplate);
+            callBinder($"{PREFIX}deleteCityTemplate", DeleteCityTemplate);
+            callBinder($"{PREFIX}duplicateCityTemplate", DuplicateCityTemplate);
+            callBinder($"{PREFIX}exportCityLayoutAsXml", ExportCityLayoutAsXml);
+            callBinder($"{PREFIX}openExportedFilesFolder", OpenExportedFilesFolder);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
@@ -46,16 +55,18 @@ namespace BelzontWE
         private string ExportComponentAsXml(Entity e, string name)
         {
             KFileUtils.EnsureFolderCreation(WETemplateManager.SAVED_PREFABS_FOLDER);
-            var targetFilename = Path.Combine(WETemplateManager.SAVED_PREFABS_FOLDER, $"{name}.{WETemplateManager.SIMPLE_LAYOUT_EXTENSION}");
+            var effectiveFileName = name;
+            var targetFilename = Path.Combine(WETemplateManager.SAVED_PREFABS_FOLDER, $"{effectiveFileName}.{WETemplateManager.SIMPLE_LAYOUT_EXTENSION}");
             if (File.Exists(targetFilename))
             {
                 for (int i = 1; File.Exists(targetFilename); i++)
                 {
-                    targetFilename = Path.Combine(WETemplateManager.SAVED_PREFABS_FOLDER, $"{name}_{i}.{WETemplateManager.SIMPLE_LAYOUT_EXTENSION}");
+                    effectiveFileName = $"{name}_{i}";
+                    targetFilename = Path.Combine(WETemplateManager.SAVED_PREFABS_FOLDER, $"{effectiveFileName}.{WETemplateManager.SIMPLE_LAYOUT_EXTENSION}");
                 }
             }
             File.WriteAllText(targetFilename, WETextDataTree.FromEntity(e, EntityManager).ToXML());
-            return targetFilename;
+            return effectiveFileName;
         }
         private bool LoadAsChildFromXml(Entity parent, string layoutName)
         {
@@ -103,5 +114,48 @@ namespace BelzontWE
             return 1;
         }
 
+        private Dictionary<string, Entity> ListCityTemplates() => m_templateManager.ListCityTemplates();
+
+        private CityDetailResponse GetCityTemplateDetail(string name)
+            => name == null || !m_templateManager.CityTemplateExists(name)
+                ? null
+                : new CityDetailResponse
+                {
+                    name = name,
+                    usages = m_templateManager.GetCityTemplateUsageCount(name)
+                };
+
+        private void RenameCityTemplate(string oldName, string newName)
+        {
+            if (oldName == newName || oldName.TrimToNull() == null || newName.TrimToNull() == null || !m_templateManager.CityTemplateExists(oldName)) return;
+            m_templateManager[newName] = m_templateManager[oldName];
+            m_templateManager[oldName] = default;
+        }
+
+        private void DeleteCityTemplate(string name)
+        {
+            if (name != null && m_templateManager.CityTemplateExists(name))
+            {
+                m_templateManager[name] = Entity.Null;
+            }
+        }
+        private void DuplicateCityTemplate(string srcName, string newName)
+        {
+            if (srcName == newName || srcName.TrimToNull() == null || newName.TrimToNull() == null || !m_templateManager.CityTemplateExists(srcName)) return;
+            m_templateManager[newName] = m_templateManager[srcName];
+        }
+
+        private string ExportCityLayoutAsXml(string layoutName, string saveName)
+            => layoutName.TrimToNull() == null || !m_templateManager.CityTemplateExists(layoutName)
+                ? null
+                : ExportComponentAsXml(m_templateManager[layoutName], saveName);
+
+        private void OpenExportedFilesFolder() => RemoteProcess.OpenFolder(WETemplateManager.SAVED_PREFABS_FOLDER);
+
+        private class CityDetailResponse
+        {
+            public string name;
+            public int usages;
+        }
     }
 }
