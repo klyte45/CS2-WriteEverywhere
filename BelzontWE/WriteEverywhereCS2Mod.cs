@@ -1,7 +1,11 @@
 ﻿using Belzont.Interfaces;
+using Belzont.Utils;
+using BelzontWE.UI;
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
+using Game.UI.InGame;
+using Unity.Entities;
 using WriteEverywhere.Sprites;
 
 namespace BelzontWE
@@ -20,6 +24,7 @@ namespace BelzontWE
             updateSystem.UpdateAfter<WEPostRendererSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WEWorldPickerController>(SystemUpdatePhase.ModificationEnd);
             updateSystem.UpdateAt<WEUISystem>(SystemUpdatePhase.UIUpdate);
+            updateSystem.UpdateAt<WEMainUISystem>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<WELayoutController>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<WEAtlasesLibrary>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateManager>(SystemUpdatePhase.Rendering);
@@ -27,7 +32,6 @@ namespace BelzontWE
             SelfRegiterUIEvents("we");
             GameManager.instance.userInterface.view.uiSystem.defaultUIView.Listener.ReadyForBindings += () => SelfRegiterUIEvents("we");
 #endif
-
         }
 
         public override void OnDispose()
@@ -36,6 +40,8 @@ namespace BelzontWE
 
         public override void DoOnLoad()
         {
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<GamePanelUISystem>().SetDefaultArgs(new WEMainPanel());
+            LogUtils.DoInfoLog($"Registered panel: {typeof(WEMainPanel).FullName}");
         }
 
 

@@ -1,0 +1,25 @@
+.k45_we_mainPanel {
+    >div {
+        width: 1400rem;
+        height: 600rem;
+        max-width: 90%;
+    }
+
+    [class^=title-bar_] {
+        padding: 0;
+    }
+
+    .k45_we_mainPanel_title {
+        width: 100%;
+
+        button {
+            position: absolute;
+            right: 10rem;
+            top: 6rem;
+        }
+    }
+
+    .k45_we_mainPanel_tabBar {
+        width: 100%;
+    }
+}
