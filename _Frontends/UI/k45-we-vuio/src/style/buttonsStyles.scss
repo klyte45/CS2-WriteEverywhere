@@ -1,0 +1,172 @@
+%buttonsStyle {
+
+    button,
+    a {
+        transition-property: background-color, color;
+        transition-duration: 0.5s;
+    }
+
+    button,
+    %basicBtn {
+        padding: 5rem 5rem;
+        border-style: solid;
+        border-top-width: var(--stroke2);
+        border-left-width: var(--stroke2);
+        border-bottom-width: var(--stroke2);
+        border-right-width: var(--stroke2);
+        border-top-color: rgba(0, 0, 0, 0);
+        border-left-color: rgba(0, 0, 0, 0);
+        border-bottom-color: rgba(0, 0, 0, 0);
+        border-right-color: rgba(0, 0, 0, 0);
+
+        border-radius: 4rem;
+        color: rgba(0, 0, 0, .7);
+        font-size: var(--fontSizeM);
+        font-weight: bold;
+        text-transform: uppercase;
+        transition-property: background-color, color, filter;
+        transition-duration: 0.5s;
+
+        &:focus {
+            border-top-color: #fff;
+            border-left-color: #fff;
+            border-bottom-color: #fff;
+            border-right-color: #fff;
+            box-shadow: 0 0 20rem rgba(0, 0, 0, .5);
+        }
+
+        &[disabled],
+        &[disabled]:hover {
+            background-color: black;
+            color: gray;
+            pointer-events: none;
+        }
+    }
+
+    .positiveBtn {
+        @extend %basicBtn;
+        background-color: var(--dialogButtonYesColor);
+
+        &:hover {
+            background-color: var(--dialogButtonYesColor-hover);
+        }
+
+        &:active {
+            background-color: var(--dialogButtonYesColor-active);
+        }
+
+        &:focus {
+            background-color: var(--dialogButtonYesColor-focused)
+        }
+    }
+
+    .tabBtn {
+        @extend %basicBtn;
+        background-color: var(--editorFocusedColorDark);
+
+        &.selected {
+            background-color: var(--dialogButtonYesColor)
+        }
+
+        &:hover {
+            background-color: var(--dialogButtonYesColor-hover);
+        }
+
+        &:active {
+            background-color: var(--dialogButtonYesColor-active);
+        }
+
+        &:focus {
+            background-color: var(--dialogButtonYesColor-focused)
+        }
+    }
+
+    .negativeBtn {
+        @extend %basicBtn;
+        background-color: var(--dialogButtonNoColor);
+
+        &:hover {
+            background-color: var(--dialogButtonNoColor-hover);
+        }
+
+        &:active {
+            background-color: var(--dialogButtonNoColor-active);
+        }
+
+        &:focus {
+            background-color: var(--dialogButtonNoColor-focused);
+        }
+    }
+
+    .darkestBtn {
+        @extend %basicBtn;
+        background-color: var(--accentColorDarker);
+        color: var(--menuText1Normal);
+
+        &:hover {
+            background-color: var(--accentColorDarker-hover);
+            color: var(--menuText1Disabled);
+        }
+
+        &:active {
+            background-color: var(--accentColorDarker-pressed);
+            color: var(--menuText1Disabled);
+        }
+
+        &:focus {
+            background-color: var(--accentColorDarker-pressed);
+            color: var(--menuText1Disabled);
+        }
+    }
+
+    .darkBtn {
+        @extend %basicBtn;
+        background-color: var(--accentColorDark);
+
+        &:hover {
+            background-color: var(--accentColorDark-hover);
+        }
+
+        &:active {
+            background-color: var(--accentColorDark-pressed);
+        }
+
+        &:focus {
+            background-color: var(--accentColorDark-focused)
+        }
+    }
+
+    .normalBtn {
+        @extend %basicBtn;
+        background-color: var(--accentColorNormal);
+
+        &:hover {
+            background-color: var(--accentColorNormal-hover);
+        }
+
+        &:active {
+            background-color: var(--accentColorNormal-pressed);
+        }
+
+        &:focus {
+            background-color: var(--accentColorLighter)
+        }
+    }
+
+    .neutralBtn {
+        @extend %basicBtn;
+        background-color: #1e83aa;
+
+        &:hover {
+            background-color: #26a4d5;
+        }
+
+        &:active {
+            background-color: #64c0e4;
+        }
+
+        &:focus {
+            background-color: #00c2ff
+        }
+    }
+}

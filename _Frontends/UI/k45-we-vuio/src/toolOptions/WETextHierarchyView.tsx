@@ -1,10 +1,11 @@
-import { Entity, HierarchyViewport, LocElementType, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
-import { Panel, Portal } from "cs2/ui";
+import { Entity, HierarchyViewport, LocElementType, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { ConfirmationDialog, Panel, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
 import { LayoutsService } from "services/LayoutsService";
 import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeElement";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
+import { WESaveAsCityTemplateDialog } from "./WESaveAsCityTemplateDialog";
 
 
 
@@ -47,6 +48,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const T_importLayoutAtRoot = translate("textHierarchyWindow.importLayout"); //"Appearance Settings"
     const T_exportLayoutAsPrefab = translate("textHierarchyWindow.exportLayoutAsDefault"); //"Appearance Settings"
     const T_saveAsCityTemplate = translate("textHierarchyWindow.saveAsCityTemplate"); //"Appearance Settings"
+
+    const T_confirmOverrideSaveAsCityTemplate = translate("textHierarchyWindow.confirmOverrideCityTemplateQuestion"); //"Appearance Settings"
 
     const defaultPosition = { x: 20 / window.innerWidth, y: 100 / window.innerHeight }
 
@@ -106,6 +109,24 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         }
     }
 
+    const [savingCityTemplate, setSavingCityTemplate] = useState(false)
+    const [confirmingOverrideSavingCityTemplate, setConfirmingOverrideSavingCityTemplate] = useState(false)
+    const [actionOnConfirmOverrideSavingCityTemplate, setActionOnConfirmOverrideSavingCityTemplate] = useState(() => () => { })
+    const saveCityTemplateCallback = async (name?: string) => {
+        setSavingCityTemplate(false);
+        name = name?.trim();
+        const targetEntity = wps.CurrentSubEntity.value;
+        if (!name || !targetEntity) return;
+        if (await LayoutsService.checkCityTemplateExists(name)) {
+            setActionOnConfirmOverrideSavingCityTemplate(() => () => {
+                LayoutsService.saveAsCityTemplate(targetEntity, name!);
+            })
+            setConfirmingOverrideSavingCityTemplate(true);
+        } else {
+            LayoutsService.saveAsCityTemplate(targetEntity, name!);
+        }
+    }
+
     return <Portal>
         <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
             <HierarchyMenu
@@ -122,7 +143,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 <Button onSelect={() => { WorldPickerService.dumpBris(); }} src={i_delete} tooltip={"DUMP!"} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ width: "10rem" }}></div>
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.exportComponentAsPrefabDefault(wps.CurrentSubEntity.value!, true); }} src={i_exportAsPrefabLayout} tooltip={T_exportLayoutAsPrefab} focusKey={FocusDisabled} className={buttonClass} />
-                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.saveAsCityTemplate(wps.CurrentSubEntity.value!, "teste"); }} src={i_saveAsCityTemplate} tooltip={T_saveAsCityTemplate} focusKey={FocusDisabled} className={buttonClass} />
+                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setSavingCityTemplate(true) }} src={i_saveAsCityTemplate} tooltip={T_saveAsCityTemplate} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ width: "10rem" }}></div>
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.exportComponentAsXml(wps.CurrentSubEntity.value!, "teste"); }} src={i_exportLayout} tooltip={T_exportLayout} focusKey={FocusDisabled} className={buttonClass} />
                 <Button onSelect={() => { LayoutsService.loadAsChildFromXml(wps.CurrentEntity.value!, "teste"); }} src={i_importLayout} tooltip={T_importLayoutAtRoot} focusKey={FocusDisabled} className={buttonClass} />
@@ -136,6 +157,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.removeItem()} src={i_delete} tooltip={T_delete} focusKey={FocusDisabled} className={buttonClass} />
             </EditorItemRow>
         </Panel>
+        {savingCityTemplate && <WESaveAsCityTemplateDialog callback={saveCityTemplateCallback} />}
+        {confirmingOverrideSavingCityTemplate && <ConfirmationDialog onConfirm={() => { actionOnConfirmOverrideSavingCityTemplate(); setConfirmingOverrideSavingCityTemplate(false); }} onCancel={() => setConfirmingOverrideSavingCityTemplate(false)} message={T_confirmOverrideSaveAsCityTemplate} />}
     </Portal>;
 };
-

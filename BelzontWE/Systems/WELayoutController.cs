@@ -20,6 +20,7 @@ namespace BelzontWE
             callBinder($"{PREFIX}loadAsChildFromXml", LoadAsChildFromXml);
             callBinder($"{PREFIX}saveAsCityTemplate", SaveAsCityTemplate);
             callBinder($"{PREFIX}exportComponentAsPrefabDefault", ExportComponentAsPrefabDefault);
+            callBinder($"{PREFIX}checkCityTemplateExists", CheckCityTemplateExists);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
@@ -40,6 +41,7 @@ namespace BelzontWE
             if (!EntityManager.HasComponent<WETemplateData>(templateEntity)) EntityManager.AddComponent<WETemplateData>(templateEntity);
             m_templateManager[name] = templateEntity;
         }
+        private bool CheckCityTemplateExists(string name) => m_templateManager.CityTemplateExists(name);
 
         private string ExportComponentAsXml(Entity e, string name)
         {

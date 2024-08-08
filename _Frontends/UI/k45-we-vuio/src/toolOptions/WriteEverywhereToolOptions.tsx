@@ -9,6 +9,7 @@ import { WETextAppearenceSettings } from "./WETextAppearenceSettings";
 import { WETextValueSettings } from "./WETextValueSettings";
 import { WETextHierarchyView } from "./WETextHierarchyView";
 import { WEFormulaeEditor } from "./WEFormulaeEditor";
+import { WESimulationTextType } from "services/WEFormulaeElement";
 
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
@@ -55,7 +56,7 @@ export const WriteEverywhereToolOptions: ModuleRegistryExtend = (Component: any)
 }
 const WEWorldPickerToolPanel = () => {
     //Labels and tooltips
-    const L_itemTitle = translate("toolOption.itemTitle"); //"Text #"
+    const L_itemNamePlaceholder = translate("toolOption.itemNamePlaceholder"); //"Text #"
     const L_itemName = translate("toolOption.itemName"); //"Name";
     const L_mousePrecision = translate("toolOption.mousePrecision"); //"Mouse precision";
     const L_editingPlane = translate("toolOption.editingPlane"); //"Editing plane";
@@ -107,7 +108,7 @@ const WEWorldPickerToolPanel = () => {
 
             {currentItemIsValid &&
                 <>
-                    <VectorSectionEditable title={L_itemName}
+                    <VectorSectionEditable title={wps.TextSourceType.value == WESimulationTextType.Placeholder ? L_itemNamePlaceholder : L_itemName}
                         valueGetter={() => [wps.CurrentItemName.value]}
                         valueGetterFormatted={() => [wps.CurrentItemName.value]}
                         onValueChanged={(i, x) => {

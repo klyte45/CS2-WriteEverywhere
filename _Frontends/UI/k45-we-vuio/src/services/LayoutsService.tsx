@@ -11,6 +11,9 @@ export class LayoutsService {
         return engine.call("k45::we.layouts.saveAsCityTemplate", parent, name);
     }
     static async exportComponentAsPrefabDefault(layout: Entity, force: boolean = false): Promise<string> {
-        return engine.call("k45::we.layouts.exportComponentAsPrefabDefault", layout,force);
+        return engine.call("k45::we.layouts.exportComponentAsPrefabDefault", layout, force);
+    }
+    static async checkCityTemplateExists(name: string): Promise<boolean> {
+        return engine.call("k45::we.layouts.checkCityTemplateExists", name);
     }
 }

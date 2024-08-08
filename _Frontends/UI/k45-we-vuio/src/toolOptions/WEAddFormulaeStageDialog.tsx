@@ -50,7 +50,7 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement }: Props) 
         onClose={() => callback()}
         wide={true}
         title={T_addItemDialogTitle}
-        buttons={<div className="k45_we_formulaeDialogBtns">
+        buttons={<div className="k45_we_dialogBtns">
             {(optionsMembers || optionsStaticMethods || optionsComponentGetter) && <button className="positiveBtn" onClick={() => callback(selectedElement)} disabled={!selectedElement}>Select</button>}
             <button className="negativeBtn" onClick={() => callback()}>Back</button>
         </div>}

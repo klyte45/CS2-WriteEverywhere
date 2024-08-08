@@ -1,0 +1,27 @@
+@import "buttonsStyles";
+
+.k45_we_dialogBtns {
+    @extend %buttonsStyle;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 10rem;
+
+    >* {
+        margin-left: 5rem;
+        margin-right: 5rem;
+    }
+
+    button {
+        width: 160rem;
+        min-height: 40rem;
+        justify-content: center;
+    }
+}
+
+.k45_we_dialogMessage {
+    >* {
+        margin-top: 3rem;
+        margin-bottom: 5rem;
+    }
+}

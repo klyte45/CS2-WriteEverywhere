@@ -16,6 +16,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
+
 #if BURST
 using Unity.Burst;
 #endif
@@ -306,6 +307,11 @@ namespace BelzontWE
                 PrefabTemplates[idx] = generatedEntity;
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {generatedEntity}");
             }
+        }
+
+        internal bool CityTemplateExists(string name)
+        {
+            return RegisteredTemplates.ContainsKey(name);
         }
 
 #if BURST
