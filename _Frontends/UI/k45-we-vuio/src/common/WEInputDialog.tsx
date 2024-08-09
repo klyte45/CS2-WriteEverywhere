@@ -9,9 +9,10 @@ type Props = {
     promptText: string
     initialValue?: string
     validationFn?: (val: string) => boolean
+    maxLength?: number
 }
 
-export const WEInputDialog = ({ callback, title, promptText, initialValue, validationFn }: Props) => {
+export const WEInputDialog = ({ callback, title, promptText, initialValue, validationFn, maxLength }: Props) => {
     const Dialog = VanillaComponentResolver.instance.Dialog;
     const StringInputField = VanillaWidgets.instance.StringInputField;
     const [name, setName] = useState(initialValue ?? "")
@@ -21,12 +22,12 @@ export const WEInputDialog = ({ callback, title, promptText, initialValue, valid
         wide={true}
         title={title}
         buttons={<div className="k45_we_dialogBtns">
-            {<button className="positiveBtn" onClick={() => callback(name)} disabled={validationFn ? validationFn(name) : !name.trim()}>{translate("saveBtn")}</button>}
+            {<button className="positiveBtn" onClick={() => callback(name)} disabled={validationFn ? !validationFn(name) : !name.trim()}>{translate("saveBtn")}</button>}
             <button className="negativeBtn" onClick={() => callback()}>{translate("cancelBtn")}</button>
         </div>}>
         <div className="k45_we_dialogMessage">
             <p>{promptText}</p>
-            <StringInputField onChange={setName} value={name} />
+            <StringInputField onChange={setName} value={name} maxLength={maxLength} />
         </div>
     </Dialog>
 

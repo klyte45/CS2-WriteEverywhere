@@ -46,6 +46,7 @@
 
         .k45_we_tabWithPreview_preview {
             height: 60%;
+            overflow-y: hidden;
         }
 
         .k45_we_tabWithPreview_details {
@@ -77,20 +78,21 @@
                     text-align: right;
                 }
 
-                &:hover{
+                &:hover {
                     background-color: var(--panelColorNormal);
                 }
             }
         }
 
         .k45_we_tabWithPreview_actions {
-            height: 60rem;    
+            height: 60rem;
             display: flex;
             flex-direction: row-reverse;
             padding-top: 5rem;
             padding-bottom: 5rem;
             @extend %buttonsStyle;
-            button{
+
+            button {
                 margin-left: 5rem;
                 margin-right: 5rem;
             }

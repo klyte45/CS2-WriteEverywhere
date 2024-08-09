@@ -137,9 +137,6 @@ export class WorldPickerService {
     static async listAtlasImages(atlas: string) {
         return await engine.call("k45::we.wpicker.listAtlasImages", atlas);
     }
-    static async requireFontInstallation(fontName: string): Promise<string> {
-        return await engine.call("k45::we.wpicker.requireFontInstallation", fontName);
-    }
     static async changeParent(target: Entity, newParent: Entity): Promise<boolean> {
         return await engine.call("k45::we.wpicker.changeParent", target, newParent);
     }

@@ -6,6 +6,7 @@ import "../style/floatingPanels.scss";
 import { translate } from "utils/translate";
 import { WEFormulaeEditor } from "./WEFormulaeEditor";
 import { WESimulationTextType } from "services/WEFormulaeElement";
+import { FontService } from "services/FontService";
 
 
 const i_addFont = "coui://uil/Colored/Folder.svg";
@@ -44,7 +45,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const editorTheme = VanillaWidgets.instance.editorItemModule;
     const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
     const onFontSelectWindow = async () => {
-        const res = await WorldPickerService.requireFontInstallation("");
+        const res = await FontService.requireFontInstallation("");
         console.log(res);
         return wps.SelectedFont.set(res);
     }

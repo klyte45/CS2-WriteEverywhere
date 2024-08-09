@@ -11,6 +11,7 @@ using Kwytto.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
@@ -44,7 +45,7 @@ namespace BelzontWE
 
         public static FontServer Instance { get; private set; }
         public static int DecalLayerMask { get; private set; }
-        public Dictionary<string, Entity> LoadedFonts { get; } = new();
+        private Dictionary<string, Entity> LoadedFonts { get; } = new();
 
         private EndFrameBarrier m_endFrameBarrier;
 
@@ -113,6 +114,7 @@ namespace BelzontWE
                     EntityManager.AddComponent<Created>(fontEntity);
                     EntityManager.AddComponentData(fontEntity, fontSystemData);
                 }
+                OnFontsLoadedChanged?.Invoke();
             }
             catch (FontCreationException)
             {
@@ -121,11 +123,57 @@ namespace BelzontWE
             }
             return true;
         }
+        public void DestroyFont(string name)
+        {
+            if (name != null && LoadedFonts.ContainsKey(name))
+            {
+
+                EntityManager.TryGetComponent(LoadedFonts[name], out FontSystemData fontData);
+                fontData.Dispose();
+                EntityManager.DestroyEntity(LoadedFonts[name]);
+                LoadedFonts.Remove(name);
+            }
+        }
+        public void RenameFont(string oldName, string newName)
+        {
+            if (oldName == newName || oldName.TrimToNull() == null || newName.TrimToNull() == null) return;
+            if (LoadedFonts.TryGetValue(oldName, out var entity))
+            {
+                DestroyFont(newName);
+                EntityManager.TryGetComponent(entity, out FontSystemData fontData);
+                LoadedFonts.Remove(oldName);
+                fontData.Name = newName;
+                EntityManager.SetComponentData(entity, fontData);
+                LoadedFonts[newName] = entity;
+            }
+        }
+        public void DuplicateFont(string srcFont, string newName)
+        {
+            if (srcFont == newName || srcFont.TrimToNull() == null || newName.TrimToNull() == null) return;
+            if (LoadedFonts.TryGetValue(srcFont, out var entity))
+            {
+                DestroyFont(newName);
+                EntityManager.TryGetComponent(entity, out FontSystemData fontData);
+                var newEntity = EntityManager.CreateEntity();
+                EntityManager.AddComponentData(newEntity, FontSystemData.From(fontData.Font._font.data.ArrayData, newName));
+                LoadedFonts[newName] = newEntity;
+            }
+        }
+        public bool TryGetFont(string name, out FontSystemData data)
+        {
+            data = default;
+            return LoadedFonts.TryGetValue(name, out var entity) && EntityManager.TryGetComponent(entity, out data);
+        }
+        public bool TryGetFontEntity(string name, out Entity entity)
+        {
+            return LoadedFonts.TryGetValue(name, out entity);
+        }
 
         protected override void OnUpdate()
         {
             if (GameManager.instance.isLoading) return;
             EntityCommandBuffer cmd = default;
+            bool fontsChanged = false;
             if (!m_fontEntitiesQuery.IsEmpty)
             {
                 var entities = m_fontEntitiesQuery.ToEntityArray(Allocator.Temp);
@@ -143,11 +191,13 @@ namespace BelzontWE
                                     LoadedFonts[data.Name] = entity;
                                     if (!cmd.IsCreated) cmd = m_endFrameBarrier.CreateCommandBuffer();
                                     cmd.DestroyEntity(otherEntity);
+                                    fontsChanged = true;
                                 }
                                 else
                                 {
                                     if (!cmd.IsCreated) cmd = m_endFrameBarrier.CreateCommandBuffer();
                                     cmd.DestroyEntity(entity);
+                                    fontsChanged = true;
                                     continue;
                                 }
                             }
@@ -155,12 +205,14 @@ namespace BelzontWE
                         else
                         {
                             LoadedFonts[data.Name] = entity;
+                            fontsChanged = true;
                         }
                         UpdateFontSystem(data);
                     }
                 }
             }
             UpdateFontSystem(DefaultFont);
+            if (fontsChanged) OnFontsLoadedChanged?.Invoke();
             requiresUpdateParameter = false;
         }
 
@@ -204,6 +256,11 @@ namespace BelzontWE
             return material;
         }
 
+        internal bool FontExists(string name) => LoadedFonts.ContainsKey(name);
 
+        internal string[] GetLoadedFontsNames()
+        {
+            return LoadedFonts.Keys.ToArray();
+        }
     }
 }

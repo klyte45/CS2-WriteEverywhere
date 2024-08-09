@@ -6,6 +6,7 @@ import classNames from "classnames";
 import "style/mainUi/mainUi.scss"
 import { translate } from "utils/translate";
 import { CityLayoutsTab } from "./CityLayoutsTab";
+import { FontsTab } from "./FontsTab";
 
 export const WeMainPanelId = "BelzontWE.UI.WEMainPanel";
 
@@ -49,6 +50,7 @@ export const WEMainPanel = (props: MainPanelProps) => {
         <Panel header={header} className="k45_we_mainPanel_content">
             <TabNav tabs={tabs} selectedTab={selectedTab}>
                 {selectedTab == Tabs.CityLayouts && <CityLayoutsTab />}
+                {selectedTab == Tabs.CityFonts && <FontsTab />}
             </TabNav>
         </Panel>
     </div >;

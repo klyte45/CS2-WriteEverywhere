@@ -6,8 +6,6 @@ using Game.Common;
 using Game.SceneFlow;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -34,7 +32,6 @@ namespace BelzontWE
             callBinder($"{PREFIX}removeItem", RemoveItem);
             callBinder($"{PREFIX}listAvailableLibraries", ListAvailableLibraries);
             callBinder($"{PREFIX}listAtlasImages", ListAtlasImages);
-            callBinder($"{PREFIX}requireFontInstallation", RequireFontInstallation);
             callBinder($"{PREFIX}changeParent", ChangeParent);
             callBinder($"{PREFIX}cloneAsChild", CloneAsChild);
             callBinder($"{PREFIX}dumpBris", DumpBris);
@@ -43,7 +40,7 @@ namespace BelzontWE
 
         private void DumpBris()
         {
-          WERendererSystem.dumpNextFrame = true;
+            WERendererSystem.dumpNextFrame = true;
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller)
@@ -79,18 +76,7 @@ namespace BelzontWE
         }
         private string[] ListAvailableLibraries() => m_AtlasLibrary.ListLocalAtlases();
         private string[] ListAtlasImages(string atlas) => m_AtlasLibrary.ListLocalAtlasImages(atlas);
-        private string RequireFontInstallation(string path)
-        {
-            if (!File.Exists(path)) return "";
-            var name = Path.GetFileNameWithoutExtension(path);
-            if (FontServer.Instance.RegisterFont(name, File.ReadAllBytes(path)))
-            {
-                FontList.Value = FontServer.Instance.LoadedFonts;
-                FontList.UpdateUIs();
-                return name;
-            }
-            return "";
-        }
+
 
         private bool ChangeParent(Entity target, Entity newParent)
         {
@@ -178,7 +164,7 @@ namespace BelzontWE
         public MultiUIValueBinding<float> CoatStrength { get; private set; }
         public MultiUIValueBinding<float> EmissiveExposureWeight { get; private set; }
         public MultiUIValueBinding<string> SelectedFont { get; private set; }
-        public MultiUIValueBinding<Dictionary<string, Entity>, string[]> FontList { get; private set; }
+        public MultiUIValueBinding<string[]> FontList { get; private set; }
         public MultiUIValueBinding<string> FormulaeStr { get; private set; }
         public MultiUIValueBinding<int> FormulaeCompileResult { get; private set; }
         public MultiUIValueBinding<string[]> FormulaeCompileResultErrorArgs { get; private set; }
@@ -216,7 +202,7 @@ namespace BelzontWE
             CoatStrength = new(default, $"{PREFIX}{nameof(CoatStrength)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
             EmissiveExposureWeight = new(default, $"{PREFIX}{nameof(EmissiveExposureWeight)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
             SelectedFont = new(default, $"{PREFIX}{nameof(SelectedFont)}", m_eventCaller, m_callBinder);
-            FontList = new(new Dictionary<string, Entity>(), $"{PREFIX}{nameof(FontList)}", m_eventCaller, m_callBinder, (x, t) => x.Keys.OrderBy(x => x).ToArray(), (_, t) => t.Value);
+            FontList = new(FontServer.Instance.GetLoadedFontsNames(), $"{PREFIX}{nameof(FontList)}", m_eventCaller, m_callBinder);
             FormulaeStr = new(default, $"{PREFIX}{nameof(FormulaeStr)}", m_eventCaller, m_callBinder);
             FormulaeCompileResult = new(default, $"{PREFIX}{nameof(FormulaeCompileResult)}", m_eventCaller, m_callBinder);
             FormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(FormulaeCompileResultErrorArgs)}", m_eventCaller, m_callBinder);
@@ -240,11 +226,19 @@ namespace BelzontWE
             CoatStrength.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.CoatStrength = x; return currentItem; });
             EmissiveExposureWeight.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveExposureWeight = x; return currentItem; });
 
-            SelectedFont.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Font = FontList.Value.TryGetValue(x, out var entity) ? entity : Entity.Null; return currentItem; });
+            SelectedFont.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Font = FontServer.Instance.TryGetFontEntity(x, out var entity) ? entity : Entity.Null; return currentItem; });
             FormulaeStr.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { FormulaeCompileResult.Value = currentItem.SetFormulae(FormulaeStr.Value, out var cmpErr); FormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
             TextSourceType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
             ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Atlas = x; return currentItem; });
 
+            FontList.Value = FontServer.Instance.GetLoadedFontsNames();
+            FontList.UpdateUIs();
+
+            FontServer.Instance.OnFontsLoadedChanged += () =>
+            {
+                FontList.Value = FontServer.Instance.GetLoadedFontsNames();
+                FontList.UpdateUIs();
+            };
 
             m_initialized = true;
         }
@@ -269,9 +263,6 @@ namespace BelzontWE
             FormulaeStr.Value = currentItem.Formulae;
             TextSourceType.Value = (int)currentItem.TextType;
             ImageAtlasName.Value = currentItem.Atlas;
-
-            FontList.Value = FontServer.Instance.LoadedFonts;
-            FontList.UpdateUIs();
         }
 
         #endregion

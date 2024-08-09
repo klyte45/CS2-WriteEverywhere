@@ -139,6 +139,9 @@ namespace BelzontWE
             m_moveDown.shouldBeEnabled = true;
             m_rotateClockwise.shouldBeEnabled = true;
             m_rotateCounterClockwise.shouldBeEnabled = true;
+
+            m_Controller.FontList.Value = FontServer.Instance.GetLoadedFontsNames();
+            m_Controller.FontList.UpdateUIs();
         }
         protected override void OnStopRunning()
         {

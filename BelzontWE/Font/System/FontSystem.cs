@@ -336,7 +336,7 @@ namespace BelzontWE.Font
                 return;
             }
             BasicRenderInformation result = BasicRenderInformation.Fill(brij, CurrentAtlas.Material);
-            if(result is null)
+            if (result is null)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} ");
                 itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
@@ -369,9 +369,9 @@ namespace BelzontWE.Font
         public void Dispose()
         {
             data.Dispose();
-            _glyphs.Dispose();
-            itemsQueue.Dispose();
-            results.Dispose();
+            if (_glyphs.IsCreated) _glyphs.Dispose();
+            if (itemsQueue.IsCreated) itemsQueue.Dispose();
+            if (results.IsCreated) results.Dispose();
         }
 
         public unsafe struct StringRenderingQueueItem

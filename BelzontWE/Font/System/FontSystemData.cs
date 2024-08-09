@@ -38,7 +38,17 @@ namespace BelzontWE.Font
         }
 
         private FixedString32Bytes name;
-        public string Name => name.ToString();
+        public string Name
+        {
+            get => name.ToString(); set
+            {
+                if (value.TrimToNull() != null)
+                {
+                    name = value;
+                }
+            }
+        }
+        public string DataBase64 => Convert.ToBase64String(Font._font.data.ArrayData);
 
         public bool IsWeak { get; private set; }
 
@@ -50,8 +60,9 @@ namespace BelzontWE.Font
             }
             if (_systemAddr.IsAllocated)
             {
-                FontSystem.Dispose();
+                var sys = FontSystem;
                 _systemAddr.Free();
+                sys.Dispose();
             }
         }
 
