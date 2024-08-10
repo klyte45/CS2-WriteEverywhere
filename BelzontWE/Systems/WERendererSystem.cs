@@ -136,7 +136,6 @@ namespace BelzontWE
                         }
                         else if ((item.weComponent.TextType == WESimulationTextType.Text || item.weComponent.TextType == WESimulationTextType.Image) && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
                         {
-                            cmd.SetComponent(item.textDataEntity, item.weComponent);
                             cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
                             if (dumpNextFrame)
                             {

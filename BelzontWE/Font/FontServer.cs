@@ -172,7 +172,7 @@ namespace BelzontWE
         protected override void OnUpdate()
         {
             if (GameManager.instance.isLoading) return;
-            EntityCommandBuffer cmd = default;
+            EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
             bool fontsChanged = false;
             if (!m_fontEntitiesQuery.IsEmpty)
             {
@@ -189,13 +189,11 @@ namespace BelzontWE
                                 if (!EntityManager.TryGetComponent(otherEntity, out FontSystemData otherData) || otherData.IsWeak)
                                 {
                                     LoadedFonts[data.Name] = entity;
-                                    if (!cmd.IsCreated) cmd = m_endFrameBarrier.CreateCommandBuffer();
                                     cmd.DestroyEntity(otherEntity);
                                     fontsChanged = true;
                                 }
                                 else
                                 {
-                                    if (!cmd.IsCreated) cmd = m_endFrameBarrier.CreateCommandBuffer();
                                     cmd.DestroyEntity(entity);
                                     fontsChanged = true;
                                     continue;
@@ -207,7 +205,10 @@ namespace BelzontWE
                             LoadedFonts[data.Name] = entity;
                             fontsChanged = true;
                         }
-                        UpdateFontSystem(data);
+                        if (!UpdateFontSystem(data))
+                        {
+                            cmd.DestroyEntity(entity);
+                        }
                     }
                 }
             }
@@ -216,7 +217,7 @@ namespace BelzontWE
             requiresUpdateParameter = false;
         }
 
-        private void UpdateFontSystem(FontSystemData data)
+        private bool UpdateFontSystem(FontSystemData data)
         {
             try
             {
@@ -226,10 +227,12 @@ namespace BelzontWE
                     data.FontSystem.Reset();
                 }
                 Dependency = data.FontSystem.RunJobs(Dependency);
+                return true;
             }
             catch (Exception e)
             {
                 LogUtils.DoWarnLog($"Error on UpdateFontSystem for {data.Name}: {e}");
+                return false;
             }
         }
 

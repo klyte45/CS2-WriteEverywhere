@@ -142,6 +142,7 @@ namespace BelzontWE.Font
                 2
         };
 
+        public void ResetCache() => m_textCache.Clear();
 
         public void Reset()
         {

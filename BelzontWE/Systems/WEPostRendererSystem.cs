@@ -79,6 +79,7 @@ namespace BelzontWE
         protected override void OnUpdate()
         {
             if (GameManager.instance.isGameLoading) return;
+            var cmdBuff = m_endFrameBarrier.CreateCommandBuffer();
             if (!m_pendingQueueEntities.IsEmptyIgnoreFilter)
             {
                 Dependency = new WETextImageDataUpdateJob
@@ -89,7 +90,7 @@ namespace BelzontWE
                     m_entityLookup = GetEntityStorageInfoLookup(),
                     m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
                     m_FontDataLkp = GetComponentLookup<FontSystemData>(true),
-                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter()
+                    m_CommandBuffer = cmdBuff.AsParallelWriter()
                 }.Schedule(m_pendingQueueEntities, Dependency);
             }
             if (!m_pendingQueuePlaceholders.IsEmptyIgnoreFilter)
@@ -104,7 +105,7 @@ namespace BelzontWE
                     m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
                     m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
                     m_TextDataLkp = GetComponentLookup<WETextData>(true),
-                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter()
+                    m_CommandBuffer = cmdBuff.AsParallelWriter()
                 }.Schedule(m_pendingQueuePlaceholders, Dependency));
             }
         }
@@ -191,7 +192,7 @@ namespace BelzontWE
                     return false;
                 }
                 var bri = font.FontSystem.DrawText(text);
-                if (bri == null)
+                if (bri == null || bri == BasicRenderInformation.LOADING_PLACEHOLDER)
                 {
                     if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"BRI STILL NULL!!! ({text})");
                     return false;

@@ -74,6 +74,7 @@ namespace BelzontWE.Font
             writer.Write(zippedFontFile.Length);
             writer.Write(zippedFontFile);
             zippedFontFile.Dispose();
+            FontSystem.ResetCache();
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
