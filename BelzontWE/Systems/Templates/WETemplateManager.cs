@@ -2,6 +2,7 @@
 using Belzont.Serialization;
 using Belzont.Utils;
 using Colossal;
+using Colossal.Entities;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.Common;
@@ -43,12 +44,14 @@ namespace BelzontWE
             }
             reader.Read(out int length);
             RegisteredTemplates.Clear();
+            var errors = new List<string>();
             for (var i = 0; i < length; i++)
             {
                 reader.Read(out string key);
                 reader.Read(out Entity value);
-                this[key] = value;
+                if (!SaveCityTemplate(key, value, false)) errors.Add(key);
             }
+            if (errors.Count > 0) LogUtils.DoErrorLog($"WE: The following city layouts failed being loaded. Load again with at least the Debug log level enabled to get details.\n['{string.Join("', '", errors)}']");
         }
 
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
@@ -84,23 +87,6 @@ namespace BelzontWE
                 var value = RegisteredTemplates.TryGetValue(idx, out var entity) ? entity : Entity.Null;
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded {value} @ {idx}");
                 return value;
-            }
-            set
-            {
-                if (RegisteredTemplates.TryGetValue(idx, out var obsoleteTemplate))
-                {
-                    m_obsoleteTemplateList.Add(obsoleteTemplate);
-                    RegisteredTemplates.Remove(idx);
-                }
-                else if (value != Entity.Null)
-                {
-                    m_obsoleteTemplateList.Add(Entity.Null);
-                }
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"Saved {value} @ {idx}");
-                if (value != Entity.Null)
-                {
-                    RegisteredTemplates.Add(idx, value);
-                }
             }
         }
 
@@ -261,9 +247,54 @@ namespace BelzontWE
             return Dependency;
         }
 
+        #region Prefab Layout
         public void MarkPrefabsDirty() => isPrefabListDirty = true;
         private readonly Dictionary<string, long> PrefabNameToIndex = new();
         private bool isPrefabListDirty = true;
+
+        public int CanBePrefabLayout(Entity e) => CanBePrefabLayout(e, true);
+        public int CanBePrefabLayout(Entity e, bool isRoot)
+        {
+            if (isRoot)
+            {
+                if (EntityManager.TryGetBuffer<WESubTextRef>(e, true, out var subRef))
+                {
+                    for (int i = 0; i < subRef.Length; i++)
+                    {
+                        if (CanBePrefabLayout(subRef[i].m_weTextData, false) != 0)
+                        {
+                            LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: A child node (${i}) failed validation");
+                            return 2;
+                        }
+                    }
+                }
+                else
+                {
+                    LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: The root node had no children. When exporting for prefabs, the selected node must have children typed as Placeholder items. The root setting itself is ignored.");
+                    return 1;
+                }
+            }
+            else
+            {
+                if (!EntityManager.TryGetComponent<WETextData>(e, out var weData))
+                {
+                    LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: The node don't have a text layout data.");
+                    return 3;
+                }
+
+                if (weData.TextType != WESimulationTextType.Placeholder)
+                {
+                    LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: All children must have type 'Placeholder'.");
+                    return 4;
+                };
+                if (EntityManager.TryGetBuffer<WESubTextRef>(e, true, out var subRef) && !subRef.IsEmpty)
+                {
+                    LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: The node must not have children, as any Placeholder item don't.");
+                    return 5;
+                }
+            }
+            return 0;
+        }
         private void UpdatePrefabIndexDictionary()
         {
             if (!isPrefabListDirty) return;
@@ -290,13 +321,18 @@ namespace BelzontWE
             currentValues.Dispose();
 
             PrefabTemplates.Clear();
-            var files = Directory.GetFiles(SAVED_PREFABS_FOLDER, $"*.{PREFAB_LAYOUT_EXTENSION}");
+            var files = Directory.GetFiles(SAVED_PREFABS_FOLDER, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories);
             foreach (var f in files)
             {
                 var prefabName = Path.GetFileName(f)[..^(PREFAB_LAYOUT_EXTENSION.Length + 1)];
                 if (!PrefabNameToIndex.TryGetValue(prefabName, out var idx))
                 {
                     LogUtils.DoWarnLog($"No prefab loaded with name: {prefabName}. Skipping...");
+                    continue;
+                }
+                if (PrefabTemplates.ContainsKey(idx))
+                {
+                    LogUtils.DoWarnLog($"Prefab defaults already loaded for '{prefabName}'. Skipping data from file at '{f}'");
                     continue;
                 }
                 var tree = WETextDataTree.FromXML(File.ReadAllText(f));
@@ -309,11 +345,75 @@ namespace BelzontWE
                     text = null
                 };
                 var generatedEntity = WELayoutUtility.CreateEntityFromTree(Entity.Null, tree, EntityManager);
-                PrefabTemplates[idx] = generatedEntity;
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {generatedEntity}");
+                var validationResults = CanBePrefabLayout(generatedEntity);
+                if (validationResults == 0)
+                {
+                    PrefabTemplates[idx] = generatedEntity;
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {generatedEntity}");
+                }
+                else
+                {
+                    EntityManager.DestroyEntity(generatedEntity);
+                    LogUtils.DoWarnLog($"Failed loding default template for prefab '{prefabName}'. Check previous lines at mod log to more information ({validationResults})");
+                }
             }
         }
+        #endregion
+        #region City Templates
+        public int CanBeTransformedToTemplate(Entity e)
+        {
+            if (!EntityManager.TryGetComponent<WETextData>(e, out var weData))
+            {
+                LogUtils.DoInfoLog($"Failed validation to transform to City Template: No text data found");
+                return 1;
+            }
 
+            if (weData.TextType != WESimulationTextType.Text && weData.TextType != WESimulationTextType.Image)
+            {
+                LogUtils.DoInfoLog($"Failed validation to transform to City Template: Only text and image items are allowed in a city template");
+                return 2;
+            }
+            if (EntityManager.TryGetBuffer<WESubTextRef>(e, true, out var subRef))
+            {
+                for (int i = 0; i < subRef.Length; i++)
+                {
+                    if (CanBeTransformedToTemplate(subRef[i].m_weTextData) != 0)
+                    {
+                        LogUtils.DoInfoLog($"Failed validation to transform to City Template: Item #{i} failed validation");
+                        return 3;
+                    }
+                }
+            }
+            return 0;
+        }
+        public bool SaveCityTemplate(string name, Entity e) => SaveCityTemplate(name, e, true);
+
+        private bool SaveCityTemplate(string name, Entity e, bool clone)
+        {
+            if (CanBeTransformedToTemplate(e) != 0)
+            {
+                LogUtils.DoInfoLog($"Failed {(clone ? "storing" : "loading")} layout '{name}': it failed while verifying if it could be transformed to template, check previous lines for details.");
+                return false;
+            }
+
+            Entity templateEntity = clone ? WELayoutUtility.DoCloneTextItemReferenceSelf(e, default, EntityManager) : e;
+            if (!EntityManager.HasComponent<WETemplateData>(templateEntity)) EntityManager.AddComponent<WETemplateData>(templateEntity);
+            if (RegisteredTemplates.TryGetValue(name, out var obsoleteTemplate))
+            {
+                m_obsoleteTemplateList.Add(obsoleteTemplate);
+                RegisteredTemplates.Remove(name);
+            }
+            else if (e != Entity.Null)
+            {
+                m_obsoleteTemplateList.Add(Entity.Null);
+            }
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"Saved {e} @ {name}");
+            if (e != Entity.Null)
+            {
+                RegisteredTemplates.Add(name, e);
+            }
+            return true;
+        }
         public bool CityTemplateExists(string name) => RegisteredTemplates.ContainsKey(name);
         public Dictionary<string, Entity> ListCityTemplates()
         {
@@ -336,6 +436,27 @@ namespace BelzontWE
             return counterResult;
         }
 
+        public void RenameCityTemplate(string oldName, string newName)
+        {
+            if (oldName == newName || oldName.TrimToNull() == null || newName.TrimToNull() == null || !CityTemplateExists(oldName)) return;
+            RegisteredTemplates[newName] = RegisteredTemplates[oldName];
+            RegisteredTemplates.Remove(oldName);
+        }
+
+        public void DeleteCityTemplate(string name)
+        {
+            if (name != null && CityTemplateExists(name))
+            {
+                EntityManager.DestroyEntity(RegisteredTemplates[name]);
+                RegisteredTemplates.Remove(name);
+            }
+        }
+        public void DuplicateCityTemplate(string srcName, string newName)
+        {
+            if (srcName == newName || srcName.TrimToNull() == null || newName.TrimToNull() == null || !CityTemplateExists(srcName)) return;
+            SaveCityTemplate(newName, RegisteredTemplates[srcName], true);
+        }
+        #endregion
 
         [BurstCompile]
         private unsafe struct WEPlaceholcerTemplateUsageCount : IJobChunk

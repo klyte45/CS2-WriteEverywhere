@@ -44,12 +44,7 @@ namespace BelzontWE
         }
 
         protected override void OnUpdate() { }
-        private void SaveAsCityTemplate(Entity e, string name)
-        {
-            var templateEntity = WELayoutUtility.DoCloneTextItemReferenceSelf(e, default, EntityManager);
-            if (!EntityManager.HasComponent<WETemplateData>(templateEntity)) EntityManager.AddComponent<WETemplateData>(templateEntity);
-            m_templateManager[name] = templateEntity;
-        }
+        private bool SaveAsCityTemplate(Entity e, string name) => m_templateManager.SaveCityTemplate(name, e);
         private bool CheckCityTemplateExists(string name) => m_templateManager.CityTemplateExists(name);
 
         private string ExportComponentAsXml(Entity e, string name)
@@ -83,6 +78,11 @@ namespace BelzontWE
 
         private int ExportComponentAsPrefabDefault(Entity e, bool force = false)
         {
+            var validationResults = m_templateManager.CanBePrefabLayout(e);
+            if (validationResults != 0)
+            {
+                return -1000 - validationResults;
+            }
             KFileUtils.EnsureFolderCreation(WETemplateManager.SAVED_PREFABS_FOLDER);
             var effTarget = WETextData.GetTargetEntityEffective(e, EntityManager, true);
             if (!EntityManager.TryGetComponent(effTarget, out PrefabRef prefabRef))
@@ -125,30 +125,16 @@ namespace BelzontWE
                     usages = m_templateManager.GetCityTemplateUsageCount(name)
                 };
 
-        private void RenameCityTemplate(string oldName, string newName)
-        {
-            if (oldName == newName || oldName.TrimToNull() == null || newName.TrimToNull() == null || !m_templateManager.CityTemplateExists(oldName)) return;
-            m_templateManager[newName] = m_templateManager[oldName];
-            m_templateManager[oldName] = default;
-        }
+        private void RenameCityTemplate(string oldName, string newName) => m_templateManager.RenameCityTemplate(oldName, newName);
 
-        private void DeleteCityTemplate(string name)
-        {
-            if (name != null && m_templateManager.CityTemplateExists(name))
-            {
-                m_templateManager[name] = Entity.Null;
-            }
-        }
-        private void DuplicateCityTemplate(string srcName, string newName)
-        {
-            if (srcName == newName || srcName.TrimToNull() == null || newName.TrimToNull() == null || !m_templateManager.CityTemplateExists(srcName)) return;
-            m_templateManager[newName] = m_templateManager[srcName];
-        }
+        private void DeleteCityTemplate(string name) => m_templateManager.DeleteCityTemplate(name);
+
+        private void DuplicateCityTemplate(string srcName, string newName) => m_templateManager.DuplicateCityTemplate(srcName, newName);
 
         private string ExportCityLayoutAsXml(string layoutName, string saveName)
-            => layoutName.TrimToNull() == null || !m_templateManager.CityTemplateExists(layoutName)
-                ? null
-                : ExportComponentAsXml(m_templateManager[layoutName], saveName);
+                    => layoutName.TrimToNull() == null || !m_templateManager.CityTemplateExists(layoutName)
+                        ? null
+                        : ExportComponentAsXml(m_templateManager[layoutName], saveName);
 
         private void OpenExportedFilesFolder() => RemoteProcess.OpenFolder(WETemplateManager.SAVED_PREFABS_FOLDER);
 

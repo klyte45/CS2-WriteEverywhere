@@ -30,7 +30,6 @@ namespace BelzontWE
         private EntityQuery m_pendingQueueEntities;
         private EntityQuery m_pendingQueuePlaceholders;
         private EndFrameBarrier m_endFrameBarrier;
-        private WEAtlasesLibrary m_atlasesLibrary;
         private WETemplateManager m_templateManager;
 
         protected override void OnCreate()
@@ -38,7 +37,6 @@ namespace BelzontWE
             base.OnCreate();
 
             m_endFrameBarrier = World.GetExistingSystemManaged<EndFrameBarrier>();
-            m_atlasesLibrary = World.GetOrCreateSystemManaged<WEAtlasesLibrary>();
             m_pendingQueueEntities = GetEntityQuery(new EntityQueryDesc[]
             {
                 new ()
