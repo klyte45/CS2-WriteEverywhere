@@ -65,7 +65,7 @@ namespace BelzontWE
             keys.Dispose();
         }
 
-        private UnsafeParallelHashMap<FixedString32Bytes, Entity> RegisteredTemplates;
+        private UnsafeParallelHashMap<FixedString128Bytes, Entity> RegisteredTemplates;
         private NativeHashSet<Entity> m_obsoleteTemplateList;
         private PrefabSystem m_prefabSystem;
         private EndFrameBarrier m_endFrameBarrier;
@@ -75,9 +75,9 @@ namespace BelzontWE
         private EntityQuery m_prefabsToMarkDirty;
         private UnsafeParallelHashMap<long, Entity> PrefabTemplates;
 
-        public ref UnsafeParallelHashMap<FixedString32Bytes, Entity> RegisteredTemplatesRef => ref RegisteredTemplates;
+        public ref UnsafeParallelHashMap<FixedString128Bytes, Entity> RegisteredTemplatesRef => ref RegisteredTemplates;
 
-        public Entity this[FixedString32Bytes idx]
+        public Entity this[FixedString128Bytes idx]
         {
             get
             {
@@ -106,7 +106,7 @@ namespace BelzontWE
 
         protected override void OnCreate()
         {
-            RegisteredTemplates = new UnsafeParallelHashMap<FixedString32Bytes, Entity>(0, Allocator.Persistent);
+            RegisteredTemplates = new UnsafeParallelHashMap<FixedString128Bytes, Entity>(0, Allocator.Persistent);
             PrefabTemplates = new UnsafeParallelHashMap<long, Entity>(0, Allocator.Persistent);
             m_obsoleteTemplateList = new NativeHashSet<Entity>(10, Allocator.Persistent);
             m_prefabSystem = World.GetExistingSystemManaged<PrefabSystem>();

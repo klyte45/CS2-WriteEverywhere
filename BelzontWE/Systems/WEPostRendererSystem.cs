@@ -11,7 +11,6 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using WriteEverywhere.Sprites;
 using Unity.Jobs;
-using System;
 using BelzontWE.Font.Utility;
 
 
@@ -153,8 +152,9 @@ namespace BelzontWE
                                 m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             }
                             break;
-                        case WESimulationTextType.Placeholder:
-                            throw new Exception("INVALID PLACEHOLDER TYPE!");
+                        default:
+                            m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
+                            break;
 
                     }
                 }
@@ -181,7 +181,7 @@ namespace BelzontWE
                 SetupTemplateComponent(e, ref weCustomData, unfilteredChunkIndex, cmd);
                 if (text == "")
                 {
-                    weCustomData = weCustomData.UpdateBRI(new BasicRenderInformation(null, null, null) { m_refText = "" }, "");
+                    weCustomData = weCustomData.UpdateBRI(new BasicRenderInformation("", null, null, null), "");
                     return true;
                 }
                 var font = m_FontDataLkp.TryGetComponent(weCustomData.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
@@ -225,7 +225,7 @@ namespace BelzontWE
             public BufferLookup<WESubTextRef> m_subRefLkp;
             public EntityStorageInfoLookup m_entityLookup;
             public ComponentLookup<WETemplateData> m_templateDataLkp;
-            public UnsafeParallelHashMap<FixedString32Bytes, Entity> m_templateManager;
+            public UnsafeParallelHashMap<FixedString128Bytes, Entity> m_templateManager;
             public ComponentLookup<WETemplateUpdater> m_templateUpdaterLkp;
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
@@ -236,9 +236,9 @@ namespace BelzontWE
                 {
                     var entity = entities[i];
                     var weCustomData = weTextDatas[i];
-                    if (!m_entityLookup.Exists(weCustomData.TargetEntity) 
+                    if (!m_entityLookup.Exists(weCustomData.TargetEntity)
                         || (m_TextDataLkp.TryGetComponent(weCustomData.ParentEntity, out var weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder)
-                        || (m_TextDataLkp.TryGetComponent(weCustomData.TargetEntity, out weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder) 
+                        || (m_TextDataLkp.TryGetComponent(weCustomData.TargetEntity, out weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder)
                         || (weCustomData.TargetEntity == Entity.Null && !m_templateDataLkp.HasComponent(entity)))
                     {
 #if !BURST
@@ -256,7 +256,7 @@ namespace BelzontWE
             {
                 if (!SetupTemplateComponent(e, ref weCustomData, unfilteredChunkIndex, cmd))
                 {
-                    var targetTemplate = m_templateManager[weCustomData.ItemName];
+                    var targetTemplate = m_templateManager[new FixedString128Bytes(weCustomData.Text512)];
                     if (m_templateUpdaterLkp.TryGetComponent(e, out var templateUpdated) && templateUpdated.childEntity != Entity.Null)
                     {
 #if !BURST

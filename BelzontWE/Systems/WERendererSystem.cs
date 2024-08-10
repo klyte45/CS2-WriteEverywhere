@@ -158,17 +158,16 @@ namespace BelzontWE
                               )
                         {
                             wasDirty = true;
+                            if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! +WEWaitingRendering");
                             cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
                         }
                         wasDirty |= item.weComponent.IsDirty();
                     }
-                    
+
                     if (bri.m_refText != "")
                     {
                         Graphics.DrawMesh(bri.Mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
-                        if (dumpNextFrame)
-                            LogUtils.DoInfoLog($"DUMP! E = {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length} | M= {item.transformMatrix}");
-
+                        if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! E = {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length} | {bri.m_generatedMaterial} | M= {item.transformMatrix}");
                     }
 
                     if (wasDirty) cmd.SetComponent(item.textDataEntity, item.weComponent);
@@ -202,7 +201,8 @@ namespace BelzontWE
                     isAtWeEditor = m_pickerTool.IsSelected,
                     m_selectedSubEntity = m_pickerController.CurrentSubEntity.Value,
                     m_selectedEntity = m_pickerController.CurrentEntity.Value,
-                    m_weSubRefLookup = GetBufferLookup<WESubTextRef>(true)
+                    m_weSubRefLookup = GetBufferLookup<WESubTextRef>(true),
+                    doLog = dumpNextFrame
                 };
                 job2.ScheduleParallel(m_renderQueueEntities, Dependency).Complete();
             }

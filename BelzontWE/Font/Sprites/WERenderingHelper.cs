@@ -16,15 +16,16 @@ namespace WriteEverywhere.Sprites
             1,
         };
 
-        public static BasicRenderInformation GenerateBri(Texture2D tex, Vector4 borders = default, float pixelDensity = 1000)
+        public static BasicRenderInformation GenerateBri(string refName, Texture2D tex)
         {
             var proportion = tex.width / (float)tex.height;
-            var bri = new BasicRenderInformation(new[]
+            var bri = new BasicRenderInformation(refName,
+                new[]
                     {
-                        new Vector3(50f * proportion, -50f, 0f),
-                        new Vector3(50f * proportion, 50f, 0f),
-                        new Vector3(-50f * proportion, 50f, 0f),
-                        new Vector3(-50f * proportion, -50f, 0f),
+                        new Vector3(-.5f * proportion, -.5f, 0f),
+                        new Vector3(-.5f * proportion, .5f, 0f),
+                        new Vector3(.5f * proportion, .5f, 0f),
+                        new Vector3(.5f * proportion, -.5f, 0f),
                     },
                 uv: new[]
                     {
@@ -35,15 +36,8 @@ namespace WriteEverywhere.Sprites
                     },
                 triangles: kTriangleIndices)
             {
-                m_fontBaseLimits = new RangeVector { min = 0, max = 1 },
-                m_YAxisOverflows = new RangeVector { min = -.5f, max = .5f },
                 m_sizeMetersUnscaled = new Vector2(proportion, 1),
-                m_offsetScaleX = 1,
-                m_generatedMaterial = FontServer.CreateDefaultFontMaterial(),
-                m_borders = borders,
-                m_pixelDensityMeters = pixelDensity,
-                m_lineOffset = .5f,
-                m_expandXIfAlone = true
+                m_generatedMaterial = FontServer.CreateDefaultFontMaterial()
             };
             bri.m_generatedMaterial.mainTexture = tex;
             bri.m_generatedMaterial.SetTexture(FontAtlas._BaseColorMap, tex);

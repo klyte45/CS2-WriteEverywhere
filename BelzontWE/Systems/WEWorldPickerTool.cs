@@ -341,9 +341,9 @@ namespace BelzontWE
                         var isRotationLocked = m_Controller.CameraRotationLocked.Value;
                         var targetMatrix = (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
                         {
-                            ToolEditMode.PlaneZY => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 75, 0)),
-                            ToolEditMode.PlaneXZ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(75, isRotationLocked ? -itemAngles.y : 0, 0)),
-                            _ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 0, isRotationLocked ? -itemAngles.z : 0)),
+                            ToolEditMode.PlaneZY => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 225, 0)),
+                            ToolEditMode.PlaneXZ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(75, (isRotationLocked ? -itemAngles.y : 0) + 180, 0)),
+                            _ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 180, isRotationLocked ? -itemAngles.z : 0)),
                         };
 
                         m_cameraSystem.cinematicCameraController.pivot = m_Controller.CurrentItemMatrix.GetPosition() + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));
@@ -376,9 +376,9 @@ namespace BelzontWE
             var currentMousePos = new float2(InputManager.instance.mousePosition.x, InputManager.instance.mousePosition.y);
             var offsetMouse = (Vector2)(currentMousePos - m_mousePositionRef) * moveMode switch
             {
-                1 => Vector2.right,
+                1 => Vector2.left,
                 2 => Vector2.up,
-                _ => Vector2.one,
+                _ => Vector2.left + Vector2.up,
             };
             ApplyPosition(m_originalPositionText, offsetMouse);
         }
@@ -386,8 +386,8 @@ namespace BelzontWE
         private void ApplyPositionKeys()
         {
             var offsetRef = new float2(
-                m_moveLeft.IsPressed() ? -1 :
-                m_moveRight.IsPressed() ? 1 : 0,
+                m_moveLeft.IsPressed() ? 1 :
+                m_moveRight.IsPressed() ? -1 : 0,
                 m_moveUp.IsPressed() ? 1 :
                 m_moveDown.IsPressed() ? -1 : 0
                 );
@@ -419,14 +419,14 @@ namespace BelzontWE
 
         private void ApplyRotationMouseRelative()
         {
-            var offsetMouse = m_mousePositionRefRot - InputManager.instance.mousePosition.x;
+            var offsetMouse = m_mousePositionRefRot + InputManager.instance.mousePosition.x;
 
             ApplyRotation(m_originalRotationText, offsetMouse);
         }
 
         private void ApplyRotationKeys()
         {
-            var offset = m_rotateClockwise.IsPressed() ? -1 : m_rotateCounterClockwise.IsPressed() ? 1 : 0;
+            var offset = m_rotateClockwise.IsPressed() ? 1 : m_rotateCounterClockwise.IsPressed() ? -1 : 0;
             if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) offset *= 10;
             ApplyRotation(((Quaternion)m_Controller.CurrentEditingItem.offsetRotation).eulerAngles, offset);
         }

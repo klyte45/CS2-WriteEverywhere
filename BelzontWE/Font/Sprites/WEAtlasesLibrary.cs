@@ -160,8 +160,7 @@ namespace WriteEverywhere.Sprites
                 return null;
             }
             var info = targetAtlas[spriteName];
-            var bri = WERenderingHelper.GenerateBri(info.Texture, info.Borders, info.PixelsPerMeter);
-            bri.m_refText = spriteName;
+            var bri = WERenderingHelper.GenerateBri(spriteName, info.Texture);
             if ((assetId as string) == INTERNAL_ATLAS_NAME)
             {
                 bri.m_isError = true;
@@ -303,7 +302,7 @@ namespace WriteEverywhere.Sprites
         {
             if (m_bgTexture == null)
             {
-                m_bgTexture = WERenderingHelper.GenerateBri(Texture2D.whiteTexture, default, 100);
+                m_bgTexture = WERenderingHelper.GenerateBri("\0whiteTexture\0", Texture2D.whiteTexture);
             }
             return m_bgTexture;
         }

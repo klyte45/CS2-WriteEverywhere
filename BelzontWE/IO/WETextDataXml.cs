@@ -15,6 +15,8 @@ namespace BelzontWE
         [XmlAttribute] public string itemName;
         [XmlAttribute] public WEShader shader;
         [XmlAttribute] public string text;
+        [XmlAttribute] public string layoutName { get => text; set => text = value; }
+        [XmlAttribute] public string imageName { get => text; set => text = value; }
         [XmlAttribute] public string atlas;
         [XmlAttribute] public WESimulationTextType textType;
         public WETextDataStyleXml style = new();
@@ -23,7 +25,9 @@ namespace BelzontWE
         [DefaultValue(0f)] internal float maxWidthMeters;
 
         public bool ShouldSerializeshader() => textType != WESimulationTextType.Placeholder;
-        public bool ShouldSerializetext() => textType != WESimulationTextType.Placeholder;
+        public bool ShouldSerializetext() => textType == WESimulationTextType.Text;
+        public bool ShouldSerializeimageName() => textType == WESimulationTextType.Image;
+        public bool ShouldSerializelayoutName() => textType == WESimulationTextType.Placeholder;
         public bool ShouldSerializeatlas() => textType == WESimulationTextType.Image;
         public bool ShouldSerializeformulae() => textType != WESimulationTextType.Placeholder;
         public bool ShouldSerializefontName() => textType == WESimulationTextType.Text;

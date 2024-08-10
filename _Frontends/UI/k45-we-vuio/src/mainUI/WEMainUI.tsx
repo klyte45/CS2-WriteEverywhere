@@ -26,8 +26,8 @@ type MainPanelProps = { selectedTab: number, onClose: () => any }
 enum Tabs {
     CityLayouts = "CityLayouts",
     CityFonts = "CityFonts",
-    CityAtlases = "CityAtlases",
-    PrefabTemplates = "PrefabTemplates"
+    // CityAtlases = "CityAtlases",
+    // PrefabTemplates = "PrefabTemplates"
 }
 export const WEMainPanel = (props: MainPanelProps) => {
     const PanelTitleBar = VanillaComponentResolver.instance.PanelTitleBar;

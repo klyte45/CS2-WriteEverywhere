@@ -35,7 +35,7 @@ namespace BelzontWE
         private float coatStrength;
         private WESimulationTextType type;
         private GCHandle atlas;
-        private GCHandle text;
+        public readonly FixedString512Bytes Text512 => m_text;
         private FixedString512Bytes formulaeHandlerStr;
         private GCHandle formulaeHandlerFn;
         private bool loadingFnDone;
@@ -49,11 +49,11 @@ namespace BelzontWE
         private FixedString32Bytes itemName;
         public WEShader shader;
         public float maxWidthMeters;
+        private FixedString512Bytes m_text;
+
         public bool InitializedEffectiveText { get; private set; }
 
         public FixedString512Bytes LastErrorStr { get; private set; }
-        public float BriOffsetScaleX { get; private set; }
-        public float BriPixelDensity { get; private set; }
         public Entity TargetEntity { readonly get => targetEntity; set => targetEntity = value; }
         public Entity ParentEntity { readonly get => parentEntity; private set => parentEntity = value; }
 
@@ -143,11 +143,14 @@ namespace BelzontWE
 
         public string Text
         {
-            readonly get => text.IsAllocated ? text.Target as string ?? "" : "";
+            readonly get => m_text.ToString();
             set
             {
-                if (text.IsAllocated) text.Free();
-                text = GCHandle.Alloc(value);
+                if (m_text != value && TextType == WESimulationTextType.Placeholder)
+                {
+                    templateDirty = true;
+                }
+                m_text = value ?? "";
                 if (basicRenderInformation.IsAllocated)
                 {
                     basicRenderInformation.Free();
@@ -249,7 +252,7 @@ namespace BelzontWE
         }
         public bool HasFormulae => formulaeHandlerFn.IsAllocated;
         public bool HasBRI => basicRenderInformation.IsAllocated;
-        public Bounds3 Bounds {  get; private set; }
+        public Bounds3 Bounds { get; private set; }
         private Func<EntityManager, Entity, string> FormulaeFn
         {
             get => formulaeHandlerFn.IsAllocated ? formulaeHandlerFn.Target as Func<EntityManager, Entity, string> : null;
@@ -262,14 +265,7 @@ namespace BelzontWE
 
         public FixedString32Bytes ItemName
         {
-            readonly get => itemName; set
-            {
-                if (itemName != value && TextType == WESimulationTextType.Placeholder)
-                {
-                    templateDirty = true;
-                }
-                itemName = value;
-            }
+            get => itemName; set => itemName = value;
         }
 
         public static WETextData CreateDefault(Entity target, Entity? parent = null)
@@ -288,7 +284,7 @@ namespace BelzontWE
                 smoothness = 0,
                 emissiveIntensity = 0,
                 coatStrength = 0.5f,
-                text = GCHandle.Alloc("NEW TEXT"),
+                m_text = "NEW TEXT",
                 ItemName = "New item",
                 shader = WEShader.Default
             };
@@ -320,8 +316,6 @@ namespace BelzontWE
             basicRenderInformation = default;
             basicRenderInformation = GCHandle.Alloc(bri, bri.m_refText == "" ? GCHandleType.Normal : GCHandleType.Weak);
             Bounds = bri.m_bounds;
-            BriOffsetScaleX = bri.m_offsetScaleX;
-            BriPixelDensity = bri.m_pixelDensityMeters;
             BriWidthMetersUnscaled = bri.m_sizeMetersUnscaled.x;
             if (bri.m_isError)
             {
@@ -335,7 +329,6 @@ namespace BelzontWE
             materialBlockPtr.Free();
             formulaeHandlerFn.Free();
             atlas.Free();
-            text.Free();
         }
 
 
@@ -399,7 +392,6 @@ namespace BelzontWE
         public void OnPostInstantiate()
         {
             formulaeHandlerFn = formulaeHandlerFn.IsAllocated ? GCHandle.Alloc(formulaeHandlerFn.Target) : default;
-            text = text.IsAllocated ? GCHandle.Alloc(text.Target) : default;
             atlas = atlas.IsAllocated ? GCHandle.Alloc(atlas.Target) : default;
             basicRenderInformation = default;
             materialBlockPtr = default;
@@ -419,7 +411,7 @@ namespace BelzontWE
             writer.Write(emissiveIntensity);
             writer.Write(metallic);
             writer.Write(smoothness);
-            writer.Write(text.IsAllocated ? new FixedString512Bytes(text.Target as string ?? "") : "");
+            writer.Write(m_text);
             writer.Write(font);
             writer.Write(ItemName);
             writer.Write(coatStrength);
@@ -450,9 +442,7 @@ namespace BelzontWE
             reader.Read(out emissiveIntensity);
             reader.Read(out metallic);
             reader.Read(out smoothness);
-            reader.Read(out FixedString512Bytes txt);
-            if (text.IsAllocated) text.Free();
-            text = GCHandle.Alloc(txt.ToString());
+            reader.Read(out m_text);
             reader.Read(out font);
             reader.Read(out itemName);
             reader.Read(out coatStrength);

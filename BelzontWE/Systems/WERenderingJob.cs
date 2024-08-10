@@ -4,6 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 using Unity.Burst.Intrinsics;
+
 #if BURST
 using Unity.Burst;
 #else
@@ -37,6 +38,7 @@ namespace BelzontWE
             public Entity m_selectedSubEntity;
             public Entity m_selectedEntity;
             public bool isAtWeEditor;
+            public bool doLog;
 
             public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -113,13 +115,13 @@ namespace BelzontWE
                         }
                         if (isAtWeEditor)
                         {
-                            var scale2 = weCustomData.scale * weCustomData.BriOffsetScaleX / weCustomData.BriPixelDensity;
+                            var scale2 = weCustomData.scale;
                             availToDraw.Enqueue(new WERenderData
                             {
                                 textDataEntity = nextEntity,
                                 geometryEntity = geometryEntity,
                                 weComponent = weCustomData,
-                                transformMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, scale2)
+                                transformMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.offsetPosition + (float3)Matrix4x4.Rotate(weCustomData.offsetRotation).MultiplyPoint(new float3(0, 0, -.001f)), weCustomData.offsetRotation, scale2)
                             });
                         }
 
@@ -131,32 +133,35 @@ namespace BelzontWE
                             m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
                             return;
                         }
-                        var scale = weCustomData.scale * weCustomData.BriOffsetScaleX / weCustomData.BriPixelDensity;
+                        var scale = weCustomData.scale;
                         if (weCustomData.HasBRI && weCustomData.TextType == WESimulationTextType.Text && weCustomData.maxWidthMeters > 0 && weCustomData.BriWidthMetersUnscaled * scale.x > weCustomData.maxWidthMeters)
                         {
                             scale.x = weCustomData.maxWidthMeters / weCustomData.BriWidthMetersUnscaled;
                         }
                         var refPos = parentIsPlaceholder ? default : weCustomData.offsetPosition;
                         var refRot = parentIsPlaceholder ? default : weCustomData.offsetRotation;
-
+                        var matrix = prevMatrix * Matrix4x4.TRS(refPos, refRot, scale);
+                        if (doLog && weCustomData.Text512 == "R-01") Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: R-01!!!!! M = \n{matrix.m00}\t{matrix.m01}\t{matrix.m02}\t{matrix.m03}\n{matrix.m10}\t{matrix.m11}\t{matrix.m12}\t{matrix.m13}\n{matrix.m20}\t{matrix.m21}\t{matrix.m22}\t{matrix.m23}\n{matrix.m30}\t{matrix.m31}\t{matrix.m32}\t{matrix.m33}");
                         if (weCustomData.HasBRI)
                         {
-                            var matrix = prevMatrix * Matrix4x4.TRS(refPos, refRot, scale);
-                            var refBounds = new Colossal.Mathematics.Bounds3(matrix.MultiplyPoint(weCustomData.Bounds.min), matrix.MultiplyPoint(weCustomData.Bounds.max));
-                            float minDist = RenderingUtils.CalculateMinDistance(refBounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
-
-                            int lod = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
-                            var minLod = RenderingUtils.CalculateLodLimit(RenderingUtils.GetRenderingSize((refBounds.max - refBounds.min) * 8));
-                       //     if (doLog) Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: minDist = {minDist} - refBounds = {refBounds.min} {refBounds.max} - lod = {lod} - minLod = {minLod} - m_LodParameters = {m_LodParameters}");
-                            if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
+                            if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
                             {
-                                availToDraw.Enqueue(new WERenderData
+                                var refBounds = new Colossal.Mathematics.Bounds3(matrix.MultiplyPoint(weCustomData.Bounds.min), matrix.MultiplyPoint(weCustomData.Bounds.max));
+                                float minDist = RenderingUtils.CalculateMinDistance(refBounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
+
+                                int lod = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
+                                var minLod = RenderingUtils.CalculateLodLimit(RenderingUtils.GetRenderingSize((refBounds.max - refBounds.min) * 8));
+                                if (doLog) Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: minDist = {minDist} - refBounds = {refBounds.min} {refBounds.max} - lod = {lod} - minLod = {minLod} - m_LodParameters = {m_LodParameters}");
+                                if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                 {
-                                    textDataEntity = nextEntity,
-                                    geometryEntity = geometryEntity,
-                                    weComponent = weCustomData,
-                                    transformMatrix = matrix
-                                });
+                                    availToDraw.Enqueue(new WERenderData
+                                    {
+                                        textDataEntity = nextEntity,
+                                        geometryEntity = geometryEntity,
+                                        weComponent = weCustomData,
+                                        transformMatrix = matrix
+                                    });
+                                }
                             }
                         }
                         else
@@ -166,12 +171,12 @@ namespace BelzontWE
                                 textDataEntity = nextEntity,
                                 geometryEntity = geometryEntity,
                                 weComponent = weCustomData,
-                                transformMatrix = prevMatrix * Matrix4x4.TRS(refPos, refRot, scale)
+                                transformMatrix = matrix
                             });
                         }
                         if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout))
                         {
-                            var itemMatrix = prevMatrix * Matrix4x4.TRS(refPos, refRot, Vector3.one);
+                            var itemMatrix = prevMatrix * Matrix4x4.TRS(refPos + (float3)Matrix4x4.Rotate(refRot).MultiplyPoint(new float3(0, 0, .00075f)), refRot, Vector3.one);
                             for (int j = 0; j < subLayout.Length; j++)
                             {
                                 DrawTree(geometryEntity, subLayout[j].m_weTextData, itemMatrix, unfilteredChunkIndex);

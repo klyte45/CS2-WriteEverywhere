@@ -56,7 +56,6 @@ export const WriteEverywhereToolOptions: ModuleRegistryExtend = (Component: any)
 }
 const WEWorldPickerToolPanel = () => {
     //Labels and tooltips
-    const L_itemNamePlaceholder = translate("toolOption.itemNamePlaceholder"); //"Text #"
     const L_itemName = translate("toolOption.itemName"); //"Name";
     const L_mousePrecision = translate("toolOption.mousePrecision"); //"Mouse precision";
     const L_editingPlane = translate("toolOption.editingPlane"); //"Editing plane";
@@ -108,7 +107,7 @@ const WEWorldPickerToolPanel = () => {
 
             {currentItemIsValid &&
                 <>
-                    <VectorSectionEditable title={wps.TextSourceType.value == WESimulationTextType.Placeholder ? L_itemNamePlaceholder : L_itemName}
+                    <VectorSectionEditable title={L_itemName}
                         valueGetter={() => [wps.CurrentItemName.value]}
                         valueGetterFormatted={() => [wps.CurrentItemName.value]}
                         onValueChanged={(i, x) => {

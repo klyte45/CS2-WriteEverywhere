@@ -25,7 +25,8 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const T_HeightCm = translate("textValueSettings.heightCm"); //
     const T_WidthCm = translate("textValueSettings.widthCm"); //
     const T_widthDistortion = translate("textValueSettings.widthDistortion"); //
-    const T_maxWidth = translate("textValueSettings.maxWidth"); //
+    const T_maxWidth = translate("textValueSettings.maxWidth"); //    
+    const L_itemNamePlaceholder = translate("toolOption.itemNamePlaceholder"); //"Text #"
 
     const wps = WorldPickerService.instance;
     const [buildIdx, setBuild] = useState(0);
@@ -188,6 +189,17 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                             />
                         </EditorItemRow>
                     }
+                </>} {wps.TextSourceType.value == WESimulationTextType.Placeholder &&<>
+                    <EditorItemRow label={L_itemNamePlaceholder}>
+                            <StringInputField
+                                value={fixedTextTyping}
+                                onChange={(x) => { setFixedTextTyping(x) }}
+                                onChangeEnd={() => {
+                                    wps.CurrentItemText.set(fixedTextTyping.trim());
+                                }}
+                                maxLength={120}
+                            />
+                        </EditorItemRow>
                 </>}
             </Panel>
         </Portal>

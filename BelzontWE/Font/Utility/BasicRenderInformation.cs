@@ -13,8 +13,11 @@ namespace BelzontWE.Font.Utility
 {
     public class BasicRenderInformation
     {
-        public BasicRenderInformation(Vector3[] vertices, int[] triangles, Vector2[] uv)
+        public const string PLACEHOLDER_REFTEXT = "\0\nPlaceholder\n\0";
+        public static readonly BasicRenderInformation LOADING_PLACEHOLDER = new(PLACEHOLDER_REFTEXT, null, null, null);
+        public BasicRenderInformation(string refText, Vector3[] vertices, int[] triangles, Vector2[] uv)
         {
+            m_refText = refText ?? throw new ArgumentNullException("refText");
             if (vertices != null && (triangles?.All(x => x < vertices.Length) ?? false))
             {
                 m_vertices = vertices;
@@ -24,17 +27,14 @@ namespace BelzontWE.Font.Utility
             }
             else if (triangles != null && vertices != null)
             {
-                LogUtils.DoLog($"m_vertices.Length = {m_vertices?.Length} | m_triangles: [{string.Join(",", m_triangles ?? new int[0])}]");
+                LogUtils.DoWarnLog($"m_vertices.Length = {m_vertices?.Length} | m_triangles: [{string.Join(",", m_triangles ?? new int[0])}]");
             }
         }
         public static BasicRenderInformation Fill(BasicRenderInformationJob brij, Material targetAtlas)
         {
-            var bri = new BasicRenderInformation(AlignVertices(brij.vertices.ToList()), brij.triangles.ToArray(), brij.uv1.ToArray());
+            var bri = new BasicRenderInformation(brij.originalText.ToString(), AlignVertices(brij.vertices.ToList()), brij.triangles.ToArray(), brij.uv1.ToArray());
             if (bri.Mesh == null) return null;
-            bri.m_YAxisOverflows = brij.m_YAxisOverflows;
-            bri.m_fontBaseLimits = brij.m_fontBaseLimits;
             bri.m_generatedMaterial = targetAtlas;
-            bri.m_pixelDensityMeters = 1000f;
 
             bri.m_colors32 = brij.colors.ToArray();
 
@@ -75,19 +75,9 @@ namespace BelzontWE.Font.Utility
 
 
         public Vector2 m_sizeMetersUnscaled;
-        public long m_materialGeneratedTick;
         [XmlIgnore]
         public Material m_generatedMaterial;
-        public RangeVector m_YAxisOverflows;
-        public RangeVector m_fontBaseLimits;
-        public float m_refY = 1f;
-        public string m_refText;
-        public float m_baselineOffset = 0;
-        public Vector4 m_borders = default;
-        public float m_pixelDensityMeters;
-        public float m_lineOffset = .5f;
-        public bool m_expandXIfAlone;
-        public float m_offsetScaleX = 1f;
+        public readonly string m_refText;
         public bool m_isError = false;
 
         private static Vector3[] AlignVertices(List<Vector3> points)
