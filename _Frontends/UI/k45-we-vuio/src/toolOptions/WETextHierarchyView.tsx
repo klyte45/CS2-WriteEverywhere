@@ -17,14 +17,10 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const i_copy = "coui://uil/Standard/RectangleCopy.svg";
     const i_paste = "coui://uil/Standard/RectanglePaste.svg";
     const i_delete = "coui://uil/Standard/Trash.svg";
-    /**/const i_addRoot = "coui://uil/Standard/ArrowLeftTriangleNotch.svg";
-    /**/const i_addChild = "coui://uil/Standard/Plus.svg";
+    const i_addItem = "coui://uil/Standard/Plus.svg";
 
-    /**/const i_exportAsPrefabLayout = "coui://uil/Standard/Cube.svg";
-    /**/const i_saveAsCityTemplate = "coui://uil/Standard/Building Themes.svg";
-
-    /**/const i_exportLayout = "coui://uil/Standard/DiskSave.svg";
-    /**/const i_importLayout = "coui://uil/Standard/Folder.svg";
+    const i_exportLayout = "coui://uil/Standard/DiskSave.svg";
+    const i_importLayout = "coui://uil/Standard/Folder.svg";
 
 
     const i_typeText = "coui://uil/Standard/PencilPaper.svg";
@@ -44,14 +40,20 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const T_pasteAsSibling = translate("textHierarchyWindow.pasteAsSibling"); //"Appearance Settings"
     const T_copiedInfo = translate("textHierarchyWindow.copiedInfoSuffix"); //"Appearance Settings"
     const T_cuttedInfo = translate("textHierarchyWindow.cuttedInfoSuffix"); //"Appearance Settings"
+    const T_addItem = translate("textHierarchyWindow.addItem"); //"Appearance Settings"
+    const T_addEmptySibling = translate("textHierarchyWindow.addEmptySibling"); //"Appearance Settings"
     const T_addEmptyChild = translate("textHierarchyWindow.addEmptyChild"); //"Appearance Settings"
     const T_addEmptyRoot = translate("textHierarchyWindow.addEmptyRoot"); //"Appearance Settings"
 
 
-    const T_exportLayout = translate("textHierarchyWindow.exportLayoutToLib"); //"Appearance Settings"
-    const T_importLayoutAtRoot = translate("textHierarchyWindow.importLayout"); //"Appearance Settings"
+    const T_exportSave = translate("textHierarchyWindow.exportOrSave"); //"Appearance Settings"
+    const T_exportLayoutXml = translate("textHierarchyWindow.exportLayoutXml"); //"Appearance Settings"
     const T_exportLayoutAsPrefab = translate("textHierarchyWindow.exportLayoutAsDefault"); //"Appearance Settings"
     const T_saveAsCityTemplate = translate("textHierarchyWindow.saveAsCityTemplate"); //"Appearance Settings"
+
+    const T_importOrLoad = translate("textHierarchyWindow.importOrLoad"); //"Appearance Settings"
+    const T_loadFromCityTemplate = translate("textHierarchyWindow.loadFromCityTemplate"); //"Appearance Settings"
+    const T_importLayoutXml = translate("textHierarchyWindow.importLayoutXml"); //"Appearance Settings"
 
     const T_confirmOverrideSaveAsCityTemplate = translate("textHierarchyWindow.confirmOverrideCityTemplateQuestion"); //"Appearance Settings"
     const T_addItemDialogTitle = translate("template.saveCityDialog.title")
@@ -116,7 +118,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
 
     const getParentNode = (search: Entity, treeNode: WETextItemResume): Entity | undefined => {
         if (treeNode.children.some(x => x.id.Index == search.Index)) return treeNode.id
-        return treeNode.children.map(x => getParentNode(search, x)).find(x => x)
+        return treeNode.children.find(x => getParentNode(search, x))?.id
     }
 
     const [savingCityTemplate, setSavingCityTemplate] = useState(false)
@@ -156,9 +158,52 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         null,
         {
             label: T_clearClipboard,
-            action: () => setClipboard(void 0)            
-        },
+            action: () => setClipboard(void 0)
+        }
+    ]
 
+    const addNodeMenu: ContextButtonMenuItemArray = [
+        {
+            label: T_addEmptyChild,
+            action: () => WorldPickerService.addEmpty(wps.CurrentSubEntity.value!),
+            disabled: !wps.CurrentSubEntity.value?.Index
+        },
+        {
+            label: T_addEmptySibling,
+            action: () => WorldPickerService.addEmpty(currentParentNode!),
+            disabled: !currentParentNode
+        },
+        {
+            label: T_addEmptyRoot,
+            action: () => WorldPickerService.addEmpty()
+        }
+    ]
+
+    const saveNodeMenu: ContextButtonMenuItemArray = [
+        {
+            label: T_saveAsCityTemplate,
+            action: () => setSavingCityTemplate(true)
+        },
+        {
+            label: T_exportLayoutXml,
+            action: () => LayoutsService.exportComponentAsXml(wps.CurrentSubEntity.value!, "teste")
+        },
+        {
+            label: T_exportLayoutAsPrefab,
+            action: () => LayoutsService.exportComponentAsPrefabDefault(wps.CurrentSubEntity.value!, true)
+        }
+    ]
+
+    const loadNodeMenu: ContextButtonMenuItemArray = [
+        {
+            label: T_loadFromCityTemplate,
+            action: () => { },
+            disabled: true
+        },
+        {
+            label: T_importLayoutXml,
+            action: () => LayoutsService.loadAsChildFromXml(wps.CurrentEntity.value!, "teste")
+        }
     ]
 
     return <Portal>
@@ -171,16 +216,12 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 onSetExpanded={(x, b) => !b ? setExpandedViewports(expandedViewports.filter(y => y.Index != viewport[x].id.Index)) : setExpandedViewports(expandedViewports.concat([viewport[x].id]))}
             />
             <EditorItemRow>
-                <Button onSelect={() => WorldPickerService.addEmpty()} src={i_addRoot} tooltip={T_addEmptyRoot} focusKey={FocusDisabled} className={buttonClass} />
-                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.addEmpty(wps.CurrentSubEntity.value!)} src={i_addChild} tooltip={T_addEmptyChild} focusKey={FocusDisabled} className={buttonClass} />
+                <ContextMenuButton src={i_addItem} tooltip={T_addItem} focusKey={FocusDisabled} className={buttonClass} menuItems={addNodeMenu} menuTitle={T_addItem} />
                 <div style={{ flexGrow: 1 }}></div>
                 <Button onSelect={() => { WorldPickerService.dumpBris(); }} src={i_delete} tooltip={"DUMP!"} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ width: "10rem" }}></div>
-                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.exportComponentAsPrefabDefault(wps.CurrentSubEntity.value!, true); }} src={i_exportAsPrefabLayout} tooltip={T_exportLayoutAsPrefab} focusKey={FocusDisabled} className={buttonClass} />
-                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setSavingCityTemplate(true) }} src={i_saveAsCityTemplate} tooltip={T_saveAsCityTemplate} focusKey={FocusDisabled} className={buttonClass} />
-                <div style={{ width: "10rem" }}></div>
-                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { LayoutsService.exportComponentAsXml(wps.CurrentSubEntity.value!, "teste"); }} src={i_exportLayout} tooltip={T_exportLayout} focusKey={FocusDisabled} className={buttonClass} />
-                <Button onSelect={() => { LayoutsService.loadAsChildFromXml(wps.CurrentEntity.value!, "teste"); }} src={i_importLayout} tooltip={T_importLayoutAtRoot} focusKey={FocusDisabled} className={buttonClass} />
+                <ContextMenuButton disabled={!wps.CurrentSubEntity.value?.Index} src={i_exportLayout} tooltip={T_exportSave} focusKey={FocusDisabled} className={buttonClass} menuItems={saveNodeMenu} menuTitle={T_exportSave} />
+                <ContextMenuButton src={i_importLayout} tooltip={T_importOrLoad} focusKey={FocusDisabled} className={buttonClass} menuItems={loadNodeMenu} menuTitle={T_importOrLoad} />
                 <div style={{ flexGrow: 1 }}></div>
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(true); }} src={i_cut} tooltip={T_cut} focusKey={FocusDisabled} className={buttonClass} />
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(false); }} src={i_copy} tooltip={T_copy} focusKey={FocusDisabled} className={buttonClass} />

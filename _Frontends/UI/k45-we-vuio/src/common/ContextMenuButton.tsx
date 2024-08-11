@@ -6,7 +6,7 @@ import "style/contextMenu.scss"
 
 export type ContextButtonMenuItemArray = ({
     label: string,
-    action: () => {},
+    action: () => any,
     disabled?: boolean
 } | null)[]
 
@@ -78,6 +78,21 @@ export const ContextMenuButton = (props: ContextMenuBtnProps) => {
                 break;
         }
     }, [menuRef.current?.offsetHeight, menuRef.current?.offsetWidth, menuPosition.left, menuPosition.top])
+
+ 
+    const handleClickOutside = (event: MouseEvent) => {
+        if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+            setMenuOpen(false);
+        }
+    };
+
+    useEffect(() => {
+        document.addEventListener('click', handleClickOutside, true);
+        return () => {
+            document.removeEventListener('click', handleClickOutside, true);
+        };
+    }, []);
+
 
 
     return <>
