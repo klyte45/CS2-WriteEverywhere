@@ -1,0 +1,63 @@
+.k45_comm_contextMenu {
+    color: var(--textColorDim);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    background-color: var(--panelColorNormal);
+    backdrop-filter: var(--panelBlur);
+    pointer-events: auto;
+    border-style: solid;
+    border-top-width: var(--stroke2);
+    border-left-width: var(--stroke2);
+    border-bottom-width: var(--stroke2);
+    border-right-width: var(--stroke2);
+    border-top-color: rgba(0, 0, 0, 0);
+    border-left-color: rgba(0, 0, 0, 0);
+    border-bottom-color: rgba(0, 0, 0, 0);
+    border-right-color: rgba(0, 0, 0, 0);
+    border-top-right-radius: var(--panelRadius);
+    border-bottom-left-radius: var(--panelRadius);
+    border-bottom-right-radius: var(--panelRadius);
+
+    .k45_comm_contextMenu_title {
+        color: var(--textColor);
+        height: 30rem;
+        padding: 5rem;
+        background-color: var(--panelColorNormal);
+        backdrop-filter: var(--panelBlur);
+    }
+
+    [class^=content_] {
+        padding: 0;
+    }
+
+    .k45_comm_contextMenu_item {
+        color: var(--textColorDim);
+        padding-top: 6rem;
+        padding-bottom: 6rem;
+        padding-left: 10rem;
+        padding-right: 10rem;
+        text-align: left;
+        &.disabled {
+            color: var(--menuText1Disabled);
+            pointer-events: none;            
+        }
+
+        &:hover {
+            color: var(--textColor);
+            background-color: var(--accentColorDark);
+        }
+    }
+
+    .k45_comm_contextMenu_separator {
+        height: 0;
+        border-bottom: 2rem;
+        border-bottom-style: solid;
+        margin: 4rem;
+        color: var(--textColorDimmest);
+    }
+
+    max-height: 600rem;
+    min-width: 100rem;
+    max-width: 500rem;
+}

@@ -1,12 +1,13 @@
 import { Entity, HierarchyViewport, LocElementType, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { ConfirmationDialog, Panel, Portal } from "cs2/ui";
-import { useEffect, useState } from "react";
+import { forwardRef, ReactNode, useEffect, useRef, useState } from "react";
 import { LayoutsService } from "services/LayoutsService";
 import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeElement";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
 import { WEInputDialog } from "../common/WEInputDialog";
 import { getOverrideCheckFn } from "utils/getOverrideCheckFn";
+import { ContextButtonMenuItemArray, ContextMenuButton } from "common/ContextMenuButton";
 
 
 
@@ -15,7 +16,6 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     /**/const i_cut = "coui://uil/Standard/DottedLinesMarkers.svg";
     const i_copy = "coui://uil/Standard/RectangleCopy.svg";
     const i_paste = "coui://uil/Standard/RectanglePaste.svg";
-    /**/const i_pasteAtRoot = "coui://uil/Standard/ArrowUpTriangleNotch.svg";
     const i_delete = "coui://uil/Standard/Trash.svg";
     /**/const i_addRoot = "coui://uil/Standard/ArrowLeftTriangleNotch.svg";
     /**/const i_addChild = "coui://uil/Standard/Plus.svg";
@@ -36,9 +36,12 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const T_title = translate("textHierarchyWindow.title"); //"Appearance Settings"
     const T_cut = translate("textHierarchyWindow.cut"); //"Appearance Settings"
     const T_copy = translate("textHierarchyWindow.copy"); //"Appearance Settings"
-    const T_paste = translate("textHierarchyWindow.paste"); //"Appearance Settings"
+    const T_paste = translate("textHierarchyWindow.pasteAt"); //"Appearance Settings"
     const T_delete = translate("textHierarchyWindow.delete"); //"Appearance Settings"
     const T_pasteAtRoot = translate("textHierarchyWindow.pasteAtRoot"); //"Appearance Settings"
+    const T_clearClipboard = translate("textHierarchyWindow.clearClipboard"); //"Appearance Settings"
+    const T_pasteAsChildren = translate("textHierarchyWindow.pasteAsChildren"); //"Appearance Settings"
+    const T_pasteAsSibling = translate("textHierarchyWindow.pasteAsSibling"); //"Appearance Settings"
     const T_copiedInfo = translate("textHierarchyWindow.copiedInfoSuffix"); //"Appearance Settings"
     const T_cuttedInfo = translate("textHierarchyWindow.cuttedInfoSuffix"); //"Appearance Settings"
     const T_addEmptyChild = translate("textHierarchyWindow.addEmptyChild"); //"Appearance Settings"
@@ -97,9 +100,6 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         setViewport(wps.CurrentTree.value.flatMap((x, i) => ResumeToViewPort(x)))
     }, [wps.CurrentEntity.value, wps.CurrentSubEntity.value, wps.CurrentTree.value, expandedViewports, clipboard, clipboardIsCut])
 
-    const applyPasteAtRoot = () => doPaste(wps.CurrentEntity.value!)
-    const applyPaste = () => doPaste(wps.CurrentSubEntity.value!)
-
     const doPaste = async (parent: Entity) => {
         if (clipboard) {
             if (clipboardIsCut) {
@@ -109,7 +109,14 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             } else {
                 await WorldPickerService.cloneAsChild(clipboard, parent);
             }
+            setExpandedViewports(expandedViewports.concat([parent]))
         }
+    }
+
+
+    const getParentNode = (search: Entity, treeNode: WETextItemResume): Entity | undefined => {
+        if (treeNode.children.some(x => x.id.Index == search.Index)) return treeNode.id
+        return treeNode.children.map(x => getParentNode(search, x)).find(x => x)
     }
 
     const [savingCityTemplate, setSavingCityTemplate] = useState(false)
@@ -125,6 +132,34 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             LayoutsService.saveAsCityTemplate(wps.CurrentSubEntity.value!, x!);
         })
 
+    const [currentParentNode, setCurrentParentNode] = useState(null as Entity | null | undefined)
+
+    useEffect(() => {
+        setCurrentParentNode(wps.CurrentSubEntity.value && wps.CurrentTree.value.map(x => getParentNode(wps.CurrentSubEntity.value!, x)).find(x => x))
+    }, [wps.CurrentSubEntity.value])
+    const pasteMenuItems: ContextButtonMenuItemArray = [
+        {
+            label: T_pasteAsChildren,
+            action: () => doPaste(wps.CurrentSubEntity.value!),
+            disabled: !wps.CurrentSubEntity.value?.Index
+        },
+        {
+            label: T_pasteAsSibling,
+            action: () => doPaste(currentParentNode!),
+            disabled: !currentParentNode
+        },
+        {
+            label: T_pasteAtRoot,
+            action: () => doPaste(wps.CurrentEntity.value!),
+            disabled: !wps.CurrentEntity.value?.Index
+        },
+        null,
+        {
+            label: T_clearClipboard,
+            action: () => setClipboard(void 0)            
+        },
+
+    ]
 
     return <Portal>
         <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
@@ -150,13 +185,13 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(true); }} src={i_cut} tooltip={T_cut} focusKey={FocusDisabled} className={buttonClass} />
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(false); }} src={i_copy} tooltip={T_copy} focusKey={FocusDisabled} className={buttonClass} />
                 <div style={{ width: "10rem" }}></div>
-                <Button disabled={!clipboard || !wps.CurrentSubEntity.value?.Index} onSelect={() => applyPaste()} src={i_paste} tooltip={T_paste} focusKey={FocusDisabled} className={buttonClass} />
-                <Button disabled={!clipboard} onSelect={() => applyPasteAtRoot()} src={i_pasteAtRoot} tooltip={T_pasteAtRoot} focusKey={FocusDisabled} className={buttonClass} />
+                <ContextMenuButton disabled={!clipboard} tooltip={T_paste} src={i_paste} focusKey={FocusDisabled} className={buttonClass} menuItems={pasteMenuItems} menuTitle={T_paste} />
                 <div style={{ width: "10rem" }}></div>
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.removeItem()} src={i_delete} tooltip={T_delete} focusKey={FocusDisabled} className={buttonClass} />
             </EditorItemRow>
         </Panel>
         {savingCityTemplate && <WEInputDialog callback={saveCityTemplateCallback} title={T_addItemDialogTitle} promptText={T_addItemDialogPromptText} />}
         {confirmingOverrideSavingCityTemplate && <ConfirmationDialog onConfirm={() => { actionOnConfirmOverrideSavingCityTemplate(); }} onCancel={() => setConfirmingOverrideSavingCityTemplate(false)} message={T_confirmOverrideSaveAsCityTemplate} />}
+
     </Portal>;
 };
