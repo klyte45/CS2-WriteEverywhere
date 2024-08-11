@@ -1,5 +1,6 @@
 import { Entity, replaceArgs, VanillaComponentResolver, VanillaFnResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import classNames from "classnames";
+import { NameInputWithOverrideDialog } from "common/NameInputWithOverrideDialog";
 import { WEInputDialog } from "common/WEInputDialog";
 import { WEListWithPreviewTab } from "common/WEListWithPreviewTab";
 import { ConfirmationDialog, Portal } from "cs2/ui";
@@ -14,9 +15,6 @@ type Props = {}
 enum Modals {
     NONE,
     CONFIRMING_DELETE,
-    RENAMING_TEMPLATE,
-    OVERRIDE_CONFIRM,
-    DUPLICATING_TEMPLATE,
     EXPORTING_TEMPLATE,
     SUCCESS_EXPORTING_TEMPLATE,
 }
@@ -46,7 +44,6 @@ export const CityLayoutsTab = (props: Props) => {
     const [layoutList, setLayoutList] = useState({} as Record<string, Entity>);
     const [selectedTemplateDetails, setSelectedTemplateDetails] = useState(null as null | CityDetailResponse);
     const [currentModal, setCurrentModal] = useState(Modals.NONE);
-    const [actionOnConfirmOverride, setActionOnConfirmOverride] = useState(() => () => { })
     const [lastXmlExportedLayoutName, setLastXmlExportedLayoutName] = useState("");
 
 
@@ -54,37 +51,14 @@ export const CityLayoutsTab = (props: Props) => {
     useEffect(() => { LayoutsService.getCityTemplateDetail(selectedLayout!).then(setSelectedTemplateDetails) }, [selectedLayout])
     const actions = [
         { className: "negativeBtn", action() { setCurrentModal(Modals.CONFIRMING_DELETE) }, text: T_delete },
-        { className: "neutralBtn", action() { setCurrentModal(Modals.RENAMING_TEMPLATE) }, text: T_rename },
-        { className: "neutralBtn", action() { setCurrentModal(Modals.DUPLICATING_TEMPLATE) }, text: T_duplicate },
+        { className: "neutralBtn", action() { setIsRenamingLayout(true) }, text: T_rename },
+        { className: "neutralBtn", action() { setIsDuplicatingLayout(true) }, text: T_duplicate },
         null,
         { className: "neutralBtn", action() { setCurrentModal(Modals.EXPORTING_TEMPLATE) }, text: T_export },
 
     ]
     const detailsFields = selectedTemplateDetails ? [{ key: T_usages, value: formatInteger(selectedTemplateDetails.usages) }] : undefined
-
-    const renameTemplateCallback = getOverrideCheckFn(
-        (x: boolean) => setCurrentModal(x ? Modals.RENAMING_TEMPLATE : 0),
-        (x) => !x || x == selectedLayout,
-        LayoutsService.checkCityTemplateExists,
-        setActionOnConfirmOverride,
-        (x: boolean) => setCurrentModal(x ? Modals.OVERRIDE_CONFIRM : 0),
-        (x) => {
-            LayoutsService.renameCityTemplate(selectedLayout!, x!);
-            setSelectedLayout(x!);
-        })
-
-
-    const duplicateTemplateCallback = getOverrideCheckFn(
-        (x: boolean) => setCurrentModal(x ? Modals.DUPLICATING_TEMPLATE : 0),
-        (x) => !x || x == selectedLayout,
-        LayoutsService.checkCityTemplateExists,
-        setActionOnConfirmOverride,
-        (x: boolean) => setCurrentModal(x ? Modals.OVERRIDE_CONFIRM : 0),
-        (x) => {
-            LayoutsService.duplicateCityTemplate(selectedLayout!, x!);
-            setSelectedLayout(x!);
-        })
-
+  
     const exportTemplateCallback = async (fileName?: string) => {
         if (!fileName || !selectedLayout) return;
         var filepath = await LayoutsService.exportCityLayoutAsXml(selectedLayout, fileName);
@@ -95,20 +69,40 @@ export const CityLayoutsTab = (props: Props) => {
     const displayingModal = () => {
         switch (currentModal) {
             case Modals.CONFIRMING_DELETE: return <ConfirmationDialog onConfirm={() => { setCurrentModal(0); LayoutsService.deleteTemplate(selectedLayout!); setSelectedLayout(null) }} onCancel={() => setCurrentModal(0)} message={T_confirmDeleteText} />
-            case Modals.RENAMING_TEMPLATE: return <WEInputDialog callback={renameTemplateCallback} title={T_renameDialogTitle} promptText={T_renameDialogText} initialValue={selectedLayout!} />
-            case Modals.OVERRIDE_CONFIRM: return <ConfirmationDialog onConfirm={actionOnConfirmOverride} onCancel={() => setCurrentModal(0)} message={T_confirmOverrideText} />
-            case Modals.DUPLICATING_TEMPLATE: return <WEInputDialog callback={duplicateTemplateCallback} title={T_duplicateDialogTitle} promptText={T_duplicateDialogText} validationFn={(x) => !x?.trim() && x != selectedLayout} />
             case Modals.EXPORTING_TEMPLATE: return <WEInputDialog callback={exportTemplateCallback} title={T_exportXmlDialogTitle} promptText={T_exportXmlDialogText} initialValue={selectedLayout!} />
             case Modals.SUCCESS_EXPORTING_TEMPLATE: return <ConfirmationDialog onConfirm={() => { LayoutsService.openExportedFilesFolder(); setCurrentModal(0) }} onCancel={() => setCurrentModal(0)} confirm={T_goToFileFolder} cancel={T_back} message={replaceArgs(T_successMessage, { "name": lastXmlExportedLayoutName })} />
         }
     }
 
+
+    const [isRenamingLayout, setIsRenamingLayout] = useState(false);
+    const onRenameLayout = (x: string) => {
+        LayoutsService.renameCityTemplate(selectedLayout!, x!);
+        setSelectedLayout(x!);
+    }
+    const [isDuplicatingLayout, setIsDuplicatingLayout] = useState(false);
+    const onDuplicateLayout = (x: string) => {
+        LayoutsService.duplicateCityTemplate(selectedLayout!, x!);
+        setSelectedLayout(x!);
+    }
     return <>
         <WEListWithPreviewTab actions={actions} detailsFields={detailsFields} listItems={Object.keys(layoutList)} selectedKey={selectedLayout!} onChangeSelection={setSelectedLayout} >
             <div className="k45_we_tabWithPreview_previewControls">
 
             </div>
         </WEListWithPreviewTab>
+        <NameInputWithOverrideDialog dialogTitle={T_renameDialogTitle} dialogPromptText={T_renameDialogText} dialogOverrideText={T_confirmOverrideText} initialValue={selectedLayout!}
+            isActive={isRenamingLayout} setIsActive={setIsRenamingLayout}
+            isShortCircuitCheckFn={(x) => !x || x == selectedLayout}
+            checkIfExistsFn={LayoutsService.checkCityTemplateExists}
+            actionOnSuccess={onRenameLayout}
+        />
+        <NameInputWithOverrideDialog dialogTitle={T_duplicateDialogTitle} dialogPromptText={T_duplicateDialogText} dialogOverrideText={T_confirmOverrideText}
+            isActive={isDuplicatingLayout} setIsActive={setIsDuplicatingLayout}
+            isShortCircuitCheckFn={(x) => !x || x == selectedLayout}
+            checkIfExistsFn={LayoutsService.checkCityTemplateExists}
+            actionOnSuccess={onDuplicateLayout}
+        />
         <Portal>{displayingModal()}</Portal>
     </>
 };

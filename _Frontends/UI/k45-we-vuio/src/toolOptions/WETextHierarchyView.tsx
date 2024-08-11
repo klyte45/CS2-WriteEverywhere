@@ -8,6 +8,7 @@ import { translate } from "utils/translate";
 import { WEInputDialog } from "../common/WEInputDialog";
 import { getOverrideCheckFn } from "utils/getOverrideCheckFn";
 import { ContextButtonMenuItemArray, ContextMenuButton } from "common/ContextMenuButton";
+import { NameInputWithOverrideDialog } from "common/NameInputWithOverrideDialog";
 
 
 
@@ -67,9 +68,25 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const FocusDisabled = VanillaComponentResolver.instance.FOCUS_DISABLED;
     const buttonClass = VanillaComponentResolver.instance.toolButtonTheme.button;
 
+
+    const [clipboardIsCut, setClipboardIsCut] = useState(false)
+    const doPaste = async (parent: Entity) => {
+        if (clipboard) {
+            if (clipboardIsCut) {
+                if (await WorldPickerService.changeParent(clipboard, parent)) {
+                    setClipboard(void 0);
+                }
+            } else {
+                await WorldPickerService.cloneAsChild(clipboard, parent);
+            }
+            setExpandedViewports(expandedViewports.concat([parent]))
+        }
+    }
+
+
+
     const [viewport, setViewport] = useState([] as (HierarchyViewport & WETextItemResume)[])
     const [expandedViewports, setExpandedViewports] = useState([] as Entity[])
-    const [clipboardIsCut, setClipboardIsCut] = useState(false)
 
     const getDisplayName = (x: WETextItemResume) => x.id.Index == clipboard?.Index ? `${x.name} <${clipboardIsCut ? T_cuttedInfo : T_copiedInfo}>` : x.name
 
@@ -85,7 +102,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     }
 
     function ResumeToViewPort(x: WETextItemResume, level: number = 0): (HierarchyViewport & WETextItemResume)[] {
-        const isExpanded = expandedViewports.some(y => y.Index == x.id.Index);
+        const isExpanded = expandedViewports?.some(y => y.Index == x.id.Index);
         return [{
             ...x,
             displayName: { value: getDisplayName(x), __Type: LocElementType.String },
@@ -102,43 +119,30 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         setViewport(wps.CurrentTree.value.flatMap((x, i) => ResumeToViewPort(x)))
     }, [wps.CurrentEntity.value, wps.CurrentSubEntity.value, wps.CurrentTree.value, expandedViewports, clipboard, clipboardIsCut])
 
-    const doPaste = async (parent: Entity) => {
-        if (clipboard) {
-            if (clipboardIsCut) {
-                if (await WorldPickerService.changeParent(clipboard, parent)) {
-                    setClipboard(void 0);
-                }
-            } else {
-                await WorldPickerService.cloneAsChild(clipboard, parent);
-            }
-            setExpandedViewports(expandedViewports.concat([parent]))
+
+    const [savingCityTemplate, setSavingCityTemplate] = useState(false)
+   
+    const onSaveTemplate = async (x: string) => {
+        if (!await LayoutsService.saveAsCityTemplate(wps.CurrentSubEntity.value!, x!)) {
+            setAlertToDisplay(translate("template.saveCityDialog.error.1"))
         }
     }
 
-
     const getParentNode = (search: Entity, treeNode: WETextItemResume): Entity | undefined => {
-        if (treeNode.children.some(x => x.id.Index == search.Index)) return treeNode.id
-        return treeNode.children.find(x => getParentNode(search, x))?.id
+        if (treeNode.children?.some(x => x.id.Index == search.Index)) return treeNode.id
+        return treeNode.children?.find(x => getParentNode(search, x))?.id
     }
-
-    const [savingCityTemplate, setSavingCityTemplate] = useState(false)
-    const [confirmingOverrideSavingCityTemplate, setConfirmingOverrideSavingCityTemplate] = useState(false)
-    const [actionOnConfirmOverrideSavingCityTemplate, setActionOnConfirmOverrideSavingCityTemplate] = useState(() => () => { })
-    const saveCityTemplateCallback = getOverrideCheckFn(
-        setSavingCityTemplate,
-        (x) => !x || !wps.CurrentSubEntity.value,
-        LayoutsService.checkCityTemplateExists,
-        setActionOnConfirmOverrideSavingCityTemplate,
-        setConfirmingOverrideSavingCityTemplate,
-        (x) => {
-            LayoutsService.saveAsCityTemplate(wps.CurrentSubEntity.value!, x!);
-        })
 
     const [currentParentNode, setCurrentParentNode] = useState(null as Entity | null | undefined)
 
     useEffect(() => {
         setCurrentParentNode(wps.CurrentSubEntity.value && wps.CurrentTree.value.map(x => getParentNode(wps.CurrentSubEntity.value!, x)).find(x => x))
     }, [wps.CurrentSubEntity.value])
+
+
+    const [alertToDisplay, setAlertToDisplay] = useState(void 0 as string | undefined);
+
+
     const pasteMenuItems: ContextButtonMenuItemArray = [
         {
             label: T_pasteAsChildren,
@@ -218,8 +222,6 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             <EditorItemRow>
                 <ContextMenuButton src={i_addItem} tooltip={T_addItem} focusKey={FocusDisabled} className={buttonClass} menuItems={addNodeMenu} menuTitle={T_addItem} />
                 <div style={{ flexGrow: 1 }}></div>
-                <Button onSelect={() => { WorldPickerService.dumpBris(); }} src={i_delete} tooltip={"DUMP!"} focusKey={FocusDisabled} className={buttonClass} />
-                <div style={{ width: "10rem" }}></div>
                 <ContextMenuButton disabled={!wps.CurrentSubEntity.value?.Index} src={i_exportLayout} tooltip={T_exportSave} focusKey={FocusDisabled} className={buttonClass} menuItems={saveNodeMenu} menuTitle={T_exportSave} />
                 <ContextMenuButton src={i_importLayout} tooltip={T_importOrLoad} focusKey={FocusDisabled} className={buttonClass} menuItems={loadNodeMenu} menuTitle={T_importOrLoad} />
                 <div style={{ flexGrow: 1 }}></div>
@@ -231,8 +233,12 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.removeItem()} src={i_delete} tooltip={T_delete} focusKey={FocusDisabled} className={buttonClass} />
             </EditorItemRow>
         </Panel>
-        {savingCityTemplate && <WEInputDialog callback={saveCityTemplateCallback} title={T_addItemDialogTitle} promptText={T_addItemDialogPromptText} />}
-        {confirmingOverrideSavingCityTemplate && <ConfirmationDialog onConfirm={() => { actionOnConfirmOverrideSavingCityTemplate(); }} onCancel={() => setConfirmingOverrideSavingCityTemplate(false)} message={T_confirmOverrideSaveAsCityTemplate} />}
-
+        {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissable={false} message={alertToDisplay} />}
+        <NameInputWithOverrideDialog dialogTitle={T_addItemDialogTitle} dialogPromptText={T_addItemDialogPromptText} dialogOverrideText={T_confirmOverrideSaveAsCityTemplate}
+            isActive={savingCityTemplate} setIsActive={setSavingCityTemplate}
+            isShortCircuitCheckFn={(x) => !x || !wps.CurrentSubEntity.value}
+            checkIfExistsFn={LayoutsService.checkCityTemplateExists}
+            actionOnSuccess={onSaveTemplate}
+        />
     </Portal>;
 };
