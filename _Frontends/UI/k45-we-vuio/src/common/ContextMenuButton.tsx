@@ -17,12 +17,12 @@ export enum ContextMenuExpansion {
     TOP_LEFT
 }
 
-type ContextMenuBtnProps = {
+export type ContextMenuButtonProps = {
     menuTitle?: ReactNode,
     menuItems: ContextButtonMenuItemArray,
     menuDirection?: ContextMenuExpansion
 } & Omit<PropsToolButton, "onClick" | "onSelect" | "selected">
-export const ContextMenuButton = (props: ContextMenuBtnProps) => {
+export const ContextMenuButton = (props: ContextMenuButtonProps) => {
     const menuRef = useRef(null as any as HTMLDivElement);
     const Button = VanillaComponentResolver.instance.ToolButton;
     const ScrollPanel = VanillaWidgets.instance.EditorScrollable;

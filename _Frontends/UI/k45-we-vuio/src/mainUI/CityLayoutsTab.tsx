@@ -86,7 +86,7 @@ export const CityLayoutsTab = (props: Props) => {
         setSelectedLayout(x!);
     }
     return <>
-        <WEListWithPreviewTab actions={actions} detailsFields={detailsFields} listItems={Object.keys(layoutList)} selectedKey={selectedLayout!} onChangeSelection={setSelectedLayout} >
+        <WEListWithPreviewTab itemActions={actions} detailsFields={detailsFields} listItems={Object.keys(layoutList)} selectedKey={selectedLayout!} onChangeSelection={setSelectedLayout} >
             <div className="k45_we_tabWithPreview_previewControls">
 
             </div>

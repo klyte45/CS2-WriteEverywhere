@@ -11,6 +11,27 @@
         left: 5rem;
         bottom: 5rem;
 
+        .k45_we_tabWithPreview_listActions {
+            padding: 10rem;
+            display: flex;
+            flex-direction: row;
+            height: 60rem;
+            align-items: center;
+        }
+
+        .k45_we_tabWithPreview_emptyListMsg {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            align-items: center;
+            justify-content: center;
+            display: flex;
+            font-size: 300%;
+            color: var(--menuSelectedColor);
+        }
+
         button {
             font-size: 140%;
             color: var(--textColorDim);
@@ -43,6 +64,19 @@
         bottom: 5rem;
         display: flex;
         flex-direction: column;
+
+        .k45_we_tabWithPreview_noneSelectedMsg {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            align-items: center;
+            justify-content: center;
+            display: flex;
+            font-size: 300%;
+            color: var(--menuSelectedColor);
+        }
 
         .k45_we_tabWithPreview_preview {
             height: 60%;

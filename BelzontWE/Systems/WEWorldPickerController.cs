@@ -170,6 +170,7 @@ namespace BelzontWE
         public MultiUIValueBinding<string[]> FormulaeCompileResultErrorArgs { get; private set; }
         public MultiUIValueBinding<int> TextSourceType { get; private set; }
         public MultiUIValueBinding<string> ImageAtlasName { get; private set; }
+        public MultiUIValueBinding<int> DecalFlags { get; private set; }
         private void InitValueBindings()
         {
             if (m_initialized) return;
@@ -202,12 +203,13 @@ namespace BelzontWE
             CoatStrength = new(default, $"{PREFIX}{nameof(CoatStrength)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
             EmissiveExposureWeight = new(default, $"{PREFIX}{nameof(EmissiveExposureWeight)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
             SelectedFont = new(default, $"{PREFIX}{nameof(SelectedFont)}", m_eventCaller, m_callBinder);
-            FontList = new(FontServer.Instance.GetLoadedFontsNames(), $"{PREFIX}{nameof(FontList)}", m_eventCaller, m_callBinder);
+            FontList = new(default, $"{PREFIX}{nameof(FontList)}", m_eventCaller, m_callBinder);
             FormulaeStr = new(default, $"{PREFIX}{nameof(FormulaeStr)}", m_eventCaller, m_callBinder);
             FormulaeCompileResult = new(default, $"{PREFIX}{nameof(FormulaeCompileResult)}", m_eventCaller, m_callBinder);
             FormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(FormulaeCompileResultErrorArgs)}", m_eventCaller, m_callBinder);
             TextSourceType = new(default, $"{PREFIX}{nameof(TextSourceType)}", m_eventCaller, m_callBinder);
             ImageAtlasName = new(default, $"{PREFIX}{nameof(ImageAtlasName)}", m_eventCaller, m_callBinder);
+            DecalFlags = new(default, $"{PREFIX}{nameof(DecalFlags)}", m_eventCaller, m_callBinder);
 
 
             CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
@@ -230,6 +232,7 @@ namespace BelzontWE
             FormulaeStr.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { FormulaeCompileResult.Value = currentItem.SetFormulae(FormulaeStr.Value, out var cmpErr); FormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
             TextSourceType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
             ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Atlas = x; return currentItem; });
+            DecalFlags.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.DecalFlags = x; return currentItem; });
 
             FontList.Value = FontServer.Instance.GetLoadedFontsNames();
             FontList.UpdateUIs();
@@ -263,6 +266,7 @@ namespace BelzontWE
             FormulaeStr.Value = currentItem.Formulae;
             TextSourceType.Value = (int)currentItem.TextType;
             ImageAtlasName.Value = currentItem.Atlas;
+            DecalFlags.Value = currentItem.DecalFlags;
         }
 
         #endregion

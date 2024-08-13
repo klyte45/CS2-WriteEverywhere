@@ -189,8 +189,9 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                             />
                         </EditorItemRow>
                     }
-                </>} {wps.TextSourceType.value == WESimulationTextType.Placeholder &&<>
-                    <EditorItemRow label={L_itemNamePlaceholder}>
+                </>} {wps.TextSourceType.value == WESimulationTextType.Placeholder &&
+                    <>
+                        <EditorItemRow label={L_itemNamePlaceholder}>
                             <StringInputField
                                 value={fixedTextTyping}
                                 onChange={(x) => { setFixedTextTyping(x) }}
@@ -200,7 +201,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                                 maxLength={120}
                             />
                         </EditorItemRow>
-                </>}
+                    </>}
             </Panel>
         </Portal>
         {usingFormulae && <WEFormulaeEditor />}

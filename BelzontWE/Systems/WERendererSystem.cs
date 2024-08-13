@@ -32,6 +32,7 @@ namespace BelzontWE
         private WEWorldPickerTool m_pickerTool;
         private NativeQueue<WERenderData> availToDraw = new(Allocator.Persistent);
         internal static bool dumpNextFrame;
+        public static uint FrameCounter { get; private set; } = 0;
 #if BURST
         [Preserve]
 #endif
@@ -99,13 +100,12 @@ namespace BelzontWE
             availToDraw.Dispose();
             base.OnDestroy();
         }
-        private uint counter = 0;
 #if BURST
         [Preserve]
 #endif
         private void Render_Impl()
         {
-            ++counter;
+            ++FrameCounter;
             EntityCommandBuffer cmd;
             if (!m_renderQueueEntities.IsEmptyIgnoreFilter)
             {
@@ -151,7 +151,7 @@ namespace BelzontWE
                     }
                     else if (item.weComponent.TextType == WESimulationTextType.Text || item.weComponent.TextType == WESimulationTextType.Image)
                     {
-                        if ((((counter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
+                        if ((((FrameCounter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
                               && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity)
                               && item.weComponent.UpdateEffectiveText(EntityManager, item.geometryEntity)
                               )

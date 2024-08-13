@@ -7,8 +7,10 @@ using BelzontWE.Font.Utility;
 using Colossal.Entities;
 using Colossal.Mathematics;
 using Colossal.Serialization.Entities;
+using Kwytto.Utils;
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Authentication.ExtendedProtection;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -18,7 +20,8 @@ namespace BelzontWE
 {
     public struct WETextData : ISerializable, IDisposable, IComponentData
     {
-        public const uint CURRENT_VERSION = 3;
+        public const uint CURRENT_VERSION = 4;
+        public const int DEFAULT_DECAL_FLAGS = 12;
         public unsafe static int Size => sizeof(WETextData);
 
 
@@ -50,7 +53,16 @@ namespace BelzontWE
         public WEShader shader;
         public float maxWidthMeters;
         private FixedString512Bytes m_text;
+        private int decalFlags;
 
+        public int DecalFlags
+        {
+            readonly get => decalFlags; set
+            {
+                decalFlags = value;
+                dirty = true;
+            }
+        }
         public bool InitializedEffectiveText { get; private set; }
 
         public FixedString512Bytes LastErrorStr { get; private set; }
@@ -133,6 +145,7 @@ namespace BelzontWE
                     block.SetFloat("_EmissiveExposureWeight", emissiveExposureWeight);
                     block.SetFloat("_CoatStrength", coatStrength);
                     block.SetFloat("_Smoothness", smoothness);
+                    block.SetFloat(FontServer.DecalLayerMask, decalFlags.ToFloatBitFlags());
 
                     dirty = false;
                 }
@@ -286,7 +299,8 @@ namespace BelzontWE
                 coatStrength = 0.5f,
                 m_text = "NEW TEXT",
                 ItemName = "New item",
-                shader = WEShader.Default
+                shader = WEShader.Default,
+                decalFlags = DEFAULT_DECAL_FLAGS
             };
         }
 
@@ -421,6 +435,8 @@ namespace BelzontWE
             writer.Write(parentEntity);
             writer.Write(fontName);
             writer.Write(maxWidthMeters);
+            writer.Write(decalFlags);
+
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -468,6 +484,14 @@ namespace BelzontWE
             {
                 reader.Read(out maxWidthMeters);
             }
+            if (version >= 4)
+            {
+                reader.Read(out decalFlags);
+            }
+            else
+            {
+                decalFlags = DEFAULT_DECAL_FLAGS;
+            }
         }
 
         public WETextDataXml ToDataXml(EntityManager em)
@@ -511,7 +535,7 @@ namespace BelzontWE
             }
             var font = FontServer.Instance.GetOrCreateFontAsDefault(xml.fontName);
 
-            return new WETextData
+            var weData = new WETextData
             {
                 targetEntity = target,
                 parentEntity = parent,
@@ -533,7 +557,10 @@ namespace BelzontWE
                 Metallic = xml.style.metallic,
                 Smoothness = xml.style.smoothness,
                 maxWidthMeters = xml.maxWidthMeters,
+                decalFlags = xml.decalFlags
             };
+            weData.UpdateEffectiveText(em, target);
+            return weData;
         }
 
         #endregion

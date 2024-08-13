@@ -1,6 +1,6 @@
 import { VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { NameInputWithOverrideDialog } from "common/NameInputWithOverrideDialog";
-import { WEListWithPreviewTab } from "common/WEListWithPreviewTab";
+import { ListActionTypeArray, WEListWithPreviewTab } from "common/WEListWithPreviewTab";
 import { ConfirmationDialog, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
 import { FontDetailResponse, FontService } from "services/FontService";
@@ -30,6 +30,9 @@ function removeCssElement(cssEl: Element) {
 }
 
 export const FontsTab = (props: Props) => {
+    const i_addItem = "coui://uil/Standard/Plus.svg";
+
+    const T_addItem = translate("cityFontsTab.addFont")
     const T_rename = translate("cityFontsTab.rename")
     const T_duplicate = translate("cityFontsTab.duplicate")
     const T_delete = translate("cityFontsTab.delete")
@@ -86,6 +89,9 @@ export const FontsTab = (props: Props) => {
     const StringInputField = VanillaWidgets.instance.StringInputField;
     const IntSlider = VanillaWidgets.instance.IntSlider;
     const FocusableEditorItem = VanillaWidgets.instance.FocusableEditorItem;
+    const FocusDisabled = VanillaComponentResolver.instance.FOCUS_DISABLED;
+    const buttonClass = VanillaComponentResolver.instance.toolButtonTheme.button;
+
     const [previewText, setPreviewText] = useState("");
     const [fontSize, setFontSize] = useState(30);
     const validateName = (x: string) => x.match(/^[A-Za-z0-9_]{2,30}$/g) != null;
@@ -105,8 +111,19 @@ export const FontsTab = (props: Props) => {
         FontService.duplicateCityFont(selectedFont!, x!);
         setSelectedFont(x!);
     }
+
+    const listActions: ListActionTypeArray = [
+        {
+            isContext: false,
+            onSelect: () => { },
+            src: i_addItem,
+            tooltip: T_addItem,
+            focusKey: FocusDisabled,
+            className: buttonClass
+        }
+    ]
     return <>
-        <WEListWithPreviewTab actions={actions} detailsFields={detailsFields} listItems={Object.entries(fontList).filter(x => !x[1]).map(x => x[0]).sort((a, b) => a.localeCompare(b))} selectedKey={selectedFont!} onChangeSelection={setSelectedFont} >
+        <WEListWithPreviewTab listActions={listActions} itemActions={actions} detailsFields={detailsFields} listItems={Object.entries(fontList).filter(x => !x[1]).map(x => x[0]).sort((a, b) => a.localeCompare(b))} selectedKey={selectedFont!} onChangeSelection={setSelectedFont} >
             {fontDetail && <>
                 <div className="k45_we_fontTab_previewControls">
                     <FocusableEditorItem focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}><StringInputField value={previewText} onChange={setPreviewText} /></FocusableEditorItem>

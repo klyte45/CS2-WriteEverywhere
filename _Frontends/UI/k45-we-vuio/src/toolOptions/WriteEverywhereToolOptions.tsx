@@ -69,8 +69,6 @@ const WEWorldPickerToolPanel = () => {
     const T_editingPlane_ZY = translate("toolOption.editingPlane_ZY.tooltip"); //"move in ZY, rotate in X (right)"
     const T_editingPlane_XZ = translate("toolOption.editingPlane_XZ.tooltip"); //"move in XZ, rotate in Y (top)"
     const T_picker = translate("toolOption.picker.tooltip"); //"Pick another object"
-    const T_addText = translate("toolOption.addText.tooltip"); //"Add text"
-    const T_removeText = translate("toolOption.removeText.tooltip"); //"Remove text"
     const T_lockCamera = translate("toolOption.lockCamera.tooltip"); //"Lock camera to editing plane area and angle"
     const T_lockRotationView = translate("toolOption.lockRotationView.tooltip"); //"Do not rotate camera along the text"
     const T_AppearenceBtn = translate("toolOption.AppearenceBtn.tooltip"); //"Appearance settings"
