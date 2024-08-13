@@ -21,9 +21,9 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const T_contentType = translate("textValueSettings.contentType"); //
     const T_atlas = translate("textValueSettings.atlas"); //
     const T_image = translate("textValueSettings.image"); //
-    const T_Height = translate("textValueSettings.height"); //
+    const T_useAbsoluteSize = translate("textValueSettings.useAbsoluteSize"); //
+    const T_heightWidthCm = translate("textValueSettings.heightWidthCm"); //
     const T_HeightCm = translate("textValueSettings.heightCm"); //
-    const T_WidthCm = translate("textValueSettings.widthCm"); //
     const T_widthDistortion = translate("textValueSettings.widthDistortion"); //
     const T_maxWidth = translate("textValueSettings.maxWidth"); //    
     const L_itemNamePlaceholder = translate("toolOption.itemNamePlaceholder"); //"Text #"
@@ -43,6 +43,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const Tooltip = VanillaComponentResolver.instance.Tooltip;
     const ToggleField = VanillaWidgets.instance.ToggleField;
     const FloatInputField = VanillaWidgets.instance.FloatInputField;
+    const Float2InputField = VanillaWidgets.instance.Float2InputField;
     const editorTheme = VanillaWidgets.instance.editorItemModule;
     const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
     const onFontSelectWindow = async () => {
@@ -101,6 +102,10 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     const defaultPosition = props.initialPosition ?? { x: 1 - 400 / window.innerWidth, y: 1 - 180 / window.innerHeight }
 
+    const alwaysBeAbsolute = wps.TextSourceType.value == WESimulationTextType.Placeholder;
+    const alwaysBeRelative = wps.TextSourceType.value == WESimulationTextType.Text;
+    const mayBeAbsolute = wps.TextSourceType.value == WESimulationTextType.Image;
+
     return <>
         <Portal>
             <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
@@ -112,9 +117,12 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                         style={{ flexGrow: 1, width: "inherit" }}
                     />
                 </EditorItemRow>
-                <FloatInputField label={T_HeightCm} min={.001} max={10000000} value={height * 100} onChange={(x) => saveHeight(x * .01)} onChangeEnd={() => saveHeight(height)} />
-                {[WESimulationTextType.Text, WESimulationTextType.Image].includes(wps.TextSourceType.value) && <FloatInputField label={T_widthDistortion} min={.001} max={1000000} value={widthDistortion} onChange={setWidthDistortion} onChangeEnd={() => saveWidthDistortion(widthDistortion)} />}
-                {[WESimulationTextType.Placeholder].includes(wps.TextSourceType.value) && <FloatInputField label={T_WidthCm} min={.001} max={1000000} value={width * 100} onChange={(x) => saveWidth(x * .01)} onChangeEnd={() => saveWidth(width)} />}
+                {mayBeAbsolute && <ToggleField label={T_useAbsoluteSize} value={wps.UseAbsoluteSizeEditing.value} onChange={(x) => wps.UseAbsoluteSizeEditing.set(x)} />}
+                {(alwaysBeRelative || (!wps.UseAbsoluteSizeEditing.value && mayBeAbsolute)) && <>
+                    <FloatInputField label={T_HeightCm} min={.001} max={10000000} value={height * 100} onChange={(x) => saveHeight(x * .01)} onChangeEnd={() => saveHeight(height)} />
+                    <FloatInputField label={T_widthDistortion} min={.001} max={1000000} value={widthDistortion} onChange={setWidthDistortion} onChangeEnd={() => saveWidthDistortion(widthDistortion)} />
+                </>}
+                {(alwaysBeAbsolute || (wps.UseAbsoluteSizeEditing.value && mayBeAbsolute)) && <Float2InputField label={T_heightWidthCm} value={{ x: wps.CurrentScale.value[0] * 100, y: wps.CurrentScale.value[1] * 100 }} onChange={(x) => wps.CurrentScale.set([x.x * .01, x.y * .01, 1])} />}
                 {wps.TextSourceType.value == WESimulationTextType.Text && <>
                     <FloatInputField label={T_maxWidth} min={.001} max={1000000} value={maxWidth} onChange={setMaxWidth} onChangeEnd={() => saveMaxWidth(maxWidth)} />
                     <EditorItemRow label={T_fontFieldTitle} styleContent={{ paddingLeft: "34rem" }}>

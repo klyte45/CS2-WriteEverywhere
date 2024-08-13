@@ -171,6 +171,7 @@ namespace BelzontWE
         public MultiUIValueBinding<int> TextSourceType { get; private set; }
         public MultiUIValueBinding<string> ImageAtlasName { get; private set; }
         public MultiUIValueBinding<int> DecalFlags { get; private set; }
+        public MultiUIValueBinding<bool> UseAbsoluteSizeEditing { get; private set; }
         private void InitValueBindings()
         {
             if (m_initialized) return;
@@ -210,6 +211,7 @@ namespace BelzontWE
             TextSourceType = new(default, $"{PREFIX}{nameof(TextSourceType)}", m_eventCaller, m_callBinder);
             ImageAtlasName = new(default, $"{PREFIX}{nameof(ImageAtlasName)}", m_eventCaller, m_callBinder);
             DecalFlags = new(default, $"{PREFIX}{nameof(DecalFlags)}", m_eventCaller, m_callBinder);
+            UseAbsoluteSizeEditing = new(default, $"{PREFIX}{nameof(UseAbsoluteSizeEditing)}", m_eventCaller, m_callBinder);
 
 
             CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
@@ -233,6 +235,7 @@ namespace BelzontWE
             TextSourceType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
             ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Atlas = x; return currentItem; });
             DecalFlags.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.DecalFlags = x; return currentItem; });
+            UseAbsoluteSizeEditing.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.useAbsoluteSizeEditing = x; return currentItem; });
 
             FontList.Value = FontServer.Instance.GetLoadedFontsNames();
             FontList.UpdateUIs();
@@ -267,6 +270,7 @@ namespace BelzontWE
             TextSourceType.Value = (int)currentItem.TextType;
             ImageAtlasName.Value = currentItem.Atlas;
             DecalFlags.Value = currentItem.DecalFlags;
+            UseAbsoluteSizeEditing.Value = currentItem.useAbsoluteSizeEditing;
         }
 
         #endregion

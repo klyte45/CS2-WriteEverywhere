@@ -20,7 +20,7 @@ namespace BelzontWE
 {
     public struct WETextData : ISerializable, IDisposable, IComponentData
     {
-        public const uint CURRENT_VERSION = 4;
+        public const uint CURRENT_VERSION = 5;
         public const int DEFAULT_DECAL_FLAGS = 12;
         public unsafe static int Size => sizeof(WETextData);
 
@@ -64,6 +64,7 @@ namespace BelzontWE
             }
         }
         public bool InitializedEffectiveText { get; private set; }
+        public bool useAbsoluteSizeEditing;
 
         public FixedString512Bytes LastErrorStr { get; private set; }
         public Entity TargetEntity { readonly get => targetEntity; set => targetEntity = value; }
@@ -436,6 +437,7 @@ namespace BelzontWE
             writer.Write(fontName);
             writer.Write(maxWidthMeters);
             writer.Write(decalFlags);
+            writer.Write(useAbsoluteSizeEditing);
 
         }
 
@@ -491,6 +493,10 @@ namespace BelzontWE
             else
             {
                 decalFlags = DEFAULT_DECAL_FLAGS;
+            }
+            if (version >= 5)
+            {
+                reader.Read(out useAbsoluteSizeEditing);
             }
         }
 

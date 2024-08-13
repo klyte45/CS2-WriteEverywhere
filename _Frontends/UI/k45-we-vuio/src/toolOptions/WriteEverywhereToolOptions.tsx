@@ -8,8 +8,6 @@ import { translate } from "../utils/translate";
 import { WETextAppearenceSettings } from "./WETextAppearenceSettings";
 import { WETextValueSettings } from "./WETextValueSettings";
 import { WETextHierarchyView } from "./WETextHierarchyView";
-import { WEFormulaeEditor } from "./WEFormulaeEditor";
-import { WESimulationTextType } from "services/WEFormulaeElement";
 
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
@@ -18,32 +16,21 @@ const i_XYplaneIcon = "coui://uil/Standard/BoxFront.svg";
 const i_ZYplaneIcon = "coui://uil/Standard/BoxSide.svg";
 const i_XZplaneIcon = "coui://uil/Standard/BoxTop.svg";
 const i_UnselectCurrentIcon = "coui://uil/Standard/PickerPipette.svg";
-const i_AddItemIcon = "coui://uil/Standard/Plus.svg";
-const i_removeItemIcon = "coui://uil/Standard/Minus.svg";
 const i_cameraIcon = "coui://uil/Standard/VideoCamera.svg";
 const i_moveModeAll = "coui://uil/Standard/ArrowsMoveAll.svg";
 const i_moveModeHorizontal = "coui://uil/Standard/ArrowsMoveLeftRight.svg";
 const i_moveModeVertical = "coui://uil/Standard/ArrowsMoveUpDown.svg";
-const i_lockRotationView = "coui://uil/Standard/ArrowCircularLeft.svg";
 const i_AppearenceBtnIcon = "coui://uil/Standard/ColorPalette.svg";
 
 const iarr_moveMode = [i_moveModeAll, i_moveModeHorizontal, i_moveModeVertical]
 
-
-
-const addItem = () => engine.call("k45::we.wpicker.addItem");
-const removeItem = () => engine.call("k45::we.wpicker.removeItem");
-
-
-const descriptionToolTipStyle = getModule("game-ui/common/tooltip/description-tooltip/description-tooltip.module.scss", "classes");
 
 export const WriteEverywhereToolOptionsVisibility: ModuleRegistryExtend = (Component: any) => {
     return () => Component() || tool.activeTool$.value.id == "K45_WE_WEWorldPickerTool"
 }
 
 export const WriteEverywhereToolOptions: ModuleRegistryExtend = (Component: any) => {
-    return (props) => {
-        const { children, ...otherProps } = props || {};
+    return () => {
         const toolActive = useValue(tool.activeTool$).id == "K45_WE_WEWorldPickerTool";
 
         var result = Component();
@@ -70,7 +57,6 @@ const WEWorldPickerToolPanel = () => {
     const T_editingPlane_XZ = translate("toolOption.editingPlane_XZ.tooltip"); //"move in XZ, rotate in Y (top)"
     const T_picker = translate("toolOption.picker.tooltip"); //"Pick another object"
     const T_lockCamera = translate("toolOption.lockCamera.tooltip"); //"Lock camera to editing plane area and angle"
-    const T_lockRotationView = translate("toolOption.lockRotationView.tooltip"); //"Do not rotate camera along the text"
     const T_AppearenceBtn = translate("toolOption.AppearenceBtn.tooltip"); //"Appearance settings"
 
     const Tarr_moveMode = [
@@ -133,8 +119,7 @@ const WEWorldPickerToolPanel = () => {
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 2} onSelect={() => wps.CurrentPlaneMode.set(2)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XZ}></VanillaComponentResolver.instance.ToolButton>
                         <div style={{ width: "10rem" }}></div>
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentMoveMode.value > 0} onSelect={() => wps.CurrentMoveMode.set((wps.CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[wps.CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[wps.CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
-                        <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
-                        <VanillaComponentResolver.instance.ToolButton disabled={!wps.CameraLocked.value} selected={wps.CameraLocked.value && wps.CameraRotationLocked.value} onSelect={() => wps.CameraRotationLocked.set(!wps.CameraRotationLocked.value)} src={i_lockRotationView} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockRotationView}></VanillaComponentResolver.instance.ToolButton>
+                        <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>                        
                     </VanillaComponentResolver.instance.Section>
                     <VectorSectionEditable title={L_position}
                         valueGetter={() => wps.CurrentPosition.value?.map(x => x.toFixed(3))}
