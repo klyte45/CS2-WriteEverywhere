@@ -102,7 +102,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     const defaultPosition = props.initialPosition ?? { x: 1 - 400 / window.innerWidth, y: 1 - 180 / window.innerHeight }
 
-    const alwaysBeAbsolute = wps.TextSourceType.value == WESimulationTextType.Placeholder;
+    const alwaysBeAbsolute = [WESimulationTextType.Placeholder, WESimulationTextType.WhiteTexture].includes(wps.TextSourceType.value);
     const alwaysBeRelative = wps.TextSourceType.value == WESimulationTextType.Text;
     const mayBeAbsolute = wps.TextSourceType.value == WESimulationTextType.Image;
 
@@ -112,7 +112,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                 <EditorItemRow label={T_contentType}>
                     <NumberDropdownField
                         value={wps.TextSourceType.value}
-                        items={[0, 1, 2].map(x => { return { displayName: { __Type: LocElementType.String, value: translate(`textValueSettings.contentType.${x}`) }, value: x } })}
+                        items={[0, 1, 2, 4].map(x => { return { displayName: { __Type: LocElementType.String, value: translate(`textValueSettings.contentType.${x}`) }, value: x } })}
                         onChange={(x) => wps.TextSourceType.set(x)}
                         style={{ flexGrow: 1, width: "inherit" }}
                     />

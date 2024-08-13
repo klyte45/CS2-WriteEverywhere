@@ -30,7 +30,7 @@ namespace BelzontWE
         public bool ShouldSerializeimageName() => textType == WESimulationTextType.Image;
         public bool ShouldSerializelayoutName() => textType == WESimulationTextType.Placeholder;
         public bool ShouldSerializeatlas() => textType == WESimulationTextType.Image;
-        public bool ShouldSerializeformulae() => textType != WESimulationTextType.Placeholder;
+        public bool ShouldSerializeformulae() => textType == WESimulationTextType.Text || textType == WESimulationTextType.Image;
         public bool ShouldSerializefontName() => textType == WESimulationTextType.Text;
         public bool ShouldSerializemaxWidthMeters() => textType == WESimulationTextType.Text;
 

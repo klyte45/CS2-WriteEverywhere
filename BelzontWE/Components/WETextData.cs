@@ -296,7 +296,7 @@ namespace BelzontWE
 
         public bool SetNewParent(Entity e, EntityManager em)
         {
-            if (e != targetEntity && e != Entity.Null && (!em.TryGetComponent<WETextData>(e, out var weData) || (weData.targetEntity != Entity.Null && weData.targetEntity != targetEntity)))
+            if ((e != targetEntity && e != Entity.Null && (!em.TryGetComponent<WETextData>(e, out var weData) || weData.TextType == WESimulationTextType.Placeholder || (weData.targetEntity != Entity.Null && weData.targetEntity != targetEntity))))
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"NOPE: e = {e}; weData = {weData}; targetEntity = {targetEntity}; weData.targetEntity = {weData.targetEntity}");
                 return false;
@@ -426,7 +426,6 @@ namespace BelzontWE
             writer.Write(maxWidthMeters);
             writer.Write(decalFlags);
             writer.Write(useAbsoluteSizeEditing);
-
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader

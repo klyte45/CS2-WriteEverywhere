@@ -300,10 +300,7 @@ namespace WriteEverywhere.Sprites
         private static BasicRenderInformation m_bgTexture;
         public static BasicRenderInformation GetWhiteTextureBRI()
         {
-            if (m_bgTexture == null)
-            {
-                m_bgTexture = WERenderingHelper.GenerateBri("\0whiteTexture\0", Texture2D.whiteTexture);
-            }
+            m_bgTexture ??= WERenderingHelper.GenerateBri("\0whiteTexture\0", Texture2D.whiteTexture);
             return m_bgTexture;
         }
         #endregion

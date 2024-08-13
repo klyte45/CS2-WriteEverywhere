@@ -282,12 +282,12 @@ namespace BelzontWE
                     return 3;
                 }
 
-                if (weData.TextType != WESimulationTextType.Placeholder)
+                if ((weData.TextType < 0 || weData.TextType > WESimulationTextType.Placeholder) && weData.TextType != WESimulationTextType.WhiteTexture)
                 {
-                    LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: All children must have type 'Placeholder'.");
+                    LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: All children must have type 'Placeholder', 'WhiteTexture', 'Image' or 'Text'.");
                     return 4;
                 };
-                if (EntityManager.TryGetBuffer<WESubTextRef>(e, true, out var subRef) && !subRef.IsEmpty)
+                if (weData.TextType == WESimulationTextType.Placeholder && EntityManager.TryGetBuffer<WESubTextRef>(e, true, out var subRef) && !subRef.IsEmpty)
                 {
                     LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: The node must not have children, as any Placeholder item don't.");
                     return 5;
@@ -298,6 +298,7 @@ namespace BelzontWE
         private void UpdatePrefabIndexDictionary()
         {
             if (!isPrefabListDirty) return;
+            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"UpdatePrefabIndexDictionary!!!");
             PrefabNameToIndex.Clear();
             var prefabs = PrefabSystemOverrides.LoadedPrefabBaseList(m_prefabSystem);
             var entities = PrefabSystemOverrides.LoadedPrefabEntitiesList(m_prefabSystem);
@@ -368,9 +369,9 @@ namespace BelzontWE
                 return 1;
             }
 
-            if (weData.TextType != WESimulationTextType.Text && weData.TextType != WESimulationTextType.Image)
+            if (weData.TextType != WESimulationTextType.Text && weData.TextType != WESimulationTextType.Image && weData.TextType != WESimulationTextType.WhiteTexture)
             {
-                LogUtils.DoInfoLog($"Failed validation to transform to City Template: Only text and image items are allowed in a city template");
+                LogUtils.DoInfoLog($"Failed validation to transform to City Template: Only white textures, text and image items are allowed in a city template");
                 return 2;
             }
             if (EntityManager.TryGetBuffer<WESubTextRef>(e, true, out var subRef))

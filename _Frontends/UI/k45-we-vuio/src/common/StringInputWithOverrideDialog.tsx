@@ -3,7 +3,7 @@ import { useState } from "react"
 import { getOverrideCheckFn } from "utils/getOverrideCheckFn"
 import { WEInputDialog } from "./WEInputDialog"
 
-type NameInputWithOverrideDialogProps = {
+type StringInputWithOverrideDialogProps = {
     isActive: boolean,
     setIsActive: (x: boolean) => any,
     dialogTitle: string,
@@ -16,7 +16,7 @@ type NameInputWithOverrideDialogProps = {
     validationFn?: (val: string) => boolean
     maxLength?: number
 }
-export const NameInputWithOverrideDialog = ({
+export const StringInputWithOverrideDialog = ({
     isActive,
     setIsActive,
     dialogTitle,
@@ -28,10 +28,10 @@ export const NameInputWithOverrideDialog = ({
     actionOnSuccess,
     validationFn,
     maxLength
-}: NameInputWithOverrideDialogProps) => {
+}: StringInputWithOverrideDialogProps) => {
     const [confirmingOverride, setConfirmingOverride] = useState(false)
     const [actionOnConfirmOverride, setActionOnConfirmOverride] = useState(() => () => { })
-    const saveCityTemplateCallback = getOverrideCheckFn(
+    const callback = getOverrideCheckFn(
         setIsActive,
         isShortCircuitCheckFn,
         checkIfExistsFn,
@@ -41,7 +41,7 @@ export const NameInputWithOverrideDialog = ({
     );
 
     return <Portal>
-        {isActive && <WEInputDialog callback={saveCityTemplateCallback} title={dialogTitle} promptText={dialogPromptText} initialValue={initialValue} validationFn={validationFn} maxLength={maxLength} />}
+        {isActive && <WEInputDialog callback={callback} title={dialogTitle} promptText={dialogPromptText} initialValue={initialValue} validationFn={validationFn} maxLength={maxLength} />}
         {confirmingOverride && <ConfirmationDialog onConfirm={() => { actionOnConfirmOverride(); }} title={dialogTitle} onCancel={() => setConfirmingOverride(false)} message={dialogOverrideText} />}
     </Portal>
 }

@@ -12,7 +12,8 @@ export type WETextItemResume = {
 export enum WESimulationTextType {
     Text = 0,
     Image = 1,
-    Placeholder = 2
+    Placeholder = 2,
+    WhiteTexture = 4
 }
 
 export type EnumWrapper<T> = { value__: T; };

@@ -1,5 +1,6 @@
 import { VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
-import { NameInputWithOverrideDialog } from "common/NameInputWithOverrideDialog";
+import { StringInputDialog } from "common/StringInputDialog";
+import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
 import { ListActionTypeArray, WEListWithPreviewTab } from "common/WEListWithPreviewTab";
 import { ConfirmationDialog, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
@@ -43,6 +44,9 @@ export const FontsTab = (props: Props) => {
     const T_duplicateDialogTitle = translate("cityFontsTab.duplicateDialog.title")
     const T_duplicateDialogText = translate("cityFontsTab.duplicateDialog.text")
     const T_typeAboveToPreviewThisFont = translate("cityFontsTab.typeAboveToPreview")
+    const T_addDialogTitle = translate("cityFontsTab.addFontDialog.title")
+    const T_addDialogText = translate("cityFontsTab.addFontDialog.text")
+    const T_addDialogErrorGeneric = translate("cityFontsTab.addFontDialog.errorLoadingFontMsg")
 
 
     const [selectedFont, setSelectedFont] = useState(null as null | string);
@@ -92,6 +96,8 @@ export const FontsTab = (props: Props) => {
     const FocusDisabled = VanillaComponentResolver.instance.FOCUS_DISABLED;
     const buttonClass = VanillaComponentResolver.instance.toolButtonTheme.button;
 
+    const [alertToDisplay, setAlertToDisplay] = useState(undefined as string | undefined)
+
     const [previewText, setPreviewText] = useState("");
     const [fontSize, setFontSize] = useState(30);
     const validateName = (x: string) => x.match(/^[A-Za-z0-9_]{2,30}$/g) != null;
@@ -112,10 +118,21 @@ export const FontsTab = (props: Props) => {
         setSelectedFont(x!);
     }
 
+    const [isAskingPathAdd, setIsAskingPathAdd] = useState(false);
+    const onAskPathAdd = async (x?: string) => {
+        if (!x) return;
+        const newFontName = await FontService.requireFontInstallation(x);
+        if (newFontName) {
+            setSelectedFont(newFontName);
+        } else {
+            setAlertToDisplay(T_addDialogErrorGeneric)
+        }
+    }
+
     const listActions: ListActionTypeArray = [
         {
             isContext: false,
-            onSelect: () => { },
+            onSelect: () => setIsAskingPathAdd(true),
             src: i_addItem,
             tooltip: T_addItem,
             focusKey: FocusDisabled,
@@ -134,21 +151,28 @@ export const FontsTab = (props: Props) => {
                 </div></>}
         </WEListWithPreviewTab>
 
-        <NameInputWithOverrideDialog dialogTitle={T_renameDialogTitle} dialogPromptText={T_renameDialogText} dialogOverrideText={T_confirmOverrideText} validationFn={validateName} initialValue={selectedFont!}
+        <StringInputWithOverrideDialog dialogTitle={T_renameDialogTitle} dialogPromptText={T_renameDialogText} dialogOverrideText={T_confirmOverrideText} validationFn={validateName} initialValue={selectedFont!}
             maxLength={30}
             isActive={isRenamingLayout} setIsActive={setIsRenamingLayout}
             isShortCircuitCheckFn={(x) => !x || x == selectedFont}
             checkIfExistsFn={FontService.checkFontExists}
             actionOnSuccess={onRenameLayout}
         />
-        <NameInputWithOverrideDialog dialogTitle={T_duplicateDialogTitle} dialogPromptText={T_duplicateDialogText} dialogOverrideText={T_confirmOverrideText} validationFn={validateName}
+        <StringInputWithOverrideDialog dialogTitle={T_duplicateDialogTitle} dialogPromptText={T_duplicateDialogText} dialogOverrideText={T_confirmOverrideText} validationFn={validateName}
             maxLength={30}
             isActive={isDuplicatingLayout} setIsActive={setIsDuplicatingLayout}
             isShortCircuitCheckFn={(x) => !x || x == selectedFont}
             checkIfExistsFn={FontService.checkFontExists}
             actionOnSuccess={onDuplicateLayout}
         />
-        <Portal>{displayingModal()}</Portal>
+        <StringInputDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText}
+            isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd}
+            actionOnSuccess={onAskPathAdd}
+        />
+        <Portal>
+            {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissable={false} message={alertToDisplay} confirm={"OK"} />}
+            {displayingModal()}
+        </Portal>
     </>
 };
 

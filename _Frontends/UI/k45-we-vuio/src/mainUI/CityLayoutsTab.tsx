@@ -1,13 +1,11 @@
-import { Entity, replaceArgs, VanillaComponentResolver, VanillaFnResolver, VanillaWidgets } from "@klyte45/vuio-commons";
-import classNames from "classnames";
-import { NameInputWithOverrideDialog } from "common/NameInputWithOverrideDialog";
+import { Entity, replaceArgs, VanillaFnResolver } from "@klyte45/vuio-commons";
+import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
 import { WEInputDialog } from "common/WEInputDialog";
 import { WEListWithPreviewTab } from "common/WEListWithPreviewTab";
 import { ConfirmationDialog, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
 import { CityDetailResponse, LayoutsService } from "services/LayoutsService";
-import "style/mainUi/tabStructure.scss"
-import { getOverrideCheckFn } from "utils/getOverrideCheckFn";
+import "style/mainUi/tabStructure.scss";
 import { translate } from "utils/translate";
 
 type Props = {}
@@ -91,13 +89,13 @@ export const CityLayoutsTab = (props: Props) => {
 
             </div>
         </WEListWithPreviewTab>
-        <NameInputWithOverrideDialog dialogTitle={T_renameDialogTitle} dialogPromptText={T_renameDialogText} dialogOverrideText={T_confirmOverrideText} initialValue={selectedLayout!}
+        <StringInputWithOverrideDialog dialogTitle={T_renameDialogTitle} dialogPromptText={T_renameDialogText} dialogOverrideText={T_confirmOverrideText} initialValue={selectedLayout!}
             isActive={isRenamingLayout} setIsActive={setIsRenamingLayout}
             isShortCircuitCheckFn={(x) => !x || x == selectedLayout}
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}
             actionOnSuccess={onRenameLayout}
         />
-        <NameInputWithOverrideDialog dialogTitle={T_duplicateDialogTitle} dialogPromptText={T_duplicateDialogText} dialogOverrideText={T_confirmOverrideText}
+        <StringInputWithOverrideDialog dialogTitle={T_duplicateDialogTitle} dialogPromptText={T_duplicateDialogText} dialogOverrideText={T_confirmOverrideText}
             isActive={isDuplicatingLayout} setIsActive={setIsDuplicatingLayout}
             isShortCircuitCheckFn={(x) => !x || x == selectedLayout}
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}

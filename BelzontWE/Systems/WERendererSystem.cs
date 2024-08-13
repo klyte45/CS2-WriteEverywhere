@@ -127,6 +127,7 @@ namespace BelzontWE
                         continue;
                     }
                     BasicRenderInformation bri;
+                    bool wasDirty = false;
                     if ((bri = item.weComponent.RenderInformation) == null)
                     {
                         if (!item.weComponent.InitializedEffectiveText)
@@ -134,19 +135,30 @@ namespace BelzontWE
                             item.weComponent.UpdateEffectiveText(EntityManager, item.geometryEntity);
                             cmd.SetComponent(item.textDataEntity, item.weComponent);
                         }
-                        else if ((item.weComponent.TextType == WESimulationTextType.Text || item.weComponent.TextType == WESimulationTextType.Image) && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
+                        switch (item.weComponent.TextType)
                         {
-                            cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
-                            if (dumpNextFrame)
-                            {
-                                LogUtils.DoInfoLog($"DUMP! E =  {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nMARKED TO RE-RENDER");
-                            }
+                            case WESimulationTextType.Text:
+                            case WESimulationTextType.Image:
+                                if (!EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
+                                {
+                                    cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                                    if (dumpNextFrame)
+                                    {
+                                        LogUtils.DoInfoLog($"DUMP! E =  {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nMARKED TO RE-RENDER");
+                                    }
+                                }
+                                break;
+                            case WESimulationTextType.WhiteTexture:
+                                bri = WEAtlasesLibrary.GetWhiteTextureBRI();
+                                item.weComponent = item.weComponent.UpdateBRI(bri, bri.m_refText);
+                                wasDirty = true;
+                                break;
+
                         }
-                        if (!m_pickerTool.IsSelected) continue;
                     }
-                    bool wasDirty = false;
                     if (bri is null)
                     {
+                        if (!m_pickerTool.IsSelected) continue;
                         bri = WEAtlasesLibrary.GetWhiteTextureBRI();
                     }
                     else if (item.weComponent.TextType == WESimulationTextType.Text || item.weComponent.TextType == WESimulationTextType.Image)

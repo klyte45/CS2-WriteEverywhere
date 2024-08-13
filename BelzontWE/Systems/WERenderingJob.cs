@@ -107,7 +107,6 @@ namespace BelzontWE
                         }
                         return;
                     case WESimulationTextType.Placeholder:
-
                         if (!m_weTemplateUpdaterLookup.TryGetComponent(nextEntity, out var updater))
                         {
                             m_CommandBuffer.AddComponent<WEWaitingRenderingPlaceholder>(unfilteredChunkIndex, nextEntity);
@@ -126,6 +125,24 @@ namespace BelzontWE
                         }
 
                         DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, Vector3.one), unfilteredChunkIndex, true);
+                        break;
+                    case WESimulationTextType.WhiteTexture:
+                        availToDraw.Enqueue(new WERenderData
+                        {
+                            textDataEntity = nextEntity,
+                            geometryEntity = geometryEntity,
+                            weComponent = weCustomData,
+                            transformMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, weCustomData.scale)
+                        });
+
+                        if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayoutWt))
+                        {
+                            var itemMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, Vector3.one);
+                            for (int j = 0; j < subLayoutWt.Length; j++)
+                            {
+                                DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, unfilteredChunkIndex);
+                            }
+                        }
                         return;
                     default:
                         if (m_weTemplateUpdaterLookup.HasComponent(nextEntity))
