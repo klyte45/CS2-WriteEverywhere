@@ -43,6 +43,16 @@ namespace BelzontWE
         {
             if (!File.Exists(path)) return "";
             var name = Regex.Replace(Path.GetFileNameWithoutExtension(path), "[^A-Za-z0-9_]", "_").Truncate(30);
+            if (FontServer.Instance.FontExists(name))
+            {
+                var i = 1;
+                var baseName = name;
+                do
+                {
+                    baseName = baseName.Truncate(29 - i.ToString().Length);
+                    name = $"{baseName}_{i}";
+                } while (FontServer.Instance.FontExists(name));
+            }
             return FontServer.Instance.RegisterFont(name, File.ReadAllBytes(path)) ? name : null;
         }
 

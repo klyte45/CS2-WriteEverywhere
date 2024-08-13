@@ -10,7 +10,6 @@ using Colossal.Serialization.Entities;
 using Kwytto.Utils;
 using System;
 using System.Runtime.InteropServices;
-using System.Security.Authentication.ExtendedProtection;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -20,7 +19,7 @@ namespace BelzontWE
 {
     public struct WETextData : ISerializable, IDisposable, IComponentData
     {
-        public const uint CURRENT_VERSION = 5;
+        public const uint CURRENT_VERSION = 6;
         public const int DEFAULT_DECAL_FLAGS = 12;
         public unsafe static int Size => sizeof(WETextData);
 
@@ -42,7 +41,6 @@ namespace BelzontWE
         private FixedString512Bytes formulaeHandlerStr;
         private GCHandle formulaeHandlerFn;
         private bool loadingFnDone;
-        private Entity font;
         private FixedString32Bytes fontName;
         private Entity targetEntity;
         private Entity parentEntity;
@@ -72,20 +70,12 @@ namespace BelzontWE
 
         public Entity Font
         {
-            get
-            {
-                if (fontName != "" && !FontServer.Instance.EntityManager.Exists(font) && (font = FontServer.Instance[fontName.ToString()]) == Entity.Null)
-                {
-                    fontName = "";
-                }
-                return font;
-            }
+            readonly get => FontServer.Instance.TryGetFontEntity(fontName, out var data) ? data : default;
 
             set
             {
                 if (value == Entity.Null)
                 {
-                    font = default;
                     fontName = "";
                     if (basicRenderInformation.IsAllocated)
                     {
@@ -95,7 +85,6 @@ namespace BelzontWE
                 }
                 else if (FontServer.Instance.EntityManager.TryGetComponent(value, out FontSystemData fsd))
                 {
-                    font = value;
                     fontName = fsd.Name;
                     if (basicRenderInformation.IsAllocated)
                     {
@@ -427,7 +416,6 @@ namespace BelzontWE
             writer.Write(metallic);
             writer.Write(smoothness);
             writer.Write(m_text);
-            writer.Write(font);
             writer.Write(ItemName);
             writer.Write(coatStrength);
             writer.Write(Formulae ?? "");
@@ -461,7 +449,7 @@ namespace BelzontWE
             reader.Read(out metallic);
             reader.Read(out smoothness);
             reader.Read(out m_text);
-            reader.Read(out font);
+            if (version < 6) reader.Read(out Entity _);
             reader.Read(out itemName);
             reader.Read(out coatStrength);
             reader.Read(out string formulae);
@@ -514,7 +502,7 @@ namespace BelzontWE
                 text = Text,
                 textType = TextType,
                 maxWidthMeters = maxWidthMeters,
-                fontName = fontName == "" && font != Entity.Null ? em.TryGetComponent(font, out FontSystemData data) ? data.Name : "" : fontName.ToString(),
+                fontName = fontName.ToString(),
                 style = new WETextDataXml.WETextDataStyleXml
                 {
                     coatStrength = CoatStrength,
@@ -539,8 +527,6 @@ namespace BelzontWE
             {
                 target = parent;
             }
-            var font = FontServer.Instance.GetOrCreateFontAsDefault(xml.fontName);
-
             var weData = new WETextData
             {
                 targetEntity = target,
@@ -554,7 +540,6 @@ namespace BelzontWE
                 Formulae = xml.formulae ?? "",
                 Text = xml.text ?? "",
                 TextType = xml.textType,
-                font = font,
                 CoatStrength = xml.style.coatStrength,
                 Color = xml.style.color,
                 EmissiveColor = xml.style.emissiveColor,

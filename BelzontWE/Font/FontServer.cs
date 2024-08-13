@@ -45,7 +45,7 @@ namespace BelzontWE
 
         public static FontServer Instance { get; private set; }
         public static int DecalLayerMask { get; private set; }
-        private Dictionary<string, Entity> LoadedFonts { get; } = new();
+        private Dictionary<FixedString32Bytes, Entity> LoadedFonts { get; } = new();
 
         private EndFrameBarrier m_endFrameBarrier;
 
@@ -145,6 +145,8 @@ namespace BelzontWE
                 fontData.Name = newName;
                 EntityManager.SetComponentData(entity, fontData);
                 LoadedFonts[newName] = entity;
+                fontData.FontSystem.Reset();
+                DefaultFont.FontSystem.Reset();
             }
         }
         public void DuplicateFont(string srcFont, string newName)
@@ -157,14 +159,15 @@ namespace BelzontWE
                 var newEntity = EntityManager.CreateEntity();
                 EntityManager.AddComponentData(newEntity, FontSystemData.From(fontData.Font._font.data.ArrayData, newName));
                 LoadedFonts[newName] = newEntity;
+                DefaultFont.FontSystem.Reset();
             }
         }
-        public bool TryGetFont(string name, out FontSystemData data)
+        public bool TryGetFont(FixedString32Bytes name, out FontSystemData data)
         {
             data = default;
             return LoadedFonts.TryGetValue(name, out var entity) && EntityManager.TryGetComponent(entity, out data);
         }
-        public bool TryGetFontEntity(string name, out Entity entity)
+        public bool TryGetFontEntity(FixedString32Bytes name, out Entity entity)
         {
             return LoadedFonts.TryGetValue(name, out entity);
         }
@@ -261,9 +264,6 @@ namespace BelzontWE
 
         internal bool FontExists(string name) => LoadedFonts.ContainsKey(name);
 
-        internal string[] GetLoadedFontsNames()
-        {
-            return LoadedFonts.Keys.ToArray();
-        }
+        internal string[] GetLoadedFontsNames() => LoadedFonts.Keys.Select(x => x.ToString()).ToArray();
     }
 }
