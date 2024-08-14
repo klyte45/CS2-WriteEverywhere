@@ -6,6 +6,7 @@ using Game.Prefabs;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using Unity.Entities;
 
 namespace BelzontWE
@@ -15,6 +16,7 @@ namespace BelzontWE
         private const string PREFIX = "layouts.";
         private WETemplateManager m_templateManager;
         private PrefabSystem m_prefabSystem;
+        private WEWorldPickerController m_controller;
 
         public void SetupCallBinder(Action<string, Delegate> callBinder)
         {
@@ -30,6 +32,8 @@ namespace BelzontWE
             callBinder($"{PREFIX}duplicateCityTemplate", DuplicateCityTemplate);
             callBinder($"{PREFIX}exportCityLayoutAsXml", ExportCityLayoutAsXml);
             callBinder($"{PREFIX}openExportedFilesFolder", OpenExportedFilesFolder);
+            callBinder($"{PREFIX}loadAsChildFromCityTemplate", LoadAsChildFromCityTemplate);
+            callBinder($"{PREFIX}importAsCityTemplateFromXml", ImportAsCityTemplateFromXml);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
@@ -41,6 +45,7 @@ namespace BelzontWE
             base.OnCreate();
             m_templateManager = World.GetOrCreateSystemManaged<WETemplateManager>();
             m_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
+            m_controller = World.GetOrCreateSystemManaged<WEWorldPickerController>();
         }
 
         protected override void OnUpdate() { }
@@ -63,17 +68,47 @@ namespace BelzontWE
             File.WriteAllText(targetFilename, WETextDataTree.FromEntity(e, EntityManager).ToXML());
             return effectiveFileName;
         }
-        private bool LoadAsChildFromXml(Entity parent, string layoutName)
+        private bool LoadAsChildFromXml(Entity parent, string targetFilename)
         {
-            KFileUtils.EnsureFolderCreation(WETemplateManager.SAVED_PREFABS_FOLDER);
-            var targetFilename = Path.Combine(WETemplateManager.SAVED_PREFABS_FOLDER, $"{layoutName}.{WETemplateManager.SIMPLE_LAYOUT_EXTENSION}");
             if (!File.Exists(targetFilename)) return false;
 
             var tree = WETextDataTree.FromXML(File.ReadAllText(targetFilename));
             if (tree == null) return false;
 
             WELayoutUtility.CreateEntityFromTree(tree, parent, EntityManager);
+            m_controller.UpdateTree();
             return true;
+        }
+        private bool LoadAsChildFromCityTemplate(Entity parent, string templateName)
+        {
+            if (!m_templateManager.CityTemplateExists(templateName)) return false;
+            WELayoutUtility.DoCloneTextItem(m_templateManager[templateName], parent, EntityManager);
+            m_controller.UpdateTree();
+            return true;
+        }
+        private string ImportAsCityTemplateFromXml(string path)
+        {
+            if (!File.Exists(path)) return null;
+            var name = Regex.Replace(Path.GetFileNameWithoutExtension(path.Replace(WETemplateManager.SIMPLE_LAYOUT_EXTENSION, "xml")), "[^A-Za-z0-9_]", "_").Truncate(30);
+            if (m_templateManager.CityTemplateExists(name))
+            {
+                var i = 1;
+                var baseName = name;
+                do
+                {
+                    baseName = baseName.Truncate(29 - i.ToString().Length);
+                    name = $"{baseName}_{i}";
+                } while (m_templateManager.CityTemplateExists(name));
+            }
+            try
+            {
+                return m_templateManager.SaveCityTemplate(name, WELayoutUtility.CreateEntityFromTree(WETextDataTree.FromXML(File.ReadAllText(path)), Entity.Null, EntityManager)) ? name : null;
+            }
+            catch (Exception e)
+            {
+                LogUtils.DoWarnLog($"Exception importing layout: {e}");
+                return null;
+            }
         }
 
         private int ExportComponentAsPrefabDefault(Entity e, bool force = false)

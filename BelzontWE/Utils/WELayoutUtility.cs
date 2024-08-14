@@ -55,7 +55,7 @@ namespace BelzontWE
         public static Entity CreateEntityFromTree(WETextDataTree tree, Entity parent, EntityManager em)
         {
             var selfEntity = em.CreateEntity();
-            var selfComponent = WETextData.FromDataXml(tree.self, parent, em);
+            var selfComponent = WETextData.FromDataXml(tree.self ?? new(), parent, em);
             if (parent != Entity.Null)
             {
                 if (!em.TryGetBuffer<WESubTextRef>(parent, true, out var subBuff)) subBuff = em.AddBuffer<WESubTextRef>(parent);
@@ -86,7 +86,7 @@ namespace BelzontWE
         public static Entity CreateEntityFromTree(WETextDataTree tree, Entity parent, EntityManager em, EntityCommandBuffer cmdBuffer)
         {
             var selfEntity = cmdBuffer.CreateEntity();
-            var selfComponent = WETextData.FromDataXml(tree.self, parent, em);
+            var selfComponent = WETextData.FromDataXml(tree.self ?? new(), parent, em);
             if (parent != Entity.Null)
             {
                 if (!em.TryGetBuffer<WESubTextRef>(parent, true, out var subBuff)) subBuff = em.AddBuffer<WESubTextRef>(parent);

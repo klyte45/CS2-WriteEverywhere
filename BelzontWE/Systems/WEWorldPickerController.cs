@@ -316,8 +316,8 @@ namespace BelzontWE
             {
                 var targetParent = parent.Index == 0 ? CurrentEntity.Value : parent;
                 var currentEntity = CurrentEntity.Value;
-                m_executionQueue.Enqueue(() => DoWithBuffer<WESubTextRef>(targetParent,
-                   (buff) =>
+                m_executionQueue.Enqueue(() => DoWithBuffer(targetParent,
+                   (Action<DynamicBuffer<WESubTextRef>>)((buff) =>
                    {
                        var subref = new WESubTextRef
                        {
@@ -327,9 +327,14 @@ namespace BelzontWE
                        EntityManager.AddComponentData(subref.m_weTextData, newData);
                        buff.Add(subref);
                        CurrentSubEntity.ChangeValueWithEffects(subref.m_weTextData);
-                       CurrentTree.Value = GetTextTreeForEntity(currentEntity);
-                   }));
+                       UpdateTree();
+                   })));
             }
+        }
+
+        public void UpdateTree()
+        {
+            CurrentTree.Value = GetTextTreeForEntity(CurrentEntity.Value);
         }
 
         private void RemoveItem()
@@ -344,7 +349,7 @@ namespace BelzontWE
                         if (RemoveSubItemRef(buff, subEntity, parent, true))
                         {
                             CurrentSubEntity.ChangeValueWithEffects(Entity.Null);
-                            CurrentTree.Value = GetTextTreeForEntity(CurrentEntity.Value);
+                            UpdateTree();
                         }
                     })));
             }

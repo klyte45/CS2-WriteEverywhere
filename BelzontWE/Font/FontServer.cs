@@ -257,7 +257,7 @@ namespace BelzontWE
             material.SetVector("_DoubleSidedConstants", new Vector4(1, 1, -1, 0));
             material.SetFloat("_Smoothness", .5f);
             material.SetFloat("_ZTestGBuffer", 7);
-            material.SetFloat(FontServer.DecalLayerMask, 8.ToFloatBitFlags());
+            material.SetFloat(DecalLayerMask, 8.ToFloatBitFlags());
             material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
             HDMaterial.ValidateMaterial(material);
             return material;
@@ -266,5 +266,12 @@ namespace BelzontWE
         internal bool FontExists(string name) => LoadedFonts.ContainsKey(name);
 
         internal string[] GetLoadedFontsNames() => LoadedFonts.Keys.Select(x => x.ToString()).ToArray();
+
+        internal void EnsureFont(FixedString32Bytes fontName)
+        {
+            fontName = fontName.Trim();
+            if (fontName == "" || LoadedFonts.ContainsKey(fontName)) return;
+            RegisterFont(fontName.ToString(), DefaultFont.Font._font.data.ArrayData);
+        }
     }
 }

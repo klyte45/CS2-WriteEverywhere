@@ -19,6 +19,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine.Rendering;
 
 
 #if BURST
@@ -302,6 +303,7 @@ namespace BelzontWE
                         m_prefabUpdaterHdl = GetComponentTypeHandle<WETemplateUpdater>(true),
                         m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
                         m_obsoleteTemplateList = m_obsoleteTemplateList,
+                        m_EntityLkp = GetEntityStorageInfoLookup()
                     };
                     var schedule = job.Schedule(m_templateBasedEntities, Dependency);
                     Dependency = schedule;
@@ -369,7 +371,7 @@ namespace BelzontWE
                     {
                         if (CanBePrefabLayout(subRef[i].m_weTextData, false) != 0)
                         {
-                            LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: A child node (${i}) failed validation");
+                            LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: A child node ({i}) failed validation");
                             return 2;
                         }
                     }

@@ -1,12 +1,14 @@
 ﻿using Belzont.Utils;
 using Colossal.Entities;
+using System;
+using System.Collections.Generic;
 using System.Xml.Serialization;
 using Unity.Entities;
 
 namespace BelzontWE
 {
     [XmlRoot("WELayout")]
-    public class WESelflessTextDataTree
+    public class WESelflessTextDataTree : IEquatable<WESelflessTextDataTree>
     {
         [XmlElement("children")]
         public WETextDataTree[] children;
@@ -34,5 +36,16 @@ namespace BelzontWE
             }
             catch { return null; }
         }
+
+        public override bool Equals(object obj) => Equals(obj as WESelflessTextDataTree);
+
+        public bool Equals(WESelflessTextDataTree other) => other is not null &&
+                   EqualityComparer<WETextDataTree[]>.Default.Equals(children, other.children);
+
+        public override int GetHashCode() => HashCode.Combine(children);
+
+        public static bool operator ==(WESelflessTextDataTree left, WESelflessTextDataTree right) => EqualityComparer<WESelflessTextDataTree>.Default.Equals(left, right);
+
+        public static bool operator !=(WESelflessTextDataTree left, WESelflessTextDataTree right) => !(left == right);
     }
 }

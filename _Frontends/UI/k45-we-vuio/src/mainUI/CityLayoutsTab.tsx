@@ -1,7 +1,8 @@
-import { Entity, replaceArgs, VanillaFnResolver } from "@klyte45/vuio-commons";
+import { Entity, replaceArgs, VanillaComponentResolver, VanillaFnResolver } from "@klyte45/vuio-commons";
+import { StringInputDialog } from "common/StringInputDialog";
 import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
 import { WEInputDialog } from "common/WEInputDialog";
-import { WEListWithPreviewTab } from "common/WEListWithPreviewTab";
+import { ListActionTypeArray, WEListWithPreviewTab } from "common/WEListWithPreviewTab";
 import { ConfirmationDialog, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
 import { CityDetailResponse, LayoutsService } from "services/LayoutsService";
@@ -18,6 +19,9 @@ enum Modals {
 }
 
 export const CityLayoutsTab = (props: Props) => {
+    const i_addItem = "coui://uil/Standard/Plus.svg";
+
+    const T_addItem = translate("cityLayoutsTab.addTemplateFromXml")
     const T_usages = translate("cityLayoutsTab.usages")
     const T_rename = translate("cityLayoutsTab.rename")
     const T_duplicate = translate("cityLayoutsTab.duplicate")
@@ -35,18 +39,25 @@ export const CityLayoutsTab = (props: Props) => {
     const T_goToFileFolder = translate("cityLayoutsTab.exportXml.goToFileFolder")
     const T_back = translate("cityLayoutsTab.exportXml.back")
 
+
+    const T_addDialogTitle = translate("cityLayoutsTab.addTemplateXmlDialog.title")
+    const T_addDialogText = translate("cityLayoutsTab.addTemplateXmlDialog.text")
+    const T_addDialogErrorGeneric = translate("cityLayoutsTab.addTemplateXmlDialog.errorLoadingFontMsg")
+
     const units = VanillaFnResolver.instance.unit.Unit;
     const formatInteger = VanillaFnResolver.instance.localizedNumber.useNumberFormat(units.Integer, false);
+    const FocusDisabled = VanillaComponentResolver.instance.FOCUS_DISABLED;
+    const buttonClass = VanillaComponentResolver.instance.toolButtonTheme.button;
 
-    const [selectedLayout, setSelectedLayout] = useState(null as null | string);
+    const [selectedTemplate, setSelectedTemplate] = useState(null as null | string);
     const [layoutList, setLayoutList] = useState({} as Record<string, Entity>);
     const [selectedTemplateDetails, setSelectedTemplateDetails] = useState(null as null | CityDetailResponse);
     const [currentModal, setCurrentModal] = useState(Modals.NONE);
     const [lastXmlExportedLayoutName, setLastXmlExportedLayoutName] = useState("");
 
 
-    useEffect(() => { LayoutsService.listCityTemplates().then(setLayoutList) }, [selectedLayout])
-    useEffect(() => { LayoutsService.getCityTemplateDetail(selectedLayout!).then(setSelectedTemplateDetails) }, [selectedLayout])
+    useEffect(() => { LayoutsService.listCityTemplates().then(setLayoutList) }, [selectedTemplate])
+    useEffect(() => { LayoutsService.getCityTemplateDetail(selectedTemplate!).then(setSelectedTemplateDetails) }, [selectedTemplate])
     const actions = [
         { className: "negativeBtn", action() { setCurrentModal(Modals.CONFIRMING_DELETE) }, text: T_delete },
         { className: "neutralBtn", action() { setIsRenamingLayout(true) }, text: T_rename },
@@ -56,18 +67,18 @@ export const CityLayoutsTab = (props: Props) => {
 
     ]
     const detailsFields = selectedTemplateDetails ? [{ key: T_usages, value: formatInteger(selectedTemplateDetails.usages) }] : undefined
-  
+
     const exportTemplateCallback = async (fileName?: string) => {
-        if (!fileName || !selectedLayout) return;
-        var filepath = await LayoutsService.exportCityLayoutAsXml(selectedLayout, fileName);
+        if (!fileName || !selectedTemplate) return;
+        var filepath = await LayoutsService.exportCityLayoutAsXml(selectedTemplate, fileName);
         setLastXmlExportedLayoutName(filepath)
         setCurrentModal(Modals.SUCCESS_EXPORTING_TEMPLATE);
     }
 
     const displayingModal = () => {
         switch (currentModal) {
-            case Modals.CONFIRMING_DELETE: return <ConfirmationDialog onConfirm={() => { setCurrentModal(0); LayoutsService.deleteTemplate(selectedLayout!); setSelectedLayout(null) }} onCancel={() => setCurrentModal(0)} message={T_confirmDeleteText} />
-            case Modals.EXPORTING_TEMPLATE: return <WEInputDialog callback={exportTemplateCallback} title={T_exportXmlDialogTitle} promptText={T_exportXmlDialogText} initialValue={selectedLayout!} />
+            case Modals.CONFIRMING_DELETE: return <ConfirmationDialog onConfirm={() => { setCurrentModal(0); LayoutsService.deleteTemplate(selectedTemplate!); setSelectedTemplate(null) }} onCancel={() => setCurrentModal(0)} message={T_confirmDeleteText} />
+            case Modals.EXPORTING_TEMPLATE: return <WEInputDialog callback={exportTemplateCallback} title={T_exportXmlDialogTitle} promptText={T_exportXmlDialogText} initialValue={selectedTemplate!} />
             case Modals.SUCCESS_EXPORTING_TEMPLATE: return <ConfirmationDialog onConfirm={() => { LayoutsService.openExportedFilesFolder(); setCurrentModal(0) }} onCancel={() => setCurrentModal(0)} confirm={T_goToFileFolder} cancel={T_back} message={replaceArgs(T_successMessage, { "name": lastXmlExportedLayoutName })} />
         }
     }
@@ -75,33 +86,63 @@ export const CityLayoutsTab = (props: Props) => {
 
     const [isRenamingLayout, setIsRenamingLayout] = useState(false);
     const onRenameLayout = (x: string) => {
-        LayoutsService.renameCityTemplate(selectedLayout!, x!);
-        setSelectedLayout(x!);
+        LayoutsService.renameCityTemplate(selectedTemplate!, x!);
+        setSelectedTemplate(x!);
     }
     const [isDuplicatingLayout, setIsDuplicatingLayout] = useState(false);
     const onDuplicateLayout = (x: string) => {
-        LayoutsService.duplicateCityTemplate(selectedLayout!, x!);
-        setSelectedLayout(x!);
+        LayoutsService.duplicateCityTemplate(selectedTemplate!, x!);
+        setSelectedTemplate(x!);
     }
+
+    const [alertToDisplay, setAlertToDisplay] = useState(undefined as string | undefined)
+    const [isAskingPathAdd, setIsAskingPathAdd] = useState(false);
+    const onAskPathAdd = async (x?: string) => {
+        if (!x) return;
+        const newTemplateName = await LayoutsService.importAsCityTemplateFromXml(x);
+        if (newTemplateName) {
+            setSelectedTemplate(newTemplateName);
+        } else {
+            setAlertToDisplay(T_addDialogErrorGeneric)
+        }
+    }
+
+    const listActions: ListActionTypeArray = [
+        {
+            isContext: false,
+            onSelect: () => setIsAskingPathAdd(true),
+            src: i_addItem,
+            tooltip: T_addItem,
+            focusKey: FocusDisabled,
+            className: buttonClass
+        }
+    ]
     return <>
-        <WEListWithPreviewTab itemActions={actions} detailsFields={detailsFields} listItems={Object.keys(layoutList)} selectedKey={selectedLayout!} onChangeSelection={setSelectedLayout} >
+        <WEListWithPreviewTab listActions={listActions} itemActions={actions} detailsFields={detailsFields} listItems={Object.keys(layoutList)} selectedKey={selectedTemplate!} onChangeSelection={setSelectedTemplate} >
             <div className="k45_we_tabWithPreview_previewControls">
 
             </div>
         </WEListWithPreviewTab>
-        <StringInputWithOverrideDialog dialogTitle={T_renameDialogTitle} dialogPromptText={T_renameDialogText} dialogOverrideText={T_confirmOverrideText} initialValue={selectedLayout!}
+        <StringInputWithOverrideDialog dialogTitle={T_renameDialogTitle} dialogPromptText={T_renameDialogText} dialogOverrideText={T_confirmOverrideText} initialValue={selectedTemplate!}
             isActive={isRenamingLayout} setIsActive={setIsRenamingLayout}
-            isShortCircuitCheckFn={(x) => !x || x == selectedLayout}
+            isShortCircuitCheckFn={(x) => !x || x == selectedTemplate}
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}
             actionOnSuccess={onRenameLayout}
         />
         <StringInputWithOverrideDialog dialogTitle={T_duplicateDialogTitle} dialogPromptText={T_duplicateDialogText} dialogOverrideText={T_confirmOverrideText}
             isActive={isDuplicatingLayout} setIsActive={setIsDuplicatingLayout}
-            isShortCircuitCheckFn={(x) => !x || x == selectedLayout}
+            isShortCircuitCheckFn={(x) => !x || x == selectedTemplate}
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}
             actionOnSuccess={onDuplicateLayout}
         />
-        <Portal>{displayingModal()}</Portal>
+        <StringInputDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText}
+            isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd}
+            actionOnSuccess={onAskPathAdd}
+        />
+        <Portal>
+            {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissable={false} message={alertToDisplay} confirm={"OK"} />}
+            {displayingModal()}
+        </Portal>
     </>
 };
 

@@ -77,9 +77,9 @@ export const ContextMenuButton = (props: ContextMenuButtonProps) => {
                 setMenuCss({ top: menuPosition.top + menuRef.current?.offsetHeight + 3, left: menuPosition.left });
                 break;
         }
-    }, [menuRef.current?.offsetHeight, menuRef.current?.offsetWidth, menuPosition.left, menuPosition.top])
+    }, [menuRef.current?.offsetHeight, menuRef.current?.offsetWidth, menuPosition.left, menuPosition.top, window.innerHeight, window.innerWidth, props.menuDirection])
 
- 
+
     const handleClickOutside = (event: MouseEvent) => {
         if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
             setMenuOpen(false);

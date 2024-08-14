@@ -6,7 +6,6 @@ using BelzontWE.Font;
 using BelzontWE.Font.Utility;
 using Colossal.Entities;
 using Colossal.Mathematics;
-using Colossal.Serialization.Entities;
 using Kwytto.Utils;
 using System;
 using System.Runtime.InteropServices;
@@ -19,7 +18,6 @@ namespace BelzontWE
 {
     public struct WETextData : IDisposable, IComponentData
     {
-        public const uint CURRENT_VERSION = 6;
         public const int DEFAULT_DECAL_FLAGS = 8;
         //8 = Exclude surface areas
         //4 = Accept decals
@@ -371,91 +369,6 @@ namespace BelzontWE
 
 
         #region Serialize
-        public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
-        {
-            writer.Write(CURRENT_VERSION);
-            writer.Write(TargetEntity);
-            writer.Write((byte)shader);
-            writer.Write(offsetPosition);
-            writer.Write(offsetRotation);
-            writer.Write(scale);
-            writer.Write(color);
-            writer.Write(emissiveColor);
-            writer.Write(emissiveIntensity);
-            writer.Write(metallic);
-            writer.Write(smoothness);
-            writer.Write(m_text);
-            writer.Write(ItemName);
-            writer.Write(coatStrength);
-            writer.Write(Formulae ?? "");
-            writer.Write((ushort)TextType);
-            writer.Write(Atlas);
-            writer.Write(parentEntity);
-            writer.Write(fontName);
-            writer.Write(maxWidthMeters);
-            writer.Write(decalFlags);
-            writer.Write(useAbsoluteSizeEditing);
-        }
-
-        public void Deserialize<TReader>(TReader reader) where TReader : IReader
-        {
-            reader.Read(out uint version);
-            if (version > CURRENT_VERSION)
-            {
-                LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
-                return;
-            }
-            reader.Read(out targetEntity);
-            reader.Read(out byte shader);
-            this.shader = (WEShader)shader;
-            reader.Read(out offsetPosition);
-            reader.Read(out offsetRotation);
-            reader.Read(out scale);
-            reader.Read(out color);
-            reader.Read(out emissiveColor);
-            reader.Read(out emissiveIntensity);
-            reader.Read(out metallic);
-            reader.Read(out smoothness);
-            reader.Read(out m_text);
-            if (version < 6) reader.Read(out Entity _);
-            reader.Read(out itemName);
-            reader.Read(out coatStrength);
-            reader.Read(out string formulae);
-            Formulae = formulae.TrimToNull();
-            reader.Read(out short type);
-            this.type = (WESimulationTextType)type;
-            reader.Read(out string atlas);
-            Atlas = atlas;
-            if (version >= 1)
-            {
-                reader.Read(out parentEntity);
-            }
-            else
-            {
-                parentEntity = targetEntity;
-            }
-            if (version >= 2)
-            {
-                reader.Read(out fontName);
-            }
-            if (version >= 3)
-            {
-                reader.Read(out maxWidthMeters);
-            }
-            if (version >= 4)
-            {
-                reader.Read(out decalFlags);
-            }
-            else
-            {
-                decalFlags = DEFAULT_DECAL_FLAGS;
-            }
-            if (version >= 5)
-            {
-                reader.Read(out useAbsoluteSizeEditing);
-            }
-        }
-
         public WETextDataXml ToDataXml(EntityManager em)
         {
             return new WETextDataXml
@@ -518,8 +431,9 @@ namespace BelzontWE
                 Smoothness = xml.style.smoothness,
                 maxWidthMeters = xml.maxWidthMeters,
                 decalFlags = xml.decalFlags,
-                fontName = xml.fontName ?? ""
+                fontName = xml.fontName?.Trim() ?? ""
             };
+            FontServer.Instance.EnsureFont(weData.fontName);
             weData.UpdateEffectiveText(em, target);
             return weData;
         }

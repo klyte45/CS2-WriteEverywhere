@@ -39,11 +39,11 @@ namespace BelzontWE
                     var prefabRef = prefabRefs[i];
                     if (m_prefabDataLkp.TryGetComponent(prefabRef.m_Prefab, out var prefabData) && m_indexesWithLayout.TryGetValue(prefabData.m_Index, out Entity newTemplate))
                     {
-                        if (!m_prefabLayoutLkp.TryGetComponent(newTemplate, out var layoutData) || layoutData.templateRef != newTemplate)
+                        if (!m_prefabLayoutLkp.TryGetComponent(entity, out var layoutData) || layoutData.templateRef != newTemplate)
                         {
-                            if (m_prefabLayoutLkp.TryGetComponent(newTemplate, out var oldComponent))
+                            if (m_prefabLayoutLkp.HasComponent(entity))
                             {
-                                DestroyRecursive(oldComponent.childEntity, unfilteredChunkIndex);
+                                DestroyRecursive(layoutData.childEntity, unfilteredChunkIndex);
                                 m_CommandBuffer.RemoveComponent<WETemplateForPrefab>(unfilteredChunkIndex, entities[i]);
                             }
                             var childEntity = WELayoutUtility.DoCloneTextItemReferenceSelf(newTemplate, entities[i], ref m_TextDataLkp, ref m_subRefLkp, unfilteredChunkIndex, m_CommandBuffer, true);

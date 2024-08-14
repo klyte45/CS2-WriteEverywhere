@@ -1,8 +1,6 @@
 ﻿using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
-
-
 #if BURST
 using Unity.Burst;
 #endif
@@ -17,6 +15,7 @@ namespace BelzontWE
         private unsafe struct WEPlaceholderTemplateUpdaterJob : IJobChunk
         {
             public EntityTypeHandle m_EntityType;
+            public EntityStorageInfoLookup m_EntityLkp;
             public ComponentTypeHandle<WETemplateUpdater> m_prefabUpdaterHdl;
             public NativeHashSet<Entity> m_obsoleteTemplateList;
             public EntityCommandBuffer m_CommandBuffer;
@@ -27,7 +26,7 @@ namespace BelzontWE
 
                 for (int i = 0; i < updaters.Length; i++)
                 {
-                    if (m_obsoleteTemplateList.Contains(updaters[i].templateEntity))
+                    if (m_obsoleteTemplateList.Contains(updaters[i].templateEntity) || !m_EntityLkp.Exists(updaters[i].templateEntity))
                     {
                         m_CommandBuffer.AddComponent<WEWaitingRenderingPlaceholder>(entities[i]);
                     }

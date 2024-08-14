@@ -9,6 +9,7 @@ import { WEInputDialog } from "../common/WEInputDialog";
 import { getOverrideCheckFn } from "utils/getOverrideCheckFn";
 import { ContextButtonMenuItemArray, ContextMenuButton } from "common/ContextMenuButton";
 import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
+import { StringInputDialog } from "common/StringInputDialog";
 
 
 
@@ -53,12 +54,20 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const T_saveAsCityTemplate = translate("textHierarchyWindow.saveAsCityTemplate"); //"Appearance Settings"
 
     const T_importOrLoad = translate("textHierarchyWindow.importOrLoad"); //"Appearance Settings"
-    const T_loadFromCityTemplate = translate("textHierarchyWindow.loadFromCityTemplate"); //"Appearance Settings"
-    const T_importLayoutXml = translate("textHierarchyWindow.importLayoutXml"); //"Appearance Settings"
 
     const T_confirmOverrideSaveAsCityTemplate = translate("textHierarchyWindow.confirmOverrideCityTemplateQuestion"); //"Appearance Settings"
     const T_addItemDialogTitle = translate("template.saveCityDialog.title")
     const T_addItemDialogPromptText = translate("template.saveCityDialog.dialogText")
+
+    const T_loadingFromXmlDialogTitle = translate("template.loadXmlDialog.title")
+    const T_loadingFromXmlDialogPromptText = translate("template.loadXmlDialog.dialogText")
+
+    const T_importLayoutXmlToRoot = translate("textHierarchyWindow.importLayoutXml.toRoot");
+    const T_importLayoutXmlAsSibling = translate("textHierarchyWindow.importLayoutXml.asSibling");
+    const T_importLayoutXmlAsChild = translate("textHierarchyWindow.importLayoutXml.asChild");
+    const T_loadFromCityTemplateToRoot = translate("textHierarchyWindow.loadFromCityTemplate.toRoot"); //"Appearance Settings"
+    const T_loadFromCityTemplateAsSibling = translate("textHierarchyWindow.loadFromCityTemplate.asSibling"); //"Appearance Settings"
+    const T_loadFromCityTemplateAsChild = translate("textHierarchyWindow.loadFromCityTemplate.asChild"); //"Appearance Settings"
 
     const defaultPosition = { x: 20 / window.innerWidth, y: 100 / window.innerHeight }
 
@@ -67,7 +76,6 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const Button = VanillaComponentResolver.instance.ToolButton;
     const FocusDisabled = VanillaComponentResolver.instance.FOCUS_DISABLED;
     const buttonClass = VanillaComponentResolver.instance.toolButtonTheme.button;
-
 
     const [clipboardIsCut, setClipboardIsCut] = useState(false)
     const doPaste = async (parent: Entity) => {
@@ -121,7 +129,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
 
 
     const [savingCityTemplate, setSavingCityTemplate] = useState(false)
-   
+
     const onSaveTemplate = async (x: string) => {
         if (!await LayoutsService.saveAsCityTemplate(wps.CurrentSubEntity.value!, x!)) {
             setAlertToDisplay(translate("template.saveCityDialog.error.1"))
@@ -143,7 +151,31 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const [alertToDisplay, setAlertToDisplay] = useState(void 0 as string | undefined);
 
 
+    const [loadingFromXml, setLoadingFromXml] = useState(false)
+    const [relativeParentToLoad, setRelativeParentToLoad] = useState(void 0 as Entity | undefined)
+
+    const onLoadFromXml = async (x?: string) => {
+        if (!x) return;
+        if (!await LayoutsService.loadAsChildFromXml(relativeParentToLoad!, x)) {
+            setAlertToDisplay(translate("template.loadXmlDialog.error.1"))
+        } else {
+
+        }
+    }
+
+
+    const [loadingFromCity, setLoadingFromCity] = useState(false)
+    const onLoadFromCity = async (x?: string) => {
+        if (!x) return;
+        await LayoutsService.loadAsChildFromCityTemplate(relativeParentToLoad!, x)
+    }
+
     const pasteMenuItems: ContextButtonMenuItemArray = [
+        {
+            label: T_pasteAtRoot,
+            action: () => doPaste(wps.CurrentEntity.value!),
+            disabled: !wps.CurrentEntity.value?.Index
+        },
         {
             label: T_pasteAsChildren,
             action: () => doPaste(wps.CurrentSubEntity.value!),
@@ -154,11 +186,6 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             action: () => doPaste(currentParentNode!),
             disabled: !currentParentNode
         },
-        {
-            label: T_pasteAtRoot,
-            action: () => doPaste(wps.CurrentEntity.value!),
-            disabled: !wps.CurrentEntity.value?.Index
-        },
         null,
         {
             label: T_clearClipboard,
@@ -167,6 +194,10 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     ]
 
     const addNodeMenu: ContextButtonMenuItemArray = [
+        {
+            label: T_addEmptyRoot,
+            action: () => WorldPickerService.addEmpty()
+        },
         {
             label: T_addEmptyChild,
             action: () => WorldPickerService.addEmpty(wps.CurrentSubEntity.value!),
@@ -177,10 +208,6 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             action: () => WorldPickerService.addEmpty(currentParentNode!),
             disabled: !currentParentNode
         },
-        {
-            label: T_addEmptyRoot,
-            action: () => WorldPickerService.addEmpty()
-        }
     ]
 
     const saveNodeMenu: ContextButtonMenuItemArray = [
@@ -199,15 +226,13 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     ]
 
     const loadNodeMenu: ContextButtonMenuItemArray = [
-        {
-            label: T_loadFromCityTemplate,
-            action: () => { },
-            disabled: true
-        },
-        {
-            label: T_importLayoutXml,
-            action: () => LayoutsService.loadAsChildFromXml(wps.CurrentEntity.value!, "teste")
-        }
+        { label: T_importLayoutXmlToRoot, disabled: !wps.CurrentEntity.value?.Index, action: () => { setRelativeParentToLoad(wps.CurrentEntity.value!); setLoadingFromXml(true) }, },
+        { label: T_importLayoutXmlAsChild, disabled: !wps.CurrentSubEntity.value?.Index, action: () => { setRelativeParentToLoad(wps.CurrentSubEntity.value!); setLoadingFromXml(true) }, },
+        { label: T_importLayoutXmlAsSibling, disabled: !currentParentNode, action: () => { setRelativeParentToLoad(currentParentNode!); setLoadingFromXml(true) }, },
+        null,
+        { label: T_loadFromCityTemplateToRoot, disabled: true, action: () => { setRelativeParentToLoad(wps.CurrentEntity.value!); setLoadingFromCity(true) } },
+        { label: T_loadFromCityTemplateAsChild, disabled: true, action: () => { setRelativeParentToLoad(wps.CurrentSubEntity.value!); setLoadingFromCity(true) } },
+        { label: T_loadFromCityTemplateAsSibling, disabled: true, action: () => { setRelativeParentToLoad(currentParentNode!); setLoadingFromCity(true) } },
     ]
 
     return <Portal>
@@ -239,6 +264,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             isShortCircuitCheckFn={(x) => !x || !wps.CurrentSubEntity.value}
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}
             actionOnSuccess={onSaveTemplate}
+        />
+        <StringInputDialog dialogTitle={T_loadingFromXmlDialogTitle} dialogPromptText={T_loadingFromXmlDialogPromptText} isActive={loadingFromXml} setIsActive={setLoadingFromXml} actionOnSuccess={onLoadFromXml}
         />
     </Portal>;
 };
