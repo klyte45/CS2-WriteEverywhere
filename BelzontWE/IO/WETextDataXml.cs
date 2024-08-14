@@ -23,7 +23,7 @@ namespace BelzontWE
         [XmlAttribute] public string formulae;
         [XmlAttribute] public string fontName;
         [XmlAttribute][DefaultValue(0f)] public float maxWidthMeters;
-        [XmlAttribute][DefaultValue(WETextData.DEFAULT_DECAL_FLAGS)] public int decalFlags;
+        [XmlAttribute][DefaultValue(WETextData.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextData.DEFAULT_DECAL_FLAGS;
 
         public bool ShouldSerializeshader() => textType != WESimulationTextType.Placeholder;
         public bool ShouldSerializetext() => textType == WESimulationTextType.Text;
@@ -36,8 +36,8 @@ namespace BelzontWE
 
         public class WETextDataStyleXml
         {
-            [XmlIgnore] public Color32 color ;
-            [XmlIgnore] public Color32 emissiveColor ;
+            [XmlIgnore] public Color32 color;
+            [XmlIgnore] public Color32 emissiveColor;
             [XmlAttribute][DefaultValue("00000000")] public string colorRGBA { get => color.ToRGBA(); set => color = ColorExtensions.FromRGBA(value); }
             [XmlAttribute][DefaultValue("00000000")] public string emissiveColorRGBA { get => emissiveColor.ToRGBA(); set => emissiveColor = ColorExtensions.FromRGBA(value); }
             [XmlAttribute][DefaultValue(0f)] public float metallic;

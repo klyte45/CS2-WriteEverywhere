@@ -8,6 +8,7 @@ import { translate } from "../utils/translate";
 import { WETextAppearenceSettings } from "./WETextAppearenceSettings";
 import { WETextValueSettings } from "./WETextValueSettings";
 import { WETextHierarchyView } from "./WETextHierarchyView";
+import { WETextShaderProperties } from "./WETextShaderProperties";
 
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
@@ -21,6 +22,7 @@ const i_moveModeAll = "coui://uil/Standard/ArrowsMoveAll.svg";
 const i_moveModeHorizontal = "coui://uil/Standard/ArrowsMoveLeftRight.svg";
 const i_moveModeVertical = "coui://uil/Standard/ArrowsMoveUpDown.svg";
 const i_AppearenceBtnIcon = "coui://uil/Standard/ColorPalette.svg";
+const i_ShaderBtnIcon = "coui://uil/Standard/HouseAlternative.svg";
 
 const iarr_moveMode = [i_moveModeAll, i_moveModeHorizontal, i_moveModeVertical]
 
@@ -58,6 +60,7 @@ const WEWorldPickerToolPanel = () => {
     const T_picker = translate("toolOption.picker.tooltip"); //"Pick another object"
     const T_lockCamera = translate("toolOption.lockCamera.tooltip"); //"Lock camera to editing plane area and angle"
     const T_AppearenceBtn = translate("toolOption.AppearenceBtn.tooltip"); //"Appearance settings"
+    const T_ShaderBtn = translate("toolOption.ShaderBtn.tooltip"); //"Shader settings"
 
     const Tarr_moveMode = [
         `${translate("toolOption.moveMode.tooltip")} ${translate("toolOption.moveMode.descriptionBoth")}`,// "Toggle between modes to lock/unlock a axis in current plane. Currently: Move in any direction",
@@ -74,6 +77,7 @@ const WEWorldPickerToolPanel = () => {
     }, [buildIdx])
 
     const [displayAppearenceWindow, setDisplayAppearenceWindow] = useState(false);
+    const [displayShaderWindow, setDisplayShaderWindow] = useState(false);
 
 
     const wps = WorldPickerService.instance;
@@ -119,7 +123,7 @@ const WEWorldPickerToolPanel = () => {
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 2} onSelect={() => wps.CurrentPlaneMode.set(2)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XZ}></VanillaComponentResolver.instance.ToolButton>
                         <div style={{ width: "10rem" }}></div>
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentMoveMode.value > 0} onSelect={() => wps.CurrentMoveMode.set((wps.CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[wps.CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[wps.CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
-                        <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>                        
+                        <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
                     </VanillaComponentResolver.instance.Section>
                     <VectorSectionEditable title={L_position}
                         valueGetter={() => wps.CurrentPosition.value?.map(x => x.toFixed(3))}
@@ -145,6 +149,7 @@ const WEWorldPickerToolPanel = () => {
             <VanillaComponentResolver.instance.Section title={L_actions}>
                 <>
                     {currentItemIsValid && <>
+                        <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayShaderWindow(!displayShaderWindow)} selected={displayShaderWindow} src={i_ShaderBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ShaderBtn} />
                         <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
                         <div style={{ width: "10rem" }}></div>
                     </>
@@ -153,6 +158,7 @@ const WEWorldPickerToolPanel = () => {
                 </>
             </VanillaComponentResolver.instance.Section>
             {currentItemIsValid && displayAppearenceWindow && <WETextAppearenceSettings />}
+            {currentItemIsValid && displayShaderWindow && <WETextShaderProperties />}
             {currentItemIsValid && <WETextValueSettings />}
             {<WETextHierarchyView clipboard={clipboard} setClipboard={setClipboard} />}
         </>
