@@ -1,13 +1,13 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font.Utility;
-using Colossal.OdinSerializer.Utilities;
 using Game;
 using Game.SceneFlow;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Unity.Collections;
 using UnityEngine;
 using WriteEverywhere.Layout;
 
@@ -56,9 +56,9 @@ namespace WriteEverywhere.Sprites
         public const string PROTOCOL_FOLDER_ASSET = "assetFolder://";
         private const string INTERNAL_ATLAS_NAME = @"\/INTERNAL\/";
 
-        private Dictionary<string, Dictionary<string, WEImageInfo>> LocalAtlases { get; } = new Dictionary<string, Dictionary<string, WEImageInfo>>();
+        private Dictionary<FixedString32Bytes, Dictionary<FixedString32Bytes, WEImageInfo>> LocalAtlases { get; } = new();
         //   private Dictionary<string, Dictionary<string, WEImageInfo>> AssetAtlases { get; } = new Dictionary<string, Dictionary<string, WEImageInfo>>();
-        private Dictionary<string, Dictionary<string, BasicRenderInformation>> LocalAtlasesCache { get; } = new Dictionary<string, Dictionary<string, BasicRenderInformation>>();
+        private Dictionary<FixedString32Bytes, Dictionary<FixedString32Bytes, BasicRenderInformation>> LocalAtlasesCache { get; } = new();
         //  private Dictionary<string, Dictionary<string, BasicRenderInformation>> AssetAtlasesCache { get; } = new Dictionary<string, Dictionary<string, BasicRenderInformation>>();
 
 
@@ -66,14 +66,14 @@ namespace WriteEverywhere.Sprites
 
         public string[] ListLocalAtlases()
         {
-            return LocalAtlases.Where(x => x.Key != INTERNAL_ATLAS_NAME && x.Value.Count > 0).Select(x => x.Key).ToArray();
+            return LocalAtlases.Where(x => x.Key != INTERNAL_ATLAS_NAME && x.Value.Count > 0).Select(x => x.Key.ToString()).ToArray();
         }
         public string[] ListLocalAtlasImages(string atlasName)
         {
-            return LocalAtlases.TryGetValue(atlasName ?? "", out var arr) ? arr.Keys.ToArray() : new string[0];
+            return LocalAtlases.TryGetValue(atlasName ?? "", out var arr) ? arr.Keys.Select(x => x.ToString()).ToArray() : new string[0];
         }
 
-        public void GetSpriteLib(string atlasName, out Dictionary<string, WEImageInfo> result)
+        public void GetSpriteLib(string atlasName, out Dictionary<FixedString32Bytes, WEImageInfo> result)
         {
             if (!LocalAtlases.TryGetValue(atlasName ?? string.Empty, out result))
             {
@@ -81,7 +81,7 @@ namespace WriteEverywhere.Sprites
             }
         }
 
-        public string[] GetSpritesFromLocalAtlas(string atlasName) => LocalAtlases.TryGetValue(atlasName ?? string.Empty, out Dictionary<string, WEImageInfo> atlas) ? atlas.Keys.ToArray() : null;
+        public string[] GetSpritesFromLocalAtlas(FixedString32Bytes atlasName) => LocalAtlases.TryGetValue(atlasName, out var atlas) ? atlas.Keys.Select(x => x.ToString()).ToArray() : null;
         //public string[] GetSpritesFromAssetAtlas(string packageName) => AssetAtlases.TryGetValue(packageName, out Dictionary<string, WEImageInfo> atlas) ? atlas.Keys.ToArray() : null;
         //public bool HasAssetAtlas(IIndexedPrefabData prefabData) => AssetAtlases.ContainsKey(AssetEntryNameFromData(prefabData));
 
@@ -89,32 +89,32 @@ namespace WriteEverywhere.Sprites
         {
             return GetFromLocalAtlases(INTERNAL_ATLAS_NAME, image.ToString());
         }
-        public BasicRenderInformation GetFromLocalAtlases(string atlasName, string spriteName, bool fallbackOnInvalid = false)
+        public BasicRenderInformation GetFromLocalAtlases(FixedString32Bytes atlasName, FixedString32Bytes spriteName, bool fallbackOnInvalid = false)
         {
-            if (spriteName.IsNullOrWhitespace())
+            if (spriteName.Trim().Length == 0)
             {
                 return fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage) : null;
             }
 
-            if (LocalAtlasesCache.TryGetValue(atlasName ?? string.Empty, out Dictionary<string, BasicRenderInformation> resultDicCache) && resultDicCache.TryGetValue(spriteName ?? "", out BasicRenderInformation cachedInfo))
+            if (LocalAtlasesCache.TryGetValue(atlasName, out var resultDicCache) && resultDicCache.TryGetValue(spriteName, out BasicRenderInformation cachedInfo))
             {
                 return cachedInfo;
             }
-            if (!LocalAtlases.TryGetValue(atlasName ?? string.Empty, out Dictionary<string, WEImageInfo> atlas) || !atlas.ContainsKey(spriteName))
+            if (!LocalAtlases.TryGetValue(atlasName, out var atlas) || !atlas.ContainsKey(spriteName))
             {
                 return fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage) : null;
             }
             if (resultDicCache == null)
             {
-                LocalAtlasesCache[atlasName ?? string.Empty] = new Dictionary<string, BasicRenderInformation>();
+                LocalAtlasesCache[atlasName] = new();
             }
-            actionQueue.Enqueue(() => LocalAtlasesCache[atlasName ?? string.Empty][spriteName] = CreateItemAtlasCoroutine(LocalAtlases, atlasName ?? string.Empty, spriteName) ?? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage));
-            return LocalAtlasesCache[atlasName ?? string.Empty][spriteName] = null;
+            actionQueue.Enqueue(() => LocalAtlasesCache[atlasName][spriteName] = CreateItemAtlasCoroutine(LocalAtlases, atlasName, spriteName) ?? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage));
+            return LocalAtlasesCache[atlasName][spriteName] = null;
 
         }
-        public BasicRenderInformation GetSlideFromLocal(string atlasName, Func<int, int> idxFunc, bool fallbackOnInvalid = false) => !LocalAtlases.TryGetValue(atlasName ?? string.Empty, out Dictionary<string, WEImageInfo> atlas)
+        public BasicRenderInformation GetSlideFromLocal(FixedString32Bytes atlasName, Func<int, int> idxFunc, bool fallbackOnInvalid = false) => !LocalAtlases.TryGetValue(atlasName, out var atlas)
                 ? fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidFolder) : null
-                : GameManager.instance.gameMode == Game.GameMode.Editor ? GetFromLocalAtlases(WEImages.FrameBorder) : GetFromLocalAtlases(atlasName ?? string.Empty, atlas.Keys.ElementAt(idxFunc(atlas.Count - 1) + 1), fallbackOnInvalid);
+                : GameManager.instance.gameMode == Game.GameMode.Editor ? GetFromLocalAtlases(WEImages.FrameBorder) : GetFromLocalAtlases(atlasName, atlas.Keys.ElementAt(idxFunc(atlas.Count - 1) + 1), fallbackOnInvalid);
 
         //public BasicRenderInformation GetSlideFromAsset(IIndexedPrefabData prefabData, Func<int, int> idxFunc, bool fallbackOnInvalid = false)
         //    => !AssetAtlases.TryGetValue(AssetEntryNameFromData(prefabData), out Dictionary<string, WEImageInfo> atlas)
@@ -147,7 +147,7 @@ namespace WriteEverywhere.Sprites
         //    StartCoroutine(CreateItemAtlasCoroutine(AssetAtlases, AssetAtlasesCache, assetId, spriteName));
         //    return null;
         //}
-        private BasicRenderInformation CreateItemAtlasCoroutine<T>(Dictionary<T, Dictionary<string, WEImageInfo>> spriteDict, T assetId, string spriteName)
+        private BasicRenderInformation CreateItemAtlasCoroutine<T>(Dictionary<T, Dictionary<FixedString32Bytes, WEImageInfo>> spriteDict, T assetId, FixedString32Bytes spriteName)
         {
             if (!spriteDict.TryGetValue(assetId, out var targetAtlas))
             {
@@ -169,23 +169,6 @@ namespace WriteEverywhere.Sprites
         }
         #endregion
 
-        #region Filtering
-        internal string[] FindByInLocal(string targetAtlas, string searchName, out Dictionary<string, WEImageInfo> atlas) => LocalAtlases.TryGetValue(targetAtlas ?? string.Empty, out atlas)
-              ? atlas.Keys.Where((x, i) => x.ToLower().Contains(searchName.ToLower())).Select(x => $"{(targetAtlas.IsNullOrWhitespace() ? "<ROOT>" : targetAtlas)}/{x}").OrderBy(x => x).ToArray()
-              : (new string[0]);
-        internal string[] FindByInLocalSimple(string targetAtlas, string searchName, out Dictionary<string, WEImageInfo> atlas) => LocalAtlases.TryGetValue(targetAtlas ?? string.Empty, out atlas)
-              ? atlas.Keys.Where((x, i) => x.ToLower().Contains(searchName.ToLower())).OrderBy(x => x).ToArray()
-              : (new string[0]);
-
-        //internal string[] FindByInAssetSimple(IIndexedPrefabData prefabData, string searchName, out Dictionary<string, WEImageInfo> atlas)
-        //    => AssetAtlases.TryGetValue(AssetEntryNameFromData(prefabData), out atlas)
-        //        ? atlas.Keys.Where((x, i) => x.ToLower().Contains(searchName.ToLower())).OrderBy(x => x).ToArray()
-        //        : (new string[0]);
-        internal string[] FindByInLocalFolders(string searchName) => LocalAtlases.Keys.Select(x => x == string.Empty ? "<ROOT>" : x).Where(x => x.ToLower().Contains(searchName.ToLower())).OrderBy(x => x).ToArray();
-
-
-        #endregion
-
         #region Loading
         public void LoadImagesFromLocalFolders()
         {
@@ -200,14 +183,14 @@ namespace WriteEverywhere.Sprites
                 if (isRoot || (GameManager.instance.gameMode != Game.GameMode.Editor && spritesToAdd.Count > 0))
                 {
                     var atlasName = isRoot ? string.Empty : Path.GetFileNameWithoutExtension(dir);
-                    LocalAtlases[atlasName] = new Dictionary<string, WEImageInfo>();
+                    LocalAtlases[atlasName] = new();
                     foreach (var entry in spritesToAdd)
                     {
                         LocalAtlases[atlasName][entry.Name] = entry;
                     }
                 }
             }
-            LocalAtlases[INTERNAL_ATLAS_NAME] = new Dictionary<string, WEImageInfo>();
+            LocalAtlases[INTERNAL_ATLAS_NAME] = new();
             foreach (var img in Enum.GetValues(typeof(WEImages)).Cast<WEImages>())
             {
                 LocalAtlases[INTERNAL_ATLAS_NAME][img.ToString()] = new WEImageInfo(null) { Texture = KResourceLoader.LoadTextureMod(img.ToString()) };

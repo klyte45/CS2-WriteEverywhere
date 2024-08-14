@@ -216,6 +216,7 @@ namespace BelzontWE
                 }
             }
             UpdateFontSystem(DefaultFont);
+            Dependency.Complete();
             if (fontsChanged) OnFontsLoadedChanged?.Invoke();
             requiresUpdateParameter = false;
         }

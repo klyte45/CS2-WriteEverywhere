@@ -1,6 +1,7 @@
 ﻿using BelzontWE;
 using BelzontWE.Font;
 using BelzontWE.Font.Utility;
+using Unity.Collections;
 using UnityEngine;
 
 namespace WriteEverywhere.Sprites
@@ -16,10 +17,10 @@ namespace WriteEverywhere.Sprites
             1,
         };
 
-        public static BasicRenderInformation GenerateBri(string refName, Texture2D tex)
+        public static BasicRenderInformation GenerateBri(FixedString32Bytes refName, Texture2D tex)
         {
             var proportion = tex.width / (float)tex.height;
-            var bri = new BasicRenderInformation(refName,
+            var bri = new BasicRenderInformation(refName.ToString(),
                 new[]
                     {
                         new Vector3(-.5f * proportion, -.5f, 0f),

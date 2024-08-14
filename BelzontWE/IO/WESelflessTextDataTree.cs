@@ -13,7 +13,6 @@ namespace BelzontWE
 
         public static WESelflessTextDataTree FromEntity(Entity e, EntityManager em)
         {
-            if (!em.TryGetComponent<WETextData>(e, out var weTextData)) return default;
             var result = new WESelflessTextDataTree();
             if (em.TryGetBuffer<WESubTextRef>(e, true, out var subTextData))
             {

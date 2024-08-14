@@ -17,10 +17,12 @@ using UnityEngine;
 
 namespace BelzontWE
 {
-    public struct WETextData : ISerializable, IDisposable, IComponentData
+    public struct WETextData : IDisposable, IComponentData
     {
         public const uint CURRENT_VERSION = 6;
-        public const int DEFAULT_DECAL_FLAGS = 12;
+        public const int DEFAULT_DECAL_FLAGS = 8;
+        //8 = Exclude surface areas
+        //4 = Accept decals
         public unsafe static int Size => sizeof(WETextData);
 
 
@@ -36,10 +38,9 @@ namespace BelzontWE
         private float emissiveExposureWeight;
         private float coatStrength;
         private WESimulationTextType type;
-        private GCHandle atlas;
+        private FixedString32Bytes atlas;
         public readonly FixedString512Bytes Text512 => m_text;
         private FixedString512Bytes formulaeHandlerStr;
-        private GCHandle formulaeHandlerFn;
         private bool loadingFnDone;
         private FixedString32Bytes fontName;
         private Entity targetEntity;
@@ -162,13 +163,12 @@ namespace BelzontWE
                 EffectiveText = value;
             }
         }
-        public string Atlas
+        public FixedString32Bytes Atlas
         {
-            readonly get => atlas.IsAllocated ? atlas.Target as string ?? "" : "";
+            readonly get => atlas;
             set
             {
-                if (atlas.IsAllocated) atlas.Free();
-                atlas = GCHandle.Alloc(value);
+                atlas = value;
                 if (type == WESimulationTextType.Image && basicRenderInformation.IsAllocated)
                 {
                     basicRenderInformation.Free();
@@ -253,18 +253,9 @@ namespace BelzontWE
             get => formulaeHandlerStr.ToString();
             private set => formulaeHandlerStr = value ?? "";
         }
-        public bool HasFormulae => formulaeHandlerFn.IsAllocated;
         public bool HasBRI => basicRenderInformation.IsAllocated;
         public Bounds3 Bounds { get; private set; }
-        private Func<EntityManager, Entity, string> FormulaeFn
-        {
-            get => formulaeHandlerFn.IsAllocated ? formulaeHandlerFn.Target as Func<EntityManager, Entity, string> : null;
-            set
-            {
-                if (formulaeHandlerFn.IsAllocated) formulaeHandlerFn.Free();
-                if (value != null) formulaeHandlerFn = GCHandle.Alloc(value);
-            }
-        }
+        private readonly Func<EntityManager, Entity, string> FormulaeFn => WEFormulaeHelper.GetCached(formulaeHandlerStr);
 
         public FixedString32Bytes ItemName
         {
@@ -327,25 +318,23 @@ namespace BelzontWE
             }
             return this;
         }
+
         public void Dispose()
         {
-            basicRenderInformation.Free();
-            materialBlockPtr.Free();
-            formulaeHandlerFn.Free();
-            atlas.Free();
+            if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
+            if (materialBlockPtr.IsAllocated) materialBlockPtr.Free();
+            basicRenderInformation = default;
+            materialBlockPtr = default;
         }
 
-
-        public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
+        public WETextData OnPostInstantiate()
         {
-            var result = WEFormulaeHelper.SetFormulae(newFormulae, out errorFmtArgs, out var formulaeStr, out var resultFormulaeFn);
-            if (result == 0)
-            {
-                Formulae = formulaeStr;
-                FormulaeFn = resultFormulaeFn;
-            }
-            return result;
+            basicRenderInformation = default;
+            materialBlockPtr = default;
+            return this;
         }
+
+        public byte SetFormulae(string newFormulae, out string[] errorFmtArgs) => WEFormulaeHelper.SetFormulae(newFormulae ?? "", out errorFmtArgs, out formulaeHandlerStr, out var resultFormulaeFn);
 
         public bool UpdateEffectiveText(EntityManager em, Entity geometryEntity)
         {
@@ -365,19 +354,6 @@ namespace BelzontWE
             return EffectiveText.ToString() != oldEffText;
         }
 
-        //public static Entity GetTargetEntityEffective2(Entity target, EntityManager em, bool fullRecursive = false)
-        //{
-        //    var result = em.TryGetComponent<WETextData>(target, out var weData)
-        //        ? weData.TargetEntity == target && weData.ParentEntity != target
-        //            ? GetTargetEntityEffective(weData.ParentEntity, em)
-        //            : weData.TargetEntity != target && weData.TargetEntity != Entity.Null
-        //            ? GetTargetEntityEffective(weData.TargetEntity, em)
-        //            : target
-        //        : target;
-
-        //    LogUtils.DoLog($"PARENT FOR {target} => {result}");
-        //    return result;
-        //}
         public static Entity GetTargetEntityEffective(Entity target, EntityManager em, bool fullRecursive = false)
         {
             return em.TryGetComponent<WETextData>(target, out var weData)
@@ -393,13 +369,6 @@ namespace BelzontWE
 
 
 
-        public void OnPostInstantiate()
-        {
-            formulaeHandlerFn = formulaeHandlerFn.IsAllocated ? GCHandle.Alloc(formulaeHandlerFn.Target) : default;
-            atlas = atlas.IsAllocated ? GCHandle.Alloc(atlas.Target) : default;
-            basicRenderInformation = default;
-            materialBlockPtr = default;
-        }
 
         #region Serialize
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
@@ -496,11 +465,12 @@ namespace BelzontWE
                 scale = (Vector3Xml)scale,
                 itemName = ItemName.ToString(),
                 shader = shader,
-                atlas = Atlas,
+                atlas = Atlas.ToString(),
                 formulae = Formulae,
                 text = Text,
                 textType = TextType,
                 maxWidthMeters = maxWidthMeters,
+                decalFlags = DecalFlags,
                 fontName = fontName.ToString(),
                 style = new WETextDataXml.WETextDataStyleXml
                 {
@@ -547,7 +517,8 @@ namespace BelzontWE
                 Metallic = xml.style.metallic,
                 Smoothness = xml.style.smoothness,
                 maxWidthMeters = xml.maxWidthMeters,
-                decalFlags = xml.decalFlags
+                decalFlags = xml.decalFlags,
+                fontName = xml.fontName ?? ""
             };
             weData.UpdateEffectiveText(em, target);
             return weData;

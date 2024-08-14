@@ -72,7 +72,7 @@ namespace BelzontWE
             var tree = WETextDataTree.FromXML(File.ReadAllText(targetFilename));
             if (tree == null) return false;
 
-            WELayoutUtility.CreateEntityFromTree(parent, tree, EntityManager);
+            WELayoutUtility.CreateEntityFromTree(tree, parent, EntityManager);
             return true;
         }
 

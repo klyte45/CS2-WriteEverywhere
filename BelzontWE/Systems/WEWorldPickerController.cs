@@ -233,7 +233,7 @@ namespace BelzontWE
             SelectedFont.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Font = FontServer.Instance.TryGetFontEntity(x, out var entity) ? entity : Entity.Null; return currentItem; });
             FormulaeStr.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { FormulaeCompileResult.Value = currentItem.SetFormulae(FormulaeStr.Value, out var cmpErr); FormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
             TextSourceType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
-            ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Atlas = x; return currentItem; });
+            ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
             DecalFlags.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.DecalFlags = x; return currentItem; });
             UseAbsoluteSizeEditing.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.useAbsoluteSizeEditing = x; return currentItem; });
 
@@ -268,7 +268,7 @@ namespace BelzontWE
             SelectedFont.Value = EntityManager.TryGetComponent<FontSystemData>(currentItem.Font, out var fsd) ? fsd.Name : "";
             FormulaeStr.Value = currentItem.Formulae;
             TextSourceType.Value = (int)currentItem.TextType;
-            ImageAtlasName.Value = currentItem.Atlas;
+            ImageAtlasName.Value = currentItem.Atlas.ToString();
             DecalFlags.Value = currentItem.DecalFlags;
             UseAbsoluteSizeEditing.Value = currentItem.useAbsoluteSizeEditing;
         }

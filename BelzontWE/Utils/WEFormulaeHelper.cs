@@ -8,8 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Unity.Collections;
 using Unity.Entities;
 
 namespace BelzontWE
@@ -23,25 +23,28 @@ namespace BelzontWE
         private static MethodInfo r_HasComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
             .First(x => x.Name == "HasComponent" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 1 && pi[0].ParameterType == typeof(Entity));
 
-        private static readonly Dictionary<string, GCHandle> cachedFns = new();
-        public static byte SetFormulae(string newFormulae, out string[] errorFmtArgs, out string resultFormulaeStr, out Func<EntityManager, Entity, string> resultFormulaeFn)
+        private static readonly Dictionary<FixedString512Bytes, Func<EntityManager, Entity, string>> cachedFns = new();
+
+        public static Func<EntityManager, Entity, string> GetCached(FixedString512Bytes formulae) => cachedFns.TryGetValue(formulae, out var cached) ? cached : null;
+        public static bool HasCached(FixedString512Bytes formulae) => cachedFns.ContainsKey(formulae);
+        public static byte SetFormulae(FixedString512Bytes newFormulae512, out string[] errorFmtArgs, out FixedString512Bytes resultFormulaeStr, out Func<EntityManager, Entity, string> resultFormulaeFn)
         {
-            resultFormulaeStr = (null);
-            resultFormulaeFn = (null);
-            if (newFormulae.TrimToNull() is null)
+            resultFormulaeStr = default;
+            resultFormulaeFn = default;
+            if (newFormulae512.Trim() == default)
             {
                 errorFmtArgs = null;
                 return 0;
             }
-            if (cachedFns.TryGetValue(newFormulae, out var handle) && handle.IsAllocated && handle.Target != null)
+            if (cachedFns.TryGetValue(newFormulae512, out var handle) && handle != null)
             {
-                resultFormulaeStr = (newFormulae);
+                resultFormulaeStr = (newFormulae512);
                 resultFormulaeFn = (handle.Target as Func<EntityManager, Entity, string>);
                 errorFmtArgs = null;
                 return 0;
             }
-
-
+            cachedFns[newFormulae512] = null;
+            var newFormulae = newFormulae512.ToString();
             var path = GetPathParts(newFormulae);
             DynamicMethodDefinition dynamicMethodDefinition = new(
                 $"__WE_CS2_{nameof(WETextData)}_formulae_{new Regex("[^A-Za-z0-9_]").Replace(newFormulae, "_")}",
@@ -129,11 +132,9 @@ namespace BelzontWE
                     iLGenerator.EmitCall(OpCodes.Callvirt, toStringMethod, null);
                 }
                 iLGenerator.Emit(OpCodes.Ret);
-                resultFormulaeStr = (newFormulae);
+                resultFormulaeStr = newFormulae;
                 var generatedMethod = dynamicMethodDefinition.Generate();
-                Func<EntityManager, Entity, string> fn = (x, e) => generatedMethod.Invoke(null, new object[] { x, e }) as string;
-                resultFormulaeFn = (fn);
-                cachedFns[newFormulae] = GCHandle.Alloc(fn, GCHandleType.Weak);
+                cachedFns[newFormulae512] = resultFormulaeFn = (x, e) => generatedMethod.Invoke(null, new object[] { x, e }) as string;
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => (" + string.Join(", ", dynamicMethodDefinition.Definition.Parameters.Select(x => $"{(x.IsIn ? "in " : x.IsOut ? "out " : "")}{x.ParameterType} {x.Name}")) + ")");
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => \n" + string.Join("\n", dynamicMethodDefinition.Definition.Body.Instructions.Select(x => x.ToString())));
 

@@ -4,7 +4,7 @@ using Unity.Entities;
 
 namespace BelzontWE
 {
-    public struct WETemplateForPrefab : IComponentData, ICleanupComponentData, ISerializable
+    public struct WETemplateForPrefab : IComponentData, ICleanupComponentData
     {
         public static int CURRENT_VERSION = 0;
 

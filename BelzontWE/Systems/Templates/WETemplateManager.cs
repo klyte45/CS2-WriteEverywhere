@@ -32,24 +32,73 @@ namespace BelzontWE
         public const string PREFAB_LAYOUT_EXTENSION = "wedefault.xml";
         public static readonly string SAVED_PREFABS_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "prefabs");
 
-        public const int CURRENT_VERSION = 0;
+        public const int CURRENT_VERSION = 1;
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
         {
             reader.Read(out int version);
+            if (version == 0)
+            {
+                reader.Read(out int length);
+                for (var i = 0; i < length; i++)
+                {
+                    reader.Read(out string _);
+                    reader.Read(out Entity _);
+                }
+                SetDefaults(default);
+                return;
+            }
             if (version > CURRENT_VERSION)
             {
                 LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
                 return;
             }
-            reader.Read(out int length);
+            reader.Read(out int lengthTemplates);
             RegisteredTemplates.Clear();
             var errors = new List<string>();
-            for (var i = 0; i < length; i++)
+            for (var i = 0; i < lengthTemplates; i++)
             {
                 reader.Read(out string key);
-                reader.Read(out Entity value);
-                if (!SaveCityTemplate(key, value, false)) errors.Add(key);
+                reader.Read(out int lengthData);
+                if (lengthData == 0) continue;
+                var tempArray = new NativeArray<byte>(lengthData, Allocator.Temp);
+                reader.Read(tempArray);
+                var dataUnzipped = ZipUtils.Unzip(tempArray.ToArray());
+                tempArray.Dispose();
+                var dataTree = XmlUtils.DefaultXmlDeserialize<WETextDataTree>(dataUnzipped, (x, e) =>
+                   {
+                       LogUtils.DoErrorLog($"Invalid layout data for Registered template '{key}': {e.Message}. Skipping");
+                       if (BasicIMod.DebugMode) LogUtils.DoLog($"data: {x}\n Exception: {e}");
+                   });
+                if (dataTree != null)
+                {
+                    var newEntity = WELayoutUtility.CreateEntityFromTree(dataTree, Entity.Null, EntityManager);
+                    if (!SaveCityTemplate(key, newEntity, false)) errors.Add(key);
+                }
+            }
+            reader.Read(out int lengthInstances);
+
+            for (var i = 0; i < lengthInstances; i++)
+            {
+                reader.Read(out Entity key);
+                reader.Read(out int lengthData);
+                var tempArray = new NativeArray<byte>(lengthData, Allocator.Temp);
+                reader.Read(tempArray);
+                var dataUnzipped = ZipUtils.Unzip(tempArray.ToArray());
+                tempArray.Dispose();
+                var dataTree = XmlUtils.DefaultXmlDeserialize<WESelflessTextDataTree>(dataUnzipped, (x, e) =>
+                {
+                    LogUtils.DoErrorLog($"Invalid layout data for Registered template '{key}': {e.Message}. Skipping");
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"data: {x}\n Exception: {e}");
+                });
+                if (dataTree != null && dataTree.children.Length > 0)
+                {
+                    var children = dataTree.children;
+                    foreach (var item in children)
+                    {
+                        WELayoutUtility.CreateEntityFromTree(item, key, EntityManager);
+                    }
+                }
             }
             if (errors.Count > 0) LogUtils.DoErrorLog($"WE: The following city layouts failed being loaded. Load again with at least the Debug log level enabled to get details.\n['{string.Join("', '", errors)}']");
         }
@@ -63,9 +112,37 @@ namespace BelzontWE
             for (var i = 0; i < length; i++)
             {
                 writer.Write(keys[i].ToString());
-                writer.Write(RegisteredTemplates[keys[i]]);
+                var treeData = WETextDataTree.FromEntity(RegisteredTemplates[keys[i]], EntityManager);
+                if (treeData == null)
+                {
+                    LogUtils.DoErrorLog($"WE: OBJECT WAS NULL: Template {keys[i]} - {RegisteredTemplates[keys[i]]} - {EntityManager.TryGetComponent<WETextData>(RegisteredTemplates[keys[i]], out var cmp)} {cmp.EffectiveText}");
+                    writer.Write(0);
+                    continue;
+                }
+                var data = ZipUtils.Zip(treeData.ToXML(false));
+                var tempArray = new NativeArray<byte>(data, Allocator.Temp);
+                writer.Write(data.Length);
+                writer.Write(tempArray);
+                tempArray.Dispose();
             }
             keys.Dispose();
+
+            var prefabsWithLayout = m_prefabsDataToSerialize.ToEntityArray(Allocator.Temp);
+            writer.Write(prefabsWithLayout.Length);
+            if (prefabsWithLayout.Length > 0)
+            {
+                for (var j = 0; j < prefabsWithLayout.Length; j++)
+                {
+                    writer.Write(prefabsWithLayout[j]);
+                    var data = ZipUtils.Zip(WESelflessTextDataTree.FromEntity(prefabsWithLayout[j], EntityManager).ToXML(false));
+                    var tempArray = new NativeArray<byte>(data, Allocator.Temp);
+                    writer.Write(data.Length);
+                    writer.Write(tempArray);
+                    tempArray.Dispose();
+
+                }
+            }
+
         }
 
         private UnsafeParallelHashMap<FixedString128Bytes, Entity> RegisteredTemplates;
@@ -76,7 +153,10 @@ namespace BelzontWE
         private EntityQuery m_uncheckedWePrefabLayoutQuery;
         private EntityQuery m_dirtyWePrefabLayoutQuery;
         private EntityQuery m_prefabsToMarkDirty;
+        private EntityQuery m_prefabsDataToSerialize;
         private UnsafeParallelHashMap<long, Entity> PrefabTemplates;
+        private readonly Queue<System.Action<EntityCommandBuffer>> m_executionQueue = new();
+
 
         public ref UnsafeParallelHashMap<FixedString128Bytes, Entity> RegisteredTemplatesRef => ref RegisteredTemplates;
 
@@ -173,6 +253,22 @@ namespace BelzontWE
                         }
                     }
             });
+            m_prefabsDataToSerialize = GetEntityQuery(new EntityQueryDesc[]
+            {
+                    new ()
+                    {
+                        All = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<WESubTextRef>(),
+                            ComponentType.ReadOnly<PrefabRef>(),
+                        },
+                        None = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<Temp>(),
+                            ComponentType.ReadOnly<Deleted>(),
+                        }
+                    }
+            });
         }
 
         protected override void OnDestroy()
@@ -184,10 +280,15 @@ namespace BelzontWE
 
         protected override void OnUpdate()
         {
-            if (GameManager.instance.isLoading || GameManager.instance.isGameLoading)
+            if (GameManager.instance.isLoading || GameManager.instance.isGameLoading) return;
+
+            if (m_executionQueue.Count > 0)
             {
-                EntityManager.AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty);
-                return;
+                var cmdBuffer = m_endFrameBarrier.CreateCommandBuffer();
+                while (m_executionQueue.TryDequeue(out var nextAction))
+                {
+                    nextAction(cmdBuffer);
+                }
             }
 
             UpdatePrefabIndexDictionary();
@@ -206,8 +307,12 @@ namespace BelzontWE
                     Dependency = schedule;
                     schedule.GetAwaiter().OnCompleted(() => m_obsoleteTemplateList.Clear());
                 }
+                else
+                {
+                    m_obsoleteTemplateList.Clear();
+                }                
             }
-            if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
+            else if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
             {
                 Dependency = new WEPrefabTemplateFilterJob
                 {
@@ -223,7 +328,7 @@ namespace BelzontWE
                     m_indexesWithLayout = PrefabTemplates,
                 }.ScheduleParallel(m_uncheckedWePrefabLayoutQuery, Dependency);
             }
-            if (!m_dirtyWePrefabLayoutQuery.IsEmpty)
+            else if (!m_dirtyWePrefabLayoutQuery.IsEmpty)
             {
                 Dependency = new WEPrefabTemplateFilterJob
                 {
@@ -239,6 +344,7 @@ namespace BelzontWE
                     m_indexesWithLayout = PrefabTemplates,
                 }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
             }
+            Dependency.Complete();
         }
 
         public JobHandle SetDefaults(Context context)
@@ -345,7 +451,7 @@ namespace BelzontWE
                     offsetRotation = default,
                     text = null
                 };
-                var generatedEntity = WELayoutUtility.CreateEntityFromTree(Entity.Null, tree, EntityManager);
+                var generatedEntity = WELayoutUtility.CreateEntityFromTree(tree, Entity.Null, EntityManager);
                 var validationResults = CanBePrefabLayout(generatedEntity);
                 if (validationResults == 0)
                 {

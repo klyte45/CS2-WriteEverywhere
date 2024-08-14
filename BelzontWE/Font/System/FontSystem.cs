@@ -349,14 +349,7 @@ namespace BelzontWE.Font
             else
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] REMOVING '{originalText}'");
-                m_textCache.Remove(originalText);
-            }
-            if (!CurrentAtlas.UpdateMaterial())
-            {
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"Failed updating material... Restarting process");
-                m_textCache.Clear();
-                _glyphs.Clear();
-                CurrentAtlas.Reset(_size.x, _size.y);
+                //m_textCache.Remove(originalText);
             }
         }
 
@@ -426,9 +419,18 @@ namespace BelzontWE.Font
                 dependency = job.Schedule(itemsStarted.Length, 32, dependency);
                 itemsStarted.Dispose(dependency);
             }
+            var addedItem = false;
             while (results.TryDequeue(out var result))
             {
                 PostJob(result);
+                addedItem = true;
+            }
+            if (addedItem && !CurrentAtlas.UpdateMaterial())
+            {
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Failed updating material... Restarting process");
+                m_textCache.Clear();
+                _glyphs.Clear();
+                CurrentAtlas.Reset(_size.x, _size.y);
             }
             return dependency;
         }
