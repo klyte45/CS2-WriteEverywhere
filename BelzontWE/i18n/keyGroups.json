@@ -1,0 +1,13 @@
+{ 
+	"^::":"Options menu",
+	"^K45::WE.vuio\\[[^.]+\\]$":"General UI",
+	"^K45::WE.vuio\\[mainUi\\.":"WE Window - General",
+	"^K45::WE.vuio\\[cityFontsTab\\.":"WE Window - City fonts tab",
+	"^K45::WE.vuio\\[cityLayoutsTab\\.":"WE Window - City layout templates tab",
+	"^K45::WE.vuio\\[template\\.":"Template dialogs",
+	"^K45::WE.vuio\\[toolOption\\.":"Tool options section",
+	"^K45::WE.vuio\\[textHierarchyWindow\\.":"Layout items hierarchy window",
+	"^K45::WE.vuio\\[appearenceSettings\\.":"Appearence settings window", 
+	"^K45::WE.vuio\\[shaderProperties\\.":"Shader properties window",
+	"^K45::WE.vuio\\[textValueSettings\\.":"Layout item value settings"
+}

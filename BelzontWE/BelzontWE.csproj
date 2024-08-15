@@ -31,6 +31,7 @@
     <DisplayName>Write Everywhere</DisplayName>
     <ShortDescription>Write texts in the CS2 world!</ShortDescription>
     <ForumLink></ForumLink>
+    <GitHubLink>https://github.com/klyte45/CS2-WriteEverywhere</GitHubLink>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -48,15 +49,8 @@
     </Dependency>
   </ItemGroup>
 
-  <ItemGroup>
-    <AssemblyAttribute Include="Belzont.AssemblyUtility.KlyteModDescriptionAttribute">
-      <_Parameter1>$(ModId)</_Parameter1>
-      <_Parameter2>$(DisplayName)</_Parameter2>
-      <_Parameter3>$(ShortDescription)</_Parameter3>
-      <_Parameter4>$(ForumLink)</_Parameter4>
-    </AssemblyAttribute>
-  </ItemGroup>
-  <!--Publishing generation files-->
+
+  <!--Publishing generation files--><!--
   <Target Name="SetupAttributes" BeforeTargets="BeforeBuild">
     <PropertyGroup>
       <PublishContent>
@@ -78,7 +72,7 @@
 
     <XmlPoke XmlInputPath="$(PublishConfigurationPath)" Value="$([System.IO.File]::ReadAllText($(ProjectDir)/longDescription.md)))" Query="//LongDescription" />
     <XmlPoke XmlInputPath="$(PublishConfigurationPath)" Value="$([System.IO.File]::ReadAllText($(ProjectDir)changelog.md)))" Query="//ChangeLog" />
-  </Target>
+  </Target>-->
 
   <!--<Target Name="EUIS Build" BeforeTargets="DeployWIP" AfterTargets="RunModPostProcessor">
     <Message Importance="high" Text="EUIS Build!" />
@@ -232,7 +226,13 @@
     <Content Include="..\_Frontends\bin\$(Configuration)\$(TargetFramework)\*\**\*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <None Update="i18n\devInstructions.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="i18n\i18n.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="i18n\keyGroups.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Resource Include="*.md" />

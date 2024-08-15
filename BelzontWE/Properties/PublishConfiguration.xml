@@ -2,12 +2,12 @@
   <ModId Value="" />
   <DisplayName Value="Write Everywhere" />
   <ShortDescription Value="Write texts in the CS2 world!" />
-  <LongDescription>)</LongDescription>
+  <LongDescription />
   <Thumbnail Value="Properties/Thumbnail.png" />
   <ForumLink Value="" />
   <ModVersion Value="0.0.0.0" />
   <GameVersion Value="1.1.*" />
-  <ChangeLog>)</ChangeLog>
+  <ChangeLog />
   <Tag Value="Code Mod" />
   <Dependency Id="74417" ModVersion="" DisplayName="Unified Icon Library" />
 </Publish>
