@@ -37,8 +37,8 @@ export class LayoutsService {
     static async openExportedFilesFolder(): Promise<string> {
         return engine.call("k45::we.layouts.openExportedFilesFolder");
     }
-    static async loadAsChildFromCityTemplate(parent: Entity, saveName: string): Promise<string> {
-        return engine.call("k45::we.layouts.loadAsChildFromCityTemplate", parent, saveName);
+    static async loadAsChildFromCityTemplate(parent: Entity, templateName: string): Promise<boolean> {
+        return engine.call("k45::we.layouts.loadAsChildFromCityTemplate", parent, templateName);
     }
     static async importAsCityTemplateFromXml(saveName: string): Promise<string> {
         return engine.call("k45::we.layouts.importAsCityTemplateFromXml", saveName);

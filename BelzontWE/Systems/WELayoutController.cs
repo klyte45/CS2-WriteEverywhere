@@ -82,7 +82,7 @@ namespace BelzontWE
         private bool LoadAsChildFromCityTemplate(Entity parent, string templateName)
         {
             if (!m_templateManager.CityTemplateExists(templateName)) return false;
-            WELayoutUtility.DoCloneTextItem(m_templateManager[templateName], parent, EntityManager);
+            WELayoutUtility.CreateEntityFromTree(WETextDataTree.FromEntity(m_templateManager[templateName], EntityManager), parent, EntityManager);
             m_controller.UpdateTree();
             return true;
         }

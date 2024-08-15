@@ -110,7 +110,6 @@ namespace BelzontWE.Font
             data.name = name;
             data.FontSystem = new FontSystem(data);
             data.IsWeak = isWeak;
-
             return data;
         }
     }

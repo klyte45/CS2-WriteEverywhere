@@ -23,6 +23,7 @@ export type ContextMenuButtonProps = {
     menuDirection?: ContextMenuExpansion
 } & Omit<PropsToolButton, "onClick" | "onSelect" | "selected">
 export const ContextMenuButton = (props: ContextMenuButtonProps) => {
+    const btnRef = useRef(null as any as HTMLDivElement);
     const menuRef = useRef(null as any as HTMLDivElement);
     const Button = VanillaComponentResolver.instance.ToolButton;
     const ScrollPanel = VanillaWidgets.instance.EditorScrollable;
@@ -38,12 +39,12 @@ export const ContextMenuButton = (props: ContextMenuButtonProps) => {
         }
         return result;
     }
-    const menuPosition = findFixedPosition(menuRef.current)
+    const menuPosition = findFixedPosition(btnRef.current)
     const [menuOpen, setMenuOpen] = useState(false);
     const findBetterDirection = () => {
-        if (!menuRef.current) return;
-        const btnCenterX = menuPosition.left + menuRef.current.offsetWidth / 2
-        const btnCenterY = menuPosition.top + menuRef.current.offsetHeight / 2
+        if (!btnRef.current) return;
+        const btnCenterX = menuPosition.left + btnRef.current.offsetWidth / 2
+        const btnCenterY = menuPosition.top + btnRef.current.offsetHeight / 2
         if (btnCenterX > window.innerWidth / 2) {//right - expand left
             if (btnCenterY > window.innerHeight / 2) {//bottom - expand top
                 return ContextMenuExpansion.TOP_LEFT;
@@ -64,43 +65,44 @@ export const ContextMenuButton = (props: ContextMenuButtonProps) => {
         const effectiveMenuDirection = props.menuDirection ?? findBetterDirection()
         switch (effectiveMenuDirection) {
             case ContextMenuExpansion.BOTTOM_LEFT:
-                setMenuCss({ top: menuPosition.top + menuRef.current?.offsetHeight + 3, right: window.innerWidth - menuPosition.left - menuRef.current?.offsetWidth });
+                setMenuCss({ top: menuPosition.top + btnRef.current?.offsetHeight + 3, right: window.innerWidth - menuPosition.left - btnRef.current?.offsetWidth });
                 break;
             case ContextMenuExpansion.TOP_RIGHT:
                 setMenuCss({ bottom: window.innerHeight - menuPosition.top + 3, left: menuPosition.left });
                 break;
             case ContextMenuExpansion.TOP_LEFT:
-                setMenuCss({ bottom: window.innerHeight - menuPosition.top + 3, right: window.innerWidth - menuPosition.left - menuRef.current?.offsetWidth });
+                setMenuCss({ bottom: window.innerHeight - menuPosition.top + 3, right: window.innerWidth - menuPosition.left - btnRef.current?.offsetWidth });
                 break;
             case ContextMenuExpansion.BOTTOM_RIGHT:
             default:
-                setMenuCss({ top: menuPosition.top + menuRef.current?.offsetHeight + 3, left: menuPosition.left });
+                setMenuCss({ top: menuPosition.top + btnRef.current?.offsetHeight + 3, left: menuPosition.left });
                 break;
         }
-    }, [menuRef.current?.offsetHeight, menuRef.current?.offsetWidth, menuPosition.left, menuPosition.top, window.innerHeight, window.innerWidth, props.menuDirection])
+    }, [menuOpen])
+
 
 
     const handleClickOutside = (event: MouseEvent) => {
-        if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        if (btnRef.current && !btnRef.current?.contains(event.target as Node) && !menuRef.current?.contains(event.target as Node)) {
             setMenuOpen(false);
         }
     };
 
     useEffect(() => {
-        document.addEventListener('click', handleClickOutside, true);
+        document.addEventListener('mousedown', handleClickOutside, true);
         return () => {
-            document.removeEventListener('click', handleClickOutside, true);
+            document.removeEventListener('mousedown', handleClickOutside, true);
         };
     }, []);
 
 
 
     return <>
-        <div ref={menuRef}>
-            <Button {...props} selected={menuOpen} onSelect={() => setMenuOpen(!menuOpen)} />
+        <div ref={btnRef}>
+            <Button {...props} selected={menuOpen} onSelect={() => { setMenuOpen(!menuOpen) }} />
         </div>
         {menuOpen && <Portal>
-            <div className="k45_comm_contextMenu" style={menuCss}>
+            <div className="k45_comm_contextMenu" style={menuCss} ref={menuRef}>
                 {props.menuTitle && <div className="k45_comm_contextMenu_title">{props.menuTitle}</div>}
                 <ScrollPanel>
                     {props.menuItems.map(x => x ? <button className={classNames("k45_comm_contextMenu_item", x.disabled ? "disabled" : "")} onClick={() => { setMenuOpen(false); x.action() }} disabled={x.disabled}>{x.label}</button> : <div className="k45_comm_contextMenu_separator" />)}

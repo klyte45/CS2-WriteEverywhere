@@ -1,7 +1,7 @@
 import { Entity, replaceArgs, VanillaComponentResolver, VanillaFnResolver } from "@klyte45/vuio-commons";
 import { StringInputDialog } from "common/StringInputDialog";
 import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
-import { WEInputDialog } from "common/WEInputDialog";
+import { BaseStringInputDialog } from "common/BaseStringInputDialog";
 import { ListActionTypeArray, WEListWithPreviewTab } from "common/WEListWithPreviewTab";
 import { ConfirmationDialog, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
@@ -78,7 +78,7 @@ export const CityLayoutsTab = (props: Props) => {
     const displayingModal = () => {
         switch (currentModal) {
             case Modals.CONFIRMING_DELETE: return <ConfirmationDialog onConfirm={() => { setCurrentModal(0); LayoutsService.deleteTemplate(selectedTemplate!); setSelectedTemplate(null) }} onCancel={() => setCurrentModal(0)} message={T_confirmDeleteText} />
-            case Modals.EXPORTING_TEMPLATE: return <WEInputDialog callback={exportTemplateCallback} title={T_exportXmlDialogTitle} promptText={T_exportXmlDialogText} initialValue={selectedTemplate!} />
+            case Modals.EXPORTING_TEMPLATE: return <BaseStringInputDialog onConfirm={exportTemplateCallback} dialogTitle={T_exportXmlDialogTitle} dialogPromptText={T_exportXmlDialogText} initialValue={selectedTemplate!} />
             case Modals.SUCCESS_EXPORTING_TEMPLATE: return <ConfirmationDialog onConfirm={() => { LayoutsService.openExportedFilesFolder(); setCurrentModal(0) }} onCancel={() => setCurrentModal(0)} confirm={T_goToFileFolder} cancel={T_back} message={replaceArgs(T_successMessage, { "name": lastXmlExportedLayoutName })} />
         }
     }

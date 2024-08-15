@@ -1,7 +1,7 @@
 import { Portal, ConfirmationDialog } from "cs2/ui"
 import { useState } from "react"
 import { getOverrideCheckFn } from "utils/getOverrideCheckFn"
-import { WEInputDialog } from "./WEInputDialog"
+import { BaseStringInputDialog } from "./BaseStringInputDialog"
 
 type StringInputWithOverrideDialogProps = {
     isActive: boolean,
@@ -41,7 +41,7 @@ export const StringInputWithOverrideDialog = ({
     );
 
     return <Portal>
-        {isActive && <WEInputDialog callback={callback} title={dialogTitle} promptText={dialogPromptText} initialValue={initialValue} validationFn={validationFn} maxLength={maxLength} />}
+        {isActive && <BaseStringInputDialog onConfirm={callback} dialogTitle={dialogTitle} dialogPromptText={dialogPromptText} initialValue={initialValue} validationFn={validationFn} maxLength={maxLength} />}
         {confirmingOverride && <ConfirmationDialog onConfirm={() => { actionOnConfirmOverride(); }} title={dialogTitle} onCancel={() => setConfirmingOverride(false)} message={dialogOverrideText} />}
     </Portal>
 }

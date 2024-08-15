@@ -1,5 +1,5 @@
 import { Portal } from "cs2/ui";
-import { WEInputDialog } from "./WEInputDialog";
+import { BaseStringInputDialog } from "./BaseStringInputDialog";
 
 type StringInputDialogProps = {
     isActive: boolean,
@@ -20,6 +20,6 @@ export const StringInputDialog = ({
         actionOnSuccess(x);
     };
     return <Portal>
-        {isActive && <WEInputDialog callback={onConfirm} title={dialogTitle} promptText={dialogPromptText} initialValue={initialValue} validationFn={validationFn} maxLength={maxLength} />}
+        {isActive && <BaseStringInputDialog onConfirm={onConfirm} dialogTitle={dialogTitle} dialogPromptText={dialogPromptText} initialValue={initialValue} validationFn={validationFn} maxLength={maxLength} />}
     </Portal>;
 };

@@ -3,16 +3,16 @@ import { useState } from "react";
 import "style/common.scss";
 import { translate } from "utils/translate";
 
-type Props = {
-    callback: (nameSet?: string) => any
-    title: string
-    promptText: string
+type BaseStringInputDialogProps = {
+    onConfirm: (nameSet?: string) => any
+    dialogTitle: string
+    dialogPromptText: string
     initialValue?: string
     validationFn?: (val: string) => boolean
     maxLength?: number
 }
 
-export const WEInputDialog = ({ callback, title, promptText, initialValue, validationFn, maxLength }: Props) => {
+export const BaseStringInputDialog = ({ onConfirm: callback, dialogTitle: title, dialogPromptText: promptText, initialValue, validationFn, maxLength }: BaseStringInputDialogProps) => {
     const Dialog = VanillaComponentResolver.instance.Dialog;
     const StringInputField = VanillaWidgets.instance.StringInputField;
     const [name, setName] = useState(initialValue ?? "")
@@ -30,5 +30,4 @@ export const WEInputDialog = ({ callback, title, promptText, initialValue, valid
             <StringInputField onChange={setName} value={name} maxLength={maxLength} />
         </div>
     </Dialog>
-
 };

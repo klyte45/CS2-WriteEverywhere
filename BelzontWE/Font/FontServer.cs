@@ -94,11 +94,12 @@ namespace BelzontWE
             requiresUpdateParameter = true;
         }
 
-        public bool RegisterFont(string name, byte[] fontData)
+        public bool RegisterFont(string name, byte[] fontData) => RegisterFont(name, fontData, false);
+        private bool RegisterFont(string name, byte[] fontData, bool isWeak)
         {
             try
             {
-                var fontSystemData = FontSystemData.From(fontData, name);
+                var fontSystemData = FontSystemData.From(fontData, name, isWeak);
                 if (name == null)
                 {
                     LogUtils.DoErrorLog($"RegisterFont: FONT NAME CANNOT BE NULL!!");
@@ -271,7 +272,7 @@ namespace BelzontWE
         {
             fontName = fontName.Trim();
             if (fontName == "" || LoadedFonts.ContainsKey(fontName)) return;
-            RegisterFont(fontName.ToString(), DefaultFont.Font._font.data.ArrayData);
+            RegisterFont(fontName.ToString(), DefaultFont.Font._font.data.ArrayData.ToArray(), true);
         }
     }
 }

@@ -1,15 +1,14 @@
 import { Entity, HierarchyViewport, LocElementType, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
-import { ConfirmationDialog, Panel, Portal } from "cs2/ui";
-import { forwardRef, ReactNode, useEffect, useRef, useState } from "react";
+import { ContextButtonMenuItemArray, ContextMenuButton } from "common/ContextMenuButton";
+import { DropdownDialog } from "common/DropdownDialog";
+import { StringInputDialog } from "common/StringInputDialog";
+import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
+import { ConfirmationDialog, Dropdown, Panel, Portal } from "cs2/ui";
+import { useEffect, useState } from "react";
 import { LayoutsService } from "services/LayoutsService";
 import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeElement";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
-import { WEInputDialog } from "../common/WEInputDialog";
-import { getOverrideCheckFn } from "utils/getOverrideCheckFn";
-import { ContextButtonMenuItemArray, ContextMenuButton } from "common/ContextMenuButton";
-import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
-import { StringInputDialog } from "common/StringInputDialog";
 
 
 
@@ -68,6 +67,13 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const T_loadFromCityTemplateToRoot = translate("textHierarchyWindow.loadFromCityTemplate.toRoot"); //"Appearance Settings"
     const T_loadFromCityTemplateAsSibling = translate("textHierarchyWindow.loadFromCityTemplate.asSibling"); //"Appearance Settings"
     const T_loadFromCityTemplateAsChild = translate("textHierarchyWindow.loadFromCityTemplate.asChild"); //"Appearance Settings"
+
+
+    const T_exportXmlDialogTitle = translate("cityLayoutsTab.exportXml.title")
+    const T_exportXmlDialogText = translate("cityLayoutsTab.exportXml.text")
+    const T_successMessage = translate("cityLayoutsTab.exportXml.successMessage")
+    const T_goToFileFolder = translate("cityLayoutsTab.exportXml.goToFileFolder")
+    const T_back = translate("cityLayoutsTab.exportXml.back")
 
     const defaultPosition = { x: 20 / window.innerWidth, y: 100 / window.innerHeight }
 
@@ -135,6 +141,18 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             setAlertToDisplay(translate("template.saveCityDialog.error.1"))
         }
     }
+    const [exportingAsXml, setExportingAsXml] = useState(false)
+    const [nameExportedAsXml, setNameExportedAsXml] = useState(null as string | null)
+
+    const onExportAsXml = async (x?: string) => {
+        if (!x) return;
+        const saveName = await LayoutsService.exportComponentAsXml(wps.CurrentSubEntity.value!, x!);
+        if (!saveName) {
+            setAlertToDisplay(translate("template.saveCityDialog.error.1"))
+        } else {
+            setNameExportedAsXml(saveName);
+        }
+    }
 
     const getParentNode = (search: Entity, treeNode: WETextItemResume): Entity | undefined => {
         if (treeNode.children?.some(x => x.id.Index == search.Index)) return treeNode.id
@@ -163,12 +181,19 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         }
     }
 
+    const [cityLayoutsAvailable, setCityLayoutsAvailable] = useState([] as string[])
 
     const [loadingFromCity, setLoadingFromCity] = useState(false)
     const onLoadFromCity = async (x?: string) => {
         if (!x) return;
-        await LayoutsService.loadAsChildFromCityTemplate(relativeParentToLoad!, x)
+        await LayoutsService.loadAsChildFromCityTemplate(relativeParentToLoad!, x);
     }
+
+    useEffect(() => {
+        if (loadingFromCity) {
+            LayoutsService.listCityTemplates().then(x => setCityLayoutsAvailable(Object.keys(x).sort((a, b) => a.localeCompare(b))));
+        }
+    }, [loadingFromCity])
 
     const pasteMenuItems: ContextButtonMenuItemArray = [
         {
@@ -217,7 +242,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         },
         {
             label: T_exportLayoutXml,
-            action: () => LayoutsService.exportComponentAsXml(wps.CurrentSubEntity.value!, "teste")
+            action: () => setExportingAsXml(true)
         },
         {
             label: T_exportLayoutAsPrefab,
@@ -230,9 +255,9 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         { label: T_importLayoutXmlAsChild, disabled: !wps.CurrentSubEntity.value?.Index, action: () => { setRelativeParentToLoad(wps.CurrentSubEntity.value!); setLoadingFromXml(true) }, },
         { label: T_importLayoutXmlAsSibling, disabled: !currentParentNode, action: () => { setRelativeParentToLoad(currentParentNode!); setLoadingFromXml(true) }, },
         null,
-        { label: T_loadFromCityTemplateToRoot, disabled: true, action: () => { setRelativeParentToLoad(wps.CurrentEntity.value!); setLoadingFromCity(true) } },
-        { label: T_loadFromCityTemplateAsChild, disabled: true, action: () => { setRelativeParentToLoad(wps.CurrentSubEntity.value!); setLoadingFromCity(true) } },
-        { label: T_loadFromCityTemplateAsSibling, disabled: true, action: () => { setRelativeParentToLoad(currentParentNode!); setLoadingFromCity(true) } },
+        { label: T_loadFromCityTemplateToRoot, disabled: !wps.CurrentEntity.value?.Index, action: () => { setRelativeParentToLoad(wps.CurrentEntity.value!); setLoadingFromCity(true) } },
+        { label: T_loadFromCityTemplateAsChild, disabled: !wps.CurrentSubEntity.value?.Index, action: () => { setRelativeParentToLoad(wps.CurrentSubEntity.value!); setLoadingFromCity(true) } },
+        { label: T_loadFromCityTemplateAsSibling, disabled: !currentParentNode, action: () => { setRelativeParentToLoad(currentParentNode!); setLoadingFromCity(true) } },
     ]
 
     return <Portal>
@@ -265,7 +290,12 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}
             actionOnSuccess={onSaveTemplate}
         />
-        <StringInputDialog dialogTitle={T_loadingFromXmlDialogTitle} dialogPromptText={T_loadingFromXmlDialogPromptText} isActive={loadingFromXml} setIsActive={setLoadingFromXml} actionOnSuccess={onLoadFromXml}
-        />
+        <StringInputDialog dialogTitle={T_loadingFromXmlDialogTitle} dialogPromptText={T_loadingFromXmlDialogPromptText} isActive={loadingFromXml} setIsActive={setLoadingFromXml} actionOnSuccess={onLoadFromXml} />
+
+        <StringInputDialog dialogTitle={T_exportXmlDialogTitle} dialogPromptText={T_exportXmlDialogText} isActive={exportingAsXml} setIsActive={setExportingAsXml} actionOnSuccess={onExportAsXml} />
+        {nameExportedAsXml &&
+            <ConfirmationDialog onConfirm={() => { LayoutsService.openExportedFilesFolder(); setNameExportedAsXml(null) }} onCancel={() => setNameExportedAsXml(null)} confirm={T_goToFileFolder} cancel={T_back} message={replaceArgs(T_successMessage, { "name": nameExportedAsXml })} />
+        }
+        <DropdownDialog isActive={loadingFromCity} setIsActive={setLoadingFromCity} callback={onLoadFromCity} items={cityLayoutsAvailable.map(x => { return { displayName: { __Type: LocElementType.String, value: x }, value: x } })} title={T_loadingFromXmlDialogTitle} promptText={T_loadingFromXmlDialogPromptText} />
     </Portal>;
 };

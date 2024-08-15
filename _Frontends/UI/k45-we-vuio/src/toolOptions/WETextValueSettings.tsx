@@ -127,16 +127,11 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                     <FloatInputField label={T_maxWidth} min={.001} max={1000000} value={maxWidth} onChange={setMaxWidth} onChangeEnd={() => saveMaxWidth(maxWidth)} />
                     <EditorItemRow label={T_fontFieldTitle} styleContent={{ paddingLeft: "34rem" }}>
                         <DropdownField
-                            value={wps.FontList.value.includes(wps.SelectedFont.value) ? wps.SelectedFont.value : "<DEFAULT>"}
-                            items={["<DEFAULT>"].concat(wps.FontList.value).map(x => { return { displayName: { __Type: LocElementType.String, value: x }, value: x } })}
+                            value={wps.SelectedFont.value}
+                            items={wps.FontList.value.map(x => { return { displayName: { __Type: LocElementType.String, value: x == "/DEFAULT/" ? "<DEFAULT>" : x }, value: x } })}
                             onChange={(x) => wps.SelectedFont.set(x)}
                             style={{ flexGrow: 1, width: "inherit" }}
                         />
-                        <Tooltip tooltip={T_uploadNewFont}>
-                            <CommonButton onClick={onFontSelectWindow} className={editorTheme.pickerToggle} style={{ width: "34rem" }} focusKey={noFocus}>
-                                <img src={i_addFont} className={editorTheme.directoryIcon} />
-                            </CommonButton>
-                        </Tooltip>
                     </EditorItemRow>
                     <ToggleField label={T_useFormulae} value={usingFormulae} onChange={(x) => setUsingFormulae(x)} />
                     {usingFormulae ?
