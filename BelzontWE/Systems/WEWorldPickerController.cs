@@ -172,6 +172,9 @@ namespace BelzontWE
         public MultiUIValueBinding<string> ImageAtlasName { get; private set; }
         public MultiUIValueBinding<int> DecalFlags { get; private set; }
         public MultiUIValueBinding<bool> UseAbsoluteSizeEditing { get; private set; }
+        public MultiUIValueBinding<WEShader, int> ShaderType { get; private set; }
+        public MultiUIValueBinding<Color, UIColorRGBA> GlassColor { get; private set; }
+        public MultiUIValueBinding<float> GlassRefraction { get; private set; }
         private void InitValueBindings()
         {
             if (m_initialized) return;
@@ -212,6 +215,9 @@ namespace BelzontWE
             ImageAtlasName = new(default, $"{PREFIX}{nameof(ImageAtlasName)}", m_eventCaller, m_callBinder);
             DecalFlags = new(default, $"{PREFIX}{nameof(DecalFlags)}", m_eventCaller, m_callBinder);
             UseAbsoluteSizeEditing = new(default, $"{PREFIX}{nameof(UseAbsoluteSizeEditing)}", m_eventCaller, m_callBinder);
+            ShaderType = new(default, $"{PREFIX}{nameof(ShaderType)}", m_eventCaller, m_callBinder, (x, _) => (int)x, (x, _) => (WEShader)x);
+            GlassRefraction = new(default, $"{PREFIX}{nameof(GlassRefraction)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 1, 1000));
+            GlassColor = new(default, $"{PREFIX}{nameof(GlassColor)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
 
 
             CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
@@ -236,6 +242,9 @@ namespace BelzontWE
             ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
             DecalFlags.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.DecalFlags = x; return currentItem; });
             UseAbsoluteSizeEditing.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.useAbsoluteSizeEditing = x; return currentItem; });
+            ShaderType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Shader = x; return currentItem; });
+            GlassRefraction.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.GlassRefraction = x; return currentItem; });
+            GlassColor.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.GlassColor = x; return currentItem; });
 
             FontList.Value = FontServer.Instance.GetLoadedFontsNames();
             FontList.UpdateUIs();
@@ -271,6 +280,9 @@ namespace BelzontWE
             ImageAtlasName.Value = currentItem.Atlas.ToString();
             DecalFlags.Value = currentItem.DecalFlags;
             UseAbsoluteSizeEditing.Value = currentItem.useAbsoluteSizeEditing;
+            ShaderType.Value = currentItem.Shader;
+            GlassColor.Value = currentItem.GlassColor;
+            GlassRefraction.Value = currentItem.GlassRefraction;
         }
 
         #endregion

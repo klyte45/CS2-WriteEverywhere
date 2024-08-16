@@ -14,8 +14,8 @@ namespace BelzontWE.Font.Utility
     public class BasicRenderInformation
     {
         public const string PLACEHOLDER_REFTEXT = "\0\nPlaceholder\n\0";
-        public static readonly BasicRenderInformation LOADING_PLACEHOLDER = new(PLACEHOLDER_REFTEXT, null, null, null);
-        public BasicRenderInformation(string refText, Vector3[] vertices, int[] triangles, Vector2[] uv)
+        public static readonly BasicRenderInformation LOADING_PLACEHOLDER = new(PLACEHOLDER_REFTEXT, null, null, null, null);
+        public BasicRenderInformation(string refText, Vector3[] vertices, int[] triangles, Vector2[] uv, Material material, Material glassMaterial = null)
         {
             m_refText = refText ?? throw new ArgumentNullException("refText");
             if (vertices != null && (triangles?.All(x => x < vertices.Length) ?? false))
@@ -24,17 +24,18 @@ namespace BelzontWE.Font.Utility
                 m_triangles = triangles;
                 m_uv = uv;
                 m_bounds = vertices.Length == 0 ? default : new Bounds3(vertices.Aggregate((x, y) => Vector3.Min(x, y)), vertices.Aggregate((x, y) => Vector3.Max(x, y)));
+                GeneratedMaterial = material;
+                GlassMaterial = glassMaterial;
             }
             else if (triangles != null && vertices != null)
             {
                 LogUtils.DoWarnLog($"m_vertices.Length = {m_vertices?.Length} | m_triangles: [{string.Join(",", m_triangles ?? new int[0])}]");
             }
         }
-        public static BasicRenderInformation Fill(BasicRenderInformationJob brij, Material targetAtlas)
+        public static BasicRenderInformation Fill(BasicRenderInformationJob brij, Material targetAtlas, Material decalAtlas)
         {
-            var bri = new BasicRenderInformation(brij.originalText.ToString(), AlignVertices(brij.vertices.ToList()), brij.triangles.ToArray(), brij.uv1.ToArray());
+            var bri = new BasicRenderInformation(brij.originalText.ToString(), AlignVertices(brij.vertices.ToList()), brij.triangles.ToArray(), brij.uv1.ToArray(), targetAtlas, decalAtlas);
             if (bri.Mesh == null) return null;
-            bri.m_generatedMaterial = targetAtlas;
 
             bri.m_colors32 = brij.colors.ToArray();
 
@@ -76,7 +77,12 @@ namespace BelzontWE.Font.Utility
 
         public Vector2 m_sizeMetersUnscaled;
         [XmlIgnore]
-        public Material m_generatedMaterial;
+        public Material GeneratedMaterial { get; }
+        [XmlIgnore]
+        public Material GlassMaterial
+        {
+            get; private set;
+        }
         public readonly string m_refText;
         public bool m_isError = false;
 

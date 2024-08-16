@@ -60,12 +60,14 @@ namespace BelzontWE
                 : !em.TryGetComponent<RouteNumber>(ownerRoute.m_Owner, out var number) ? "<?>"
                 : number.m_Number.ToString();
         };
+        public static Func<Entity, string> GetSerialNumber_binding = (entity) => (entity.Index % 100000).ToString().PadLeft(5, '0');
 
         public static string GetTargetDestinationStatic(Entity reference) => GetTargetDestinationStatic_binding?.Invoke(reference) ?? "<???>";
         public static string GetTargetDestinationDynamic(Entity reference) => GetTargetDestinationDynamic_binding?.Invoke(reference) ?? "<???>";
         public static string GetEntityName(Entity reference) => (nameSys ?? World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<NameSystem>()).GetName(reference).Translate();
         public static string GetVehiclePlate(Entity vehicleRef) => GetVehiclePlate_binding?.Invoke(vehicleRef) ?? "<???>";
         public static string GetTransportLineNumber(Entity reference) => GetTargetDestinationStatic_binding?.Invoke(reference) ?? "<???>";
+        public static string GetSerialNumber(Entity reference) => GetSerialNumber_binding?.Invoke(reference) ?? "<???>";
     }
 
 }

@@ -157,7 +157,7 @@ namespace BelzontWE
 
                     }
                 }
-            }         
+            }
             private bool UpdateImageMesh(Entity e, ref WETextData weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
             {
                 if (m_templateUpdaterLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
@@ -180,8 +180,8 @@ namespace BelzontWE
                 SetupTemplateComponent(e, ref weCustomData, unfilteredChunkIndex, cmd);
                 if (text == "")
                 {
-                    weCustomData = weCustomData.UpdateBRI(new BasicRenderInformation("", null, null, null), "");
-                return true;
+                    weCustomData = weCustomData.UpdateBRI(new BasicRenderInformation("", null, null, null, null), "");
+                    return true;
                 }
                 var font = m_FontDataLkp.TryGetComponent(weCustomData.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
                 if (font.Font == null)

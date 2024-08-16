@@ -1,4 +1,4 @@
-import { VanillaWidgets } from "@klyte45/vuio-commons";
+import { LocElementType, VanillaWidgets } from "@klyte45/vuio-commons";
 import { Panel, Portal } from "cs2/ui";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
@@ -14,7 +14,10 @@ export const WETextShaderProperties = (props: { initialPosition?: { x: number, y
     const T_supportTerrainDecals = translate("shaderProperties.supportTerrainDecals"); //"Emission Color"
     const T_supportCreatureDecals = translate("shaderProperties.supportCreatureDecals"); //"Emission Color"
     const T_supportOtherDecals = translate("shaderProperties.supportOtherDecals"); //"Emission Color"
+    const T_shaderType = translate("shaderProperties.shaderType"); //"Emission Color"
     const wps = WorldPickerService.instance;
+    const EditorItemRow = VanillaWidgets.instance.EditorItemRow;
+    const DropdownField = VanillaWidgets.instance.DropdownField<number>();
 
     const [buildIdx, setBuild] = useState(0);
     useEffect(() => {
@@ -24,6 +27,14 @@ export const WETextShaderProperties = (props: { initialPosition?: { x: number, y
     const defaultPosition = props.initialPosition ?? { x: 1 - 600 / window.innerWidth, y: 100 / window.innerHeight }
     return <Portal>
         <Panel draggable header={T_appearenceTitle} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
+            <EditorItemRow label={T_shaderType}>
+                <DropdownField
+                    value={wps.ShaderType.value}
+                    items={[0, 1]?.map(x => { return { displayName: { __Type: LocElementType.String, value: translate("shaderProperties.shaderType." + x) }, value: x } })}
+                    onChange={(x) => wps.ShaderType.set(x)}
+                    style={{ flexGrow: 1, width: "inherit" }}
+                />
+            </EditorItemRow>
             <VanillaWidgets.instance.ToggleField value={(wps.DecalFlags.value & 8) != 0} onChange={(x) => { wps.DecalFlags.set(!x ? wps.DecalFlags.value & ~8 : wps.DecalFlags.value | 8) }} label={T_dynamicObjectsDecalFilter} />
             <VanillaWidgets.instance.ToggleField value={(wps.DecalFlags.value & 4) != 0} onChange={(x) => { wps.DecalFlags.set(!x ? wps.DecalFlags.value & ~4 : wps.DecalFlags.value | 4) }} label={T_supportDecals} />
             <VanillaWidgets.instance.ToggleField value={(wps.DecalFlags.value & 2) != 0} onChange={(x) => { wps.DecalFlags.set(!x ? wps.DecalFlags.value & ~2 : wps.DecalFlags.value | 2) }} label={T_supportRoadDecals} />

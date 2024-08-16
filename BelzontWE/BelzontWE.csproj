@@ -15,6 +15,7 @@
     <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
     <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
     <RootNamespace>BelzontWE</RootNamespace>
+    <DefineConstants>ENABLE_EUIS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <!--Imports must be after PropertyGroup block-->
@@ -25,7 +26,7 @@
   <!--Mod data-->
   <PropertyGroup>
     <ModId></ModId>
-    <Version>0.0.0.0</Version>
+    <Version>0.0.0.1</Version>
     <GameVersion>1.1.*</GameVersion>
     <ThumbnailPath>Properties/Thumbnail.png</ThumbnailPath>
     <DisplayName>Write Everywhere</DisplayName>
@@ -48,31 +49,6 @@
       <DisplayName>Unified Icon Library</DisplayName>
     </Dependency>
   </ItemGroup>
-
-
-  <!--Publishing generation files--><!--
-  <Target Name="SetupAttributes" BeforeTargets="BeforeBuild">
-    <PropertyGroup>
-      <PublishContent>
-        <ModId Value="$(ModId)" />
-        <DisplayName Value="$(DisplayName)" />
-        <ShortDescription Value="$(ShortDescription)" />
-        <LongDescription />
-        <Thumbnail Value="$(ThumbnailPath)" />
-        <ForumLink Value="$(ForumLink)" />
-        <ModVersion Value="$(Version)" />
-        <GameVersion Value="$(GameVersion)" />
-        <ChangeLog />
-      </PublishContent>
-      <PublishContent>$(PublishContent)@(ModTag->'&lt;Tag Value="%(Identity)" /&gt;','%0a%0d')</PublishContent>
-      <PublishContent>$(PublishContent)@(Screenshots->'&lt;Screenshot Value="%(Identity)" /&gt;','%0a%0d')</PublishContent>
-      <PublishContent>$(PublishContent)@(Dependency->'&lt;Dependency Id="%(ModId)" ModVersion="%(Version)" DisplayName="%(DisplayName)"/&gt;','%0a%0d')</PublishContent>
-    </PropertyGroup>
-    <XmlPoke XmlInputPath="$(PublishConfigurationPath)" Value="$(PublishContent)" Query="//Publish" />
-
-    <XmlPoke XmlInputPath="$(PublishConfigurationPath)" Value="$([System.IO.File]::ReadAllText($(ProjectDir)/longDescription.md)))" Query="//LongDescription" />
-    <XmlPoke XmlInputPath="$(PublishConfigurationPath)" Value="$([System.IO.File]::ReadAllText($(ProjectDir)changelog.md)))" Query="//ChangeLog" />
-  </Target>-->
 
   <!--<Target Name="EUIS Build" BeforeTargets="DeployWIP" AfterTargets="RunModPostProcessor">
     <Message Importance="high" Text="EUIS Build!" />

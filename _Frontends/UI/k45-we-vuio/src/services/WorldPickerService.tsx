@@ -54,6 +54,9 @@ export class WorldPickerService {
     ImageAtlasName: MultiUIValueBinding<string>
     DecalFlags: MultiUIValueBinding<number>
     UseAbsoluteSizeEditing: MultiUIValueBinding<boolean>
+    ShaderType: MultiUIValueBinding<number>
+    GlassRefraction: MultiUIValueBinding<number>
+    GlassColor: MultiUIValueBinding<UIColorRGBA>
 
 
     private Bindings: MultiUIValueBinding<any>[] = []
@@ -90,6 +93,9 @@ export class WorldPickerService {
         this.ImageAtlasName = new MultiUIValueBinding<string>("k45::we.wpicker.ImageAtlasName")
         this.DecalFlags = new MultiUIValueBinding<number>("k45::we.wpicker.DecalFlags")
         this.UseAbsoluteSizeEditing = new MultiUIValueBinding<boolean>("k45::we.wpicker.UseAbsoluteSizeEditing")
+        this.ShaderType ??= new MultiUIValueBinding<number>("k45::we.wpicker.ShaderType")
+        this.GlassRefraction ??= new MultiUIValueBinding<number>("k45::we.wpicker.GlassRefraction")
+        this.GlassColor ??= new MultiUIValueBinding<UIColorRGBA>("k45::we.wpicker.GlassColor")
 
         this.Bindings.push(
             this.CurrentSubEntity,
@@ -121,6 +127,9 @@ export class WorldPickerService {
             this.TextSourceType,
             this.DecalFlags,
             this.ImageAtlasName,
+            this.ShaderType,
+            this.GlassColor,
+            this.GlassRefraction,
             this.UseAbsoluteSizeEditing
         );
     }

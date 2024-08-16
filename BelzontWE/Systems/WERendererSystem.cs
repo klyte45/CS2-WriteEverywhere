@@ -177,8 +177,8 @@ namespace BelzontWE
 
                     if (bri.m_refText != "")
                     {
-                        Graphics.DrawMesh(bri.Mesh, item.transformMatrix, bri.m_generatedMaterial, 0, null, 0, item.weComponent.MaterialProperties);
-                        if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length} | {bri.m_generatedMaterial} | M= {item.transformMatrix}");
+                        Graphics.DrawMesh(bri.Mesh, item.transformMatrix, item.weComponent.IsGlass ? bri.GlassMaterial : bri.GeneratedMaterial, item.weComponent.IsGlass ? layerRender : 0, null, 0, item.weComponent.MaterialProperties);
+                        if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length} | {bri.GeneratedMaterial} | M= {item.transformMatrix}");
                     }
 
                     if (wasDirty) cmd.SetComponent(item.textDataEntity, item.weComponent);
@@ -186,7 +186,7 @@ namespace BelzontWE
                 dumpNextFrame = false;
             }
         }
-
+        private int layerRender = 0;
 #if BURST
         [BurstCompile]
 #endif

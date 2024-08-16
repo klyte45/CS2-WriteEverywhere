@@ -38,10 +38,22 @@ namespace BelzontWE.Font
             {
                 if (m_material == null)
                 {
-                    m_material = FontServer.CreateDefaultFontMaterial();
+                    m_material = FontServer.CreateDefaultFontMaterial(0);
 
                 }
                 return m_material;
+            }
+        }
+        private Material m_decalMaterial;
+        public Material GlassMaterial
+        {
+            get
+            {
+                if (m_decalMaterial is null)
+                {
+                    m_decalMaterial = FontServer.CreateDefaultFontMaterial(1);
+                }
+                return m_decalMaterial;
             }
         }
 
@@ -299,6 +311,8 @@ namespace BelzontWE.Font
 
             Material.mainTexture = Texture;
             Material.SetTexture(_BaseColorMap, Texture);
+            GlassMaterial.mainTexture = Texture;
+            GlassMaterial.SetTexture(_BaseColorMap, Texture);
 #if DEBUG && false
             byte[] bytes = UnityEngine.ImageConversion.EncodeToPNG(Texture);
             // For testing purposes, also write to a file in the project folder

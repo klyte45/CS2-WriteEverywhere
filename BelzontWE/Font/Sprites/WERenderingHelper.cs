@@ -20,6 +20,13 @@ namespace WriteEverywhere.Sprites
         public static BasicRenderInformation GenerateBri(FixedString32Bytes refName, Texture2D tex)
         {
             var proportion = tex.width / (float)tex.height;
+            var materialArray = new Material[2];
+            for (int i = 0; i < materialArray.Length; i++)
+            {
+                materialArray[i] = FontServer.CreateDefaultFontMaterial(i);
+                materialArray[i].mainTexture = tex;
+                materialArray[i].SetTexture(FontAtlas._BaseColorMap, tex);
+            }
             var bri = new BasicRenderInformation(refName.ToString(),
                 new[]
                     {
@@ -35,13 +42,13 @@ namespace WriteEverywhere.Sprites
                         new Vector2(0, 1),
                         new Vector2(0, 0),
                     },
-                triangles: kTriangleIndices)
+                triangles: kTriangleIndices,
+                material: materialArray[0],
+                glassMaterial: materialArray[1]
+                )
             {
                 m_sizeMetersUnscaled = new Vector2(proportion, 1),
-                m_generatedMaterial = FontServer.CreateDefaultFontMaterial()
             };
-            bri.m_generatedMaterial.mainTexture = tex;
-            bri.m_generatedMaterial.SetTexture(FontAtlas._BaseColorMap, tex);
             return bri;
 
         }

@@ -3,7 +3,8 @@
 
     public enum WEShader : byte
     {
-        Default
+        Default,
+        Glass
     }
 
 }

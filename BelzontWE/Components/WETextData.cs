@@ -22,6 +22,7 @@ namespace BelzontWE
         //8 = Exclude surface areas
         //4 = Accept decals
         public unsafe static int Size => sizeof(WETextData);
+        private static int shader_colossal_LodDistanceFactor = UnityEngine.Shader.PropertyToID("colossal_LodDistanceFactor");
 
 
         private GCHandle basicRenderInformation;
@@ -30,6 +31,8 @@ namespace BelzontWE
         private bool templateDirty;
         private Color32 color;
         private Color32 emissiveColor;
+        private Color32 glassColor;
+        private float glassRefraction;
         private float metallic;
         private float smoothness;
         private float emissiveIntensity;
@@ -47,10 +50,11 @@ namespace BelzontWE
         public quaternion offsetRotation;
         public float3 scale;
         private FixedString32Bytes itemName;
-        public WEShader shader;
+        private WEShader shader;
         public float maxWidthMeters;
         private FixedString512Bytes m_text;
         private int decalFlags;
+        public int lastLodValue;
 
         public int DecalFlags
         {
@@ -60,6 +64,7 @@ namespace BelzontWE
                 dirty = true;
             }
         }
+        public readonly bool IsGlass => Shader == WEShader.Glass;
         public bool InitializedEffectiveText { get; private set; }
         public bool useAbsoluteSizeEditing;
 
@@ -135,7 +140,9 @@ namespace BelzontWE
                     block.SetFloat("_CoatStrength", coatStrength);
                     block.SetFloat("_Smoothness", smoothness);
                     block.SetFloat(FontServer.DecalLayerMask, decalFlags.ToFloatBitFlags());
-
+                    block.SetFloat(FontServer.IOR, glassRefraction);
+                    block.SetColor(FontServer.Transmittance, glassColor);
+                    //"COLOSSAL_GEOMETRY_TILING"
                     dirty = false;
                 }
                 return block;
@@ -246,6 +253,22 @@ namespace BelzontWE
                 dirty = true;
             }
         }
+        public float GlassRefraction
+        {
+            readonly get => glassRefraction; set
+            {
+                glassRefraction = Mathf.Clamp(value, 1, 1000);
+                dirty = true;
+            }
+        }
+        public Color GlassColor
+        {
+            readonly get => glassColor; set
+            {
+                glassColor = value;
+                dirty = true;
+            }
+        }
         public string Formulae
         {
             get => formulaeHandlerStr.ToString();
@@ -275,11 +298,12 @@ namespace BelzontWE
                 metallic = 0,
                 smoothness = 0,
                 emissiveIntensity = 0,
-                coatStrength = 0.5f,
+                coatStrength = 0f,
                 m_text = "NEW TEXT",
                 ItemName = "New item",
-                shader = WEShader.Default,
-                decalFlags = DEFAULT_DECAL_FLAGS
+                Shader = WEShader.Default,
+                decalFlags = DEFAULT_DECAL_FLAGS,
+                glassRefraction = .5f
             };
         }
 
@@ -364,6 +388,15 @@ namespace BelzontWE
         }
 
         public FixedString512Bytes EffectiveText { get; private set; }
+        public WEShader Shader
+        {
+            readonly get => shader;
+            set
+            {
+                shader = value;
+                dirty = true;
+            }
+        }
 
 
 
@@ -377,7 +410,7 @@ namespace BelzontWE
                 offsetRotation = (Vector3Xml)((Quaternion)offsetRotation).eulerAngles,
                 scale = (Vector3Xml)scale,
                 itemName = ItemName.ToString(),
-                shader = shader,
+                shader = Shader,
                 atlas = Atlas.ToString(),
                 formulae = Formulae,
                 text = Text,
@@ -392,6 +425,8 @@ namespace BelzontWE
                     emissiveColor = EmissiveColor,
                     emissiveExposureWeight = EmissiveExposureWeight,
                     emissiveIntensity = EmissiveIntensity,
+                    glassColor = GlassColor,
+                    glassRefraction = GlassRefraction,
                     metallic = Metallic,
                     smoothness = Smoothness
                 }
@@ -417,7 +452,7 @@ namespace BelzontWE
                 offsetRotation = Quaternion.Euler(xml.offsetRotation),
                 scale = (float3)xml.scale,
                 ItemName = xml.itemName ?? "",
-                shader = xml.shader,
+                Shader = xml.shader,
                 Atlas = xml.atlas ?? "",
                 Formulae = xml.formulae ?? "",
                 Text = xml.text ?? "",
@@ -425,6 +460,8 @@ namespace BelzontWE
                 CoatStrength = xml.style.coatStrength,
                 Color = xml.style.color,
                 EmissiveColor = xml.style.emissiveColor,
+                GlassColor = xml.style.glassColor,
+                GlassRefraction = xml.style.glassRefraction,
                 EmissiveExposureWeight = xml.style.emissiveExposureWeight,
                 EmissiveIntensity = xml.style.emissiveIntensity,
                 Metallic = xml.style.metallic,

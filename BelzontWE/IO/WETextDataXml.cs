@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace BelzontWE
 {
-    public class WETextDataXml : IEquatable<WETextDataXml>
+    public class WETextDataXml 
     {
         public Vector3Xml offsetPosition = new();
         public Vector3Xml offsetRotation = new();
@@ -36,78 +36,20 @@ namespace BelzontWE
         public bool ShouldSerializefontName() => textType == WESimulationTextType.Text;
         public bool ShouldSerializemaxWidthMeters() => textType == WESimulationTextType.Text;
 
-        public override bool Equals(object obj) => Equals(obj as WETextDataXml);
-
-        public bool Equals(WETextDataXml other) => other is not null &&
-                   EqualityComparer<Vector3Xml>.Default.Equals(offsetPosition, other.offsetPosition) &&
-                   EqualityComparer<Vector3Xml>.Default.Equals(offsetRotation, other.offsetRotation) &&
-                   EqualityComparer<Vector3Xml>.Default.Equals(scale, other.scale) &&
-                   itemName == other.itemName &&
-                   shader == other.shader &&
-                   text == other.text &&
-                   layoutName == other.layoutName &&
-                   imageName == other.imageName &&
-                   atlas == other.atlas &&
-                   textType == other.textType &&
-                   EqualityComparer<WETextDataStyleXml>.Default.Equals(style, other.style) &&
-                   formulae == other.formulae &&
-                   fontName == other.fontName &&
-                   maxWidthMeters == other.maxWidthMeters &&
-                   decalFlags == other.decalFlags;
-
-        public override int GetHashCode()
-        {
-            HashCode hash = new HashCode();
-            hash.Add(offsetPosition);
-            hash.Add(offsetRotation);
-            hash.Add(scale);
-            hash.Add(itemName);
-            hash.Add(shader);
-            hash.Add(text);
-            hash.Add(layoutName);
-            hash.Add(imageName);
-            hash.Add(atlas);
-            hash.Add(textType);
-            hash.Add(style);
-            hash.Add(formulae);
-            hash.Add(fontName);
-            hash.Add(maxWidthMeters);
-            hash.Add(decalFlags);
-            return hash.ToHashCode();
-        }
-
-        public class WETextDataStyleXml : IEquatable<WETextDataStyleXml>
+        public class WETextDataStyleXml
         {
             [XmlIgnore] public Color32 color;
             [XmlIgnore] public Color32 emissiveColor;
+            [XmlIgnore] public Color32 glassColor;
             [XmlAttribute][DefaultValue("00000000")] public string colorRGBA { get => color.ToRGBA(); set => color = ColorExtensions.FromRGBA(value); }
             [XmlAttribute][DefaultValue("00000000")] public string emissiveColorRGBA { get => emissiveColor.ToRGBA(); set => emissiveColor = ColorExtensions.FromRGBA(value); }
+            [XmlAttribute][DefaultValue("000000")] public string glassColorRGB { get => glassColor.ToRGB(); set => glassColor = ColorExtensions.FromRGB(value); }
+            [XmlAttribute][DefaultValue(0f)] public float glassRefraction;
             [XmlAttribute][DefaultValue(0f)] public float metallic;
             [XmlAttribute][DefaultValue(0f)] public float smoothness;
             [XmlAttribute][DefaultValue(0f)] public float emissiveIntensity;
             [XmlAttribute][DefaultValue(0f)] public float emissiveExposureWeight;
-            [XmlAttribute][DefaultValue(0f)] public float coatStrength;
-
-            public override bool Equals(object obj) => Equals(obj as WETextDataStyleXml);
-
-            public bool Equals(WETextDataStyleXml other) => other is not null &&
-                       EqualityComparer<Color32>.Default.Equals(color, other.color) &&
-                       EqualityComparer<Color32>.Default.Equals(emissiveColor, other.emissiveColor) &&
-                       metallic == other.metallic &&
-                       smoothness == other.smoothness &&
-                       emissiveIntensity == other.emissiveIntensity &&
-                       emissiveExposureWeight == other.emissiveExposureWeight &&
-                       coatStrength == other.coatStrength;
-
-            public override int GetHashCode() => HashCode.Combine(color, emissiveColor, metallic, smoothness, emissiveIntensity, emissiveExposureWeight, coatStrength);
-
-            public static bool operator ==(WETextDataStyleXml left, WETextDataStyleXml right) => EqualityComparer<WETextDataStyleXml>.Default.Equals(left, right);
-
-            public static bool operator !=(WETextDataStyleXml left, WETextDataStyleXml right) => !(left == right);
+            [XmlAttribute][DefaultValue(0f)] public float coatStrength;         
         }
-
-        public static bool operator ==(WETextDataXml left, WETextDataXml right) => EqualityComparer<WETextDataXml>.Default.Equals(left, right);
-
-        public static bool operator !=(WETextDataXml left, WETextDataXml right) => !(left == right);
     }
 }

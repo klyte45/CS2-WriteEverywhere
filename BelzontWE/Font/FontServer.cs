@@ -22,6 +22,7 @@ namespace BelzontWE
     public partial class FontServer : GameSystemBase
     {
         public const string defaultShaderName = "BH/SG_DefaultShader";
+        public const string defaultGlassShaderName = "BH/GlsShader";
         public static string FOLDER_PATH => BasicIMod.ModSettingsRootFolder;
         #region Fonts
         public const string DEFAULT_FONT_KEY = "/DEFAULT/";
@@ -44,7 +45,9 @@ namespace BelzontWE
         private static int qualitySize = 100;
 
         public static FontServer Instance { get; private set; }
-        public static int DecalLayerMask { get; private set; }
+        public static int DecalLayerMask { get; private set; } = -1;
+        public static int Transmittance { get; private set; } = -1;
+        public static int IOR { get; private set; }
         private Dictionary<FixedString32Bytes, Entity> LoadedFonts { get; } = new();
 
         private EndFrameBarrier m_endFrameBarrier;
@@ -67,6 +70,23 @@ namespace BelzontWE
             base.OnCreate();
             Instance = this;
             DecalLayerMask = Shader.PropertyToID("colossal_DecalLayerMask");
+
+            var glassShader = Shader.Find(defaultGlassShaderName);
+            var propertyCount = glassShader.GetPropertyCount();
+            for (int i = 0; i < propertyCount && (Transmittance == -1 || IOR == -1); i++)
+            {
+                switch (glassShader.GetPropertyDescription(i))
+                {
+                    case "IOR":
+                        IOR = glassShader.GetPropertyNameId(i);
+                        break;
+                    case "TransmittanceColor":
+                        Transmittance = glassShader.GetPropertyNameId(i);
+                        break;
+                }
+            }
+
+
             m_fontEntitiesQuery = GetEntityQuery(new EntityQueryDesc[]
            {
                 new() {
@@ -241,32 +261,45 @@ namespace BelzontWE
             }
         }
 
-        public static Material CreateDefaultFontMaterial()
+        public static Material CreateDefaultFontMaterial(int type)
         {
-            return Instance.CreateDefaultFontMaterial_Impl();
+            return Instance.CreateDefaultFontMaterial_Impl(type);
         }
-        private Material CreateDefaultFontMaterial_Impl()
+        private Material CreateDefaultFontMaterial_Impl(int type)
         {
-            var material = new Material(Shader.Find(defaultShaderName));
-            material.EnableKeyword("_GPU_ANIMATION_OFF");
-            HDMaterial.SetAlphaClipping(material, true);
-            HDMaterial.SetAlphaCutoff(material, .7f);
-            HDMaterial.SetUseEmissiveIntensity(material, true);
-            HDMaterial.SetEmissiveColor(material, UnityEngine.Color.white);
-            HDMaterial.SetEmissiveIntensity(material, 0, UnityEditor.Rendering.HighDefinition.EmissiveIntensityUnit.Nits);
-            material.SetFloat("_DoubleSidedEnable", 1);
-            material.SetVector("_DoubleSidedConstants", new Vector4(1, 1, -1, 0));
-            material.SetFloat("_Smoothness", .5f);
-            material.SetFloat("_ZTestGBuffer", 7);
-            material.SetFloat(DecalLayerMask, 8.ToFloatBitFlags());
-            material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
+            Material material = null; new Material(Shader.Find(defaultShaderName));
+            switch (type)
+            {
+                case 0:
+                    material = new Material(Shader.Find(defaultShaderName));
+                    material.EnableKeyword("_GPU_ANIMATION_OFF");
+                    HDMaterial.SetAlphaClipping(material, true);
+                    HDMaterial.SetAlphaCutoff(material, .7f);
+                    HDMaterial.SetUseEmissiveIntensity(material, true);
+                    HDMaterial.SetEmissiveColor(material, UnityEngine.Color.white);
+                    HDMaterial.SetEmissiveIntensity(material, 0, UnityEditor.Rendering.HighDefinition.EmissiveIntensityUnit.Nits);
+                    material.SetFloat("_DoubleSidedEnable", 1);
+                    material.SetVector("_DoubleSidedConstants", new Vector4(1, 1, -1, 0));
+                    material.SetFloat("_Smoothness", .5f);
+                    material.SetFloat("_ZTestGBuffer", 7);
+                    material.SetFloat(DecalLayerMask, 8.ToFloatBitFlags());
+                    material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
+                    break;
+                case 1:
+                    material = new Material(Shader.Find(defaultGlassShaderName));
+                    material.SetFloat("_DoubleSidedEnable", 1);
+                    material.SetVector("_DoubleSidedConstants", new Vector4(1, 1, -1, 0));
+                    material.SetFloat(DecalLayerMask, 8.ToFloatBitFlags());
+                    material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
+                    break;
+            }
             HDMaterial.ValidateMaterial(material);
             return material;
         }
 
         internal bool FontExists(string name) => LoadedFonts.ContainsKey(name);
 
-        internal string[] GetLoadedFontsNames() => LoadedFonts.Keys.Select(x => x.ToString()).ToArray();
+        public string[] GetLoadedFontsNames() => LoadedFonts.Keys.Select(x => x.ToString()).ToArray();
 
         internal void EnsureFont(FixedString32Bytes fontName)
         {
