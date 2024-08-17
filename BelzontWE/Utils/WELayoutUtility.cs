@@ -1,232 +1,77 @@
-﻿using Colossal.Entities;
-using Unity.Entities;
+﻿using Unity.Entities;
 
 namespace BelzontWE
 {
     public static class WELayoutUtility
     {
-        public static Entity DoCloneTextItemReferenceSelf(Entity toCopy, Entity newParent, EntityManager em, bool parentAsTargetAtTheEnd = false)
+        public enum ParentEntityMode
         {
-            var cloneEntity = em.Instantiate(toCopy);
-            var weData = em.GetComponentData<WETextData>(cloneEntity);
-            weData.TargetEntity = cloneEntity;
-            weData = weData.OnPostInstantiate();
-            weData.SetNewParentForced(newParent);
-            em.SetComponentData(cloneEntity, weData);
-            if (weData.TextType != WESimulationTextType.Placeholder && em.TryGetBuffer<WESubTextRef>(cloneEntity, false, out var subRefs))
+            TARGET_IS_TARGET,
+            TARGET_IS_SELF,
+            TARGET_IS_PARENT
+        }
+        public static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, EntityManager em, ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET, bool selfTarget = false)
+        {
+            var newEntity = em.CreateEntity();
+            var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, selfTarget, newEntity, out WETextData weData);
+            em.AddComponentData(newEntity, weData);
+            if (weData.TextType != WESimulationTextType.Placeholder && toCopy.children.Length > 0)
             {
-                for (int i = 0; i < subRefs.Length; i++)
+                var buff = em.AddBuffer<WESubTextRef>(newEntity);
+                for (int i = 0; i < toCopy.children.Length; i++)
                 {
-                    var subRef = subRefs[i];
-                    subRef.m_weTextData = DoCloneTextItem(subRefs[i].m_weTextData, cloneEntity, em);
-                    subRefs[i] = subRef;
+                    buff.Add(new WESubTextRef { m_weTextData = DoCreateLayoutItem(toCopy.children[i], newEntity, childTarget, em) });
                 }
             }
-            if (parentAsTargetAtTheEnd)
-            {
-                weData.TargetEntity = newParent;
-                em.SetComponentData(cloneEntity, weData);
-            }
-            return cloneEntity;
+            return newEntity;
         }
-        public static Entity DoCloneTextItem(Entity target, Entity newParent, EntityManager em)
+
+        public static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, EntityManager em, EntityCommandBuffer cmd, ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET, bool selfTarget = false)
         {
-            var finalTargetEntity = em.TryGetComponent<WETextData>(newParent, out var data) ? data.TargetEntity : newParent;
-            var cloneEntity = em.Instantiate(target);
-            var weData = em.GetComponentData<WETextData>(cloneEntity);
-            weData.TargetEntity = finalTargetEntity;
-            weData = weData.OnPostInstantiate();
-            if (weData.SetNewParent(newParent, em))
+            var newEntity = cmd.CreateEntity();
+            var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, selfTarget, newEntity, out WETextData weData);
+            cmd.AddComponent(newEntity, weData);
+            cmd.AddComponent<WEWaitingPostInstantiation>(newEntity);
+            if (weData.TextType != WESimulationTextType.Placeholder && toCopy.children.Length > 0)
             {
-                em.SetComponentData(cloneEntity, weData);
-            }
-            if (weData.TextType != WESimulationTextType.Placeholder && em.TryGetBuffer<WESubTextRef>(cloneEntity, false, out var subRefs))
-            {
-                for (int i = 0; i < subRefs.Length; i++)
+                var buff = em.AddBuffer<WESubTextRef>(newEntity);
+                for (int i = 0; i < toCopy.children.Length; i++)
                 {
-                    var subRef = subRefs[i];
-                    subRef.m_weTextData = DoCloneTextItem(subRefs[i].m_weTextData, cloneEntity, em);
-                    subRefs[i] = subRef;
+                    buff.Add(new WESubTextRef { m_weTextData = DoCreateLayoutItem(toCopy.children[i], newEntity, childTarget, em, cmd) });
                 }
             }
-            return cloneEntity;
+            return newEntity;
         }
 
-        public static Entity CreateEntityFromTree(WETextDataTree tree, Entity parent, EntityManager em)
+        public static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextData> tdLookup, ref BufferLookup<WESubTextRef> subTextLookup, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET, bool selfTarget = false)
         {
-            var selfEntity = em.CreateEntity();
-            var selfComponent = WETextData.FromDataXml(tree.self ?? new(), parent, em);
-            if (parent != Entity.Null)
+            var newEntity = cmd.CreateEntity(unfilteredChunkIndex);
+            var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, selfTarget, newEntity, out WETextData weData);
+            cmd.AddComponent(unfilteredChunkIndex, newEntity, weData);
+            cmd.AddComponent<WEWaitingPostInstantiation>(unfilteredChunkIndex, newEntity);
+            if (weData.TextType != WESimulationTextType.Placeholder && toCopy.children.Length > 0)
             {
-                if (!em.TryGetBuffer<WESubTextRef>(parent, true, out var subBuff)) subBuff = em.AddBuffer<WESubTextRef>(parent);
-                subBuff.Add(new WESubTextRef
+                var buff = cmd.AddBuffer<WESubTextRef>(unfilteredChunkIndex, newEntity);
+                for (int i = 0; i < toCopy.children.Length; i++)
                 {
-                    m_weTextData = selfEntity
-                });
-            }
-            else
-            {
-                em.AddComponent<WETemplateData>(selfEntity);
-                selfComponent.TargetEntity = selfEntity;
-            }
-            em.AddComponentData(selfEntity, selfComponent);
-
-            for (int i = 0; i < tree.children?.Length; i++)
-            {
-                var child = tree.children[i];
-                CreateEntityFromTree(child, selfEntity, em);
-            }
-            if (parent == Entity.Null)
-            {
-                selfComponent.TargetEntity = Entity.Null;
-                em.SetComponentData(selfEntity, selfComponent);
-            }
-            return selfEntity;
-        }
-        public static Entity CreateEntityFromTree(WETextDataTree tree, Entity parent, EntityManager em, EntityCommandBuffer cmdBuffer)
-        {
-            var selfEntity = cmdBuffer.CreateEntity();
-            var selfComponent = WETextData.FromDataXml(tree.self ?? new(), parent, em);
-            if (parent != Entity.Null)
-            {
-                if (!em.TryGetBuffer<WESubTextRef>(parent, true, out var subBuff)) subBuff = em.AddBuffer<WESubTextRef>(parent);
-                subBuff.Add(new WESubTextRef
-                {
-                    m_weTextData = selfEntity
-                });
-            }
-            else
-            {
-                cmdBuffer.AddComponent<WETemplateData>(selfEntity);
-                selfComponent.TargetEntity = selfEntity;
-            }
-            cmdBuffer.AddComponent(selfEntity, selfComponent);
-
-            for (int i = 0; i < tree.children?.Length; i++)
-            {
-                var child = tree.children[i];
-                CreateEntityFromTree(child, selfEntity, em, cmdBuffer);
-            }
-            if (parent == Entity.Null)
-            {
-                selfComponent.TargetEntity = Entity.Null;
-                cmdBuffer.SetComponent(selfEntity, selfComponent);
-            }
-            return selfEntity;
-        }
-
-        public static Entity DoCloneTextItemReferenceSelf(Entity toCopy, Entity newParent, EntityManager em, EntityCommandBuffer cmd, bool parentAsTargetAtTheEnd = false)
-        {
-            var cloneEntity = cmd.Instantiate(toCopy);
-            var weData = em.GetComponentData<WETextData>(toCopy);
-            weData.TargetEntity = cloneEntity;
-            weData = weData.OnPostInstantiate();
-            weData.SetNewParentForced(newParent);
-            cmd.SetComponent(cloneEntity, weData);
-            if (weData.TextType != WESimulationTextType.Placeholder && em.TryGetBuffer<WESubTextRef>(toCopy, true, out var subRefs))
-            {
-                cmd.RemoveComponent<WESubTextRef>(cloneEntity);
-                DynamicBuffer<WESubTextRef> newBuff = cmd.AddBuffer<WESubTextRef>(cloneEntity);
-                newBuff.Length = subRefs.Length;
-                for (int i = 0; i < subRefs.Length; i++)
-                {
-                    var subRef = subRefs[i];
-                    subRef.m_weTextData = DoCloneTextItemForCommandBuffer(subRefs[i].m_weTextData, cloneEntity, weData, em, cmd);
-                    newBuff[i] = subRef;
-                }
-               ;
-            }
-            if (parentAsTargetAtTheEnd)
-            {
-                weData.TargetEntity = newParent;
-                cmd.SetComponent(cloneEntity, weData);
-            }
-            return cloneEntity;
-        }
-
-
-        private static Entity DoCloneTextItemForCommandBuffer(Entity toCopy, Entity newParent, WETextData refTextData, EntityManager em, EntityCommandBuffer cmd)
-        {
-            var finalTargetEntity = refTextData.TargetEntity;
-            var cloneEntity = cmd.Instantiate(toCopy);
-            var weData = em.GetComponentData<WETextData>(toCopy);
-            weData.TargetEntity = finalTargetEntity;
-            weData = weData.OnPostInstantiate();
-            weData.SetNewParentForced(newParent);
-            cmd.SetComponent(cloneEntity, weData);
-            if (weData.TextType != WESimulationTextType.Placeholder && em.TryGetBuffer<WESubTextRef>(toCopy, true, out var subRefs))
-            {
-                cmd.RemoveComponent<WESubTextRef>(cloneEntity);
-                DynamicBuffer<WESubTextRef> newBuff = cmd.AddBuffer<WESubTextRef>(cloneEntity);
-                newBuff.Length = subRefs.Length;
-                for (int i = 0; i < subRefs.Length; i++)
-                {
-                    var subRef = subRefs[i];
-                    subRef.m_weTextData = DoCloneTextItemForCommandBuffer(subRefs[i].m_weTextData, cloneEntity, weData, em, cmd);
-                    newBuff[i] = subRef;
+                    buff.Add(new WESubTextRef { m_weTextData = DoCreateLayoutItem(toCopy.children[i], newEntity, childTarget, ref tdLookup, ref subTextLookup, unfilteredChunkIndex, cmd) });
                 }
             }
-            return cloneEntity;
+            return newEntity;
         }
 
-
-
-
-
-        public static Entity DoCloneTextItemReferenceSelf(Entity toCopy, Entity newParent, ref ComponentLookup<WETextData> tdLookup, ref BufferLookup<WESubTextRef> subTextLookup, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, bool parentAsTargetAtTheEnd = false)
+        private static Entity CommonDataSetup(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ParentEntityMode childTargetMode, bool selfTarget, Entity newEntity, out WETextData weData)
         {
-            var cloneEntity = cmd.Instantiate(unfilteredChunkIndex, toCopy);
-            tdLookup.TryGetComponent(toCopy, out var weData);
-            weData.TargetEntity = cloneEntity;
-            weData.SetNewParentForced(newParent);
-            weData = weData.OnPostInstantiate();
-            cmd.SetComponent(unfilteredChunkIndex, cloneEntity, weData);
-            cmd.AddComponent<WEWaitingPostInstantiation>(unfilteredChunkIndex, cloneEntity);
-            if (weData.TextType != WESimulationTextType.Placeholder && subTextLookup.TryGetBuffer(toCopy, out var subRefs))
+            if (selfTarget) targetEntity = newEntity;
+            weData = WETextData.FromDataStruct(toCopy.self, newEntity, targetEntity);
+            var childTarget = childTargetMode switch
             {
-                cmd.RemoveComponent<WESubTextRef>(unfilteredChunkIndex, cloneEntity);
-                DynamicBuffer<WESubTextRef> newBuff = cmd.AddBuffer<WESubTextRef>(unfilteredChunkIndex, cloneEntity);
-                newBuff.Length = subRefs.Length;
-                for (int i = 0; i < subRefs.Length; i++)
-                {
-                    var subRef = subRefs[i];
-                    subRef.m_weTextData = DoCloneTextItemForCommandBuffer(subRefs[i].m_weTextData, cloneEntity, weData, ref tdLookup, ref subTextLookup, unfilteredChunkIndex, cmd);
-                    newBuff[i] = subRef;
-                }
-               ;
-            }
-            if (parentAsTargetAtTheEnd)
-            {
-                weData.TargetEntity = newParent;
-                cmd.SetComponent(unfilteredChunkIndex, cloneEntity, weData);
-            }
-            return cloneEntity;
-        }
-
-
-        private static Entity DoCloneTextItemForCommandBuffer(Entity toCopy, Entity newParent, WETextData refTextData, ref ComponentLookup<WETextData> tdLookup, ref BufferLookup<WESubTextRef> subTextLookup, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
-        {
-            var finalTargetEntity = refTextData.TargetEntity;
-            var cloneEntity = cmd.Instantiate(unfilteredChunkIndex, toCopy);
-            tdLookup.TryGetComponent(toCopy, out var weData);
-            weData.TargetEntity = finalTargetEntity;
-            weData = weData.OnPostInstantiate();
-            weData.SetNewParentForced(newParent);
-            cmd.SetComponent(unfilteredChunkIndex, cloneEntity, weData);
-            cmd.AddComponent<WEWaitingPostInstantiation>(unfilteredChunkIndex, cloneEntity);
-            if (weData.TextType != WESimulationTextType.Placeholder && subTextLookup.TryGetBuffer(toCopy, out var subRefs))
-            {
-                cmd.RemoveComponent<WESubTextRef>(unfilteredChunkIndex, cloneEntity);
-                DynamicBuffer<WESubTextRef> newBuff = cmd.AddBuffer<WESubTextRef>(unfilteredChunkIndex, cloneEntity);
-                newBuff.Length = subRefs.Length;
-                for (int i = 0; i < subRefs.Length; i++)
-                {
-                    var subRef = subRefs[i];
-                    subRef.m_weTextData = DoCloneTextItemForCommandBuffer(subRefs[i].m_weTextData, cloneEntity, weData, ref tdLookup, ref subTextLookup, unfilteredChunkIndex, cmd);
-                    newBuff[i] = subRef;
-                }
-            }
-            return cloneEntity;
+                ParentEntityMode.TARGET_IS_SELF => newEntity,
+                ParentEntityMode.TARGET_IS_PARENT => parentEntity,
+                _ => targetEntity
+            };
+            weData.SetNewParentForced(parentEntity);
+            return childTarget;
         }
     }
 }

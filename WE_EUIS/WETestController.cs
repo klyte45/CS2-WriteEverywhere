@@ -2,6 +2,9 @@
 //#define VERBOSE 
 using Belzont.Interfaces;
 using Belzont.Utils;
+using Game.Common;
+using Game.Creatures;
+using Game.Tools;
 using Kwytto.Utils;
 using System;
 using System.Collections.Generic;
@@ -74,7 +77,7 @@ namespace BelzontWE
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
             if (m_FontServer.TryGetFont(fontName, out var fsd))
             {
-                var mat = fsd.FontSystem.CurrentAtlas.DecalMaterial;
+                var mat = fsd.FontSystem.CurrentAtlas.GlassMaterial;
                 var propertyCount = mat.shader.GetPropertyCount();
                 var listResult = new List<PropertyDescriptor>
                 {
@@ -171,7 +174,7 @@ namespace BelzontWE
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
             if (m_FontServer.TryGetFont(fontName, out var fsd))
             {
-                var mat = fsd.FontSystem.CurrentAtlas.DecalMaterial;
+                var mat = fsd.FontSystem.CurrentAtlas.GlassMaterial;
                 if (!int.TryParse(propertyIdxStr, out var propertyIdx))
                 {
                     switch (propertyIdxStr)
@@ -329,7 +332,20 @@ namespace BelzontWE
 
         private void EnableTestTool()
         {
-            m_WETestTool.Select();
+            EntityManager.AddComponent<Deleted>(GetEntityQuery(new EntityQueryDesc[]
+           {
+                new() {
+                    All = new ComponentType[]
+                    {
+                        ComponentType.ReadWrite<Pet>()
+                    },
+                    None = new ComponentType[]
+                    {
+                        ComponentType.ReadOnly<Temp>(),
+                        ComponentType.ReadOnly<Deleted>(),
+                    }
+                }
+           }));
         }
 
         private void ReloadFonts()

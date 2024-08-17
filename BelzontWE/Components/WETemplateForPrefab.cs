@@ -6,7 +6,7 @@ namespace BelzontWE
     {
         public static int CURRENT_VERSION = 0;
 
-        public Entity templateRef;
+        public Colossal.Hash128 templateRef;
         public Entity childEntity;
     }
     public struct WETemplateForPrefabDirty : ICleanupComponentData, IQueryTypeParameter { }

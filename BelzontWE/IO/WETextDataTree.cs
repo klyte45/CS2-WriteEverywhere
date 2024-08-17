@@ -16,6 +16,8 @@ namespace BelzontWE
 
         public bool ShouldSerializechildren() => self?.textType != WESimulationTextType.Placeholder;
 
+        public WETextDataTreeStruct ToStruct() => WETextDataTreeStruct.FromXml(this);
+
         public static WETextDataTree FromEntity(Entity e, EntityManager em)
         {
             if (!em.TryGetComponent<WETextData>(e, out var weTextData)) return default;

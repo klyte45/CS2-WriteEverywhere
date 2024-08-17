@@ -10,7 +10,7 @@ using Unity.Entities;
 
 namespace BelzontWE.Font
 {
-    public struct FontSystemData : IDisposable, IComponentData, ISerializable
+    public struct FontSystemData : IDisposable, IComponentData
     {
         private const uint CURRENT_VERSION = 0;
 

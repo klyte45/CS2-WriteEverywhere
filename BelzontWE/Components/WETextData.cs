@@ -150,16 +150,16 @@ namespace BelzontWE
         }
 
 
-        public string Text
+        public FixedString512Bytes Text
         {
-            readonly get => m_text.ToString();
+            readonly get => m_text;
             set
             {
                 if (m_text != value && TextType == WESimulationTextType.Placeholder)
                 {
                     templateDirty = true;
                 }
-                m_text = value ?? "";
+                m_text = value;
                 if (basicRenderInformation.IsAllocated)
                 {
                     basicRenderInformation.Free();
@@ -269,10 +269,10 @@ namespace BelzontWE
                 dirty = true;
             }
         }
-        public string Formulae
+        public FixedString512Bytes Formulae
         {
-            get => formulaeHandlerStr.ToString();
-            private set => formulaeHandlerStr = value ?? "";
+            get => formulaeHandlerStr;
+            private set => formulaeHandlerStr = value;
         }
         public bool HasBRI => basicRenderInformation.IsAllocated;
         public Bounds3 Bounds { get; private set; }
@@ -349,10 +349,10 @@ namespace BelzontWE
             materialBlockPtr = default;
         }
 
-        public WETextData OnPostInstantiate()
+        public WETextData OnPostInstantiate(EntityManager em)
         {
-            basicRenderInformation = default;
-            materialBlockPtr = default;
+            FontServer.Instance.EnsureFont(fontName);
+            UpdateEffectiveText(em, targetEntity);
             return this;
         }
 
@@ -412,13 +412,43 @@ namespace BelzontWE
                 itemName = ItemName.ToString(),
                 shader = Shader,
                 atlas = Atlas.ToString(),
+                formulae = Formulae.ToString(),
+                text = Text.ToString(),
+                textType = TextType,
+                maxWidthMeters = maxWidthMeters,
+                decalFlags = DecalFlags,
+                fontName = fontName.ToString(),
+                style = new WETextDataXml.WETextDataStyleXml
+                {
+                    coatStrength = CoatStrength,
+                    color = Color,
+                    emissiveColor = EmissiveColor,
+                    emissiveExposureWeight = EmissiveExposureWeight,
+                    emissiveIntensity = EmissiveIntensity,
+                    glassColor = GlassColor,
+                    glassRefraction = GlassRefraction,
+                    metallic = Metallic,
+                    smoothness = Smoothness
+                }
+            };
+        }
+        public WETextDataStruct ToDataStruct(EntityManager em)
+        {
+            return new WETextDataStruct
+            {
+                offsetPosition = (Vector3Xml)offsetPosition,
+                offsetRotation = (Vector3Xml)((Quaternion)offsetRotation).eulerAngles,
+                scale = (Vector3Xml)scale,
+                itemName = ItemName.ToString(),
+                shader = Shader,
+                atlas = Atlas.ToString(),
                 formulae = Formulae,
                 text = Text,
                 textType = TextType,
                 maxWidthMeters = maxWidthMeters,
                 decalFlags = DecalFlags,
                 fontName = fontName.ToString(),
-                style = new WETextDataXml.WETextDataStyleXml
+                style = new()
                 {
                     coatStrength = CoatStrength,
                     color = Color,
@@ -473,6 +503,52 @@ namespace BelzontWE
             FontServer.Instance.EnsureFont(weData.fontName);
             weData.UpdateEffectiveText(em, target);
             return weData;
+        }
+
+        public static WETextData FromDataStruct(WETextDataStruct xml, Entity parent, EntityManager em)
+        {
+            Entity target;
+            if (em.TryGetComponent(parent, out WETextData parentData))
+            {
+                target = parentData.targetEntity;
+            }
+            else
+            {
+                target = parent;
+            }
+            var weData = FromDataStruct(xml, parent, target);
+            FontServer.Instance.EnsureFont(weData.fontName);
+            weData.UpdateEffectiveText(em, target);
+            return weData;
+        }
+        public static WETextData FromDataStruct(WETextDataStruct xml, Entity parent, Entity target)
+        {
+            return new WETextData
+            {
+                targetEntity = target,
+                parentEntity = parent,
+                offsetPosition = (float3)xml.offsetPosition,
+                offsetRotation = Quaternion.Euler(xml.offsetRotation),
+                scale = (float3)xml.scale,
+                ItemName = xml.itemName,
+                Shader = xml.shader,
+                Atlas = xml.atlas,
+                Formulae = xml.formulae,
+                Text = xml.text,
+                TextType = xml.textType,
+                CoatStrength = xml.style.coatStrength,
+                Color = xml.style.color,
+                EmissiveColor = xml.style.emissiveColor,
+                GlassColor = xml.style.glassColor,
+                GlassRefraction = xml.style.glassRefraction,
+                EmissiveExposureWeight = xml.style.emissiveExposureWeight,
+                EmissiveIntensity = xml.style.emissiveIntensity,
+                Metallic = xml.style.metallic,
+                Smoothness = xml.style.smoothness,
+                maxWidthMeters = xml.maxWidthMeters,
+                decalFlags = xml.decalFlags,
+                fontName = xml.fontName.Trim()
+            };
         }
 
         #endregion

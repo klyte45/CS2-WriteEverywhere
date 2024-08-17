@@ -54,6 +54,13 @@ namespace BelzontWE
 
         private string ExportComponentAsXml(Entity e, string name)
         {
+            var dataTree = WETextDataTree.FromEntity(e, EntityManager);
+
+            return CommonExportAsXml(name, dataTree);
+        }
+
+        private static string CommonExportAsXml(string name, WETextDataTree dataTree)
+        {
             KFileUtils.EnsureFolderCreation(WETemplateManager.SAVED_PREFABS_FOLDER);
             var effectiveFileName = name;
             var targetFilename = Path.Combine(WETemplateManager.SAVED_PREFABS_FOLDER, $"{effectiveFileName}.{WETemplateManager.SIMPLE_LAYOUT_EXTENSION}");
@@ -65,24 +72,28 @@ namespace BelzontWE
                     targetFilename = Path.Combine(WETemplateManager.SAVED_PREFABS_FOLDER, $"{effectiveFileName}.{WETemplateManager.SIMPLE_LAYOUT_EXTENSION}");
                 }
             }
-            File.WriteAllText(targetFilename, WETextDataTree.FromEntity(e, EntityManager).ToXML());
+            File.WriteAllText(targetFilename, dataTree.ToXML());
             return effectiveFileName;
         }
+
         private bool LoadAsChildFromXml(Entity parent, string targetFilename)
         {
             if (!File.Exists(targetFilename)) return false;
 
             var tree = WETextDataTree.FromXML(File.ReadAllText(targetFilename));
-            if (tree == null) return false;
-
-            WELayoutUtility.CreateEntityFromTree(tree, parent, EntityManager);
+            if (tree is null) return false;
+            if (!EntityManager.TryGetComponent<WETextData>(parent, out var weData)) return false;
+            WELayoutUtility.DoCreateLayoutItem(WETextDataTreeStruct.FromXml(tree), parent, weData.TargetEntity, EntityManager);
             m_controller.UpdateTree();
             return true;
         }
         private bool LoadAsChildFromCityTemplate(Entity parent, string templateName)
         {
             if (!m_templateManager.CityTemplateExists(templateName)) return false;
-            WELayoutUtility.CreateEntityFromTree(WETextDataTree.FromEntity(m_templateManager[templateName], EntityManager), parent, EntityManager);
+            if (!EntityManager.TryGetComponent<WETextData>(parent, out var weData)) return false;
+            var layout = m_templateManager[templateName];
+            var e = WELayoutUtility.DoCreateLayoutItem(layout, parent, weData.TargetEntity, EntityManager);
+            LogUtils.DoLog($"Added entity {e} with layout {layout.Guid} as child of {parent} pointing to target {weData.TargetEntity} | {EntityManager.HasComponent<WETextData>(e)}");
             m_controller.UpdateTree();
             return true;
         }
@@ -102,7 +113,7 @@ namespace BelzontWE
             }
             try
             {
-                return m_templateManager.SaveCityTemplate(name, WELayoutUtility.CreateEntityFromTree(WETextDataTree.FromXML(File.ReadAllText(path)), Entity.Null, EntityManager)) ? name : null;
+                return m_templateManager.SaveCityTemplate(name, WETextDataTree.FromXML(File.ReadAllText(path)).ToStruct()) ? name : null;
             }
             catch (Exception e)
             {
@@ -113,13 +124,14 @@ namespace BelzontWE
 
         private int ExportComponentAsPrefabDefault(Entity e, bool force = false)
         {
-            var validationResults = m_templateManager.CanBePrefabLayout(e);
+            var xml = WESelflessTextDataTree.FromEntity(e, EntityManager);
+            var validationResults = m_templateManager.CanBePrefabLayout(xml.ToStruct());
             if (validationResults != 0)
             {
                 return -1000 - validationResults;
             }
-            KFileUtils.EnsureFolderCreation(WETemplateManager.SAVED_PREFABS_FOLDER);
             var effTarget = WETextData.GetTargetEntityEffective(e, EntityManager, true);
+            KFileUtils.EnsureFolderCreation(WETemplateManager.SAVED_PREFABS_FOLDER);
             if (!EntityManager.TryGetComponent(effTarget, out PrefabRef prefabRef))
             {
                 return -1;
@@ -144,12 +156,12 @@ namespace BelzontWE
                     return 0;
                 }
             }
-            File.WriteAllText(targetFilename, WESelflessTextDataTree.FromEntity(e, EntityManager).ToXML());
+            File.WriteAllText(targetFilename, xml.ToXML());
             m_templateManager.MarkPrefabsDirty();
             return 1;
         }
 
-        private Dictionary<string, Entity> ListCityTemplates() => m_templateManager.ListCityTemplates();
+        private Dictionary<string, string> ListCityTemplates() => m_templateManager.ListCityTemplates();
 
         private CityDetailResponse GetCityTemplateDetail(string name)
             => name == null || !m_templateManager.CityTemplateExists(name)
@@ -169,7 +181,7 @@ namespace BelzontWE
         private string ExportCityLayoutAsXml(string layoutName, string saveName)
                     => layoutName.TrimToNull() == null || !m_templateManager.CityTemplateExists(layoutName)
                         ? null
-                        : ExportComponentAsXml(m_templateManager[layoutName], saveName);
+                        : CommonExportAsXml(saveName, m_templateManager[layoutName].ToXml());
 
         private void OpenExportedFilesFolder() => RemoteProcess.OpenFolder(WETemplateManager.SAVED_PREFABS_FOLDER);
 

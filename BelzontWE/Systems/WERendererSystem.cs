@@ -203,7 +203,6 @@ namespace BelzontWE
                     m_weDataLookup = GetComponentLookup<WETextData>(true),
                     m_weTemplateUpdaterLookup = GetComponentLookup<WETemplateUpdater>(true),
                     m_weTemplateForPrefabLookup = GetComponentLookup<WETemplateForPrefab>(true),
-                    m_weTemplateDataLookup = GetComponentLookup<WETemplateData>(true),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                     m_LodParameters = m_LodParameters,
                     m_CameraPosition = m_CameraPosition,

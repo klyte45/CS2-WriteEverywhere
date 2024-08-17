@@ -6,7 +6,7 @@ namespace BelzontWE
     {
         public static int CURRENT_VERSION = 0;
 
-        public Entity templateEntity;
+        public Colossal.Hash128 templateEntity;
         public Entity childEntity;
     }
 }

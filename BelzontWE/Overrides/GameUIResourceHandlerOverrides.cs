@@ -21,7 +21,7 @@ namespace BelzontWE
         private static bool BeforeOnResourceRequest(ref IResourceRequest request, ref IResourceResponse response)
         {
             var url = request.GetURL();
-            if (BasicIMod.DebugMode) LogUtils.DoLog("URL = " + url);
+            if (BasicIMod.TraceMode) LogUtils.DoTraceLog("URL = " + url);
             if (url.StartsWith("coui://we.k45/_fonts/"))
             {
                 var fontName = url["coui://we.k45/_fonts/".Length..];
@@ -54,7 +54,7 @@ namespace BelzontWE
         private static bool BeforeOnResourceStreamRequest(ref IResourceRequest request, ref IResourceStreamResponse response)
         {
             var url = request.GetURL();
-            if (BasicIMod.DebugMode) LogUtils.DoLog("URL = " + url);
+            if (BasicIMod.TraceMode) LogUtils.DoTraceLog("URL = " + url);
             if (url.StartsWith("coui://we.k45/_fonts/"))
             {
                 var fontName = url["coui://we.k45/_fonts/".Length..];

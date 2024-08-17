@@ -113,7 +113,7 @@ namespace BelzontWE
 
         private bool CloneAsChild(Entity target, Entity newParent)
         {
-            if (!EntityManager.HasComponent<WETextData>(target)) return false;
+            if (!EntityManager.TryGetComponent<WETextData>(target, out var weData)) return false;
             if (!EntityManager.HasBuffer<WESubTextRef>(newParent))
             {
                 EntityManager.AddBuffer<WESubTextRef>(newParent);
@@ -121,7 +121,7 @@ namespace BelzontWE
             var newBuff = EntityManager.GetBuffer<WESubTextRef>(newParent, false);
             newBuff.Add(new WESubTextRef
             {
-                m_weTextData = WELayoutUtility.DoCloneTextItem(target, newParent, EntityManager)
+                m_weTextData = WELayoutUtility.DoCreateLayoutItem(WETextDataTreeStruct.FromEntity(target, EntityManager), newParent, weData.TargetEntity, EntityManager)
             });
             ReloadTree();
             return true;
@@ -275,7 +275,7 @@ namespace BelzontWE
             CoatStrength.Value = currentItem.CoatStrength;
 
             SelectedFont.Value = EntityManager.TryGetComponent<FontSystemData>(currentItem.Font, out var fsd) ? fsd.Name : "";
-            FormulaeStr.Value = currentItem.Formulae;
+            FormulaeStr.Value = currentItem.Formulae.ToString();
             TextSourceType.Value = (int)currentItem.TextType;
             ImageAtlasName.Value = currentItem.Atlas.ToString();
             DecalFlags.Value = currentItem.DecalFlags;
@@ -399,7 +399,7 @@ namespace BelzontWE
                     if (destroy)
                     {
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {subEntity} - subEntity");
-                        EntityManager.DestroyEntity(subEntity);
+                        EntityManager.AddComponent<Game.Common.Deleted>(subEntity);
                     }
 
                     buff.RemoveAt(i);

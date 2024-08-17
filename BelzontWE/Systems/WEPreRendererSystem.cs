@@ -39,7 +39,7 @@ namespace BelzontWE
             {
                 for (int i = 0; i < entities.Length; i++)
                 {
-                    weData[i].OnPostInstantiate();
+                    weData[i].OnPostInstantiate(EntityManager);
                     EntityManager.SetComponentData(entities[i], weData[i]);
                     EntityManager.RemoveComponent<WEWaitingPostInstantiation>(entities[i]);
                 }

@@ -16,8 +16,8 @@ export class LayoutsService {
     static async checkCityTemplateExists(name?: string): Promise<boolean> {
         return engine.call("k45::we.layouts.checkCityTemplateExists", name);
     }
-    static async listCityTemplates(): Promise<Record<string, Entity>> {
-        return engine.call("k45::we.layouts.listCityTemplates");
+    static async listCityTemplates(): Promise<Record<string, string>> {
+        return await engine.call("k45::we.layouts.listCityTemplates");
     }
     static async getCityTemplateDetail(name: string): Promise<CityDetailResponse> {
         return engine.call("k45::we.layouts.getCityTemplateDetail", name ?? "");

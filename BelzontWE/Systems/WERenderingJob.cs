@@ -26,7 +26,6 @@ namespace BelzontWE
             public BufferLookup<WESubTextRef> m_weSubRefLookup;
             public ComponentLookup<WETemplateUpdater> m_weTemplateUpdaterLookup;
             public ComponentLookup<WETemplateForPrefab> m_weTemplateForPrefabLookup;
-            public ComponentLookup<WETemplateData> m_weTemplateDataLookup;
             public ComponentLookup<InterpolatedTransform> m_iTransform;
             public ComponentLookup<Game.Objects.Transform> m_transform;
             public float4 m_LodParameters;
@@ -224,7 +223,7 @@ namespace BelzontWE
                         }
                     }
                 }
-                m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, nextEntity);
+                m_CommandBuffer.AddComponent<Game.Common.Deleted>(unfilteredChunkIndex, nextEntity);
             }
         }
     }

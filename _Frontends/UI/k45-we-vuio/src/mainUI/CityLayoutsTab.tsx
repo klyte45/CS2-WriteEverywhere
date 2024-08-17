@@ -50,14 +50,22 @@ export const CityLayoutsTab = (props: Props) => {
     const buttonClass = VanillaComponentResolver.instance.toolButtonTheme.button;
 
     const [selectedTemplate, setSelectedTemplate] = useState(null as null | string);
-    const [layoutList, setLayoutList] = useState({} as Record<string, Entity>);
+    const [layoutList, setLayoutList] = useState({} as Record<string, any>);
     const [selectedTemplateDetails, setSelectedTemplateDetails] = useState(null as null | CityDetailResponse);
     const [currentModal, setCurrentModal] = useState(Modals.NONE);
     const [lastXmlExportedLayoutName, setLastXmlExportedLayoutName] = useState("");
-
+    const [buildIdx, setBuildIdx] = useState(0);
 
     useEffect(() => { LayoutsService.listCityTemplates().then(setLayoutList) }, [selectedTemplate])
-    useEffect(() => { LayoutsService.getCityTemplateDetail(selectedTemplate!).then(setSelectedTemplateDetails) }, [selectedTemplate])
+    useEffect(() => {
+        LayoutsService.getCityTemplateDetail(selectedTemplate!).then((x) => {
+            setSelectedTemplateDetails(x)
+            if (selectedTemplate) setTimeout(() => setBuildIdx(buildIdx + 1), 600);
+        })
+    }, [selectedTemplate, buildIdx])
+
+
+
     const actions = [
         { className: "negativeBtn", action() { setCurrentModal(Modals.CONFIRMING_DELETE) }, text: T_delete },
         { className: "neutralBtn", action() { setIsRenamingLayout(true) }, text: T_rename },
@@ -66,7 +74,7 @@ export const CityLayoutsTab = (props: Props) => {
         { className: "neutralBtn", action() { setCurrentModal(Modals.EXPORTING_TEMPLATE) }, text: T_export },
 
     ]
-    const detailsFields = selectedTemplateDetails ? [{ key: T_usages, value: formatInteger(selectedTemplateDetails.usages) }] : undefined
+    const detailsFields = selectedTemplateDetails ? [{ key: T_usages, value: formatInteger(selectedTemplateDetails.usages) }, { key: "GUID", value: layoutList[selectedTemplate!] }] : undefined
 
     const exportTemplateCallback = async (fileName?: string) => {
         if (!fileName || !selectedTemplate) return;
@@ -118,7 +126,7 @@ export const CityLayoutsTab = (props: Props) => {
         }
     ]
     return <>
-        <WEListWithPreviewTab listActions={listActions} itemActions={actions} detailsFields={detailsFields} listItems={Object.keys(layoutList)} selectedKey={selectedTemplate!} onChangeSelection={setSelectedTemplate} >
+        <WEListWithPreviewTab listActions={listActions} itemActions={actions} detailsFields={detailsFields} listItems={Object.keys(layoutList ?? {})} selectedKey={selectedTemplate!} onChangeSelection={setSelectedTemplate} >
             <div className="k45_we_tabWithPreview_previewControls">
 
             </div>

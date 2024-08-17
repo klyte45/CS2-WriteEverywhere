@@ -1,8 +1,10 @@
 ﻿
 using Belzont.Interfaces;
+using Belzont.Serialization;
 using Belzont.Utils;
 using BelzontWE.Font;
 using Colossal.Entities;
+using Colossal.Serialization.Entities;
 using Game;
 using Game.Common;
 using Game.SceneFlow;
@@ -14,13 +16,15 @@ using System.IO;
 using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 
 namespace BelzontWE
 {
-    public partial class FontServer : GameSystemBase
+    public partial class FontServer : GameSystemBase, IBelzontSerializableSingleton<FontServer>
     {
+        public const int CURRENT_VERSION = 0;
         public const string defaultShaderName = "BH/SG_DefaultShader";
         public const string defaultGlassShaderName = "BH/GlsShader";
         public static string FOLDER_PATH => BasicIMod.ModSettingsRootFolder;
@@ -134,6 +138,7 @@ namespace BelzontWE
                     var fontEntity = EntityManager.CreateEntity();
                     EntityManager.AddComponent<Created>(fontEntity);
                     EntityManager.AddComponentData(fontEntity, fontSystemData);
+                    LoadedFonts[fontSystemData.Name] = fontEntity;
                 }
                 OnFontsLoadedChanged?.Invoke();
             }
@@ -151,7 +156,7 @@ namespace BelzontWE
 
                 EntityManager.TryGetComponent(LoadedFonts[name], out FontSystemData fontData);
                 fontData.Dispose();
-                EntityManager.DestroyEntity(LoadedFonts[name]);
+                EntityManager.AddComponent<Game.Common.Deleted>(LoadedFonts[name]);
                 LoadedFonts.Remove(name);
             }
         }
@@ -188,10 +193,7 @@ namespace BelzontWE
             data = default;
             return LoadedFonts.TryGetValue(name, out var entity) && EntityManager.TryGetComponent(entity, out data);
         }
-        public bool TryGetFontEntity(FixedString32Bytes name, out Entity entity)
-        {
-            return LoadedFonts.TryGetValue(name, out entity);
-        }
+        public bool TryGetFontEntity(FixedString32Bytes name, out Entity entity) => LoadedFonts.TryGetValue(name, out entity);
 
         protected override void OnUpdate()
         {
@@ -213,12 +215,12 @@ namespace BelzontWE
                                 if (!EntityManager.TryGetComponent(otherEntity, out FontSystemData otherData) || otherData.IsWeak)
                                 {
                                     LoadedFonts[data.Name] = entity;
-                                    cmd.DestroyEntity(otherEntity);
+                                    cmd.AddComponent<Game.Common.Deleted>(otherEntity);
                                     fontsChanged = true;
                                 }
                                 else
                                 {
-                                    cmd.DestroyEntity(entity);
+                                    cmd.AddComponent<Game.Common.Deleted>(entity);
                                     fontsChanged = true;
                                     continue;
                                 }
@@ -231,7 +233,7 @@ namespace BelzontWE
                         }
                         if (!UpdateFontSystem(data))
                         {
-                            cmd.DestroyEntity(entity);
+                            cmd.AddComponent<Game.Common.Deleted>(entity);
                         }
                     }
                 }
@@ -306,6 +308,49 @@ namespace BelzontWE
             fontName = fontName.Trim();
             if (fontName == "" || LoadedFonts.ContainsKey(fontName)) return;
             RegisterFont(fontName.ToString(), DefaultFont.Font._font.data.ArrayData.ToArray(), true);
+        }
+
+        public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+        {
+            writer.Write(CURRENT_VERSION);
+            var fontsSerializable = LoadedFonts.Where(x => EntityManager.HasComponent<FontSystemData>(x.Value)).Select(x => (x.Key, EntityManager.GetComponentData<FontSystemData>(x.Value))).Where(x => x.Item2.IsWeak).ToArray();
+            writer.Write(fontsSerializable.Length);
+            foreach (var item in fontsSerializable)
+            {
+                writer.Write(item.Key);
+                var dataToSerialize = new NativeArray<byte>(item.Item2.Font._font.data.ArrayData, Allocator.Temp);
+                writer.Write(dataToSerialize.Length);
+                writer.Write(dataToSerialize);
+                dataToSerialize.Dispose();
+            }
+        }
+
+        public void Deserialize<TReader>(TReader reader) where TReader : IReader
+        {
+            reader.Read(out int version);
+            if (version > CURRENT_VERSION)
+            {
+                LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                return;
+            }
+            reader.Read(out int fontsLength);
+            for (var i = 0; i < fontsLength; i++)
+            {
+                reader.Read(out FixedString32Bytes key);
+                reader.Read(out int arrLength);
+
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Loading font: {key} {arrLength}B");
+                var dataToSerialize = new NativeArray<byte>(arrLength, Allocator.Temp);
+                reader.Read(dataToSerialize);
+                RegisterFont(key.ToString(), dataToSerialize.ToArray(), false);
+                dataToSerialize.Dispose();
+            }
+        }
+
+        public JobHandle SetDefaults(Context context)
+        {
+            LoadedFonts.Clear();
+            return Dependency;
         }
     }
 }

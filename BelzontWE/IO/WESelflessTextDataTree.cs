@@ -28,6 +28,8 @@ namespace BelzontWE
         }
 
         public string ToXML(bool pretty = true) => XmlUtils.DefaultXmlSerialize(this, pretty);
+
+        public WETextDataTreeStruct ToStruct() => new WETextDataTree { children = children }.ToStruct();
         public static WESelflessTextDataTree FromXML(string text)
         {
             try
