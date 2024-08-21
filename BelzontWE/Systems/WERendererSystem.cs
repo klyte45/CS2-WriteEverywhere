@@ -62,6 +62,7 @@ namespace BelzontWE
                     {
                         ComponentType.ReadOnly<Temp>(),
                         ComponentType.ReadOnly<Deleted>(),
+                        ComponentType.ReadOnly<WETemplateForPrefabEmpty>(),
                     }
                 }
             });
@@ -109,6 +110,7 @@ namespace BelzontWE
             EntityCommandBuffer cmd;
             if (!m_renderQueueEntities.IsEmptyIgnoreFilter)
             {
+                if (dumpNextFrame) LogUtils.DoLog($"Drawing Items: E {m_renderQueueEntities.CalculateEntityCount()} | C {m_renderQueueEntities.CalculateChunkCount()}");
                 cmd = m_endFrameBarrier.CreateCommandBuffer();
                 while (availToDraw.TryDequeue(out var item))
                 {

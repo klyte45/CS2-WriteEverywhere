@@ -5,6 +5,7 @@ using Unity.Entities;
 
 
 
+
 #if BURST
 using Unity.Burst;
 #endif
@@ -50,6 +51,7 @@ namespace BelzontWE
                             if (m_indexesWithLayout.TryGetValue(prefabData.m_Index, out newTemplate))
                             {
                                 var childEntity = WELayoutUtility.DoCreateLayoutItem(newTemplate, entities[i], Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, unfilteredChunkIndex, m_CommandBuffer, WELayoutUtility.ParentEntityMode.TARGET_IS_PARENT, true);
+                                if (m_prefabEmptyLkp.HasComponent(entity)) m_CommandBuffer.RemoveComponent<WETemplateForPrefabEmpty>(unfilteredChunkIndex, entity);
                                 m_CommandBuffer.AddComponent<WETemplateForPrefab>(unfilteredChunkIndex, entities[i], new()
                                 {
                                     templateRef = newTemplate.Guid,
@@ -63,6 +65,7 @@ namespace BelzontWE
                                     templateRef = default,
                                     childEntity = Entity.Null
                                 });
+                                m_CommandBuffer.AddComponent<WETemplateForPrefabEmpty>(unfilteredChunkIndex, entity);
                             }
                         }
                     }
