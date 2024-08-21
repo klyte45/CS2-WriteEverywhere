@@ -38,10 +38,10 @@ namespace BelzontWE
             else if (url.StartsWith("coui://we.k45/_css/"))
             {
                 var fontName = url["coui://we.k45/_css/".Length..];
-                if (FontServer.Instance.TryGetFontEntity(fontName, out var entity))
+                if (FontServer.Instance.TryGetFont(fontName, out var font))
                 {
                     response.SetStatus(200);
-                    var data = Encoding.UTF8.GetBytes($"  @font-face {{\r\n        font-family: \"K45WE_{entity.Index}\";\r\n        src: url(coui://we.k45/_fonts/{fontName}) format('truetype');\r\n    }}");
+                    var data = Encoding.UTF8.GetBytes($"  @font-face {{\r\n        font-family: \"K45WE_{font.Guid}\";\r\n        src: url(coui://we.k45/_fonts/{fontName}) format('truetype');\r\n    }}");
                     var size = (ulong)data.Length;
                     var space = response.GetSpace(size);
                     Marshal.Copy(data, 0, space, data.Length);
@@ -69,9 +69,9 @@ namespace BelzontWE
             else if (url.StartsWith("coui://we.k45/_css/"))
             {
                 var fontName = url["coui://we.k45/_css/".Length..];
-                if (FontServer.Instance.TryGetFontEntity(fontName, out var entity))
+                if (FontServer.Instance.TryGetFont(fontName, out var entity))
                 {
-                    var data = Encoding.UTF8.GetBytes($"  @font-face {{\r\n        font-family: \"K45WE_{entity.Index}\";\r\n        src: url(coui://we.k45/_fonts/{fontName}) format('truetype');\r\n    }}");
+                    var data = Encoding.UTF8.GetBytes($"  @font-face {{\r\n        font-family: \"K45WE_{entity.Guid}\";\r\n        src: url(coui://we.k45/_fonts/{fontName}) format('truetype');\r\n    }}");
                     response.SetStreamReader(new StreamReader(data));
                     response.Finish(ResourceStreamResponse.Status.Success);
                     return false;

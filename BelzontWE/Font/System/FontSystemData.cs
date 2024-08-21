@@ -1,41 +1,20 @@
 ﻿//#define JOBS_DEBUG
 
-using Belzont.Interfaces;
 using Belzont.Utils;
 using Colossal.Serialization.Entities;
 using System;
-using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 
 namespace BelzontWE.Font
 {
-    public struct FontSystemData : IDisposable, IComponentData
+    public class FontSystemData : IDisposable
     {
         private const uint CURRENT_VERSION = 0;
 
-        private GCHandle _fontAddr;
-        private GCHandle _systemAddr;
-        public Font Font
-        {
-            get => _fontAddr.IsAllocated ? _fontAddr.Target as Font : null;
-            set
-            {
-                if (_fontAddr.IsAllocated) _fontAddr.Free();
-                _fontAddr = GCHandle.Alloc(value);
-            }
-        }
+        public Font Font { get; set; }
 
-        public FontSystem FontSystem
-        {
-            get => _systemAddr.IsAllocated ? _systemAddr.Target as FontSystem : null;
-            private set
-            {
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"Setting font system! {name}");
-                if (_systemAddr.IsAllocated) _systemAddr.Free();
-                _systemAddr = GCHandle.Alloc(value);
-            }
-        }
+        public FontSystem FontSystem { get; private set; }
 
         private FixedString32Bytes name;
         public string Name
@@ -48,23 +27,8 @@ namespace BelzontWE.Font
                 }
             }
         }
-        public string DataBase64 => Convert.ToBase64String(Font._font.data.ArrayData);
-
         public bool IsWeak { get; private set; }
-
-        public void Dispose()
-        {
-            if (_fontAddr.IsAllocated)
-            {
-                _fontAddr.Free();
-            }
-            if (_systemAddr.IsAllocated)
-            {
-                var sys = FontSystem;
-                _systemAddr.Free();
-                sys.Dispose();
-            }
-        }
+        public Colossal.Hash128 Guid { get; } = System.Guid.NewGuid();
 
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
@@ -111,6 +75,11 @@ namespace BelzontWE.Font
             data.FontSystem = new FontSystem(data);
             data.IsWeak = isWeak;
             return data;
+        }
+
+        public void Dispose()
+        {
+            FontSystem.Dispose();
         }
     }
 }

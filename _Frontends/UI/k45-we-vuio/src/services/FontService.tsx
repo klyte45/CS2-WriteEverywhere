@@ -10,5 +10,5 @@ export class FontService {
 }
 export type FontDetailResponse = {
     name: string;
-    index: number;
+    guid: string;
 }

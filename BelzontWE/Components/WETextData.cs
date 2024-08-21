@@ -2,7 +2,6 @@
 
 using Belzont.Interfaces;
 using Belzont.Utils;
-using BelzontWE.Font;
 using BelzontWE.Font.Utility;
 using Colossal.Entities;
 using Colossal.Mathematics;
@@ -72,30 +71,13 @@ namespace BelzontWE
         public Entity TargetEntity { readonly get => targetEntity; set => targetEntity = value; }
         public Entity ParentEntity { readonly get => parentEntity; private set => parentEntity = value; }
 
-        public Entity Font
+        public FixedString32Bytes Font
         {
-            readonly get => FontServer.Instance.TryGetFontEntity(fontName, out var data) ? data : default;
+            readonly get => fontName;
 
             set
             {
-                if (value == Entity.Null)
-                {
-                    fontName = "";
-                    if (basicRenderInformation.IsAllocated)
-                    {
-                        basicRenderInformation.Free();
-                        basicRenderInformation = default;
-                    }
-                }
-                else if (FontServer.Instance.EntityManager.TryGetComponent(value, out FontSystemData fsd))
-                {
-                    fontName = fsd.Name;
-                    if (basicRenderInformation.IsAllocated)
-                    {
-                        basicRenderInformation.Free();
-                        basicRenderInformation = default;
-                    }
-                }
+                fontName = value;
             }
         }
         public BasicRenderInformation RenderInformation

@@ -146,7 +146,7 @@ export const FontsTab = (props: Props) => {
                     <FocusableEditorItem focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}><StringInputField value={previewText} onChange={setPreviewText} /></FocusableEditorItem>
                     <FocusableEditorItem focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}><IntSlider min={5} max={200} value={fontSize} onChange={setFontSize} /></FocusableEditorItem>
                 </div>
-                <div className="k45_we_fontTab_previewText" style={{ fontFamily: "K45WE_" + fontDetail.index, fontSize: fontSize + "rem" }}>
+                <div className="k45_we_fontTab_previewText" style={{ fontFamily: "K45WE_" + fontDetail.guid, fontSize: fontSize + "rem" }}>
                     {previewText || T_typeAboveToPreviewThisFont}
                 </div></>}
         </WEListWithPreviewTab>

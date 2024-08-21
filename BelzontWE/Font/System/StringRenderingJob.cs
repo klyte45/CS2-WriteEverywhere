@@ -6,6 +6,7 @@ using BelzontWE.Font.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
@@ -18,13 +19,12 @@ namespace BelzontWE.Font
         private unsafe struct StringRenderingJob : IJobParallelFor
         {
             public int Size => sizeof(StringRenderingJob);
-            public int Size2 => sizeof(FontSystemData);
 
 
             public NativeQueue<BasicRenderInformationJob>.ParallelWriter output;
             public NativeArray<StringRenderingQueueItem>.ReadOnly inputArray;
 
-            public FontSystemData data;
+            public GCHandle fsd;
             public NativeHashMap<int, FontGlyph> glyphs;
             public Vector3 CurrentAtlasSize;
             public uint AtlasVersion;
@@ -72,7 +72,7 @@ namespace BelzontWE.Font
 #if JOBS_DEBUG
                 LogUtils.DoLog($"codepoint #{i}: {codepoint}");
 #endif
-                    FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, ref data);
+                    FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, fsd.Target as FontSystemData);
                     if (!glyph.IsValid)
                     {
                         continue;
@@ -112,7 +112,7 @@ namespace BelzontWE.Font
                             continue;
                         }
 
-                        FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, ref data);
+                        FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, fsd.Target as FontSystemData);
                         if (!glyph.IsValid)
                         {
                             continue;
@@ -215,7 +215,7 @@ namespace BelzontWE.Font
                 for (int i = 0; i < str.Length; i++)
                 {
                     var code = char.ConvertToUtf32(str, i);
-                    var glyph = GetGlyphWithoutBitmap(glyphs, code, ref data);
+                    var glyph = GetGlyphWithoutBitmap(glyphs, code, fsd.Target as FontSystemData);
                     if (!glyph.IsValid)
                     {
                         if (!char.ConvertFromUtf32(code).IsNormalized(System.Text.NormalizationForm.FormKD))
@@ -224,7 +224,7 @@ namespace BelzontWE.Font
                             for (int j = 0; j < normalizedStr.Length; j++)
                             {
                                 var codeJ = normalizedStr[j];
-                                var glyphJ = GetGlyphWithoutBitmap(glyphs, codeJ, ref data);
+                                var glyphJ = GetGlyphWithoutBitmap(glyphs, codeJ, fsd.Target as FontSystemData);
                                 if (glyphJ.IsValid)
                                 {
                                     result += normalizedStr[j];

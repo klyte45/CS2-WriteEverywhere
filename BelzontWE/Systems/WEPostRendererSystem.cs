@@ -12,6 +12,10 @@ using Unity.Entities;
 using WriteEverywhere.Sprites;
 using Unity.Jobs;
 using BelzontWE.Font.Utility;
+using System.Runtime.InteropServices;
+using System.Collections.Generic;
+
+
 #if BURST
 using Unity.Burst;
 #endif
@@ -81,7 +85,7 @@ namespace BelzontWE
                     m_WETextDataHdl = GetComponentTypeHandle<WETextData>(true),
                     m_entityLookup = GetEntityStorageInfoLookup(),
                     m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
-                    m_FontDataLkp = GetComponentLookup<FontSystemData>(true),
+                    FontDictPtr = FontServer.Instance.DictPtr,
                     m_CommandBuffer = cmdBuff.AsParallelWriter()
                 }.Schedule(m_pendingQueueEntities, Dependency);
             }
@@ -107,7 +111,7 @@ namespace BelzontWE
             public EntityTypeHandle m_EntityType;
             public ComponentTypeHandle<WETextData> m_WETextDataHdl;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
-            public ComponentLookup<FontSystemData> m_FontDataLkp;
+            public GCHandle FontDictPtr;
             public EntityStorageInfoLookup m_entityLookup;
             public ComponentLookup<WETemplateUpdater> m_templateUpdaterLkp;
 
@@ -115,6 +119,7 @@ namespace BelzontWE
             {
                 var entities = chunk.GetNativeArray(m_EntityType);
                 var weTextDatas = chunk.GetNativeArray(ref m_WETextDataHdl);
+                var fontDict = FontDictPtr.Target as Dictionary<FixedString32Bytes, FontSystemData>;
 
                 for (var i = 0; i < entities.Length; i++)
                 {
@@ -130,7 +135,7 @@ namespace BelzontWE
                     switch (weCustomData.TextType)
                     {
                         case WESimulationTextType.Text:
-                            if (UpdateTextMesh(entity, ref weCustomData, weCustomData.EffectiveText.ToString(), unfilteredChunkIndex, m_CommandBuffer))
+                            if (UpdateTextMesh(entity, ref weCustomData, weCustomData.EffectiveText.ToString(), unfilteredChunkIndex, m_CommandBuffer, fontDict))
                             {
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
                                 m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
@@ -165,7 +170,7 @@ namespace BelzontWE
             }
 
 
-            private bool UpdateTextMesh(Entity e, ref WETextData weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+            private bool UpdateTextMesh(Entity e, ref WETextData weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, Dictionary<FixedString32Bytes, FontSystemData> fontDict)
             {
                 if (m_templateUpdaterLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
                 if (text == "")
@@ -173,7 +178,7 @@ namespace BelzontWE
                     weCustomData = weCustomData.UpdateBRI(new BasicRenderInformation("", null, null, null, null), "");
                     return true;
                 }
-                var font = m_FontDataLkp.TryGetComponent(weCustomData.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
+                var font = fontDict.TryGetValue(weCustomData.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;
                 if (font.Font == null)
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog("Font not initialized!!!");

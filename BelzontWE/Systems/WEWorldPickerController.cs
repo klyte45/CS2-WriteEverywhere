@@ -1,11 +1,11 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
-using BelzontWE.Font;
 using Colossal.Entities;
 using Game.Common;
 using Game.SceneFlow;
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -236,7 +236,7 @@ namespace BelzontWE
             CoatStrength.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.CoatStrength = x; return currentItem; });
             EmissiveExposureWeight.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveExposureWeight = x; return currentItem; });
 
-            SelectedFont.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Font = FontServer.Instance.TryGetFontEntity(x, out var entity) ? entity : Entity.Null; return currentItem; });
+            SelectedFont.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Font = FontServer.Instance.TryGetFont(x, out var data) ? data.Name : default(FixedString32Bytes); return currentItem; });
             FormulaeStr.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { FormulaeCompileResult.Value = currentItem.SetFormulae(FormulaeStr.Value, out var cmpErr); FormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
             TextSourceType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
             ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
@@ -274,7 +274,7 @@ namespace BelzontWE
             EmissiveIntensity.Value = currentItem.EmissiveIntensity;
             CoatStrength.Value = currentItem.CoatStrength;
 
-            SelectedFont.Value = EntityManager.TryGetComponent<FontSystemData>(currentItem.Font, out var fsd) ? fsd.Name : "";
+            SelectedFont.Value = FontServer.Instance.TryGetFont(currentItem.Font, out var fsd) ? fsd.Name : "";
             FormulaeStr.Value = currentItem.Formulae.ToString();
             TextSourceType.Value = (int)currentItem.TextType;
             ImageAtlasName.Value = currentItem.Atlas.ToString();

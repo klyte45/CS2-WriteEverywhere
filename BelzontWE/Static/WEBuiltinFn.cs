@@ -66,7 +66,7 @@ namespace BelzontWE
         public static string GetTargetDestinationDynamic(Entity reference) => GetTargetDestinationDynamic_binding?.Invoke(reference) ?? "<???>";
         public static string GetEntityName(Entity reference) => (nameSys ?? World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<NameSystem>()).GetName(reference).Translate();
         public static string GetVehiclePlate(Entity vehicleRef) => GetVehiclePlate_binding?.Invoke(vehicleRef) ?? "<???>";
-        public static string GetTransportLineNumber(Entity reference) => GetTargetDestinationStatic_binding?.Invoke(reference) ?? "<???>";
+        public static string GetTransportLineNumber(Entity reference) => GetTargetTransportLineNumber_binding?.Invoke(reference) ?? "<!>";
         public static string GetSerialNumber(Entity reference) => GetSerialNumber_binding?.Invoke(reference) ?? "<???>";
     }
 

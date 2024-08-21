@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -25,8 +26,8 @@ namespace BelzontWE.Font
     }
     public partial class FontSystem : IDisposable
     {
-        private FontSystemData data = new() { };
-        public FontSystemData Data => data;
+        public FontSystemData Data { get; } = new() { };
+        private GCHandle dataPointer;
 
         public NativeHashMap<int, NativeHashMap<int, FontGlyph>> _glyphs;
 
@@ -40,7 +41,7 @@ namespace BelzontWE.Font
         public readonly int Blur;
         public float Spacing;
         public bool UseKernings = true;
-        public string Name => data.Name;
+        public string Name => Data.Name;
 
         public long LastUpdateAtlas { get; private set; }
 
@@ -70,10 +71,11 @@ namespace BelzontWE.Font
         public FontSystem(FontSystemData data)
         {
             Blur = 0;
-            this.data = data;
+            this.Data = data;
             _size = new(FontServer.DefaultTextureSizeFont, FontServer.DefaultTextureSizeFont);
             ClearState();
             itemsQueueWriter = itemsQueue.AsParallelWriter();
+            dataPointer = GCHandle.Alloc(data);
         }
 
         public void ClearState()
@@ -92,7 +94,7 @@ namespace BelzontWE.Font
             if (!m_textCache.ContainsKey(str))
             {
                 m_textCache[str] = default;
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"Enqueued String to ensure: {str} ({data.Name})");
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Enqueued String to ensure: {str} ({Data.Name})");
                 itemsQueue.Enqueue(new StringRenderingQueueItem() { text = str });
             }
         }
@@ -118,7 +120,7 @@ namespace BelzontWE.Font
             else
             {
                 var result = m_textCache[str] = BasicRenderInformation.LOADING_PLACEHOLDER;
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"Enqueued String: {str} ({data.Name}) {result}");
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Enqueued String: {str} ({Data.Name}) {result}");
                 itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = str });
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"itemsQueue: {itemsQueue.Count}");
                 return default;
@@ -149,7 +151,7 @@ namespace BelzontWE.Font
             if (BasicIMod.DebugMode) LogUtils.DoLog($"Resetting font cache for {Data.Name} => {FontServer.DefaultTextureSizeFont}");
             var width = FontServer.DefaultTextureSizeFont;
             var height = width;
-            data.Font.RecalculateBasedOnHeight(FontServer.QualitySize);
+            Data.Font.RecalculateBasedOnHeight(FontServer.QualitySize);
             CurrentAtlas.Reset(width, height);
 
 
@@ -169,7 +171,7 @@ namespace BelzontWE.Font
         private static int GetCodepointIndex(int codepoint, Font f) => f.GetGlyphIndex(codepoint);
 
 
-        private static FontGlyph GetGlyphWithoutBitmap(NativeHashMap<int, FontGlyph> glyphs, int codepoint, ref FontSystemData data)
+        private static FontGlyph GetGlyphWithoutBitmap(NativeHashMap<int, FontGlyph> glyphs, int codepoint, FontSystemData data)
         {
             if (glyphs.TryGetValue(codepoint, out FontGlyph glyph))
             {
@@ -211,7 +213,7 @@ namespace BelzontWE.Font
         private FontGlyph GetGlyphInternal(NativeHashMap<int, FontGlyph> glyphs, int codepoint, out bool hasResetted)
         {
             hasResetted = false;
-            FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, ref data);
+            FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, Data);
             if (!glyph.IsValid)
             {
                 return default;
@@ -355,10 +357,10 @@ namespace BelzontWE.Font
 
         public void Dispose()
         {
-            data.Dispose();
             if (_glyphs.IsCreated) _glyphs.Dispose();
             if (itemsQueue.IsCreated) itemsQueue.Dispose();
             if (results.IsCreated) results.Dispose();
+            if (dataPointer.IsAllocated) dataPointer.Free();
         }
 
         public unsafe struct StringRenderingQueueItem
@@ -408,7 +410,7 @@ namespace BelzontWE.Font
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Glyphs rendered: {countSucceeded}");
                 var job = new StringRenderingJob
                 {
-                    data = data,
+                    fsd = dataPointer,
                     CurrentAtlasSize = new Vector3(CurrentAtlas.Width, CurrentAtlas.Height),
                     inputArray = itemsStarted.AsReadOnly(),
                     glyphs = GetGlyphsCollection(FontHeight),

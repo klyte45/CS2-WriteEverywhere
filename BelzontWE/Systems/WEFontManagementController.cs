@@ -59,12 +59,12 @@ namespace BelzontWE
         private Dictionary<string, bool> ListCityFonts() => m_fontServer.GetLoadedFontsNames().ToDictionary(x => x, x => x == FontServer.DEFAULT_FONT_KEY);
 
         private FontDetailResponse GetFontDetail(string name)
-            => name == null || !m_fontServer.TryGetFontEntity(name, out var entity)
+            => name == null || !m_fontServer.TryGetFont(name, out var entity)
                 ? null
                 : new()
                 {
                     name = name,
-                    index = entity.Index
+                    guid = entity.Guid.ToString()
                 };
 
         private void RenameCityFont(string oldName, string newName) => m_fontServer.RenameFont(oldName, newName);
@@ -74,7 +74,7 @@ namespace BelzontWE
         private class FontDetailResponse
         {
             public string name;
-            public int index;
+            public string guid;
         }
     }
 }
