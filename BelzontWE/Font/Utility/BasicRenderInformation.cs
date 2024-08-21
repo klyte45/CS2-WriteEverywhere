@@ -141,7 +141,7 @@ namespace BelzontWE.Font.Utility
 
         public void Dispose()
         {
-            if (BasicIMod.DebugMode) LogUtils.DoLog("DISPOSING BRIJ");
+            if (BasicIMod.TraceMode) LogUtils.DoTraceLog("DISPOSING BRIJ");
             colors.Dispose();
             vertices.Dispose();
             triangles.Dispose();

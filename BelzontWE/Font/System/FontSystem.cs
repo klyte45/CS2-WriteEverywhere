@@ -245,7 +245,7 @@ namespace BelzontWE.Font
                         glyphs.Clear();
                         glyphs[codepoint] = glyph;
 
-                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Resetting size to {_size}");
+                        if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Resetting size to {_size}");
                         m_textCache.Clear();
 
                         hasResetted = true;
@@ -265,7 +265,7 @@ namespace BelzontWE.Font
                 }
                 break;
             } while (true);
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"Rendered glyph #{glyph} @ texture {CurrentAtlas.Texture}");
+            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Rendered glyph #{glyph} @ texture {CurrentAtlas.Texture}");
 
             glyph.AtlasGenerated = true;
 
@@ -293,7 +293,7 @@ namespace BelzontWE.Font
 
                 x += (int)((adv + 0) * spacingFactor + 0.5f);
             }
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"'{char.ConvertFromUtf32(glyph.Codepoint)}' = {glyph}");
+            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"'{char.ConvertFromUtf32(glyph.Codepoint)}' = {glyph}");
             float rx = x + glyph.XOffset;
             float ry = y - glyph.YOffset - (glyph.Font.Capital * .5f);
             q.X0 = rx;
@@ -303,7 +303,7 @@ namespace BelzontWE.Font
 
             x += glyph.XAdvance * .1f * spacingFactor;
 
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"x={x} y={y} Q={q}");
+            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"x={x} y={y} Q={q}");
         }
         private NativeHashMap<int, FontGlyph> GetGlyphsCollection(int size)
         {

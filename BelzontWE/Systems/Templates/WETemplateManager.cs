@@ -80,6 +80,7 @@ namespace BelzontWE
                     dataTree.Dispose();
                 }
             }
+            m_templatesDirty = true;
         }
 
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter

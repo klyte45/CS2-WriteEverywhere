@@ -71,6 +71,7 @@ namespace BelzontWE
             reader.Read(out fontName);
             reader.Read(out maxWidthMeters);
             reader.Read(out decalFlags);
+            IsInitialized = true;
         }
 
         internal static WETextDataStruct FromXml(WETextDataXml data)

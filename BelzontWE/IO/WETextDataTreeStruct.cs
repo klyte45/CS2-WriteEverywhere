@@ -26,7 +26,11 @@ namespace BelzontWE
         {
             writer.Write(CURRENT_VERSION);
             writer.Write(self);
-            writer.Write(children);
+            writer.Write(children.Length);
+            for (int i = 0; i < children.Length; i++)
+            {
+                writer.Write(children[i]);
+            }
             writer.Write(guid);
         }
 
@@ -39,8 +43,16 @@ namespace BelzontWE
                 return;
             }
             reader.Read(out self);
-            reader.Read(children);
+            reader.Read(out int length);
+            children.Dispose();
+            children = new NativeArray<WETextDataTreeStruct>(length, Allocator.Persistent);
+            for (int i = 0; i < length; i++)
+            {
+                reader.Read(out WETextDataTreeStruct tds);
+                children[i] = tds;
+            }
             reader.Read(out guid);
+            IsInitialized = true;
         }
 
         public static WETextDataTreeStruct FromEntity(Entity e, EntityManager em)

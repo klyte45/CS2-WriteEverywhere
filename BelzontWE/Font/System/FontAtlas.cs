@@ -309,10 +309,8 @@ namespace BelzontWE.Font
                 return false;
             }
 
-            Material.mainTexture = Texture;
             Material.SetTexture(_BaseColorMap, Texture);
-            GlassMaterial.mainTexture = Texture;
-            GlassMaterial.SetTexture(_BaseColorMap, Texture);
+            GlassMaterial?.SetTexture(_BaseColorMap, Texture);
 #if DEBUG && false
             byte[] bytes = UnityEngine.ImageConversion.EncodeToPNG(Texture);
             // For testing purposes, also write to a file in the project folder
