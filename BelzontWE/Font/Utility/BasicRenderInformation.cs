@@ -15,7 +15,7 @@ namespace BelzontWE.Font.Utility
     {
         public const string PLACEHOLDER_REFTEXT = "\0\nPlaceholder\n\0";
         public static readonly BasicRenderInformation LOADING_PLACEHOLDER = new(PLACEHOLDER_REFTEXT, null, null, null, null);
-        public BasicRenderInformation(string refText, Vector3[] vertices, int[] triangles, Vector2[] uv, Material material, Material glassMaterial = null)
+        public BasicRenderInformation(string refText, Vector3[] vertices, int[] triangles, Vector2[] uv, Material material = null, Material glassMaterial = null)
         {
             m_refText = refText ?? throw new ArgumentNullException("refText");
             if (vertices != null && (triangles?.All(x => x < vertices.Length) ?? false))

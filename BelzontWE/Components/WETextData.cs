@@ -54,6 +54,8 @@ namespace BelzontWE
         private int decalFlags;
         public int lastLodValue;
 
+        public bool DirtyBRI { get { return dirtyBRI || !basicRenderInformation.IsAllocated || basicRenderInformation.Target is null; } private set => dirtyBRI = value; }
+
         public int DecalFlags
         {
             readonly get => decalFlags; set
@@ -77,11 +79,7 @@ namespace BelzontWE
             set
             {
                 fontName = value;
-                if (basicRenderInformation.IsAllocated)
-                {
-                    basicRenderInformation.Free();
-                    basicRenderInformation = default;
-                }
+                DirtyBRI = true;
             }
         }
         public BasicRenderInformation RenderInformation
@@ -105,6 +103,8 @@ namespace BelzontWE
         private Colossal.Hash128 ownMaterialGuid;
         private GCHandle ownMaterialGlass;
         private GCHandle ownMaterialDefault;
+        private bool dirtyBRI;
+
         public Material OwnMaterial
         {
             get
@@ -192,11 +192,8 @@ namespace BelzontWE
                     templateDirty = true;
                 }
                 m_text = value;
-                if (basicRenderInformation.IsAllocated)
-                {
-                    basicRenderInformation.Free();
-                    basicRenderInformation = default;
-                }
+                EffectiveText = value;
+                DirtyBRI = true;
             }
         }
         public FixedString32Bytes Atlas
@@ -205,10 +202,9 @@ namespace BelzontWE
             set
             {
                 atlas = value;
-                if (type == WESimulationTextType.Image && basicRenderInformation.IsAllocated)
+                if (type == WESimulationTextType.Image)
                 {
-                    basicRenderInformation.Free();
-                    basicRenderInformation = default;
+                    DirtyBRI = true;
                 }
             }
         }
@@ -219,11 +215,7 @@ namespace BelzontWE
                 if (type != value)
                 {
                     type = value;
-                    if (basicRenderInformation.IsAllocated)
-                    {
-                        basicRenderInformation.Free();
-                        basicRenderInformation = default;
-                    }
+                    DirtyBRI = true;
                 }
             }
         }
@@ -362,13 +354,14 @@ namespace BelzontWE
             dirty = true;
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             basicRenderInformation = default;
-            basicRenderInformation = GCHandle.Alloc(bri, bri.m_refText == "" ? GCHandleType.Normal : GCHandleType.Weak);
+            basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
             Bounds = bri.m_bounds;
             BriWidthMetersUnscaled = bri.m_sizeMetersUnscaled.x;
             if (bri.m_isError)
             {
                 LastErrorStr = text;
             }
+            DirtyBRI = false;
             return this;
         }
 
@@ -389,12 +382,20 @@ namespace BelzontWE
             return this;
         }
 
-        public byte SetFormulae(string newFormulae, out string[] errorFmtArgs) => WEFormulaeHelper.SetFormulae(newFormulae ?? "", out errorFmtArgs, out formulaeHandlerStr, out var resultFormulaeFn);
+        public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
+        {
+            var result = WEFormulaeHelper.SetFormulae(newFormulae ?? "", out errorFmtArgs, out formulaeHandlerStr, out var resultFormulaeFn);
+            if (result == 0)
+            {
+                DirtyBRI = true;
+                if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
+            }
+            return result;
+        }
 
-        public bool UpdateEffectiveText(EntityManager em, Entity geometryEntity)
+        public void UpdateEffectiveText(EntityManager em, Entity geometryEntity)
         {
             InitializedEffectiveText = true;
-            if (HasBRI && RenderInformation is null) basicRenderInformation.Free();
             if (!loadingFnDone)
             {
                 if (formulaeHandlerStr.Length > 0)
@@ -407,7 +408,8 @@ namespace BelzontWE
             EffectiveText = FormulaeFn is Func<EntityManager, Entity, string> fn
                 ? fn(em, geometryEntity)?.ToString().Trim().Truncate(500) ?? "<InvlidFn>"
                 : formulaeHandlerStr.Length > 0 ? "<InvalidFn>" : Text;
-            return EffectiveText.ToString() != oldEffText;
+            var result = EffectiveText.ToString() != oldEffText;
+            if (result) DirtyBRI = true;
         }
 
         public static Entity GetTargetEntityEffective(Entity target, EntityManager em, bool fullRecursive = false)

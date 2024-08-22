@@ -177,6 +177,7 @@ namespace BelzontWE
                 }
             }
             UpdateFontSystem(DefaultFont);
+            requiresUpdateParameter = false;
             if (keysToDispose.Count > 0)
             {
                 foreach (var key in keysToDispose)
@@ -196,7 +197,6 @@ namespace BelzontWE
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog("Resetting font system!");
                     data.FontSystem.Reset();
-                    requiresUpdateParameter = false;
                 }
                 Dependency = data.FontSystem.RunJobs(Dependency);
                 return true;
@@ -231,7 +231,6 @@ namespace BelzontWE
                     material.SetFloat("_ZTestGBuffer", 7);
                     material.SetFloat(DecalLayerMask, 8.ToFloatBitFlags());
                     material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
-               //     material.enableInstancing = false;
                     break;
                 case 1:
                     material = new Material(Shader.Find(defaultGlassShaderName));
@@ -239,7 +238,6 @@ namespace BelzontWE
                     material.SetVector("_DoubleSidedConstants", new Vector4(1, 1, -1, 0));
                     material.SetFloat(DecalLayerMask, 8.ToFloatBitFlags());
                     material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
-                 //   material.enableInstancing = false;
                     break;
             }
             HDMaterial.ValidateMaterial(material);

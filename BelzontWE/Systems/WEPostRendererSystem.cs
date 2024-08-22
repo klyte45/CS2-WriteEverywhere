@@ -173,9 +173,9 @@ namespace BelzontWE
             private bool UpdateTextMesh(Entity e, ref WETextData weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, Dictionary<FixedString32Bytes, FontSystemData> fontDict)
             {
                 if (m_templateUpdaterLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
-                if (text == "")
+                if (text.Trim() == "")
                 {
-                    weCustomData = weCustomData.UpdateBRI(new BasicRenderInformation("", null, null, null, null), "");
+                    weCustomData = weCustomData.UpdateBRI(new BasicRenderInformation("", new UnityEngine.Vector3[0], new int[0], new UnityEngine.Vector2[0], null), "");
                     return true;
                 }
                 var font = fontDict.TryGetValue(weCustomData.Font, out var fsd) ? fsd : FontServer.Instance.DefaultFont;

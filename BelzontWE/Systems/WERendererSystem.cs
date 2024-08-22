@@ -16,6 +16,7 @@ using System.Collections.Generic;
 
 
 
+
 #if BURST
 using UnityEngine.Scripting;
 using Unity.Burst;
@@ -36,7 +37,7 @@ namespace BelzontWE
         private WEWorldPickerTool m_pickerTool;
         private NativeQueue<WERenderData> availToDraw = new(Allocator.Persistent);
         internal static bool dumpNextFrame;
-        public static uint FrameCounter { get; private set; } = 0;
+        private uint FrameCounter { get; set; } = 0;
 #if BURST
         [Preserve]
 #endif
@@ -111,7 +112,7 @@ namespace BelzontWE
 #endif
         private void Render(ScriptableRenderContext context, List<Camera> cameras)
         {
-            ++FrameCounter;
+            FrameCounter++;
             EntityCommandBuffer cmd;
             if (availToDraw.Count > 0)
             {
@@ -161,7 +162,19 @@ namespace BelzontWE
 
                         }
                     }
+                    if (item.weComponent.TextType == WESimulationTextType.Text || item.weComponent.TextType == WESimulationTextType.Image)
+                    {
+                        if (((FrameCounter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
+                        {
+                            item.weComponent.UpdateEffectiveText(EntityManager, item.geometryEntity);
+                        }
 
+                        if (item.weComponent.DirtyBRI && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
+                        {
+                            if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! +WEWaitingRendering");
+                            cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                        }
+                    }
                     bool briWasNull = false;
                     if (bri is null)
                     {
@@ -169,17 +182,7 @@ namespace BelzontWE
                         bri = WEAtlasesLibrary.GetWhiteTextureBRI();
                         briWasNull = true;
                     }
-                    else if (item.weComponent.TextType == WESimulationTextType.Text || item.weComponent.TextType == WESimulationTextType.Image)
-                    {
-                        if ((((FrameCounter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
-                              && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity)
-                              && item.weComponent.UpdateEffectiveText(EntityManager, item.geometryEntity)
-                              )
-                        {
-                            if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! +WEWaitingRendering");
-                            cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
-                        }
-                    }
+
                     if (bri.m_refText != "")
                     {
                         var material = briWasNull ? bri.GeneratedMaterial : item.weComponent.OwnMaterial;
