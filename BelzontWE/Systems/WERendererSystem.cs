@@ -12,6 +12,10 @@ using WriteEverywhere.Sprites;
 using Belzont.Utils;
 using Game.Tools;
 using Game.Common;
+using System.Collections.Generic;
+
+
+
 #if BURST
 using UnityEngine.Scripting;
 using Unity.Burst;
@@ -70,6 +74,7 @@ namespace BelzontWE
             m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
             RequireAnyForUpdate(m_renderQueueEntities);
+            RenderPipelineManager.beginContextRendering += Render;
         }
 #if BURST
         [Preserve]
@@ -89,7 +94,6 @@ namespace BelzontWE
                 m_CameraDirection = m_CameraUpdateSystem.activeViewer.forward;
             }
             CheckRenderQueue(m_LodParameters, m_CameraPosition, m_CameraDirection);
-            Render_Impl();
 
         }
 
@@ -100,15 +104,16 @@ namespace BelzontWE
         {
             availToDraw.Dispose();
             base.OnDestroy();
+            RenderPipelineManager.beginContextRendering -= Render;
         }
 #if BURST
         [Preserve]
 #endif
-        private void Render_Impl()
+        private void Render(ScriptableRenderContext context, List<Camera> cameras)
         {
             ++FrameCounter;
             EntityCommandBuffer cmd;
-            if (!m_renderQueueEntities.IsEmptyIgnoreFilter)
+            if (availToDraw.Count > 0)
             {
                 if (dumpNextFrame) LogUtils.DoLog($"Drawing Items: E {m_renderQueueEntities.CalculateEntityCount()} | C {m_renderQueueEntities.CalculateChunkCount()}");
                 cmd = m_endFrameBarrier.CreateCommandBuffer();
@@ -129,7 +134,6 @@ namespace BelzontWE
                         continue;
                     }
                     BasicRenderInformation bri;
-                    bool wasDirty = false;
                     if ((bri = item.weComponent.RenderInformation) == null)
                     {
                         if (!item.weComponent.InitializedEffectiveText)
@@ -153,15 +157,17 @@ namespace BelzontWE
                             case WESimulationTextType.WhiteTexture:
                                 bri = WEAtlasesLibrary.GetWhiteTextureBRI();
                                 item.weComponent = item.weComponent.UpdateBRI(bri, bri.m_refText);
-                                wasDirty = true;
                                 break;
 
                         }
                     }
+
+                    bool briWasNull = false;
                     if (bri is null)
                     {
                         if (!m_pickerTool.IsSelected) continue;
                         bri = WEAtlasesLibrary.GetWhiteTextureBRI();
+                        briWasNull = true;
                     }
                     else if (item.weComponent.TextType == WESimulationTextType.Text || item.weComponent.TextType == WESimulationTextType.Image)
                     {
@@ -170,25 +176,27 @@ namespace BelzontWE
                               && item.weComponent.UpdateEffectiveText(EntityManager, item.geometryEntity)
                               )
                         {
-                            wasDirty = true;
                             if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! +WEWaitingRendering");
                             cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
                         }
-                        wasDirty |= item.weComponent.IsDirty();
                     }
-
                     if (bri.m_refText != "")
                     {
-                        Graphics.DrawMesh(bri.Mesh, item.transformMatrix, item.weComponent.IsGlass ? bri.GlassMaterial : bri.GeneratedMaterial, item.weComponent.IsGlass ? layerRender : 0, null, 0, item.weComponent.MaterialProperties);
+                        var material = briWasNull ? bri.GeneratedMaterial : item.weComponent.OwnMaterial;
+                        foreach (var camera in cameras)
+                        {
+                            if (camera.cameraType == CameraType.Game || camera.cameraType == CameraType.SceneView)
+                            {
+                                Graphics.DrawMesh(bri.Mesh, item.transformMatrix, material, 0, camera, 0);//, item.weComponent.MaterialProperties);
+                            }
+                        }
                         if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length} | {bri.GeneratedMaterial} | M= {item.transformMatrix}");
                     }
-
-                    if (wasDirty) cmd.SetComponent(item.textDataEntity, item.weComponent);
+                    if (!briWasNull) cmd.SetComponent(item.textDataEntity, item.weComponent);
                 }
                 dumpNextFrame = false;
             }
         }
-        private int layerRender = 0;
 #if BURST
         [BurstCompile]
 #endif

@@ -25,7 +25,6 @@ namespace BelzontWE
 
 
         private GCHandle basicRenderInformation;
-        private GCHandle materialBlockPtr;
         private bool dirty;
         private bool templateDirty;
         private Color32 color;
@@ -78,6 +77,11 @@ namespace BelzontWE
             set
             {
                 fontName = value;
+                if (basicRenderInformation.IsAllocated)
+                {
+                    basicRenderInformation.Free();
+                    basicRenderInformation = default;
+                }
             }
         }
         public BasicRenderInformation RenderInformation
@@ -97,40 +101,86 @@ namespace BelzontWE
         }
 
         public float BriWidthMetersUnscaled { get; private set; }
-        public MaterialPropertyBlock MaterialProperties
+
+        private Colossal.Hash128 ownMaterialGuid;
+        private GCHandle ownMaterialGlass;
+        private GCHandle ownMaterialDefault;
+        public Material OwnMaterial
         {
             get
             {
-                MaterialPropertyBlock block;
-                if (!materialBlockPtr.IsAllocated)
+
+                if (!HasBRI || RenderInformation is null) return null;
+                if (RenderInformation.Guid != ownMaterialGuid)
                 {
-                    block = new MaterialPropertyBlock();
-                    materialBlockPtr = GCHandle.Alloc(block, GCHandleType.Normal);
+                    if (ownMaterialGlass.IsAllocated) ownMaterialGlass.Free();
+                    if (ownMaterialDefault.IsAllocated) ownMaterialDefault.Free();
+                    ownMaterialGuid = RenderInformation.Guid;
                     dirty = true;
                 }
-                else
+                Material material;
+                switch (shader)
                 {
-                    block = materialBlockPtr.Target as MaterialPropertyBlock;
+                    case WEShader.Default:
+                        if (!ownMaterialDefault.IsAllocated || ownMaterialDefault.Target is null)
+                        {
+                            if (ownMaterialDefault.IsAllocated) ownMaterialDefault.Free();
+                            material = new(RenderInformation.GeneratedMaterial);
+                            ownMaterialDefault = GCHandle.Alloc(material);
+                            dirty = true;
+                        }
+                        else
+                        {
+                            material = ownMaterialDefault.Target as Material;
+                        }
+                        if (dirty)
+                        {
+                            if (!RenderInformation.m_isError)
+                            {
+                                material.SetColor("_BaseColor", color);
+                                material.SetFloat("_Metallic", metallic);
+                                material.SetColor("_EmissiveColor", emissiveColor);
+                                material.SetFloat("_EmissiveIntensity", emissiveIntensity);
+                                material.SetFloat("_EmissiveExposureWeight", emissiveExposureWeight);
+                                material.SetFloat("_CoatStrength", coatStrength);
+                                material.SetFloat("_Smoothness", smoothness);
+                            }
+                            material.SetFloat(FontServer.DecalLayerMask, decalFlags.ToFloatBitFlags());
+                            dirty = false;
+                        }
+                        break;
+                    case WEShader.Glass:
+                        if (!ownMaterialGlass.IsAllocated || ownMaterialGlass.Target is null)
+                        {
+                            if (ownMaterialGlass.IsAllocated) ownMaterialGlass.Free();
+                            material = new(RenderInformation.GlassMaterial);
+                            ownMaterialGlass = GCHandle.Alloc(material);
+                            dirty = true;
+                        }
+                        else
+                        {
+                            material = ownMaterialGlass.Target as Material;
+                        }
+                        if (dirty)
+                        {
+                            if (!RenderInformation.m_isError)
+                            {
+                                material.SetColor("_BaseColor", color);
+                                material.SetFloat("_Metallic", metallic);
+                                material.SetFloat("_Smoothness", smoothness);
+                                material.SetFloat(FontServer.IOR, glassRefraction);
+                                material.SetColor(FontServer.Transmittance, glassColor);
+                            }
+                            material.SetFloat(FontServer.DecalLayerMask, decalFlags.ToFloatBitFlags());
+                            dirty = false;
+                        }
+                        break;
+                    default:
+                        return null;
                 }
-                if (dirty)
-                {
-                    block.SetColor("_BaseColor", color);
-                    block.SetFloat("_Metallic", metallic);
-                    block.SetColor("_EmissiveColor", emissiveColor);
-                    block.SetFloat("_EmissiveIntensity", emissiveIntensity);
-                    block.SetFloat("_EmissiveExposureWeight", emissiveExposureWeight);
-                    block.SetFloat("_CoatStrength", coatStrength);
-                    block.SetFloat("_Smoothness", smoothness);
-                    block.SetFloat(FontServer.DecalLayerMask, decalFlags.ToFloatBitFlags());
-                    block.SetFloat(FontServer.IOR, glassRefraction);
-                    block.SetColor(FontServer.Transmittance, glassColor);
-                    //"COLOSSAL_GEOMETRY_TILING"
-                    dirty = false;
-                }
-                return block;
+                return material;
             }
         }
-
 
         public FixedString512Bytes Text
         {
@@ -147,7 +197,6 @@ namespace BelzontWE
                     basicRenderInformation.Free();
                     basicRenderInformation = default;
                 }
-                EffectiveText = value;
             }
         }
         public FixedString32Bytes Atlas
@@ -326,9 +375,11 @@ namespace BelzontWE
         public void Dispose()
         {
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
-            if (materialBlockPtr.IsAllocated) materialBlockPtr.Free();
+            if (ownMaterialGlass.IsAllocated) ownMaterialGlass.Free();
+            if (ownMaterialDefault.IsAllocated) ownMaterialDefault.Free();
             basicRenderInformation = default;
-            materialBlockPtr = default;
+            ownMaterialDefault = default;
+            ownMaterialGlass = default;
         }
 
         public WETextData OnPostInstantiate(EntityManager em)
@@ -343,6 +394,7 @@ namespace BelzontWE
         public bool UpdateEffectiveText(EntityManager em, Entity geometryEntity)
         {
             InitializedEffectiveText = true;
+            if (HasBRI && RenderInformation is null) basicRenderInformation.Free();
             if (!loadingFnDone)
             {
                 if (formulaeHandlerStr.Length > 0)

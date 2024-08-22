@@ -166,7 +166,7 @@ namespace BelzontWE
                                 float minDist = RenderingUtils.CalculateMinDistance(refBounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
 
                                 int lod = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
-                                var minLod = RenderingUtils.CalculateLodLimit(RenderingUtils.GetRenderingSize((refBounds.max - refBounds.min) * 8));
+                                var minLod = RenderingUtils.CalculateLodLimit(RenderingUtils.GetRenderingSize((refBounds.max - refBounds.min) * 4));
                                 if (doLog) Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: minDist = {minDist} - refBounds = {refBounds.min} {refBounds.max} - lod = {lod} - minLod = {minLod} - m_LodParameters = {m_LodParameters}");
                                 if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                 {

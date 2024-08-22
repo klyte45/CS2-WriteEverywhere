@@ -26,6 +26,7 @@ namespace BelzontWE.Font.Utility
                 m_bounds = vertices.Length == 0 ? default : new Bounds3(vertices.Aggregate((x, y) => Vector3.Min(x, y)), vertices.Aggregate((x, y) => Vector3.Max(x, y)));
                 GeneratedMaterial = material;
                 GlassMaterial = glassMaterial;
+                Guid = System.Guid.NewGuid();
             }
             else if (triangles != null && vertices != null)
             {
@@ -73,6 +74,7 @@ namespace BelzontWE.Font.Utility
             }
         }
         public int MeshSize { get => Mesh.vertices.Length; set { } }
+        public Colossal.Hash128 Guid { get; private set; }
 
 
         public Vector2 m_sizeMetersUnscaled;

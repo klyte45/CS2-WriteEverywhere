@@ -231,6 +231,7 @@ namespace BelzontWE
                     material.SetFloat("_ZTestGBuffer", 7);
                     material.SetFloat(DecalLayerMask, 8.ToFloatBitFlags());
                     material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
+               //     material.enableInstancing = false;
                     break;
                 case 1:
                     material = new Material(Shader.Find(defaultGlassShaderName));
@@ -238,6 +239,7 @@ namespace BelzontWE
                     material.SetVector("_DoubleSidedConstants", new Vector4(1, 1, -1, 0));
                     material.SetFloat(DecalLayerMask, 8.ToFloatBitFlags());
                     material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
+                 //   material.enableInstancing = false;
                     break;
             }
             HDMaterial.ValidateMaterial(material);
