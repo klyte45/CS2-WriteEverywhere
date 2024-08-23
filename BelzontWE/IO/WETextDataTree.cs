@@ -2,7 +2,9 @@
 using Colossal.Entities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml.Serialization;
+using Unity.Collections;
 using Unity.Entities;
 
 namespace BelzontWE
@@ -57,5 +59,10 @@ namespace BelzontWE
         public static bool operator ==(WETextDataTree left, WETextDataTree right) => EqualityComparer<WETextDataTree>.Default.Equals(left, right);
 
         public static bool operator !=(WETextDataTree left, WETextDataTree right) => !(left == right);
+
+        public void MergeChildren(WETextDataTree other)
+        {
+            children = children.Concat(other.children).ToArray();
+        }
     }
 }

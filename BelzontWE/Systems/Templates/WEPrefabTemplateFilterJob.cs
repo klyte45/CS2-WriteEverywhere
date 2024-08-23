@@ -2,10 +2,6 @@
 using Unity.Burst.Intrinsics;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
-
-
-
-
 #if BURST
 using Unity.Burst;
 #endif
@@ -34,20 +30,22 @@ namespace BelzontWE
             {
                 var entities = chunk.GetNativeArray(m_EntityType);
                 var prefabRefs = chunk.GetNativeArray(ref m_prefabRefHdl);
-                //    UnityEngine.Debug.Log($"WEPrefabTemplateFilterJob SIZE: {entities.Length}");
                 for (int i = 0; i < entities.Length; i++)
                 {
                     var entity = entities[i];
                     var prefabRef = prefabRefs[i];
                     if (m_prefabDataLkp.TryGetComponent(prefabRef.m_Prefab, out var prefabData))
                     {
-                        if (!m_prefabLayoutLkp.TryGetComponent(entity, out var layoutData) || (m_indexesWithLayout.TryGetValue(prefabData.m_Index, out var newTemplate) ? layoutData.templateRef != newTemplate.Guid : layoutData.templateRef != default))
+                        bool needUpdate = !m_prefabLayoutLkp.HasComponent(entity);
+                        if (m_prefabLayoutLkp.TryGetComponent(entity, out var layoutData) && (m_indexesWithLayout.TryGetValue(prefabData.m_Index, out var newTemplate) ? layoutData.templateRef != newTemplate.Guid : layoutData.templateRef != default))
                         {
-                            if (m_prefabLayoutLkp.HasComponent(entity))
-                            {
-                                DestroyRecursive(layoutData.childEntity, unfilteredChunkIndex);
-                                m_CommandBuffer.RemoveComponent<WETemplateForPrefab>(unfilteredChunkIndex, entities[i]);
-                            }
+                            if (layoutData.childEntity != Entity.Null) DestroyRecursive(layoutData.childEntity, unfilteredChunkIndex);
+                            m_CommandBuffer.RemoveComponent<WETemplateForPrefab>(unfilteredChunkIndex, entities[i]);
+                            needUpdate = true;
+                        }
+                        if (needUpdate)
+                        {
+
                             if (m_indexesWithLayout.TryGetValue(prefabData.m_Index, out newTemplate))
                             {
                                 var childEntity = WELayoutUtility.DoCreateLayoutItem(newTemplate, entities[i], Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, unfilteredChunkIndex, m_CommandBuffer, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_FOR_PARENT);
@@ -65,7 +63,7 @@ namespace BelzontWE
                                     templateRef = default,
                                     childEntity = Entity.Null
                                 });
-                                m_CommandBuffer.AddComponent<WETemplateForPrefabEmpty>(unfilteredChunkIndex, entity);
+                                if (!m_prefabEmptyLkp.HasComponent(entity)) m_CommandBuffer.AddComponent<WETemplateForPrefabEmpty>(unfilteredChunkIndex, entity);
                             }
                         }
                     }
@@ -81,7 +79,11 @@ namespace BelzontWE
             }
             private void DestroyRecursive(Entity nextEntity, int unfilteredChunkIndex, Entity initialDelete = default, int iterationCounter = 0)
             {
-                if (iterationCounter > 256) return;
+                if (iterationCounter > 64) return;
+                if (nextEntity == Entity.Null)
+                {
+                    return;
+                }
                 if (nextEntity != initialDelete)
                 {
                     if (initialDelete == default) initialDelete = nextEntity;
@@ -100,8 +102,8 @@ namespace BelzontWE
                             DestroyRecursive(subLayout[j].m_weTextData, unfilteredChunkIndex, initialDelete, iterationCounter + 1);
                         }
                     }
+                    m_CommandBuffer.AddComponent<Game.Common.Deleted>(unfilteredChunkIndex, nextEntity);
                 }
-                m_CommandBuffer.AddComponent<Game.Common.Deleted>(unfilteredChunkIndex, nextEntity);
             }
         }
 

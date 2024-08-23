@@ -13,7 +13,7 @@ namespace BelzontWE.Font.Utility
 {
     public class BasicRenderInformation
     {
-        public const string PLACEHOLDER_REFTEXT = "\0\nPlaceholder\n\0";
+        public const string PLACEHOLDER_REFTEXT = "\0Placeholder\0";
         public static readonly BasicRenderInformation LOADING_PLACEHOLDER = new(PLACEHOLDER_REFTEXT, null, null, null, null);
         public BasicRenderInformation(string refText, Vector3[] vertices, int[] triangles, Vector2[] uv, Material material = null, Material glassMaterial = null)
         {
@@ -24,14 +24,14 @@ namespace BelzontWE.Font.Utility
                 m_triangles = triangles;
                 m_uv = uv;
                 m_bounds = vertices.Length == 0 ? default : new Bounds3(vertices.Aggregate((x, y) => Vector3.Min(x, y)), vertices.Aggregate((x, y) => Vector3.Max(x, y)));
-                GeneratedMaterial = material;
-                GlassMaterial = glassMaterial;
-                Guid = System.Guid.NewGuid();
             }
             else if (triangles != null && vertices != null)
             {
                 LogUtils.DoWarnLog($"m_vertices.Length = {m_vertices?.Length} | m_triangles: [{string.Join(",", m_triangles ?? new int[0])}]");
             }
+            GeneratedMaterial = material;
+            GlassMaterial = glassMaterial;
+            Guid = System.Guid.NewGuid();
         }
         public static BasicRenderInformation Fill(BasicRenderInformationJob brij, Material targetAtlas, Material decalAtlas)
         {
@@ -103,6 +103,8 @@ namespace BelzontWE.Font.Utility
         public override string ToString() => $"BRI [r={m_refText};v={m_vertices?.Length};sz={m_sizeMetersUnscaled}]";
 
         internal long GetSize() => GetMeshSize();
+
+        public bool IsValid() => GeneratedMaterial && GlassMaterial;
 
         private long GetMeshSize()
         {

@@ -50,10 +50,6 @@ namespace WriteEverywhere.Sprites
         //}
         #region Imported atlas
 
-        public const string PROTOCOL_IMAGE = "image://";
-        public const string PROTOCOL_IMAGE_ASSET = "assetImage://";
-        public const string PROTOCOL_FOLDER = "folder://";
-        public const string PROTOCOL_FOLDER_ASSET = "assetFolder://";
         private const string INTERNAL_ATLAS_NAME = @"\/INTERNAL\/";
 
         private Dictionary<FixedString32Bytes, Dictionary<FixedString32Bytes, WEImageInfo>> LocalAtlases { get; } = new();
@@ -95,10 +91,14 @@ namespace WriteEverywhere.Sprites
             {
                 return fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage) : null;
             }
-
-            if (LocalAtlasesCache.TryGetValue(atlasName, out var resultDicCache) && resultDicCache.TryGetValue(spriteName, out BasicRenderInformation cachedInfo))
+            BasicRenderInformation cachedInfo = null;
+            if (LocalAtlasesCache.TryGetValue(atlasName, out var resultDicCache) && resultDicCache.TryGetValue(spriteName, out cachedInfo) && (cachedInfo == null || cachedInfo.GeneratedMaterial))
             {
                 return cachedInfo;
+            }
+            if (cachedInfo != null && !cachedInfo.GeneratedMaterial)
+            {
+                LocalAtlases.Clear();
             }
             if (!LocalAtlases.TryGetValue(atlasName, out var atlas) || !atlas.ContainsKey(spriteName))
             {

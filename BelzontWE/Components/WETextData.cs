@@ -86,7 +86,7 @@ namespace BelzontWE
         {
             get
             {
-                if (basicRenderInformation.IsAllocated && basicRenderInformation.Target is BasicRenderInformation bri && bri.Mesh != null)
+                if (basicRenderInformation.IsAllocated && basicRenderInformation.Target is BasicRenderInformation bri && bri.IsValid())
                 {
                     return bri;
                 }
@@ -124,6 +124,11 @@ namespace BelzontWE
                     case WEShader.Default:
                         if (!ownMaterialDefault.IsAllocated || ownMaterialDefault.Target is null)
                         {
+                            if (!RenderInformation.GeneratedMaterial)
+                            {
+                                ResetBri();
+                                return null;
+                            }
                             if (ownMaterialDefault.IsAllocated) ownMaterialDefault.Free();
                             material = new(RenderInformation.GeneratedMaterial);
                             ownMaterialDefault = GCHandle.Alloc(material);
@@ -132,6 +137,11 @@ namespace BelzontWE
                         else
                         {
                             material = ownMaterialDefault.Target as Material;
+                            if (!material)
+                            {
+                                ResetBri();
+                                return null;
+                            }
                         }
                         if (dirty)
                         {
@@ -152,6 +162,11 @@ namespace BelzontWE
                     case WEShader.Glass:
                         if (!ownMaterialGlass.IsAllocated || ownMaterialGlass.Target is null)
                         {
+                            if (!RenderInformation.GlassMaterial)
+                            {
+                                ResetBri();
+                                return null;
+                            }
                             if (ownMaterialGlass.IsAllocated) ownMaterialGlass.Free();
                             material = new(RenderInformation.GlassMaterial);
                             ownMaterialGlass = GCHandle.Alloc(material);
@@ -160,6 +175,11 @@ namespace BelzontWE
                         else
                         {
                             material = ownMaterialGlass.Target as Material;
+                            if (!material)
+                            {
+                                ResetBri();
+                                return null;
+                            }
                         }
                         if (dirty)
                         {
@@ -180,6 +200,13 @@ namespace BelzontWE
                 }
                 return material;
             }
+        }
+
+        private void ResetBri()
+        {
+            if (ownMaterialGlass.IsAllocated) ownMaterialGlass.Free();
+            if (ownMaterialDefault.IsAllocated) ownMaterialDefault.Free();
+            basicRenderInformation.Free();
         }
 
         public FixedString512Bytes Text

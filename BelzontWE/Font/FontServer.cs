@@ -270,6 +270,7 @@ namespace BelzontWE
                 writer.Write(dataToSerialize);
                 dataToSerialize.Dispose();
             }
+            requiresUpdateParameter = true;
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader

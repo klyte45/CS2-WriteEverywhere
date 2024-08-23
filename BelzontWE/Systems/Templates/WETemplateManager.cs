@@ -31,6 +31,7 @@ namespace BelzontWE
         public const string SIMPLE_LAYOUT_EXTENSION = "welayout.xml";
         public const string PREFAB_LAYOUT_EXTENSION = "wedefault.xml";
         public static readonly string SAVED_PREFABS_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "prefabs");
+        public static WETemplateManager Instance { get; private set; }
 
         public const int CURRENT_VERSION = 0;
 
@@ -138,6 +139,7 @@ namespace BelzontWE
 
         protected override void OnCreate()
         {
+            Instance = this;
             RegisteredTemplates = new(0, Allocator.Persistent);
             PrefabTemplates = new(0, Allocator.Persistent);
             m_prefabSystem = World.GetExistingSystemManaged<PrefabSystem>();
@@ -262,24 +264,6 @@ namespace BelzontWE
                 EntityManager.AddComponent<WEWaitingRenderingPlaceholder>(m_templateBasedEntities);
                 m_templatesDirty = false;
             }
-            //if (!m_templateBasedEntities.IsEmpty)
-            //{
-            //    var job = new WEPlaceholderTemplateUpdaterJob
-            //    {
-            //        m_EntityType = GetEntityTypeHandle(),
-            //        m_prefabUpdaterHdl = GetComponentTypeHandle<WETemplateUpdater>(true),
-            //        m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
-            //        m_obsoleteTemplateList = m_obsoleteTemplateList,
-            //        m_EntityLkp = GetEntityStorageInfoLookup()
-            //    };
-            //    var schedule = job.Schedule(m_templateBasedEntities, Dependency);
-            //    Dependency = schedule;
-            //    schedule.GetAwaiter().OnCompleted(() => m_obsoleteTemplateList.Clear());
-            //}
-            //else
-            //{
-            //}
-
             else if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
             {
                 Dependency = new WEPrefabTemplateFilterJob
@@ -294,6 +278,7 @@ namespace BelzontWE
                     m_TextDataLkp = GetComponentLookup<WETextData>(true),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                     m_indexesWithLayout = PrefabTemplates,
+                    m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
                 }.ScheduleParallel(m_uncheckedWePrefabLayoutQuery, Dependency);
             }
             else if (!m_dirtyWePrefabLayoutQuery.IsEmpty)
@@ -310,6 +295,7 @@ namespace BelzontWE
                     m_TextDataLkp = GetComponentLookup<WETextData>(true),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                     m_indexesWithLayout = PrefabTemplates,
+                    m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
                 }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
             }
             Dependency.Complete();
@@ -400,11 +386,6 @@ namespace BelzontWE
                     LogUtils.DoWarnLog($"No prefab loaded with name: {prefabName}. Skipping...");
                     continue;
                 }
-                if (PrefabTemplates.ContainsKey(idx))
-                {
-                    LogUtils.DoWarnLog($"Prefab defaults already loaded for '{prefabName}'. Skipping data from file at '{f}'");
-                    continue;
-                }
                 var tree = WETextDataTree.FromXML(File.ReadAllText(f));
                 if (tree is null) continue;
                 tree.self = new WETextDataXml
@@ -418,8 +399,20 @@ namespace BelzontWE
                 var validationResults = CanBePrefabLayout(generatedEntity);
                 if (validationResults == 0)
                 {
-                    PrefabTemplates[idx] = generatedEntity;
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {generatedEntity}");
+
+                    if (PrefabTemplates.ContainsKey(idx))
+                    {
+                        var newXml = PrefabTemplates[idx].ToXml();
+                        newXml.MergeChildren(tree);
+                        generatedEntity.Dispose();
+                        PrefabTemplates[idx].Dispose();
+                        PrefabTemplates[idx] = WETextDataTreeStruct.FromXml(newXml);
+                    }
+                    else
+                    {
+                        PrefabTemplates[idx] = generatedEntity;
+                    }
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {generatedEntity} from {f[SAVED_PREFABS_FOLDER.Length..]}");
                 }
                 else
                 {

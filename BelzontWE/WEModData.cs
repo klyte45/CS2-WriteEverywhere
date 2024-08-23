@@ -40,6 +40,7 @@ namespace BelzontWE
         const string kFontsSection = "Font";
         const string kKeybindingSection = "Keybinding";
         const string kSpritesSection = "Sprites";
+        const string kLayoutDefaultSection = "LayoutDefaults";
         const string kFormattingSection = "Formatting";
         const string kSourcesTab = "SourcesTab";
 
@@ -132,6 +133,12 @@ namespace BelzontWE
         public bool SpritesFolderRefresh
         {
             set => WEAtlasesLibrary.Instance?.LoadImagesFromLocalFolders();
+        }
+        [SettingsUIButton]
+        [SettingsUISection(kSourcesTab, kLayoutDefaultSection)]
+        public bool PrefabLayoutsRefresh
+        {
+            set => WETemplateManager.Instance?.MarkPrefabsDirty();
         }
 
         [SettingsUISection(kSourcesTab, kFormattingSection)]
