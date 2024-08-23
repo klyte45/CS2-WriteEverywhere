@@ -248,7 +248,7 @@ namespace BelzontWE
                 var newData = new WETemplateUpdater()
                 {
                     templateEntity = targetTemplate.Guid,
-                    childEntity = !targetTemplate.IsInitialized ? Entity.Null : WELayoutUtility.DoCreateLayoutItem(targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, unfilteredChunkIndex, cmd, selfTarget: true)
+                    childEntity = !targetTemplate.IsInitialized ? Entity.Null : WELayoutUtility.DoCreateLayoutItem(targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, unfilteredChunkIndex, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
                 };
 #if !BURST
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Cloned info! {weCustomData.ItemName} => {targetTemplate}");

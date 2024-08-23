@@ -1,4 +1,5 @@
-﻿using Unity.Entities;
+﻿using Colossal.Entities;
+using Unity.Entities;
 
 namespace BelzontWE
 {
@@ -8,66 +9,78 @@ namespace BelzontWE
         {
             TARGET_IS_TARGET,
             TARGET_IS_SELF,
+            TARGET_IS_SELF_FOR_PARENT,
+            TARGET_IS_SELF_PARENT_HAS_TARGET,
             TARGET_IS_PARENT
         }
-        public static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, EntityManager em, ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET, bool selfTarget = false)
+        public static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, EntityManager em, ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET)
         {
             var newEntity = em.CreateEntity();
-            var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, selfTarget, newEntity, out WETextData weData);
+            var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, newEntity, out WETextData weData);
             em.AddComponentData(newEntity, weData);
+            if (childTargetMode == ParentEntityMode.TARGET_IS_TARGET)
+            {
+                if (!em.TryGetBuffer<WESubTextRef>(parentEntity, true, out var subRefBuff)) subRefBuff = em.AddBuffer<WESubTextRef>(parentEntity);
+                subRefBuff.Add(new WESubTextRef
+                {
+                    m_weTextData = newEntity
+                });
+            }
             if (weData.TextType != WESimulationTextType.Placeholder && toCopy.children.Length > 0)
             {
-                var buff = em.AddBuffer<WESubTextRef>(newEntity);
                 for (int i = 0; i < toCopy.children.Length; i++)
                 {
-                    buff.Add(new WESubTextRef { m_weTextData = DoCreateLayoutItem(toCopy.children[i], newEntity, childTarget, em) });
+                    DoCreateLayoutItem(toCopy.children[i], newEntity, childTarget, em);
                 }
             }
             return newEntity;
         }
-
-        public static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, EntityManager em, EntityCommandBuffer cmd, ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET, bool selfTarget = false)
+        public static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextData> tdLookup,
+                   ref BufferLookup<WESubTextRef> subTextLookup, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd,
+                   ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET)
         {
-            var newEntity = cmd.CreateEntity();
-            var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, selfTarget, newEntity, out WETextData weData);
-            cmd.AddComponent(newEntity, weData);
-            cmd.AddComponent<WEWaitingPostInstantiation>(newEntity);
-            if (weData.TextType != WESimulationTextType.Placeholder && toCopy.children.Length > 0)
-            {
-                var buff = em.AddBuffer<WESubTextRef>(newEntity);
-                for (int i = 0; i < toCopy.children.Length; i++)
-                {
-                    buff.Add(new WESubTextRef { m_weTextData = DoCreateLayoutItem(toCopy.children[i], newEntity, childTarget, em, cmd) });
-                }
-            }
-            return newEntity;
+            if (!subTextLookup.TryGetBuffer(parentEntity, out var buff)) buff = childTargetMode == ParentEntityMode.TARGET_IS_TARGET ? cmd.AddBuffer<WESubTextRef>(unfilteredChunkIndex, parentEntity) : default;
+            return DoCreateLayoutItem(toCopy, parentEntity, targetEntity, ref tdLookup, ref subTextLookup, unfilteredChunkIndex, cmd, ref buff, childTargetMode);
         }
 
-        public static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextData> tdLookup, ref BufferLookup<WESubTextRef> subTextLookup, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET, bool selfTarget = false)
+        private static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextData> tdLookup,
+        ref BufferLookup<WESubTextRef> subTextLookup, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd,
+        ref DynamicBuffer<WESubTextRef> parentSubRefArray, ParentEntityMode childTargetMode)
         {
             var newEntity = cmd.CreateEntity(unfilteredChunkIndex);
-            var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, selfTarget, newEntity, out WETextData weData);
+            var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, newEntity, out WETextData weData);
             cmd.AddComponent(unfilteredChunkIndex, newEntity, weData);
             cmd.AddComponent<WEWaitingPostInstantiation>(unfilteredChunkIndex, newEntity);
+
+            if (childTargetMode == ParentEntityMode.TARGET_IS_TARGET)
+            {
+                parentSubRefArray.Add(new WESubTextRef
+                {
+                    m_weTextData = newEntity
+                });
+            }
+
             if (weData.TextType != WESimulationTextType.Placeholder && toCopy.children.Length > 0)
             {
                 var buff = cmd.AddBuffer<WESubTextRef>(unfilteredChunkIndex, newEntity);
                 for (int i = 0; i < toCopy.children.Length; i++)
                 {
-                    buff.Add(new WESubTextRef { m_weTextData = DoCreateLayoutItem(toCopy.children[i], newEntity, childTarget, ref tdLookup, ref subTextLookup, unfilteredChunkIndex, cmd) });
+                    DoCreateLayoutItem(toCopy.children[i], newEntity, childTarget, ref tdLookup, ref subTextLookup, unfilteredChunkIndex, cmd, ref buff, ParentEntityMode.TARGET_IS_TARGET);
                 }
             }
             return newEntity;
         }
 
-        private static Entity CommonDataSetup(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ParentEntityMode childTargetMode, bool selfTarget, Entity newEntity, out WETextData weData)
+        private static Entity CommonDataSetup(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ParentEntityMode childTargetMode, Entity newEntity, out WETextData weData)
         {
-            if (selfTarget) targetEntity = newEntity;
-            weData = WETextData.FromDataStruct(toCopy.self, newEntity, targetEntity);
+            var parentTarget = ParentEntityMode.TARGET_IS_SELF_FOR_PARENT == childTargetMode || ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET == childTargetMode ? newEntity : targetEntity;
+            weData = WETextData.FromDataStruct(toCopy.self, newEntity, parentTarget);
             var childTarget = childTargetMode switch
             {
                 ParentEntityMode.TARGET_IS_SELF => newEntity,
+                ParentEntityMode.TARGET_IS_SELF_FOR_PARENT => parentEntity,
                 ParentEntityMode.TARGET_IS_PARENT => parentEntity,
+                ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET => newEntity,
                 _ => targetEntity
             };
             weData.SetNewParentForced(parentEntity);

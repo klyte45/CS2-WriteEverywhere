@@ -20,8 +20,12 @@
 }
 
 .k45_we_dialogMessage {
+    display: flex;
+    flex-direction: column;
+
     >* {
         margin-top: 3rem;
         margin-bottom: 5rem;
+        flex-grow: 1;
     }
 }

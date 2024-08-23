@@ -82,18 +82,29 @@ namespace BelzontWE
 
             var tree = WETextDataTree.FromXML(File.ReadAllText(targetFilename));
             if (tree is null) return false;
-            if (!EntityManager.TryGetComponent<WETextData>(parent, out var weData)) return false;
-            WELayoutUtility.DoCreateLayoutItem(WETextDataTreeStruct.FromXml(tree), parent, weData.TargetEntity, EntityManager);
+            var isTarget = EntityManager.HasComponent<PrefabRef>(parent);
+            var targetEntity = parent;
+            if (!isTarget)
+            {
+                if (!EntityManager.TryGetComponent<WETextData>(parent, out var weData)) return false;
+                targetEntity = weData.TargetEntity;
+            }
+            WELayoutUtility.DoCreateLayoutItem(WETextDataTreeStruct.FromXml(tree), parent, targetEntity, EntityManager);
             m_controller.UpdateTree();
             return true;
         }
         private bool LoadAsChildFromCityTemplate(Entity parent, string templateName)
         {
             if (!m_templateManager.CityTemplateExists(templateName)) return false;
-            if (!EntityManager.TryGetComponent<WETextData>(parent, out var weData)) return false;
+            var isTarget = EntityManager.HasComponent<PrefabRef>(parent);
+            var targetEntity = parent;
+            if (!isTarget)
+            {
+                if (!EntityManager.TryGetComponent<WETextData>(parent, out var weData)) return false;
+                targetEntity = weData.TargetEntity;
+            }
             var layout = m_templateManager[templateName];
-            var e = WELayoutUtility.DoCreateLayoutItem(layout, parent, weData.TargetEntity, EntityManager);
-            LogUtils.DoLog($"Added entity {e} with layout {layout.Guid} as child of {parent} pointing to target {weData.TargetEntity} | {EntityManager.HasComponent<WETextData>(e)}");
+            var e = WELayoutUtility.DoCreateLayoutItem(layout, parent, targetEntity, EntityManager);
             m_controller.UpdateTree();
             return true;
         }
