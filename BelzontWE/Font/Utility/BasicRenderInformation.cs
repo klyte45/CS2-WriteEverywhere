@@ -11,11 +11,11 @@ using UnityEngine;
 
 namespace BelzontWE.Font.Utility
 {
-    public class BasicRenderInformation
+    public class BasicRenderInformation : IDisposable
     {
         public const string PLACEHOLDER_REFTEXT = "\0Placeholder\0";
-        public static readonly BasicRenderInformation LOADING_PLACEHOLDER = new(PLACEHOLDER_REFTEXT, null, null, null, null);
-        public BasicRenderInformation(string refText, Vector3[] vertices, int[] triangles, Vector2[] uv, Material material = null, Material glassMaterial = null)
+        public static readonly BasicRenderInformation LOADING_PLACEHOLDER = new(PLACEHOLDER_REFTEXT, null, null, null, Texture2D.whiteTexture);
+        public BasicRenderInformation(string refText, Vector3[] vertices, int[] triangles, Vector2[] uv, Texture main, Texture normal = null, Texture control = null, Texture emissive = null, Texture mask = null)
         {
             m_refText = refText ?? throw new ArgumentNullException("refText");
             if (vertices != null && (triangles?.All(x => x < vertices.Length) ?? false))
@@ -29,13 +29,16 @@ namespace BelzontWE.Font.Utility
             {
                 LogUtils.DoWarnLog($"m_vertices.Length = {m_vertices?.Length} | m_triangles: [{string.Join(",", m_triangles ?? new int[0])}]");
             }
-            GeneratedMaterial = material;
-            GlassMaterial = glassMaterial;
+            Main = main;
+            Normal = normal;
+            Emissive = emissive;
+            Control = control;
+            Mask = mask;
             Guid = System.Guid.NewGuid();
         }
-        public static BasicRenderInformation Fill(BasicRenderInformationJob brij, Material targetAtlas, Material decalAtlas)
+        public static BasicRenderInformation Fill(BasicRenderInformationJob brij, Texture main)
         {
-            var bri = new BasicRenderInformation(brij.originalText.ToString(), AlignVertices(brij.vertices.ToList()), brij.triangles.ToArray(), brij.uv1.ToArray(), targetAtlas, decalAtlas);
+            var bri = new BasicRenderInformation(brij.originalText.ToString(), AlignVertices(brij.vertices.ToList()), brij.triangles.ToArray(), brij.uv1.ToArray(), main);
             if (bri.Mesh == null) return null;
 
             bri.m_colors32 = brij.colors.ToArray();
@@ -52,6 +55,14 @@ namespace BelzontWE.Font.Utility
         private readonly Vector2[] m_uv;
         public readonly Bounds3 m_bounds;
         private Mesh m_mesh;
+
+        [XmlIgnore]
+        public Texture Main { get; private set; }
+        public Texture Normal { get; private set; }
+        public Texture Emissive { get; private set; }
+        public Texture Control { get; private set; }
+        public Texture Mask { get; private set; }
+
         [XmlIgnore]
         public Mesh Mesh
         {
@@ -78,13 +89,6 @@ namespace BelzontWE.Font.Utility
 
 
         public Vector2 m_sizeMetersUnscaled;
-        [XmlIgnore]
-        public Material GeneratedMaterial { get; }
-        [XmlIgnore]
-        public Material GlassMaterial
-        {
-            get; private set;
-        }
         public readonly string m_refText;
         public bool m_isError = false;
 
@@ -104,7 +108,7 @@ namespace BelzontWE.Font.Utility
 
         internal long GetSize() => GetMeshSize();
 
-        public bool IsValid() => GeneratedMaterial && GlassMaterial;
+        public bool IsValid() => Main || m_refText.TrimToNull() == null;
 
         private long GetMeshSize()
         {
@@ -130,6 +134,14 @@ namespace BelzontWE.Font.Utility
             }
         }
 
+        public void Dispose()
+        {
+            if (Main) GameObject.Destroy(Main);
+            if (Normal) GameObject.Destroy(Normal);
+            if (Emissive) GameObject.Destroy(Emissive);
+            if (Control) GameObject.Destroy(Control);
+            if (Mask) GameObject.Destroy(Mask);
+        }
     }
 
     public unsafe struct BasicRenderInformationJob : IComponentData, IDisposable

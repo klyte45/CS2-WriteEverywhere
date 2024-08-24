@@ -5,13 +5,13 @@ using Belzont.Utils;
 using BelzontWE.Font.Utility;
 using Colossal.Entities;
 using Colossal.Mathematics;
-using Kwytto.Utils;
 using System;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Rendering.HighDefinition;
 
 namespace BelzontWE
 {
@@ -52,14 +52,13 @@ namespace BelzontWE
         private int decalFlags;
         public int lastLodValue;
         private Colossal.Hash128 ownMaterialGuid;
-        private GCHandle ownMaterialGlass;
-        private GCHandle ownMaterialDefault;
+        private GCHandle ownMaterial;
         private bool dirtyBRI;
         private Color colorMask1;
         private Color colorMask2;
         private Color colorMask3;
 
-        public bool DirtyBRI { get { return dirtyBRI || !basicRenderInformation.IsAllocated || basicRenderInformation.Target is null; } private set => dirtyBRI = value; }
+        public bool DirtyBRI => dirtyBRI || !basicRenderInformation.IsAllocated || basicRenderInformation.Target is null;
 
         public int DecalFlags
         {
@@ -69,7 +68,6 @@ namespace BelzontWE
                 dirty = true;
             }
         }
-        public readonly bool IsGlass => Shader == WEShader.Glass;
         public bool InitializedEffectiveText { get; private set; }
         public bool useAbsoluteSizeEditing;
         private float glassThickness;
@@ -85,7 +83,7 @@ namespace BelzontWE
             set
             {
                 fontName = value;
-                DirtyBRI = true;
+                dirtyBRI = true;
             }
         }
         public BasicRenderInformation RenderInformation
@@ -115,38 +113,28 @@ namespace BelzontWE
                 if (!HasBRI || RenderInformation is null) return null;
                 if (RenderInformation.Guid != ownMaterialGuid)
                 {
-                    if (ownMaterialGlass.IsAllocated) ownMaterialGlass.Free();
-                    if (ownMaterialDefault.IsAllocated) ownMaterialDefault.Free();
+                    ResetMaterial();
                     ownMaterialGuid = RenderInformation.Guid;
                     dirty = true;
                 }
-                Material material;
-                switch (shader)
+                ;
+                if (!ownMaterial.IsAllocated || ownMaterial.Target is not Material material || !material)
                 {
-                    case WEShader.Default:
-                        if (!ownMaterialDefault.IsAllocated || ownMaterialDefault.Target is null)
-                        {
-                            if (!RenderInformation.GeneratedMaterial)
-                            {
-                                ResetBri();
-                                return null;
-                            }
-                            if (ownMaterialDefault.IsAllocated) ownMaterialDefault.Free();
-                            material = new(RenderInformation.GeneratedMaterial);
-                            ownMaterialDefault = GCHandle.Alloc(material);
-                            dirty = true;
-                        }
-                        else
-                        {
-                            material = ownMaterialDefault.Target as Material;
-                            if (!material)
-                            {
-                                ResetBri();
-                                return null;
-                            }
-                        }
-                        if (dirty)
-                        {
+                    if (!RenderInformation.IsValid())
+                    {
+                        ResetBri();
+                        return null;
+                    }
+                    ResetMaterial();
+                    material = WERenderingHelper.GenerateMaterial(RenderInformation, shader);
+                    ownMaterial = GCHandle.Alloc(material);
+                    dirty = true;
+                }
+                if (dirty)
+                {
+                    switch (shader)
+                    {
+                        case WEShader.Default:
                             if (!RenderInformation.m_isError)
                             {
                                 material.SetColor("_BaseColor", color);
@@ -169,50 +157,25 @@ namespace BelzontWE
                                     material.SetColor("colossal_ColorMask2", UnityEngine.Color.white);
                                 }
                             }
-                            material.SetFloat(FontServer.DecalLayerMask, decalFlags.ToFloatBitFlags());
-                            dirty = false;
-                        }
-                        break;
-                    case WEShader.Glass:
-                        if (!ownMaterialGlass.IsAllocated || ownMaterialGlass.Target is null)
-                        {
-                            if (!RenderInformation.GlassMaterial)
-                            {
-                                ResetBri();
-                                return null;
-                            }
-                            if (ownMaterialGlass.IsAllocated) ownMaterialGlass.Free();
-                            material = new(RenderInformation.GlassMaterial);
-                            ownMaterialGlass = GCHandle.Alloc(material);
-                            dirty = true;
-                        }
-                        else
-                        {
-                            material = ownMaterialGlass.Target as Material;
-                            if (!material)
-                            {
-                                ResetBri();
-                                return null;
-                            }
-                        }
-                        if (dirty)
-                        {
+                            break;
+                        case WEShader.Glass:
                             if (!RenderInformation.m_isError)
                             {
                                 material.SetColor("_BaseColor", color);
                                 material.SetFloat("_Metallic", metallic);
                                 material.SetFloat("_Smoothness", smoothness);
-                                material.SetFloat(FontServer.IOR, glassRefraction);
-                                material.SetColor(FontServer.Transmittance, glassColor);
+                                material.SetFloat(WERenderingHelper.IOR, glassRefraction);
+                                material.SetColor(WERenderingHelper.Transmittance, glassColor);
                                 material.SetFloat("_NormalStrength", normalStrength);
                                 material.SetFloat("_Thickness", glassThickness);
                             }
-                            material.SetFloat(FontServer.DecalLayerMask, decalFlags.ToFloatBitFlags());
-                            dirty = false;
-                        }
-                        break;
-                    default:
-                        return null;
+                            break;
+                        default:
+                            return null;
+                    }
+                    material.SetFloat(WERenderingHelper.DecalLayerMask, decalFlags.ToFloatBitFlags());
+                    HDMaterial.ValidateMaterial(material);
+                    dirty = false;
                 }
                 return material;
             }
@@ -220,9 +183,16 @@ namespace BelzontWE
 
         private void ResetBri()
         {
-            if (ownMaterialGlass.IsAllocated) ownMaterialGlass.Free();
-            if (ownMaterialDefault.IsAllocated) ownMaterialDefault.Free();
+            ResetMaterial();
             basicRenderInformation.Free();
+        }
+        private void ResetMaterial()
+        {
+            if (ownMaterial.IsAllocated)
+            {
+                GameObject.Destroy(ownMaterial.Target as Material);
+                ownMaterial.Free();
+            }
         }
 
         public FixedString512Bytes Text
@@ -236,7 +206,7 @@ namespace BelzontWE
                 }
                 m_text = value;
                 EffectiveText = value;
-                DirtyBRI = true;
+                dirtyBRI = true;
             }
         }
         public FixedString32Bytes Atlas
@@ -247,7 +217,7 @@ namespace BelzontWE
                 atlas = value;
                 if (type == WESimulationTextType.Image)
                 {
-                    DirtyBRI = true;
+                    dirtyBRI = true;
                 }
             }
         }
@@ -258,7 +228,7 @@ namespace BelzontWE
                 if (type != value)
                 {
                     type = value;
-                    DirtyBRI = true;
+                    dirtyBRI = true;
                     if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
                 }
             }
@@ -376,6 +346,19 @@ namespace BelzontWE
                 dirty = true;
             }
         }
+        public WEShader Shader
+        {
+            readonly get => shader;
+            set
+            {
+                if (shader != value)
+                {
+                    shader = value;
+                    ResetMaterial();
+                    dirty = true;
+                }
+            }
+        }
         public FixedString512Bytes Formulae
         {
             get => formulaeHandlerStr;
@@ -394,8 +377,8 @@ namespace BelzontWE
         {
             return new WETextData
             {
-                TargetEntity = target,
-                ParentEntity = parent ?? target,
+                targetEntity = target,
+                parentEntity = parent ?? target,
                 offsetPosition = new(0, 0, 0),
                 offsetRotation = new(),
                 scale = new(1, 1, 1),
@@ -407,14 +390,14 @@ namespace BelzontWE
                 emissiveIntensity = 0,
                 coatStrength = 0f,
                 m_text = "NEW TEXT",
-                ItemName = "New item",
-                Shader = WEShader.Default,
+                itemName = "New item",
+                shader = WEShader.Default,
                 decalFlags = DEFAULT_DECAL_FLAGS,
                 glassRefraction = 1f,
                 colorMask1 = UnityEngine.Color.white,
                 colorMask2 = UnityEngine.Color.white,
                 colorMask3 = UnityEngine.Color.white,
-                GlassColor = UnityEngine.Color.white,
+                glassColor = UnityEngine.Color.white,
                 glassThickness = .5f
             };
         }
@@ -450,18 +433,20 @@ namespace BelzontWE
             {
                 LastErrorStr = text;
             }
-            DirtyBRI = false;
+            dirtyBRI = false;
             return this;
         }
 
         public void Dispose()
         {
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
-            if (ownMaterialGlass.IsAllocated) ownMaterialGlass.Free();
-            if (ownMaterialDefault.IsAllocated) ownMaterialDefault.Free();
+            if (ownMaterial.IsAllocated)
+            {
+                GameObject.Destroy(ownMaterial.Target as Material);
+                ownMaterial.Free();
+            }
             basicRenderInformation = default;
-            ownMaterialDefault = default;
-            ownMaterialGlass = default;
+            ownMaterial = default;
         }
 
         public WETextData OnPostInstantiate(EntityManager em)
@@ -476,7 +461,7 @@ namespace BelzontWE
             var result = WEFormulaeHelper.SetFormulae(newFormulae ?? "", out errorFmtArgs, out formulaeHandlerStr, out var resultFormulaeFn);
             if (result == 0)
             {
-                DirtyBRI = true;
+                dirtyBRI = true;
                 if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             }
             return result;
@@ -498,7 +483,7 @@ namespace BelzontWE
                 ? fn(em, geometryEntity)?.ToString().Trim().Truncate(500) ?? "<InvlidFn>"
                 : formulaeHandlerStr.Length > 0 ? "<InvalidFn>" : Text;
             var result = EffectiveText.ToString() != oldEffText;
-            if (result) DirtyBRI = true;
+            if (result) dirtyBRI = true;
         }
 
         public static Entity GetTargetEntityEffective(Entity target, EntityManager em, bool fullRecursive = false)
@@ -513,15 +498,7 @@ namespace BelzontWE
         }
 
         public FixedString512Bytes EffectiveText { get; private set; }
-        public WEShader Shader
-        {
-            readonly get => shader;
-            set
-            {
-                shader = value;
-                dirty = true;
-            }
-        }
+
 
 
 
@@ -630,7 +607,7 @@ namespace BelzontWE
                 offsetRotation = Quaternion.Euler(xml.offsetRotation),
                 scale = (float3)xml.scale,
                 ItemName = xml.itemName ?? "",
-                Shader = xml.shader,
+                shader = xml.shader,
                 Atlas = xml.atlas ?? "",
                 Formulae = xml.formulae ?? "",
                 Text = xml.text ?? "",
@@ -693,9 +670,9 @@ namespace BelzontWE
             weData.offsetPosition = xml.offsetPosition;
             weData.offsetRotation = Quaternion.Euler(xml.offsetRotation);
             weData.scale = xml.scale;
-            weData.ItemName = xml.itemName;
-            weData.Shader = xml.shader;
-            weData.Atlas = xml.atlas;
+            weData.itemName = xml.itemName;
+            weData.shader = xml.shader;
+            weData.atlas = xml.atlas;
             weData.Formulae = xml.formulae;
             weData.Text = xml.text;
             weData.TextType = xml.textType;

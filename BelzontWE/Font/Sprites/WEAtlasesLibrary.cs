@@ -1,5 +1,6 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
+using BelzontWE;
 using BelzontWE.Font.Utility;
 using Game;
 using Game.SceneFlow;
@@ -107,11 +108,11 @@ namespace WriteEverywhere.Sprites
                 return fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage) : null;
             }
             BasicRenderInformation cachedInfo = null;
-            if (LocalAtlasesCache.TryGetValue(atlasName, out var resultDicCache) && resultDicCache.TryGetValue(spriteName, out cachedInfo) && (cachedInfo == null || cachedInfo.GeneratedMaterial))
+            if (LocalAtlasesCache.TryGetValue(atlasName, out var resultDicCache) && resultDicCache.TryGetValue(spriteName, out cachedInfo) && (cachedInfo == null || cachedInfo.Main))
             {
                 return cachedInfo;
             }
-            if (cachedInfo != null && !cachedInfo.GeneratedMaterial)
+            if (cachedInfo != null && !cachedInfo.Main)
             {
                 LocalAtlases.Clear();
             }
@@ -297,6 +298,16 @@ namespace WriteEverywhere.Sprites
         {
             m_bgTexture ??= WERenderingHelper.GenerateBri("\0whiteTexture\0", new WEImageInfo(null) { Texture = Texture2D.whiteTexture });
             return m_bgTexture;
+        }
+        private static Material m_whiteBriMaterial;
+        public static Material DefaultMaterialWhiteTexture()
+        {
+            if (!m_whiteBriMaterial)
+            {
+                m_whiteBriMaterial = WERenderingHelper.GenerateMaterial(m_bgTexture, WEShader.Default);
+                m_whiteBriMaterial.mainTexture = Texture2D.whiteTexture;
+            }
+            return m_whiteBriMaterial;
         }
         #endregion
 

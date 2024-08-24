@@ -2,69 +2,18 @@
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using Color = UnityEngine.Color;
 
 namespace BelzontWE.Font
 {
-    public class FontAtlas
+    public class FontAtlas : IDisposable
     {
-        public int Width
-        {
-            get; private set;
-        }
-
-        public int Height
-        {
-            get; private set;
-        }
-
-        public int NodesNumber
-        {
-            get; private set;
-        }
-
-        public FontAtlasNode[] Nodes
-        {
-            get; private set;
-        }
-
-        public Texture2D Texture
-        {
-            get; set;
-        }
-        private Material m_material;
-        public Material Material
-        {
-            get
-            {
-                if (m_material == null)
-                {
-                    m_material = FontServer.CreateDefaultFontMaterial(0);
-
-                }
-                return m_material;
-            }
-        }
-        private Material m_decalMaterial;
-        public Material GlassMaterial
-        {
-            get
-            {
-                if (m_decalMaterial is null)
-                {
-                    m_decalMaterial = FontServer.CreateDefaultFontMaterial(1);
-                }
-                return m_decalMaterial;
-            }
-        }
-
+        public int Width { get; private set; }
+        public int Height { get; private set; }
+        public int NodesNumber { get; private set; }
+        public FontAtlasNode[] Nodes { get; private set; }
+        public Texture2D Texture { get; set; }
         public uint Version { get; private set; }
-
-        ~FontAtlas()
-        {
-            UnityEngine.Object.Destroy(Texture);
-            UnityEngine.Object.Destroy(m_material);
-        }
-
         public FontAtlas(int w, int h, int count)
         {
             Width = w;
@@ -131,9 +80,7 @@ namespace BelzontWE.Font
             Width = w;
             Height = h;
             UnityEngine.Object.Destroy(Texture);
-            UnityEngine.Object.Destroy(m_material);
             Texture = null;
-            m_material = null;
             NodesNumber = 0;
             Nodes[0].X = 0;
             Nodes[0].Y = 0;
@@ -302,22 +249,7 @@ namespace BelzontWE.Font
         public bool IsDirty { get; private set; } = false;
 
         public static readonly int _BaseColorMap = Shader.PropertyToID("_BaseColorMap");
-        public bool UpdateMaterial()
-        {
-            if (Texture == null)
-            {
-                return false;
-            }
 
-            Material.SetTexture(_BaseColorMap, Texture);
-            GlassMaterial?.SetTexture(_BaseColorMap, Texture);
-#if DEBUG && false
-            byte[] bytes = UnityEngine.ImageConversion.EncodeToPNG(Texture);
-            // For testing purposes, also write to a file in the project folder
-            File.WriteAllBytes(Path.Combine(BasicIMod.ModSettingsRootFolder, $"Texture_.png"), bytes);
-#endif
-            return true;
-        }
 
         private void Blur(byte[] dst, int w, int h, int dstStride, int blur)
         {
@@ -388,5 +320,7 @@ namespace BelzontWE.Font
                 dst++;
             }
         }
+
+        public void Dispose() => GameObject.Destroy(Texture);
     }
 }

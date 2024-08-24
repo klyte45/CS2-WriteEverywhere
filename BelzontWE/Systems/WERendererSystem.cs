@@ -13,10 +13,6 @@ using Belzont.Utils;
 using Game.Tools;
 using Game.Common;
 using System.Collections.Generic;
-
-
-
-
 #if BURST
 using UnityEngine.Scripting;
 using Unity.Burst;
@@ -185,9 +181,9 @@ namespace BelzontWE
 
                     if (bri.m_refText != "")
                     {
-                        var material = briWasNull ? bri.GeneratedMaterial : item.weComponent.OwnMaterial;
+                        var material = briWasNull ? WEAtlasesLibrary.DefaultMaterialWhiteTexture() : item.weComponent.OwnMaterial;
                         Graphics.DrawMesh(bri.Mesh, item.transformMatrix, material, 0, null, 0);
-                        if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length} | {bri.GeneratedMaterial} | M= {item.transformMatrix}");
+                        if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {item.weComponent.TargetEntity} P: {item.weComponent.ParentEntity}\n{item.weComponent.ItemName} - {item.weComponent.TextType} - '{item.weComponent.EffectiveText}'\nBRI: {item.weComponent.RenderInformation?.m_refText} | {item.weComponent.RenderInformation?.Mesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
                     }
                     if (!briWasNull) cmd.SetComponent(item.textDataEntity, item.weComponent);
                 }

@@ -153,12 +153,8 @@ namespace BelzontWE.Font
             var height = width;
             Data.Font.RecalculateBasedOnHeight(FontServer.QualitySize);
             CurrentAtlas.Reset(width, height);
-
-
             if (_glyphs.IsCreated) _glyphs.Clear();
-
             m_textCache.Clear();
-
             if (width == _size.x && height == _size.y)
             {
                 return;
@@ -335,7 +331,7 @@ namespace BelzontWE.Font
                 itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
                 return;
             }
-            BasicRenderInformation result = BasicRenderInformation.Fill(brij, CurrentAtlas.Material, CurrentAtlas.GlassMaterial);
+            BasicRenderInformation result = BasicRenderInformation.Fill(brij, CurrentAtlas.Texture);
             if (result is null)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} ");
@@ -361,6 +357,7 @@ namespace BelzontWE.Font
             if (itemsQueue.IsCreated) itemsQueue.Dispose();
             if (results.IsCreated) results.Dispose();
             if (dataPointer.IsAllocated) dataPointer.Free();
+            _currentAtlas?.Dispose();
         }
 
         public unsafe struct StringRenderingQueueItem
@@ -426,13 +423,6 @@ namespace BelzontWE.Font
             {
                 PostJob(result);
                 addedItem = true;
-            }
-            if (addedItem && !CurrentAtlas.UpdateMaterial())
-            {
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"Failed updating material... Restarting process");
-                m_textCache.Clear();
-                _glyphs.Clear();
-                CurrentAtlas.Reset(_size.x, _size.y);
             }
             return dependency;
         }
