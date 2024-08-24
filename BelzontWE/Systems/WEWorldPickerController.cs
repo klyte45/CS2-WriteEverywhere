@@ -175,6 +175,10 @@ namespace BelzontWE
         public MultiUIValueBinding<WEShader, int> ShaderType { get; private set; }
         public MultiUIValueBinding<Color, UIColorRGBA> GlassColor { get; private set; }
         public MultiUIValueBinding<float> GlassRefraction { get; private set; }
+        public MultiUIValueBinding<Color, UIColorRGBA> ColorMask1 { get; private set; }
+        public MultiUIValueBinding<Color, UIColorRGBA> ColorMask2 { get; private set; }
+        public MultiUIValueBinding<Color, UIColorRGBA> ColorMask3 { get; private set; }
+        public MultiUIValueBinding<float> NormalStrength { get; private set; }
         private void InitValueBindings()
         {
             if (m_initialized) return;
@@ -219,6 +223,11 @@ namespace BelzontWE
             GlassRefraction = new(default, $"{PREFIX}{nameof(GlassRefraction)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 1, 1000));
             GlassColor = new(default, $"{PREFIX}{nameof(GlassColor)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
 
+            ColorMask1 = new(default, $"{PREFIX}{nameof(ColorMask1)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
+            ColorMask2 = new(default, $"{PREFIX}{nameof(ColorMask2)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
+            ColorMask3 = new(default, $"{PREFIX}{nameof(ColorMask3)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
+            NormalStrength = new(default, $"{PREFIX}{nameof(NormalStrength)}", m_eventCaller, m_callBinder);
+
 
             CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
             CurrentRotation.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.offsetRotation = KMathUtils.UnityEulerToQuaternion(x); return currentItem; });
@@ -245,6 +254,11 @@ namespace BelzontWE
             ShaderType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Shader = x; return currentItem; });
             GlassRefraction.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.GlassRefraction = x; return currentItem; });
             GlassColor.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.GlassColor = x; return currentItem; });
+
+            ColorMask1.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.ColorMask1 = x; return currentItem; });
+            ColorMask2.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.ColorMask2 = x; return currentItem; });
+            ColorMask3.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.ColorMask3 = x; return currentItem; });
+            NormalStrength.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.NormalStrength = x; return currentItem; });
 
             FontList.Value = FontServer.Instance.GetLoadedFontsNames();
             FontList.UpdateUIs();
@@ -283,6 +297,10 @@ namespace BelzontWE
             ShaderType.Value = currentItem.Shader;
             GlassColor.Value = currentItem.GlassColor;
             GlassRefraction.Value = currentItem.GlassRefraction;
+            ColorMask1.Value = currentItem.ColorMask1;
+            ColorMask2.Value = currentItem.ColorMask2;
+            ColorMask3.Value = currentItem.ColorMask3;
+            NormalStrength.Value = currentItem.NormalStrength;
         }
 
         #endregion

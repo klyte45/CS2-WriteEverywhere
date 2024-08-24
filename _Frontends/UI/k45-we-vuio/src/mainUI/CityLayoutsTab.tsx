@@ -137,7 +137,7 @@ export const CityLayoutsTab = (props: Props) => {
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}
             actionOnSuccess={onRenameLayout}
         />
-        <StringInputWithOverrideDialog dialogTitle={T_duplicateDialogTitle} dialogPromptText={T_duplicateDialogText} dialogOverrideText={T_confirmOverrideText}
+        <StringInputWithOverrideDialog dialogTitle={T_duplicateDialogTitle} dialogPromptText={T_duplicateDialogText} dialogOverrideText={T_confirmOverrideText} initialValue={selectedTemplate!}
             isActive={isDuplicatingLayout} setIsActive={setIsDuplicatingLayout}
             isShortCircuitCheckFn={(x) => !x || x == selectedTemplate}
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}

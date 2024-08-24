@@ -57,6 +57,10 @@ export class WorldPickerService {
     ShaderType: MultiUIValueBinding<number>
     GlassRefraction: MultiUIValueBinding<number>
     GlassColor: MultiUIValueBinding<UIColorRGBA>
+    ColorMask1: MultiUIValueBinding<UIColorRGBA>
+    ColorMask2: MultiUIValueBinding<UIColorRGBA>
+    ColorMask3: MultiUIValueBinding<UIColorRGBA>
+    NormalStrength: MultiUIValueBinding<number>
 
 
     private Bindings: MultiUIValueBinding<any>[] = []
@@ -96,6 +100,10 @@ export class WorldPickerService {
         this.ShaderType ??= new MultiUIValueBinding<number>("k45::we.wpicker.ShaderType")
         this.GlassRefraction ??= new MultiUIValueBinding<number>("k45::we.wpicker.GlassRefraction")
         this.GlassColor ??= new MultiUIValueBinding<UIColorRGBA>("k45::we.wpicker.GlassColor")
+        this.ColorMask1 ??= new MultiUIValueBinding<UIColorRGBA>("k45::we.wpicker.ColorMask1")
+        this.ColorMask2 ??= new MultiUIValueBinding<UIColorRGBA>("k45::we.wpicker.ColorMask2")
+        this.ColorMask3 ??= new MultiUIValueBinding<UIColorRGBA>("k45::we.wpicker.ColorMask3")
+        this.NormalStrength ??= new MultiUIValueBinding<number>("k45::we.wpicker.NormalStrength")
 
         this.Bindings.push(
             this.CurrentSubEntity,
@@ -130,7 +138,11 @@ export class WorldPickerService {
             this.ShaderType,
             this.GlassColor,
             this.GlassRefraction,
-            this.UseAbsoluteSizeEditing
+            this.UseAbsoluteSizeEditing,
+            this.ColorMask1,
+            this.ColorMask2,
+            this.ColorMask3,
+            this.NormalStrength,
         );
     }
 

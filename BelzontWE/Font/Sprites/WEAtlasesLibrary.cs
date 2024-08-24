@@ -28,6 +28,21 @@ namespace WriteEverywhere.Sprites
             LoadImagesFromLocalFolders();
         }
 
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            foreach (var item in LocalAtlases)
+            {
+                if (item.Value != null)
+                {
+                    foreach (var subitem in item.Value)
+                    {
+                        subitem.Value.Dispose();
+                    }
+                }
+            }
+        }
+
         //public void ReloadAssetImages()
         //{
         //    foreach (var asset in
@@ -160,7 +175,7 @@ namespace WriteEverywhere.Sprites
                 return null;
             }
             var info = targetAtlas[spriteName];
-            var bri = WERenderingHelper.GenerateBri(spriteName, info.Texture);
+            var bri = WERenderingHelper.GenerateBri(spriteName, info);
             if ((assetId as string) == INTERNAL_ATLAS_NAME)
             {
                 bri.m_isError = true;
@@ -172,6 +187,17 @@ namespace WriteEverywhere.Sprites
         #region Loading
         public void LoadImagesFromLocalFolders()
         {
+            foreach (var item in LocalAtlases)
+            {
+                if (item.Value != null)
+                {
+                    foreach (var subitem in item.Value)
+                    {
+                        subitem.Value.Dispose();
+                    }
+                }
+            }
+            LocalAtlasesCache.Clear();
             LocalAtlases.Clear();
             var errors = new List<string>();
             var folders = new string[] { IMAGES_FOLDER }.Concat(Directory.GetDirectories(IMAGES_FOLDER));
@@ -202,20 +228,6 @@ namespace WriteEverywhere.Sprites
                 {
                     LogUtils.DoWarnLog($"Error loading WE atlases: {errors[i]}");
                 }
-                //KwyttoDialog.ShowModal(new KwyttoDialog.BindProperties
-                //{
-                //    message = $"{Str.WTS_CUSTOMSPRITE_ERRORHEADER}:",
-                //    scrollText = $"\t{string.Join("\n\t", errors.ToArray())}",
-                //    buttons = new[]{
-                //        KwyttoDialog.SpaceBtn,
-                //        new KwyttoDialog.ButtonDefinition
-                //        {
-                //            title = KStr.comm_releaseNotes_Ok,
-                //            onClick=() => true,
-                //        },
-                //        KwyttoDialog.SpaceBtn
-                //    }
-                //});
             }
             LogUtils.DoInfoLog($"Loaded atlases: {string.Join(", ", LocalAtlases.Select(x => x.Key))}");
         }
@@ -283,7 +295,7 @@ namespace WriteEverywhere.Sprites
         private static BasicRenderInformation m_bgTexture;
         public static BasicRenderInformation GetWhiteTextureBRI()
         {
-            m_bgTexture ??= WERenderingHelper.GenerateBri("\0whiteTexture\0", Texture2D.whiteTexture);
+            m_bgTexture ??= WERenderingHelper.GenerateBri("\0whiteTexture\0", new WEImageInfo(null) { Texture = Texture2D.whiteTexture });
             return m_bgTexture;
         }
         #endregion

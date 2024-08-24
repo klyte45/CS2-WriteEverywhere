@@ -116,7 +116,7 @@ namespace BelzontWE
 
         public unsafe struct WETextDataStyleStruct : ISerializable
         {
-            public const int CURRENT_VERSION = 0;
+            public const int CURRENT_VERSION = 1;
             public static readonly int SIZE = sizeof(WETextDataStyleStruct);
             public Color32 color;
             public Color32 emissiveColor;
@@ -127,6 +127,10 @@ namespace BelzontWE
             public float emissiveIntensity;
             public float emissiveExposureWeight;
             public float coatStrength;
+            public Color32 colorMask1;
+            public Color32 colorMask2;
+            public Color32 colorMask3;
+            public float normalStrength;
 
             internal static WETextDataStyleStruct FromXml(WETextDataXml.WETextDataStyleXml style)
                 => style is null
@@ -142,6 +146,10 @@ namespace BelzontWE
                         emissiveIntensity = style.emissiveIntensity,
                         emissiveExposureWeight = style.emissiveExposureWeight,
                         coatStrength = style.coatStrength,
+                        colorMask1 = style.colorMask1,
+                        colorMask2 = style.colorMask2,
+                        colorMask3 = style.colorMask3,
+                        normalStrength = style.normalStrength,
                     };
 
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -161,6 +169,19 @@ namespace BelzontWE
                 reader.Read(out emissiveIntensity);
                 reader.Read(out emissiveExposureWeight);
                 reader.Read(out coatStrength);
+                if (version >= 1)
+                {
+                    reader.Read(out colorMask1);
+                    reader.Read(out colorMask2);
+                    reader.Read(out colorMask3);
+                    reader.Read(out normalStrength);
+                }
+                else
+                {
+                    colorMask1 = Color.white;
+                    colorMask2 = Color.white;
+                    colorMask3 = Color.white;
+                }
             }
 
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
@@ -175,6 +196,10 @@ namespace BelzontWE
                 writer.Write(emissiveIntensity);
                 writer.Write(emissiveExposureWeight);
                 writer.Write(coatStrength);
+                writer.Write(colorMask1);
+                writer.Write(colorMask2);
+                writer.Write(colorMask3);
+                writer.Write(normalStrength);
             }
 
             internal readonly WETextDataXml.WETextDataStyleXml ToXml() => new()
@@ -188,6 +213,10 @@ namespace BelzontWE
                 emissiveIntensity = emissiveIntensity,
                 emissiveExposureWeight = emissiveExposureWeight,
                 coatStrength = coatStrength,
+                colorMask1 = colorMask1,
+                colorMask2 = colorMask2,
+                colorMask3 = colorMask3,
+                normalStrength = normalStrength
             };
         }
 

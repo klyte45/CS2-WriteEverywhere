@@ -18,13 +18,11 @@ namespace BelzontWE
     public struct WETextData : IDisposable, IComponentData
     {
         public const int DEFAULT_DECAL_FLAGS = 8;
-        //8 = Exclude surface areas
-        //4 = Accept decals
         public unsafe static int Size => sizeof(WETextData);
-        private static int shader_colossal_LodDistanceFactor = UnityEngine.Shader.PropertyToID("colossal_LodDistanceFactor");
 
 
         private GCHandle basicRenderInformation;
+        private float normalStrength;
         private bool dirty;
         private bool templateDirty;
         private Color32 color;
@@ -104,6 +102,9 @@ namespace BelzontWE
         private GCHandle ownMaterialGlass;
         private GCHandle ownMaterialDefault;
         private bool dirtyBRI;
+        private Color colorMask1;
+        private Color colorMask2;
+        private Color colorMask3;
 
         public Material OwnMaterial
         {
@@ -154,6 +155,18 @@ namespace BelzontWE
                                 material.SetFloat("_EmissiveExposureWeight", emissiveExposureWeight);
                                 material.SetFloat("_CoatStrength", coatStrength);
                                 material.SetFloat("_Smoothness", smoothness);
+                                if (TextType == WESimulationTextType.Image)
+                                {
+                                    material.SetColor("colossal_ColorMask0", colorMask1);
+                                    material.SetColor("colossal_ColorMask1", colorMask2);
+                                    material.SetColor("colossal_ColorMask2", colorMask3);
+                                }
+                                else
+                                {
+                                    material.SetColor("colossal_ColorMask0", UnityEngine.Color.white);
+                                    material.SetColor("colossal_ColorMask1", UnityEngine.Color.white);
+                                    material.SetColor("colossal_ColorMask2", UnityEngine.Color.white);
+                                }
                             }
                             material.SetFloat(FontServer.DecalLayerMask, decalFlags.ToFloatBitFlags());
                             dirty = false;
@@ -190,6 +203,7 @@ namespace BelzontWE
                                 material.SetFloat("_Smoothness", smoothness);
                                 material.SetFloat(FontServer.IOR, glassRefraction);
                                 material.SetColor(FontServer.Transmittance, glassColor);
+                                material.SetFloat("_NormalStrength", normalStrength);
                             }
                             material.SetFloat(FontServer.DecalLayerMask, decalFlags.ToFloatBitFlags());
                             dirty = false;
@@ -243,6 +257,7 @@ namespace BelzontWE
                 {
                     type = value;
                     DirtyBRI = true;
+                    if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
                 }
             }
         }
@@ -319,6 +334,38 @@ namespace BelzontWE
                 dirty = true;
             }
         }
+        public Color ColorMask1
+        {
+            readonly get => colorMask1; set
+            {
+                colorMask1 = value;
+                dirty = true;
+            }
+        }
+        public Color ColorMask2
+        {
+            readonly get => colorMask2; set
+            {
+                colorMask2 = value;
+                dirty = true;
+            }
+        }
+        public Color ColorMask3
+        {
+            readonly get => colorMask3; set
+            {
+                colorMask3 = value;
+                dirty = true;
+            }
+        }
+        public float NormalStrength
+        {
+            readonly get => normalStrength; set
+            {
+                normalStrength = Mathf.Clamp(value, 0, 100);
+                dirty = true;
+            }
+        }
         public FixedString512Bytes Formulae
         {
             get => formulaeHandlerStr;
@@ -353,7 +400,11 @@ namespace BelzontWE
                 ItemName = "New item",
                 Shader = WEShader.Default,
                 decalFlags = DEFAULT_DECAL_FLAGS,
-                glassRefraction = .5f
+                glassRefraction = 1f,
+                colorMask1 = UnityEngine.Color.white,
+                colorMask2 = UnityEngine.Color.white,
+                colorMask3 = UnityEngine.Color.white,
+                GlassColor = UnityEngine.Color.white,
             };
         }
 
@@ -491,7 +542,11 @@ namespace BelzontWE
                     glassColor = GlassColor,
                     glassRefraction = GlassRefraction,
                     metallic = Metallic,
-                    smoothness = Smoothness
+                    smoothness = Smoothness,
+                    normalStrength = normalStrength,
+                    colorMask1 = colorMask1,
+                    colorMask2 = colorMask2,
+                    colorMask3 = colorMask3
                 }
             };
         }
@@ -521,7 +576,11 @@ namespace BelzontWE
                     glassColor = GlassColor,
                     glassRefraction = GlassRefraction,
                     metallic = Metallic,
-                    smoothness = Smoothness
+                    smoothness = Smoothness,
+                    normalStrength = normalStrength,
+                    colorMask1 = colorMask1,
+                    colorMask2 = colorMask2,
+                    colorMask3 = colorMask3
                 }
             };
         }
@@ -561,7 +620,11 @@ namespace BelzontWE
                 Smoothness = xml.style.smoothness,
                 maxWidthMeters = xml.maxWidthMeters,
                 decalFlags = xml.decalFlags,
-                fontName = xml.fontName?.Trim() ?? ""
+                fontName = xml.fontName?.Trim() ?? "",
+                normalStrength = xml.style.normalStrength,
+                colorMask1 = xml.style.colorMask1,
+                colorMask2 = xml.style.colorMask2,
+                colorMask3 = xml.style.colorMask3
             };
             FontServer.Instance.EnsureFont(weData.fontName);
             weData.UpdateEffectiveText(em, target);
@@ -590,9 +653,9 @@ namespace BelzontWE
             {
                 targetEntity = target,
                 parentEntity = parent,
-                offsetPosition = (float3)xml.offsetPosition,
+                offsetPosition = xml.offsetPosition,
                 offsetRotation = Quaternion.Euler(xml.offsetRotation),
-                scale = (float3)xml.scale,
+                scale = xml.scale,
                 ItemName = xml.itemName,
                 Shader = xml.shader,
                 Atlas = xml.atlas,
@@ -610,7 +673,11 @@ namespace BelzontWE
                 Smoothness = xml.style.smoothness,
                 maxWidthMeters = xml.maxWidthMeters,
                 decalFlags = xml.decalFlags,
-                fontName = xml.fontName.Trim()
+                fontName = xml.fontName.Trim(),
+                normalStrength = xml.style.normalStrength,
+                colorMask1 = xml.style.colorMask1,
+                colorMask2 = xml.style.colorMask2,
+                colorMask3 = xml.style.colorMask3
             };
         }
 

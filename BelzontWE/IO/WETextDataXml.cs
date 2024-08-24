@@ -1,6 +1,4 @@
 ﻿using Belzont.Utils;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 
 #pragma warning disable IDE1006
@@ -9,7 +7,7 @@ using UnityEngine;
 
 namespace BelzontWE
 {
-    public class WETextDataXml 
+    public class WETextDataXml
     {
         public Vector3Xml offsetPosition = new();
         public Vector3Xml offsetRotation = new();
@@ -49,7 +47,14 @@ namespace BelzontWE
             [XmlAttribute][DefaultValue(0f)] public float smoothness;
             [XmlAttribute][DefaultValue(0f)] public float emissiveIntensity;
             [XmlAttribute][DefaultValue(0f)] public float emissiveExposureWeight;
-            [XmlAttribute][DefaultValue(0f)] public float coatStrength;         
+            [XmlAttribute][DefaultValue(0f)] public float coatStrength;
+            [XmlIgnore] public Color32 colorMask1 = Color.white;
+            [XmlIgnore] public Color32 colorMask2 = Color.white;
+            [XmlIgnore] public Color32 colorMask3 = Color.white;
+            [XmlAttribute][DefaultValue("FFFFFF")] public string colorMask1RGB { get => colorMask1.ToRGB(); set => colorMask1 = ColorExtensions.FromRGB(value); }
+            [XmlAttribute][DefaultValue("FFFFFF")] public string colorMask2RGB { get => colorMask2.ToRGB(); set => colorMask2 = ColorExtensions.FromRGB(value); }
+            [XmlAttribute][DefaultValue("FFFFFF")] public string colorMask3RGB { get => colorMask3.ToRGB(); set => colorMask3 = ColorExtensions.FromRGB(value); }
+            [XmlAttribute][DefaultValue(0f)] public float normalStrength;
         }
     }
 }

@@ -77,7 +77,7 @@ namespace BelzontWE
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
             if (m_FontServer.TryGetFont(fontName, out var fsd))
             {
-                var mat = fsd.FontSystem.CurrentAtlas.GlassMaterial;
+                var mat = fsd.FontSystem.CurrentAtlas.Material;
                 var propertyCount = mat.shader.GetPropertyCount();
                 var listResult = new List<PropertyDescriptor>
                 {
@@ -174,7 +174,7 @@ namespace BelzontWE
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
             if (m_FontServer.TryGetFont(fontName, out var fsd))
             {
-                var mat = fsd.FontSystem.CurrentAtlas.GlassMaterial;
+                var mat = fsd.FontSystem.CurrentAtlas.Material;
                 if (!int.TryParse(propertyIdxStr, out var propertyIdx))
                 {
                     switch (propertyIdxStr)

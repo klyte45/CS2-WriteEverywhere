@@ -16,7 +16,7 @@
     <DebugType Condition="'$(Configuration)'=='Release'">None</DebugType>
     <DebugSymbols Condition="'$(Configuration)'=='Release'">False</DebugSymbols> 
   </PropertyGroup>
-  <Target Name="CopyEuis" AfterTargets="AfterBuild">
+  <Target Name="CopyEuis" AfterTargets="AfterBuild" Condition="'$(Configuration)'=='Debug'">
     <ItemGroup>
       <EuisResult Include="$(OutDir)\*.euis" />
     </ItemGroup>
