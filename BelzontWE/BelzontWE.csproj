@@ -50,7 +50,7 @@
     </Dependency>
   </ItemGroup>
 
-  <!--<Target Condition="'$(Configuration)'=='Debug'" Name="EUIS Build" BeforeTargets="DeployWIP" AfterTargets="RunModPostProcessor">
+  <Target Condition="'$(Configuration)'=='Debug'" Name="EUIS Build" BeforeTargets="DeployWIP" AfterTargets="RunModPostProcessor">
     <Message Importance="high" Text="EUIS Build!" />
     <MSBuild Projects="../WE_EUIS/WE_EUIS.csproj" Targets="Build" BuildInParallel="false" />
     <ItemGroup>
@@ -58,7 +58,7 @@
     </ItemGroup>
     <Copy SourceFiles="@(EuisResult)" DestinationFolder="$(OutDir)" ContinueOnError="false" />
     
-  </Target>-->
+  </Target>
 
 
   <ItemGroup>

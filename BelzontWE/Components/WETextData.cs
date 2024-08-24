@@ -51,6 +51,13 @@ namespace BelzontWE
         private FixedString512Bytes m_text;
         private int decalFlags;
         public int lastLodValue;
+        private Colossal.Hash128 ownMaterialGuid;
+        private GCHandle ownMaterialGlass;
+        private GCHandle ownMaterialDefault;
+        private bool dirtyBRI;
+        private Color colorMask1;
+        private Color colorMask2;
+        private Color colorMask3;
 
         public bool DirtyBRI { get { return dirtyBRI || !basicRenderInformation.IsAllocated || basicRenderInformation.Target is null; } private set => dirtyBRI = value; }
 
@@ -65,6 +72,7 @@ namespace BelzontWE
         public readonly bool IsGlass => Shader == WEShader.Glass;
         public bool InitializedEffectiveText { get; private set; }
         public bool useAbsoluteSizeEditing;
+        private float glassThickness;
 
         public FixedString512Bytes LastErrorStr { get; private set; }
         public Entity TargetEntity { readonly get => targetEntity; set => targetEntity = value; }
@@ -98,13 +106,6 @@ namespace BelzontWE
 
         public float BriWidthMetersUnscaled { get; private set; }
 
-        private Colossal.Hash128 ownMaterialGuid;
-        private GCHandle ownMaterialGlass;
-        private GCHandle ownMaterialDefault;
-        private bool dirtyBRI;
-        private Color colorMask1;
-        private Color colorMask2;
-        private Color colorMask3;
 
         public Material OwnMaterial
         {
@@ -204,6 +205,7 @@ namespace BelzontWE
                                 material.SetFloat(FontServer.IOR, glassRefraction);
                                 material.SetColor(FontServer.Transmittance, glassColor);
                                 material.SetFloat("_NormalStrength", normalStrength);
+                                material.SetFloat("_Thickness", glassThickness);
                             }
                             material.SetFloat(FontServer.DecalLayerMask, decalFlags.ToFloatBitFlags());
                             dirty = false;
@@ -362,7 +364,15 @@ namespace BelzontWE
         {
             readonly get => normalStrength; set
             {
-                normalStrength = Mathf.Clamp(value, 0, 100);
+                normalStrength = Mathf.Clamp(value, 0, 10);
+                dirty = true;
+            }
+        }
+        public float GlassThickness
+        {
+            readonly get => glassThickness; set
+            {
+                glassThickness = Mathf.Clamp(value, 0.01f, 100);
                 dirty = true;
             }
         }
@@ -405,6 +415,7 @@ namespace BelzontWE
                 colorMask2 = UnityEngine.Color.white,
                 colorMask3 = UnityEngine.Color.white,
                 GlassColor = UnityEngine.Color.white,
+                glassThickness = .5f
             };
         }
 
@@ -532,21 +543,28 @@ namespace BelzontWE
                 maxWidthMeters = maxWidthMeters,
                 decalFlags = DecalFlags,
                 fontName = fontName.ToString(),
-                style = new WETextDataXml.WETextDataStyleXml
+                defaultStyle = new WETextDataXml.WETextDataDefaultStyleXml
                 {
                     coatStrength = CoatStrength,
                     color = Color,
                     emissiveColor = EmissiveColor,
                     emissiveExposureWeight = EmissiveExposureWeight,
                     emissiveIntensity = EmissiveIntensity,
+                    metallic = Metallic,
+                    smoothness = Smoothness,
+                    colorMask1 = colorMask1,
+                    colorMask2 = colorMask2,
+                    colorMask3 = colorMask3,
+                },
+                glassStyle = new WETextDataXml.WETextDataGlassStyleXml
+                {
+                    color = Color,
                     glassColor = GlassColor,
                     glassRefraction = GlassRefraction,
                     metallic = Metallic,
                     smoothness = Smoothness,
                     normalStrength = normalStrength,
-                    colorMask1 = colorMask1,
-                    colorMask2 = colorMask2,
-                    colorMask3 = colorMask3
+                    thickness = glassThickness
                 }
             };
         }
@@ -566,22 +584,29 @@ namespace BelzontWE
                 maxWidthMeters = maxWidthMeters,
                 decalFlags = DecalFlags,
                 fontName = fontName.ToString(),
-                style = new()
+                defaultStyle = new()
                 {
                     coatStrength = CoatStrength,
                     color = Color,
                     emissiveColor = EmissiveColor,
                     emissiveExposureWeight = EmissiveExposureWeight,
                     emissiveIntensity = EmissiveIntensity,
+                    metallic = Metallic,
+                    smoothness = Smoothness,
+                    colorMask1 = colorMask1,
+                    colorMask2 = colorMask2,
+                    colorMask3 = colorMask3
+                },
+                glassStyle = new()
+                {
+                    color = Color,
                     glassColor = GlassColor,
                     glassRefraction = GlassRefraction,
                     metallic = Metallic,
                     smoothness = Smoothness,
                     normalStrength = normalStrength,
-                    colorMask1 = colorMask1,
-                    colorMask2 = colorMask2,
-                    colorMask3 = colorMask3
-                }
+                    thickness = glassThickness
+                },
             };
         }
 
@@ -596,6 +621,7 @@ namespace BelzontWE
             {
                 target = parent;
             }
+
             var weData = new WETextData
             {
                 targetEntity = target,
@@ -609,23 +635,34 @@ namespace BelzontWE
                 Formulae = xml.formulae ?? "",
                 Text = xml.text ?? "",
                 TextType = xml.textType,
-                CoatStrength = xml.style.coatStrength,
-                Color = xml.style.color,
-                EmissiveColor = xml.style.emissiveColor,
-                GlassColor = xml.style.glassColor,
-                GlassRefraction = xml.style.glassRefraction,
-                EmissiveExposureWeight = xml.style.emissiveExposureWeight,
-                EmissiveIntensity = xml.style.emissiveIntensity,
-                Metallic = xml.style.metallic,
-                Smoothness = xml.style.smoothness,
                 maxWidthMeters = xml.maxWidthMeters,
                 decalFlags = xml.decalFlags,
                 fontName = xml.fontName?.Trim() ?? "",
-                normalStrength = xml.style.normalStrength,
-                colorMask1 = xml.style.colorMask1,
-                colorMask2 = xml.style.colorMask2,
-                colorMask3 = xml.style.colorMask3
             };
+            switch (xml.shader)
+            {
+                case WEShader.Glass:
+                    weData.color = xml.glassStyle.color;
+                    weData.glassColor = xml.glassStyle.glassColor;
+                    weData.glassRefraction = xml.glassStyle.glassRefraction;
+                    weData.metallic = xml.glassStyle.metallic;
+                    weData.smoothness = xml.glassStyle.smoothness;
+                    weData.normalStrength = xml.glassStyle.normalStrength;
+                    weData.glassThickness = xml.glassStyle.thickness;
+                    break;
+                default:
+                    weData.coatStrength = xml.defaultStyle.coatStrength;
+                    weData.color = xml.defaultStyle.color;
+                    weData.emissiveColor = xml.defaultStyle.emissiveColor;
+                    weData.emissiveExposureWeight = xml.defaultStyle.emissiveExposureWeight;
+                    weData.emissiveIntensity = xml.defaultStyle.emissiveIntensity;
+                    weData.metallic = xml.defaultStyle.metallic;
+                    weData.smoothness = xml.defaultStyle.smoothness;
+                    weData.colorMask1 = xml.defaultStyle.colorMask1;
+                    weData.colorMask2 = xml.defaultStyle.colorMask2;
+                    weData.colorMask2 = xml.defaultStyle.colorMask3;
+                    break;
+            }
             FontServer.Instance.EnsureFont(weData.fontName);
             weData.UpdateEffectiveText(em, target);
             return weData;
@@ -649,36 +686,48 @@ namespace BelzontWE
         }
         public static WETextData FromDataStruct(WETextDataStruct xml, Entity parent, Entity target)
         {
-            return new WETextData
+            var weData = CreateDefault(default, default);
+
+            weData.targetEntity = target;
+            weData.parentEntity = parent;
+            weData.offsetPosition = xml.offsetPosition;
+            weData.offsetRotation = Quaternion.Euler(xml.offsetRotation);
+            weData.scale = xml.scale;
+            weData.ItemName = xml.itemName;
+            weData.Shader = xml.shader;
+            weData.Atlas = xml.atlas;
+            weData.Formulae = xml.formulae;
+            weData.Text = xml.text;
+            weData.TextType = xml.textType;
+            weData.maxWidthMeters = xml.maxWidthMeters;
+            weData.decalFlags = xml.decalFlags;
+            weData.fontName = xml.fontName.Trim();
+
+            switch (xml.shader)
             {
-                targetEntity = target,
-                parentEntity = parent,
-                offsetPosition = xml.offsetPosition,
-                offsetRotation = Quaternion.Euler(xml.offsetRotation),
-                scale = xml.scale,
-                ItemName = xml.itemName,
-                Shader = xml.shader,
-                Atlas = xml.atlas,
-                Formulae = xml.formulae,
-                Text = xml.text,
-                TextType = xml.textType,
-                CoatStrength = xml.style.coatStrength,
-                Color = xml.style.color,
-                EmissiveColor = xml.style.emissiveColor,
-                GlassColor = xml.style.glassColor,
-                GlassRefraction = xml.style.glassRefraction,
-                EmissiveExposureWeight = xml.style.emissiveExposureWeight,
-                EmissiveIntensity = xml.style.emissiveIntensity,
-                Metallic = xml.style.metallic,
-                Smoothness = xml.style.smoothness,
-                maxWidthMeters = xml.maxWidthMeters,
-                decalFlags = xml.decalFlags,
-                fontName = xml.fontName.Trim(),
-                normalStrength = xml.style.normalStrength,
-                colorMask1 = xml.style.colorMask1,
-                colorMask2 = xml.style.colorMask2,
-                colorMask3 = xml.style.colorMask3
-            };
+                case WEShader.Glass:
+                    weData.color = xml.glassStyle.color;
+                    weData.glassColor = xml.glassStyle.glassColor;
+                    weData.glassRefraction = xml.glassStyle.glassRefraction;
+                    weData.metallic = xml.glassStyle.metallic;
+                    weData.smoothness = xml.glassStyle.smoothness;
+                    weData.normalStrength = xml.glassStyle.normalStrength;
+                    weData.glassThickness = xml.glassStyle.thickness;
+                    break;
+                default:
+                    weData.coatStrength = xml.defaultStyle.coatStrength;
+                    weData.color = xml.defaultStyle.color;
+                    weData.emissiveColor = xml.defaultStyle.emissiveColor;
+                    weData.emissiveExposureWeight = xml.defaultStyle.emissiveExposureWeight;
+                    weData.emissiveIntensity = xml.defaultStyle.emissiveIntensity;
+                    weData.metallic = xml.defaultStyle.metallic;
+                    weData.smoothness = xml.defaultStyle.smoothness;
+                    weData.colorMask1 = xml.defaultStyle.colorMask1;
+                    weData.colorMask2 = xml.defaultStyle.colorMask2;
+                    weData.colorMask2 = xml.defaultStyle.colorMask3;
+                    break;
+            }
+            return weData;
         }
 
         #endregion

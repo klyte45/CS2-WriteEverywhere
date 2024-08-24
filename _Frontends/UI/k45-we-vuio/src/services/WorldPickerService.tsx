@@ -61,6 +61,7 @@ export class WorldPickerService {
     ColorMask2: MultiUIValueBinding<UIColorRGBA>
     ColorMask3: MultiUIValueBinding<UIColorRGBA>
     NormalStrength: MultiUIValueBinding<number>
+    GlassThickness: MultiUIValueBinding<number>
 
 
     private Bindings: MultiUIValueBinding<any>[] = []
@@ -104,6 +105,7 @@ export class WorldPickerService {
         this.ColorMask2 ??= new MultiUIValueBinding<UIColorRGBA>("k45::we.wpicker.ColorMask2")
         this.ColorMask3 ??= new MultiUIValueBinding<UIColorRGBA>("k45::we.wpicker.ColorMask3")
         this.NormalStrength ??= new MultiUIValueBinding<number>("k45::we.wpicker.NormalStrength")
+        this.GlassThickness ??= new MultiUIValueBinding<number>("k45::we.wpicker.GlassThickness")
 
         this.Bindings.push(
             this.CurrentSubEntity,
@@ -143,6 +145,7 @@ export class WorldPickerService {
             this.ColorMask2,
             this.ColorMask3,
             this.NormalStrength,
+            this.GlassThickness,
         );
     }
 

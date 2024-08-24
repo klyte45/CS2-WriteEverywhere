@@ -13,12 +13,12 @@ export type Entity = {
   Version: number;
 };
 const menus: MenuItem[] = [
-  {
-    iconUrl: "coui://GameUI/Media/Glyphs/Gear.svg",
-    name: "Main",
-    panelContent: <BaseTab />,
-    tintedIcon: true
-  },
+  // {
+  //   iconUrl: "coui://GameUI/Media/Glyphs/Gear.svg",
+  //   name: "Main",
+  //   panelContent: <BaseTab />,
+  //   tintedIcon: true
+  // },
   {
     iconUrl: "coui://we.k45/UI/images/WE.svg",
     name: "Shader Editing",
@@ -35,7 +35,6 @@ export default class Root extends Component<{}> {
   componentDidMount(): void {
     engine.on("k45::we.test.enableTestTool->", this.onSelectEntity)
     engine.on("k45::we.test.fontsChanged->", this.onFontsChanged)
-    engine.call("k45::we.test.listFonts").then((x) => this.setState({ fontsLoaded: (x as string[]).map(x => { return { name: x } }) }));
   }
   componentWillUnmount(): void {
     engine.off("k45::we.test.enableTestTool->")

@@ -179,6 +179,7 @@ namespace BelzontWE
         public MultiUIValueBinding<Color, UIColorRGBA> ColorMask2 { get; private set; }
         public MultiUIValueBinding<Color, UIColorRGBA> ColorMask3 { get; private set; }
         public MultiUIValueBinding<float> NormalStrength { get; private set; }
+        public MultiUIValueBinding<float> GlassThickness { get; private set; }
         private void InitValueBindings()
         {
             if (m_initialized) return;
@@ -222,6 +223,7 @@ namespace BelzontWE
             ShaderType = new(default, $"{PREFIX}{nameof(ShaderType)}", m_eventCaller, m_callBinder, (x, _) => (int)x, (x, _) => (WEShader)x);
             GlassRefraction = new(default, $"{PREFIX}{nameof(GlassRefraction)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 1, 1000));
             GlassColor = new(default, $"{PREFIX}{nameof(GlassColor)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
+            GlassThickness = new(default, $"{PREFIX}{nameof(GlassThickness)}", m_eventCaller, m_callBinder);
 
             ColorMask1 = new(default, $"{PREFIX}{nameof(ColorMask1)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
             ColorMask2 = new(default, $"{PREFIX}{nameof(ColorMask2)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
@@ -254,6 +256,7 @@ namespace BelzontWE
             ShaderType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Shader = x; return currentItem; });
             GlassRefraction.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.GlassRefraction = x; return currentItem; });
             GlassColor.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.GlassColor = x; return currentItem; });
+            GlassThickness.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.GlassThickness = x; return currentItem; });
 
             ColorMask1.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.ColorMask1 = x; return currentItem; });
             ColorMask2.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.ColorMask2 = x; return currentItem; });
@@ -301,6 +304,7 @@ namespace BelzontWE
             ColorMask2.Value = currentItem.ColorMask2;
             ColorMask3.Value = currentItem.ColorMask3;
             NormalStrength.Value = currentItem.NormalStrength;
+            GlassThickness.Value = currentItem.GlassThickness;
         }
 
         #endregion

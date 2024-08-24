@@ -1,6 +1,7 @@
 ﻿using Belzont.Utils;
 using System.ComponentModel;
 
+
 #pragma warning disable IDE1006
 using System.Xml.Serialization;
 using UnityEngine;
@@ -19,7 +20,8 @@ namespace BelzontWE
         [XmlAttribute] public string imageName { get => text; set => text = value; }
         [XmlAttribute] public string atlas;
         [XmlAttribute] public WESimulationTextType textType;
-        public WETextDataStyleXml style = new();
+        [XmlElement] public WETextDataDefaultStyleXml defaultStyle;
+        [XmlElement] public WETextDataGlassStyleXml glassStyle;
         [XmlAttribute] public string formulae;
         [XmlAttribute] public string fontName;
         [XmlAttribute][DefaultValue(0f)] public float maxWidthMeters;
@@ -33,16 +35,16 @@ namespace BelzontWE
         public bool ShouldSerializeformulae() => textType == WESimulationTextType.Text || textType == WESimulationTextType.Image;
         public bool ShouldSerializefontName() => textType == WESimulationTextType.Text;
         public bool ShouldSerializemaxWidthMeters() => textType == WESimulationTextType.Text;
+        public bool ShouldSerializestyle() => false;
+        public bool ShouldSerializedefaultStyle() => shader == WEShader.Default;
+        public bool ShouldSerializeglassStyle() => shader == WEShader.Glass;
 
-        public class WETextDataStyleXml
+        public class WETextDataDefaultStyleXml
         {
             [XmlIgnore] public Color32 color;
             [XmlIgnore] public Color32 emissiveColor;
-            [XmlIgnore] public Color32 glassColor;
             [XmlAttribute][DefaultValue("00000000")] public string colorRGBA { get => color.ToRGBA(); set => color = ColorExtensions.FromRGBA(value); }
             [XmlAttribute][DefaultValue("00000000")] public string emissiveColorRGBA { get => emissiveColor.ToRGBA(); set => emissiveColor = ColorExtensions.FromRGBA(value); }
-            [XmlAttribute][DefaultValue("000000")] public string glassColorRGB { get => glassColor.ToRGB(); set => glassColor = ColorExtensions.FromRGB(value); }
-            [XmlAttribute][DefaultValue(0f)] public float glassRefraction;
             [XmlAttribute][DefaultValue(0f)] public float metallic;
             [XmlAttribute][DefaultValue(0f)] public float smoothness;
             [XmlAttribute][DefaultValue(0f)] public float emissiveIntensity;
@@ -54,7 +56,19 @@ namespace BelzontWE
             [XmlAttribute][DefaultValue("FFFFFF")] public string colorMask1RGB { get => colorMask1.ToRGB(); set => colorMask1 = ColorExtensions.FromRGB(value); }
             [XmlAttribute][DefaultValue("FFFFFF")] public string colorMask2RGB { get => colorMask2.ToRGB(); set => colorMask2 = ColorExtensions.FromRGB(value); }
             [XmlAttribute][DefaultValue("FFFFFF")] public string colorMask3RGB { get => colorMask3.ToRGB(); set => colorMask3 = ColorExtensions.FromRGB(value); }
+        }
+
+        public class WETextDataGlassStyleXml
+        {
+            [XmlIgnore] public Color32 color;
+            [XmlIgnore] public Color32 glassColor;
+            [XmlAttribute][DefaultValue("00000000")] public string colorRGBA { get => color.ToRGBA(); set => color = ColorExtensions.FromRGBA(value); }
+            [XmlAttribute][DefaultValue("000000")] public string glassColorRGB { get => glassColor.ToRGB(); set => glassColor = ColorExtensions.FromRGB(value); }
+            [XmlAttribute][DefaultValue(0f)] public float glassRefraction;
+            [XmlAttribute][DefaultValue(0f)] public float metallic;
+            [XmlAttribute][DefaultValue(0f)] public float smoothness;
             [XmlAttribute][DefaultValue(0f)] public float normalStrength;
+            [XmlAttribute][DefaultValue(0f)] public float thickness = 1;
         }
     }
 }

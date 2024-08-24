@@ -24,6 +24,7 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
     const T_colorMask2 = translate("appearenceSettings.colorMask2"); //"Emissive Exposure"
     const T_colorMask3 = translate("appearenceSettings.colorMask3"); //"Emissive Exposure"
     const T_normalStrength = translate("appearenceSettings.normalStrength"); //"Emissive Exposure"
+    const T_glassThickness = translate("appearenceSettings.glassThickness"); //"Emissive Exposure"
 
     const [buildIdx, setBuild] = useState(0);
     useEffect(() => {
@@ -58,6 +59,7 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
                 </>}
                 <VanillaWidgets.instance.FloatSlider value={wps.Metallic.value} onChange={(x) => { wps.Metallic.set(x) }} label={T_glassTint} max={1} min={0} />
                 <VanillaWidgets.instance.FloatSlider value={wps.Smoothness.value} onChange={(x) => { wps.Smoothness.set(x) }} label={T_glassClearness} max={1} min={0} />
+                <VanillaWidgets.instance.FloatSlider value={wps.GlassThickness.value} onChange={(x) => { wps.GlassThickness.set(x) }} label={T_glassThickness} max={100} min={0} />
             </>}
         </Panel>
     </Portal>;

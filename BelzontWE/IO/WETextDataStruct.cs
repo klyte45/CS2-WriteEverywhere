@@ -1,5 +1,6 @@
 ﻿using Belzont.Utils;
 using Colossal.Serialization.Entities;
+using System;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
@@ -8,7 +9,7 @@ namespace BelzontWE
 {
     public unsafe struct WETextDataStruct : ISerializable
     {
-        public const int CURRENT_VERSION = 0;
+        public const int CURRENT_VERSION = 1;
         public static readonly int SIZE = sizeof(WETextDataStruct);
 
         public bool IsInitialized { get; private set; }
@@ -20,7 +21,8 @@ namespace BelzontWE
         public FixedString32Bytes atlas = default;
         public WEShader shader = default;
         public WESimulationTextType textType = default;
-        public WETextDataStyleStruct style = default;
+        public WETextDataDefaultStyleStruct defaultStyle = default;
+        public WETextDataGlassStyleStruct glassStyle = default;
         public FixedString512Bytes formulae = default;
         public FixedString32Bytes fontName = default;
         public float maxWidthMeters = default;
@@ -42,12 +44,15 @@ namespace BelzontWE
             writer.Write(atlas);
             writer.Write((int)shader);
             writer.Write((int)textType);
-            writer.Write(style);
             writer.Write(formulae);
             writer.Write(fontName);
             writer.Write(maxWidthMeters);
             writer.Write(decalFlags);
-
+            switch (shader)
+            {
+                case WEShader.Default: writer.Write(defaultStyle); break;
+                case WEShader.Glass: writer.Write(glassStyle); break;
+            }
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -66,11 +71,24 @@ namespace BelzontWE
             reader.Read(out atlas);
             reader.Read(out int shader); this.shader = (WEShader)shader;
             reader.Read(out int textType); this.textType = (WESimulationTextType)textType;
-            reader.Read(out style);
+            if (version == 0)
+            {
+                reader.Read(out WETextDataStyleStruct oldStyle);
+                defaultStyle = oldStyle.ToDefaultStyle();
+                glassStyle = oldStyle.ToGlassStyle();
+            }
             reader.Read(out formulae);
             reader.Read(out fontName);
             reader.Read(out maxWidthMeters);
             reader.Read(out decalFlags);
+            if (version >= 1)
+            {
+                switch (this.shader)
+                {
+                    case WEShader.Default: reader.Read(out defaultStyle); break;
+                    case WEShader.Glass: reader.Read(out glassStyle); break;
+                }
+            }
             IsInitialized = true;
         }
 
@@ -88,7 +106,8 @@ namespace BelzontWE
                     atlas = data.atlas ?? "",
                     shader = data.shader,
                     textType = data.textType,
-                    style = WETextDataStyleStruct.FromXml(data.style),
+                    glassStyle = WETextDataGlassStyleStruct.FromXml(data.glassStyle),
+                    defaultStyle = WETextDataDefaultStyleStruct.FromXml(data.defaultStyle),
                     formulae = data.formulae ?? "",
                     fontName = data.fontName ?? "",
                     maxWidthMeters = data.maxWidthMeters,
@@ -106,14 +125,15 @@ namespace BelzontWE
             atlas = atlas.ToString(),
             shader = shader,
             textType = textType,
-            style = style.ToXml(),
+            defaultStyle = defaultStyle.ToXml(),
+            glassStyle = glassStyle.ToXml(),
             formulae = formulae.ToString(),
             fontName = fontName.ToString(),
             maxWidthMeters = maxWidthMeters,
             decalFlags = decalFlags,
 
         };
-
+        [Obsolete("Use specific class")]
         public unsafe struct WETextDataStyleStruct : ISerializable
         {
             public const int CURRENT_VERSION = 1;
@@ -132,26 +152,29 @@ namespace BelzontWE
             public Color32 colorMask3;
             public float normalStrength;
 
-            internal static WETextDataStyleStruct FromXml(WETextDataXml.WETextDataStyleXml style)
-                => style is null
-                    ? default
-                    : new()
-                    {
-                        color = style.color,
-                        emissiveColor = style.emissiveColor,
-                        glassColor = style.glassColor,
-                        glassRefraction = style.glassRefraction,
-                        metallic = style.metallic,
-                        smoothness = style.smoothness,
-                        emissiveIntensity = style.emissiveIntensity,
-                        emissiveExposureWeight = style.emissiveExposureWeight,
-                        coatStrength = style.coatStrength,
-                        colorMask1 = style.colorMask1,
-                        colorMask2 = style.colorMask2,
-                        colorMask3 = style.colorMask3,
-                        normalStrength = style.normalStrength,
-                    };
-
+            public WETextDataDefaultStyleStruct ToDefaultStyle() => new()
+            {
+                coatStrength = coatStrength,
+                color = color,
+                colorMask1 = colorMask1,
+                colorMask2 = colorMask2,
+                colorMask3 = colorMask3,
+                emissiveColor = emissiveColor,
+                emissiveExposureWeight = emissiveExposureWeight,
+                emissiveIntensity = emissiveIntensity,
+                metallic = metallic,
+                smoothness = smoothness
+            };
+            public WETextDataGlassStyleStruct ToGlassStyle() => new()
+            {
+                color = color,
+                metallic = metallic,
+                smoothness = smoothness,
+                glassColor = glassColor,
+                glassRefraction = glassRefraction,
+                normalStrength = normalStrength,
+                thickness = .5f
+            };
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
             {
                 reader.Read(out int version);
@@ -201,13 +224,79 @@ namespace BelzontWE
                 writer.Write(colorMask3);
                 writer.Write(normalStrength);
             }
+        }
 
-            internal readonly WETextDataXml.WETextDataStyleXml ToXml() => new()
+        public unsafe struct WETextDataDefaultStyleStruct : ISerializable
+        {
+            public const int CURRENT_VERSION = 0;
+            public static readonly int SIZE = sizeof(WETextDataDefaultStyleStruct);
+            public Color32 color;
+            public Color32 emissiveColor;
+            public float metallic;
+            public float smoothness;
+            public float emissiveIntensity;
+            public float emissiveExposureWeight;
+            public float coatStrength;
+            public Color32 colorMask1;
+            public Color32 colorMask2;
+            public Color32 colorMask3;
+
+            internal static WETextDataDefaultStyleStruct FromXml(WETextDataXml.WETextDataDefaultStyleXml style)
+                => style is null
+                    ? default
+                    : new()
+                    {
+                        color = style.color,
+                        emissiveColor = style.emissiveColor,
+                        metallic = style.metallic,
+                        smoothness = style.smoothness,
+                        emissiveIntensity = style.emissiveIntensity,
+                        emissiveExposureWeight = style.emissiveExposureWeight,
+                        coatStrength = style.coatStrength,
+                        colorMask1 = style.colorMask1,
+                        colorMask2 = style.colorMask2,
+                        colorMask3 = style.colorMask3,
+                    };
+
+            public void Deserialize<TReader>(TReader reader) where TReader : IReader
+            {
+                reader.Read(out int version);
+                if (version > CURRENT_VERSION)
+                {
+                    LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                    return;
+                }
+                reader.Read(out color);
+                reader.Read(out emissiveColor);
+                reader.Read(out metallic);
+                reader.Read(out smoothness);
+                reader.Read(out emissiveIntensity);
+                reader.Read(out emissiveExposureWeight);
+                reader.Read(out coatStrength);
+                reader.Read(out colorMask1);
+                reader.Read(out colorMask2);
+                reader.Read(out colorMask3);
+            }
+
+            public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+            {
+                writer.Write(CURRENT_VERSION);
+                writer.Write(color);
+                writer.Write(emissiveColor);
+                writer.Write(metallic);
+                writer.Write(smoothness);
+                writer.Write(emissiveIntensity);
+                writer.Write(emissiveExposureWeight);
+                writer.Write(coatStrength);
+                writer.Write(colorMask1);
+                writer.Write(colorMask2);
+                writer.Write(colorMask3);
+            }
+
+            internal readonly WETextDataXml.WETextDataDefaultStyleXml ToXml() => new()
             {
                 color = color,
                 emissiveColor = emissiveColor,
-                glassColor = glassColor,
-                glassRefraction = glassRefraction,
                 metallic = metallic,
                 smoothness = smoothness,
                 emissiveIntensity = emissiveIntensity,
@@ -216,9 +305,73 @@ namespace BelzontWE
                 colorMask1 = colorMask1,
                 colorMask2 = colorMask2,
                 colorMask3 = colorMask3,
-                normalStrength = normalStrength
             };
         }
+        public unsafe struct WETextDataGlassStyleStruct : ISerializable
+        {
+            public const int CURRENT_VERSION = 0;
+            public static readonly int SIZE = sizeof(WETextDataGlassStyleStruct);
+            public Color32 color;
+            public Color32 glassColor;
+            public float glassRefraction;
+            public float metallic;
+            public float smoothness;
+            public float normalStrength;
+            public float thickness;
 
+            internal static WETextDataGlassStyleStruct FromXml(WETextDataXml.WETextDataGlassStyleXml style)
+                => style is null
+                    ? default
+                    : new()
+                    {
+                        color = style.color,
+                        glassColor = style.glassColor,
+                        glassRefraction = style.glassRefraction,
+                        metallic = style.metallic,
+                        smoothness = style.smoothness,
+                        normalStrength = style.normalStrength,
+                        thickness = style.thickness
+                    };
+
+            public void Deserialize<TReader>(TReader reader) where TReader : IReader
+            {
+                reader.Read(out int version);
+                if (version > CURRENT_VERSION)
+                {
+                    LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                    return;
+                }
+                reader.Read(out color);
+                reader.Read(out glassColor);
+                reader.Read(out glassRefraction);
+                reader.Read(out metallic);
+                reader.Read(out smoothness);
+                reader.Read(out thickness);
+                reader.Read(out normalStrength);
+            }
+
+            public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+            {
+                writer.Write(CURRENT_VERSION);
+                writer.Write(color);
+                writer.Write(glassColor);
+                writer.Write(glassRefraction);
+                writer.Write(metallic);
+                writer.Write(smoothness);
+                writer.Write(thickness);
+                writer.Write(normalStrength);
+            }
+
+            internal readonly WETextDataXml.WETextDataGlassStyleXml ToXml() => new()
+            {
+                color = color,
+                glassColor = glassColor,
+                glassRefraction = glassRefraction,
+                metallic = metallic,
+                smoothness = smoothness,
+                normalStrength = normalStrength,
+                thickness = thickness,
+            };
+        }
     }
 }

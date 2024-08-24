@@ -2,6 +2,7 @@
 //#define VERBOSE 
 using Belzont.Interfaces;
 using Belzont.Utils;
+using Colossal.Entities;
 using Game.Common;
 using Game.Creatures;
 using Game.Tools;
@@ -23,17 +24,13 @@ namespace BelzontWE
         private WEWorldPickerTool m_WETestTool;
         private FontServer m_FontServer;
 
-        internal static Entity targetEntity;
-        private string targetString;
-        private string targetFont;
+        internal Entity targetEntity;
+
         public static uint Overlay { get; private set; }
 
         public void SetupCallBinder(Action<string, Delegate> eventCaller)
         {
             eventCaller("test.enableTestTool", EnableTestTool);
-            eventCaller("test.reloadFonts", ReloadFonts);
-            eventCaller("test.listFonts", ListFonts);
-            eventCaller("test.requestTextMesh", RequestTextMesh);
             eventCaller("test.listShaderDatails", ListShadersDetails);
             eventCaller("test.listShader", ListShaders);
             eventCaller("test.setShader", SetShader);
@@ -42,6 +39,8 @@ namespace BelzontWE
             eventCaller("test.setCurrentMaterialSettings", SetCurrentMaterialSettings);
             eventCaller("test.setOverlay", SetOverlay);
             eventCaller("test.getOverlay", GetOverlay);
+            eventCaller("test.getEntity", GetEntity);
+            eventCaller("test.setEntity", SetEntity);
         }
 
         public uint SetOverlay(int newVal)
@@ -61,6 +60,8 @@ namespace BelzontWE
         }
 
         public uint GetOverlay() => Overlay;
+        public Entity GetEntity() => targetEntity;
+        public void SetEntity(int index, int version) => targetEntity = new Entity { Index = index, Version = version };
 
         public class PropertyDescriptor
         {
@@ -72,12 +73,12 @@ namespace BelzontWE
             public string Value { get; set; }
         }
 
-        private List<PropertyDescriptor> ListCurrentMaterialSettings(string fontName)
+        private List<PropertyDescriptor> ListCurrentMaterialSettings()
         {
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-            if (m_FontServer.TryGetFont(fontName, out var fsd))
+            if (EntityManager.TryGetComponent<WETextData>(targetEntity, out var weComponent))
             {
-                var mat = fsd.FontSystem.CurrentAtlas.Material;
+                var mat = weComponent.OwnMaterial;
                 var propertyCount = mat.shader.GetPropertyCount();
                 var listResult = new List<PropertyDescriptor>
                 {
@@ -168,13 +169,13 @@ namespace BelzontWE
             }
         }
 
-        private string SetCurrentMaterialSettings(string fontName, string propertyIdxStr, string value)
+        private string SetCurrentMaterialSettings(string propertyIdxStr, string value)
         {
 
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-            if (m_FontServer.TryGetFont(fontName, out var fsd))
+            if (EntityManager.TryGetComponent<WETextData>(targetEntity, out var weComponent))
             {
-                var mat = fsd.FontSystem.CurrentAtlas.Material;
+                var mat = weComponent.OwnMaterial;
                 if (!int.TryParse(propertyIdxStr, out var propertyIdx))
                 {
                     switch (propertyIdxStr)
@@ -319,7 +320,6 @@ namespace BelzontWE
         {
             m_WETestTool = World.GetExistingSystemManaged<WEWorldPickerTool>();
             m_FontServer = World.GetOrCreateSystemManaged<FontServer>();
-            m_FontServer.OnFontsLoadedChanged += () => SendToFrontend("test.fontsChanged->", new object[] { ListFonts() });
             base.OnCreate();
         }
         public override void Update()
@@ -346,54 +346,6 @@ namespace BelzontWE
                     }
                 }
            }));
-        }
-
-        private void ReloadFonts()
-        {
-
-        }
-
-        private void UpdateDataAtEntity()
-        {
-            //if (targetEntity != Entity.Null && targetString != null && targetFont != null)
-            //{
-            //    if (EntityManager.HasComponent<WESimulationTextComponent>(targetEntity))
-            //    {
-            //        var compList = EntityManager.GetBuffer<WESimulationTextComponent>(targetEntity, false);
-            //        for (int i = 0; i < compList.Length; i++)
-            //        {
-            //            var x = compList[i];
-            //            x.FontName = targetFont;
-            //            x.Text = targetString;
-            //            x.Color = Color.red;
-            //            x.EmissiveColor = Color.gray;
-            //            x.Metallic = .0f;
-            //            compList[i] = x;
-            //        }
-            //    }
-            //    else
-            //    {
-            //        var newComponent = new WESimulationTextComponent
-            //        {
-            //            FontName = targetFont,
-            //            Text = targetString,
-            //            offsetPosition = Vector3.up * 2,
-            //            scale = Vector3.one * 4
-            //        };
-            //        EntityManager.AddBuffer<WESimulationTextComponent>(targetEntity).Add(newComponent);
-            //    }
-            //}
-        }
-
-        private string[] ListFonts() => m_FontServer.GetLoadedFontsNames();
-
-        private string RequestTextMesh(string text, string fontName)
-        {
-            //targetFont = fontName;
-            //targetString = text;
-            //UpdateDataAtEntity();
-            //var result = m_FontServer[targetFont]?.DrawString(text, FontServer.Instance.ScaleEffective);
-            return null;// result is null ? null : XmlUtils.DefaultXmlSerialize(result);
         }
     }
 
