@@ -98,6 +98,10 @@
       <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Colossal.PSI.Common">
+      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.PSI.Common.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>

@@ -9,7 +9,10 @@ using Game.Prefabs;
 using Game.Rendering;
 using Game.SceneFlow;
 using Game.Tools;
+using Game.UI;
+using Game.UI.Localization;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,6 +22,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 
 #if BURST
@@ -350,43 +354,85 @@ namespace BelzontWE
             }
             return 0;
         }
+        public bool IsLoadingLayouts => LoadingPrefabLayoutsCoroutine != null;
+        private Coroutine LoadingPrefabLayoutsCoroutine;
+        private const string LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID = "loadingPrefabTemplates";
+        private const string ERRORS_LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID = "errorLoadingPrefabTemplates";
         private void UpdatePrefabIndexDictionary()
         {
             if (!isPrefabListDirty) return;
+            if (LoadingPrefabLayoutsCoroutine != null) GameManager.instance.StopCoroutine(LoadingPrefabLayoutsCoroutine);
             if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"UpdatePrefabIndexDictionary!!!");
+            LoadingPrefabLayoutsCoroutine = GameManager.instance.StartCoroutine(UpdatePrefabIndexDictionary_Coroutine());
+        }
+        private IEnumerator UpdatePrefabIndexDictionary_Coroutine()
+        {
+            isPrefabListDirty = false;
+            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 0);
+            yield return 0;
             PrefabNameToIndex.Clear();
             var prefabs = PrefabSystemOverrides.LoadedPrefabBaseList(m_prefabSystem);
             var entities = PrefabSystemOverrides.LoadedPrefabEntitiesList(m_prefabSystem);
+
+            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 1, textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.gettingPrefabIndexes");
+            yield return 0;
             foreach (var prefab in prefabs)
             {
                 var data = EntityManager.GetComponentData<PrefabData>(entities[prefab]);
                 PrefabNameToIndex[prefab.name] = data.m_Index;
             }
-            LoadTemplatesFromFolder();
+            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 20, textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.prefabIndexesLoaded");
+            yield return LoadTemplatesFromFolder(20, 80f);
             EntityManager.AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty);
-            isPrefabListDirty = false;
         }
 
-        private void LoadTemplatesFromFolder()
+        private IEnumerator LoadTemplatesFromFolder(int offsetPercentage, float totalStep)
         {
             var currentValues = PrefabTemplates.GetValueArray(Allocator.Temp);
+            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.01f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.erasingCachedLayouts");
+            yield return 0;
             for (int i = 0; i < currentValues.Length; i++)
             {
                 currentValues[i].Dispose();
+                if (i % 3 == 0)
+                {
+                    NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + ((.01f + (.09f * ((i + 1f) / currentValues.Length))) * totalStep)),
+                        textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.disposedOldLayout", argsText: new()
+                        {
+                            ["progress"] = LocalizedString.Value($"{i}/{currentValues.Length}")
+                        });
+                    yield return 0;
+                }
             }
             currentValues.Dispose();
-
             PrefabTemplates.Clear();
+            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.11f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.searchingForFiles");
+            yield return 0;
             var files = Directory.GetFiles(SAVED_PREFABS_FOLDER, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories);
-            foreach (var f in files)
+            var errorsList = new Dictionary<string, LocalizedString>();
+            for (int i = 0; i < files.Length; i++)
             {
-                var prefabName = Path.GetFileName(f)[..^(PREFAB_LAYOUT_EXTENSION.Length + 1)];
+                string fileItem = files[i];
+                string relativePath = fileItem[SAVED_PREFABS_FOLDER.Length..];
+                NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + ((.11f + (.89f * ((i + 1f) / files.Length))) * totalStep)),
+                        textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingPrefabLayoutFile", argsText: new()
+                        {
+                            ["fileName"] = LocalizedString.Value(relativePath),
+                            ["progress"] = LocalizedString.Value($"{i}/{files.Length}")
+                        });
+                yield return 0;
+                var prefabName = Path.GetFileName(fileItem)[..^(PREFAB_LAYOUT_EXTENSION.Length + 1)];
                 if (!PrefabNameToIndex.TryGetValue(prefabName, out var idx))
                 {
                     LogUtils.DoWarnLog($"No prefab loaded with name: {prefabName}. Skipping...");
+                    errorsList.Add(relativePath, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidPrefabName]", null, new Dictionary<string, ILocElement>()
+                    {
+                        ["fileName"] = LocalizedString.Value(relativePath),
+                        ["prefabName"] = LocalizedString.Value(prefabName)
+                    }));
                     continue;
                 }
-                var tree = WETextDataTree.FromXML(File.ReadAllText(f));
+                var tree = WETextDataTree.FromXML(File.ReadAllText(fileItem));
                 if (tree is null) continue;
                 tree.self = new WETextDataXml
                 {
@@ -412,14 +458,44 @@ namespace BelzontWE
                     {
                         PrefabTemplates[idx] = generatedEntity;
                     }
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {generatedEntity} from {f[SAVED_PREFABS_FOLDER.Length..]}");
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {generatedEntity} from {fileItem[SAVED_PREFABS_FOLDER.Length..]}");
                 }
                 else
                 {
                     generatedEntity.Dispose();
+                    errorsList.Add(relativePath, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidFileContent]", null, new Dictionary<string, ILocElement>()
+                    {
+                        ["fileName"] = LocalizedString.Value(relativePath),
+                        ["prefabName"] = LocalizedString.Value(prefabName)
+                    }));
                     LogUtils.DoWarnLog($"Failed loding default template for prefab '{prefabName}'. Check previous lines at mod log to more information ({validationResults})");
                 }
             }
+            if (errorsList.Count > 0)
+            {
+                NotificationHelper.NotifyWithCallback(ERRORS_LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Colossal.PSI.Common.ProgressState.Warning, () =>
+                {
+                    var dialog2 = new MessageDialogWithDetails(
+                        LocalizedString.Id(NotificationHelper.GetModDefaultNotificationTitle(ERRORS_LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID)),
+                        LocalizedString.Id("K45::WE.TEMPLATE_MANAGER[errorDIalogHeader]"),
+                        LocalizedString.Value(string.Join("\n", errorsList.Select(x => $"{x.Key}: {x.Value.Translate()}"))),
+                        true,
+                        LocalizedString.Id("Common.OK"),
+                        LocalizedString.Id(BasicIMod.ModData.FixLocaleId(BasicIMod.ModData.GetOptionLabelLocaleID(nameof(BasicModData.GoToLogFolder))))
+                        );
+                    GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog2, (x) =>
+                    {
+                        switch (x)
+                        {
+                            case 2:
+                                BasicIMod.ModData.GoToLogFolder = true;
+                                break;
+                        }
+                        NotificationHelper.RemoveNotification(ERRORS_LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID);
+                    });
+                });
+            }
+            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + totalStep), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingComplete");
         }
         #endregion
         #region City Templates

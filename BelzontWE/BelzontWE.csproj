@@ -126,6 +126,10 @@
       <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.AssetPipeline.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Colossal.PSI.Common">
+      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.PSI.Common.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
       <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>False</Private>

@@ -4,7 +4,9 @@ using BelzontWE;
 using BelzontWE.Font.Utility;
 using Game;
 using Game.SceneFlow;
+using Game.UI.Localization;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,6 +19,7 @@ namespace WriteEverywhere.Sprites
     public partial class WEAtlasesLibrary : GameSystemBase
     {
         public static string IMAGES_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "imageAtlases");
+        private const string GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID = "generatingAtlasesCache";
 
         public static WEAtlasesLibrary Instance { get; private set; }
         private readonly Queue<Action> actionQueue = new Queue<Action>();
@@ -186,25 +189,46 @@ namespace WriteEverywhere.Sprites
         #endregion
 
         #region Loading
+
+        private Coroutine currentJobRunning;
         public void LoadImagesFromLocalFolders()
         {
-            foreach (var item in LocalAtlases)
+            if (currentJobRunning is null)
             {
-                if (item.Value != null)
+                currentJobRunning = GameManager.instance.StartCoroutine(LoadImagesFromLocalFoldersCoroutine());
+            }
+        }
+        public IEnumerator LoadImagesFromLocalFoldersCoroutine()
+        {
+            NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 0);
+            yield return 0;
+            var values = LocalAtlases.Values.ToArray();
+            for (int i = 0; i < values.Length; i++)
+            {
+                Dictionary<FixedString32Bytes, WEImageInfo> item = values[i];
+                if (item != null)
                 {
-                    foreach (var subitem in item.Value)
+                    foreach (var subitem in item)
                     {
                         subitem.Value.Dispose();
                     }
+                    NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((i + 1f) / values.Length * 25), textI18n: "generatingAtlasesCache.deletingOld");
+                    yield return 0;
                 }
             }
-            LocalAtlasesCache.Clear();
             LocalAtlases.Clear();
             var errors = new List<string>();
-            var folders = new string[] { IMAGES_FOLDER }.Concat(Directory.GetDirectories(IMAGES_FOLDER));
-            foreach (var dir in folders)
+            var folders = new string[] { IMAGES_FOLDER }.Concat(Directory.GetDirectories(IMAGES_FOLDER)).ToArray();
+            for (int i = 0; i < folders.Length; i++)
             {
+                string dir = folders[i];
                 bool isRoot = dir == IMAGES_FOLDER;
+                NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * i / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: new()
+                {
+                    ["progress"] = LocalizedString.Value($"{i + 1}/{folders.Length}"),
+                    ["atlasName"] = LocalizedString.Value(isRoot ? "<ROOT>" : dir[IMAGES_FOLDER.Length..])
+                });
+                yield return 0;
                 var spritesToAdd = new List<WEImageInfo>();
                 WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, ref spritesToAdd, ref errors, false);
                 if (isRoot || (GameManager.instance.gameMode != Game.GameMode.Editor && spritesToAdd.Count > 0))
@@ -217,6 +241,8 @@ namespace WriteEverywhere.Sprites
                     }
                 }
             }
+            NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
+            yield return 0;
             LocalAtlases[INTERNAL_ATLAS_NAME] = new();
             foreach (var img in Enum.GetValues(typeof(WEImages)).Cast<WEImages>())
             {
@@ -230,7 +256,10 @@ namespace WriteEverywhere.Sprites
                     LogUtils.DoWarnLog($"Error loading WE atlases: {errors[i]}");
                 }
             }
-            LogUtils.DoInfoLog($"Loaded atlases: {string.Join(", ", LocalAtlases.Select(x => x.Key))}");
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded atlases: {string.Join(", ", LocalAtlases.Select(x => x.Key))}");
+
+            NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 100, textI18n: "generatingAtlasesCache.complete");
+            currentJobRunning = null;
         }
 
         private WEImageInfo CloneWEImageInfo(SpriteInfo x) => x is null ? null : new WEImageInfo(null)
