@@ -32,23 +32,41 @@ export const ShaderEditTab = (props: {}) => {
 
   const [currentEntity, setCurrentEntity] = useState(null as Entity | null)
   const [loadedProperties, setLoadedProperties] = useState(null as Properties[] | null)
+  const [shaderList, setShaderList] = useState([] as { name: string }[])
+  const [shader, setShader] = useState("" as string)
   useEffect(() => {
-    engine.call("k45::we.test.getEntity").then(setCurrentEntity)
+    engine.call("k45::we.test.getEntity").then(setCurrentEntity);
+    engine.call("k45::we.test.listShader").then((x: string[]) => setShaderList(x.filter(y => !y.startsWith("Hidden/")).sort((a, b) => a.localeCompare(b)).map(y => { return { name: y } })))
   }, [])
   useEffect(() => {
-    if (currentEntity != null) engine.call("k45::we.test.setEntity", currentEntity?.Index ?? 0, currentEntity?.Version ?? 0).then(x => {
-      engine.call("k45::we.test.listCurrentMaterialSettings").then(x => setLoadedProperties(x))
-    });
+    if (currentEntity != null) {
+      engine.call("k45::we.test.setEntity", currentEntity?.Index ?? 0, currentEntity?.Version ?? 0).then(x => {
+        engine.call("k45::we.test.listCurrentMaterialSettings").then(x => setLoadedProperties(x))
+        engine.call("k45::we.test.getShader").then(x => setShader(x))
+      });
+    }
   }, [currentEntity])
+  const saveShader = (x) => {
+    setShader(x);
+    engine.call("k45::we.test.setShader", x).then(x => engine.call("k45::we.test.listCurrentMaterialSettings").then(x => setLoadedProperties(x)));
+  }
 
   return <>
     <DefaultPanelScreen title="Shader test">
-
-      <Input title="Entity Index" getValue={() => currentEntity?.Index.toString()} onValueChanged={async (y) => { setCurrentEntity({ Index: parseInt(y) || 0, Version: currentEntity?.Version ?? 0 }); return y }} />
-      <Input title="Entity Version" getValue={() => currentEntity?.Version.toString()} onValueChanged={async (y) => { setCurrentEntity({ Index: currentEntity?.Index ?? 0, Version: parseInt(y) || 0 }); return y }} />
-
+      <div style={{ display: 'flex', flexDirection: "row" }}>
+        <Input title="Entity Index" getValue={() => currentEntity?.Index.toString()} onValueChanged={async (y) => { setCurrentEntity({ Index: parseInt(y) || 0, Version: currentEntity?.Version ?? 0 }); return y }} />
+        <Input title="Entity Version" getValue={() => currentEntity?.Version.toString()} onValueChanged={async (y) => { setCurrentEntity({ Index: currentEntity?.Index ?? 0, Version: parseInt(y) || 0 }); return y }} />
+      </div>
       <GameScrollComponent>
         {loadedProperties && <>
+          <Cs2FormLine title="Select Font">
+            <Cs2Select
+              options={shaderList}
+              getOptionLabel={(x) => x.name}
+              getOptionValue={(x) => x.name}
+              onChange={(x) => saveShader(x.name)}
+              value={{ name: shader }} />
+          </Cs2FormLine>
           {loadedProperties.sort((a, b) => a.Name.localeCompare(b.Name))
             .map((x) => {
               if (x.Type == ShaderPropertyType.Keyword || x.Type == ShaderPropertyType.ShaderPass) {

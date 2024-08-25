@@ -6,7 +6,6 @@ using Colossal.Entities;
 using Game.Common;
 using Game.Creatures;
 using Game.Tools;
-using Kwytto.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -295,17 +294,33 @@ namespace BelzontWE
         }
         private List<string> ListShaders()
         {
-            return Resources.FindObjectsOfTypeAll<Shader>().Select(x => x.name).ToList();
+            return Resources.FindObjectsOfTypeAll<Shader>().Select(x =>
+            {
+                var count = x.GetPropertyCount();
+                var idx = -1;
+                for (int i = 0; i < count; i++)
+                {
+                   if(x.GetPropertyName(i) == "_TileOffset")
+                    {
+                        idx = i;
+                        break;
+                    }
+                }
+                LogUtils.DoLog($"Shader _TileOffset idx = {idx} @ {x.name}");
+                return x.name;
+            }).ToList();
         }
 
         private void SetShader(string shaderName)
         {
-            //m_FontServer.SetDefaultShader(shaderName);
+            if (EntityManager.TryGetComponent<WETextData>(targetEntity, out var weComponent) && Shader.Find(shaderName) is Shader sh)
+            {
+                weComponent.OwnMaterial.shader = sh;
+            }
         }
         private string GetShader()
         {
-            return "";
-            //return m_FontServer.GetDefaultShader();
+            return EntityManager.TryGetComponent<WETextData>(targetEntity, out var weComponent) ? weComponent.OwnMaterial.shader.name : null;
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller)
