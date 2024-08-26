@@ -154,7 +154,7 @@ namespace BelzontWE
                         }
                         var refPos = parentIsPlaceholder ? default : weCustomData.offsetPosition;
                         var refRot = parentIsPlaceholder ? default : weCustomData.offsetRotation;
-                        var matrix = prevMatrix * Matrix4x4.TRS(refPos, refRot, scale);                      
+                        var matrix = prevMatrix * Matrix4x4.TRS(refPos, refRot, scale);
                         if (weCustomData.HasBRI)
                         {
                             if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
@@ -163,8 +163,9 @@ namespace BelzontWE
                                 float minDist = RenderingUtils.CalculateMinDistance(refBounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
 
                                 int lod = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
-                                var minLod = RenderingUtils.CalculateLodLimit(RenderingUtils.GetRenderingSize((refBounds.max - refBounds.min) * 8));
-                                if (doLog) Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: minDist = {minDist} - refBounds = {refBounds.min} {refBounds.max} - lod = {lod} - minLod = {minLod} - m_LodParameters = {m_LodParameters}");
+                                var boundsSize = refBounds.max - refBounds.min;
+                                var minLod = RenderingUtils.CalculateLodLimit(RenderingUtils.GetRenderingSize((boundsSize.xy + boundsSize.zy) * .5f));
+                                if (doLog) Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: minDist = {minDist} - refBounds = {refBounds.min} {refBounds.max} ({boundsSize}) - lod = {lod} - minLod = {minLod} - m_LodParameters = {m_LodParameters}");
                                 if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                 {
                                     availToDraw.Enqueue(new WERenderData

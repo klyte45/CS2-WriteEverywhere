@@ -23,13 +23,13 @@ namespace WriteEverywhere.Sprites
         private const string GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID = "generatingAtlasesCache";
 
         public static WEAtlasesLibrary Instance { get; private set; }
-        private readonly Queue<Action> actionQueue = new Queue<Action>();
+        private readonly Queue<Action> actionQueue = new();
 
         protected override void OnCreate()
         {
             Instance = this;
             KFileUtils.EnsureFolderCreation(IMAGES_FOLDER);
-            LoadImagesFromLocalFolders();
+            actionQueue.Enqueue(() => LoadImagesFromLocalFolders());
         }
 
         protected override void OnDestroy()
@@ -46,54 +46,40 @@ namespace WriteEverywhere.Sprites
 
         private Dictionary<FixedString32Bytes, WETextureAtlas> LocalAtlases { get; } = new();
 
-
         #region Getters
 
-        public string[] ListLocalAtlases()
-        {
-            return LocalAtlases.Where(x => x.Key != INTERNAL_ATLAS_NAME && x.Value.Count > 0).Select(x => x.Key.ToString()).ToArray();
-        }
-        public string[] ListLocalAtlasImages(string atlasName)
-        {
-            return LocalAtlases.TryGetValue(atlasName ?? "", out var arr) ? arr.Keys.Select(x => x.ToString()).ToArray() : new string[0];
-        }
+        public string[] ListLocalAtlases() => LocalAtlases.Where(x => x.Key != INTERNAL_ATLAS_NAME && x.Value.Count > 0).Select(x => x.Key.ToString()).ToArray();
 
-        internal BasicRenderInformation GetFromLocalAtlases(WEImages image)
-        {
-            return GetFromLocalAtlases(INTERNAL_ATLAS_NAME, image.ToString());
-        }
+        public string[] ListLocalAtlasImages(string atlasName) => LocalAtlases.TryGetValue(atlasName ?? "", out var arr) ? arr.Keys.Select(x => x.ToString()).ToArray() : new string[0];
+
+        internal BasicRenderInformation GetFromLocalAtlases(WEImages image) => GetFromLocalAtlases(INTERNAL_ATLAS_NAME, image.ToString());
+
         public BasicRenderInformation GetFromLocalAtlases(FixedString32Bytes atlasName, FixedString32Bytes spriteName, bool fallbackOnInvalid = false)
-        {
-            if (spriteName.Trim().Length == 0)
-            {
-                return fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage) : null;
-            }
-            BasicRenderInformation cachedInfo = null;
-            if (LocalAtlases.TryGetValue(atlasName, out var resultDicCache) && resultDicCache.TryGetValue(spriteName, out cachedInfo) && (cachedInfo == null || cachedInfo.Main))
-            {
-                return cachedInfo;
-            }
-            else
-            {
-                return fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage) : null;
-            }
-        }
-        public BasicRenderInformation GetSlideFromLocal(FixedString32Bytes atlasName, Func<int, int> idxFunc, bool fallbackOnInvalid = false) => !LocalAtlases.TryGetValue(atlasName, out var atlas)
-                ? fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidFolder) : null
-                : GameManager.instance.gameMode == Game.GameMode.Editor ? GetFromLocalAtlases(WEImages.FrameBorder) : GetFromLocalAtlases(atlasName, atlas.Keys.ElementAt(idxFunc(atlas.Count - 1) + 1), fallbackOnInvalid);
+            => spriteName.Trim().Length == 0
+                ? fallbackOnInvalid
+                    ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage)
+                    : null
+                : LocalAtlases.TryGetValue(atlasName, out var resultDicCache) && resultDicCache.TryGetValue(spriteName, out BasicRenderInformation cachedInfo) && (cachedInfo == null || cachedInfo.Main)
+                    ? cachedInfo
+                    : fallbackOnInvalid
+                        ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage)
+                        : null;
+
+        public BasicRenderInformation GetSlideFromLocal(FixedString32Bytes atlasName, Func<int, int> idxFunc, bool fallbackOnInvalid = false)
+            => !LocalAtlases.TryGetValue(atlasName, out var atlas)
+                ? fallbackOnInvalid
+                    ? GetFromLocalAtlases(WEImages.FrameParamsInvalidFolder)
+                    : null
+                : GameManager.instance.gameMode == GameMode.Editor
+                    ? GetFromLocalAtlases(WEImages.FrameBorder)
+                    : GetFromLocalAtlases(atlasName, atlas.Keys.ElementAt(idxFunc(atlas.Count - 1) + 1), fallbackOnInvalid);
 
         #endregion
 
         #region Loading
 
         private Coroutine currentJobRunning;
-        public void LoadImagesFromLocalFolders()
-        {
-            if (currentJobRunning is null)
-            {
-                currentJobRunning = GameManager.instance.StartCoroutine(LoadImagesFromLocalFoldersCoroutine());
-            }
-        }
+        public void LoadImagesFromLocalFolders() => currentJobRunning ??= GameManager.instance.StartCoroutine(LoadImagesFromLocalFoldersCoroutine());
         public IEnumerator LoadImagesFromLocalFoldersCoroutine()
         {
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 0);
@@ -116,11 +102,12 @@ namespace WriteEverywhere.Sprites
             {
                 string dir = folders[i];
                 bool isRoot = dir == IMAGES_FOLDER;
-                NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * i / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: new()
+                var argsNotif = new Dictionary<string, ILocElement>()
                 {
                     ["progress"] = LocalizedString.Value($"{i + 1}/{folders.Length}"),
-                    ["atlasName"] = LocalizedString.Value(isRoot ? "<ROOT>" : dir[IMAGES_FOLDER.Length..])
-                });
+                    ["atlasName"] = LocalizedString.Value(isRoot ? "<ROOT>" : dir[(IMAGES_FOLDER.Length+1)..])
+                };
+                NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * i / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
                 yield return 0;
                 var spritesToAdd = new List<WEImageInfo>();
                 WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, ref spritesToAdd, ref errors, false);
@@ -128,8 +115,9 @@ namespace WriteEverywhere.Sprites
                 {
                     var atlasName = isRoot ? string.Empty : Path.GetFileNameWithoutExtension(dir);
                     LocalAtlases[atlasName] = new(512);
-                    foreach (var entry in spritesToAdd)
+                    for (int j = 0; j < spritesToAdd.Count; j++)
                     {
+                        WEImageInfo entry = spritesToAdd[j];
                         while (LocalAtlases[atlasName].Insert(entry) == 2)
                         {
                             var currentSize = LocalAtlases[atlasName].Width;
@@ -140,6 +128,11 @@ namespace WriteEverywhere.Sprites
                             LocalAtlases[atlasName] = newAtlas;
                         }
                         entry.Dispose();
+
+                        if (j % 3 == 2)
+                        {
+                            NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * (i + ((j + 1f) / spritesToAdd.Count)) / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
+                        }
                     }
                     LocalAtlases[atlasName].Apply();
                     if (BasicIMod.DebugMode) LocalAtlases[atlasName]._SaveDebug(atlasName);

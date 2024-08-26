@@ -86,7 +86,7 @@ namespace BelzontWE
             {
                 children[i].Dispose();
             }
-            children.Dispose();
+            if (children.IsCreated) children.Dispose();
         }
 
         public readonly WETextDataTreeStruct WithNewGuid()
