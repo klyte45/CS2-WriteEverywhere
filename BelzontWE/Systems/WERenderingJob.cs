@@ -53,8 +53,6 @@ namespace BelzontWE
 
                         continue;
                     }
-
-
                     float3 positionRef;
                     quaternion rotationRef;
                     if (m_iTransform.TryGetComponent(entity, out var transform))
@@ -156,8 +154,7 @@ namespace BelzontWE
                         }
                         var refPos = parentIsPlaceholder ? default : weCustomData.offsetPosition;
                         var refRot = parentIsPlaceholder ? default : weCustomData.offsetRotation;
-                        var matrix = prevMatrix * Matrix4x4.TRS(refPos, refRot, scale);
-                        if (doLog && weCustomData.Text512 == "R-01") Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: R-01!!!!! M = \n{matrix.m00}\t{matrix.m01}\t{matrix.m02}\t{matrix.m03}\n{matrix.m10}\t{matrix.m11}\t{matrix.m12}\t{matrix.m13}\n{matrix.m20}\t{matrix.m21}\t{matrix.m22}\t{matrix.m23}\n{matrix.m30}\t{matrix.m31}\t{matrix.m32}\t{matrix.m33}");
+                        var matrix = prevMatrix * Matrix4x4.TRS(refPos, refRot, scale);                      
                         if (weCustomData.HasBRI)
                         {
                             if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
@@ -166,7 +163,7 @@ namespace BelzontWE
                                 float minDist = RenderingUtils.CalculateMinDistance(refBounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
 
                                 int lod = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
-                                var minLod = RenderingUtils.CalculateLodLimit(RenderingUtils.GetRenderingSize((refBounds.max - refBounds.min) * 4));
+                                var minLod = RenderingUtils.CalculateLodLimit(RenderingUtils.GetRenderingSize((refBounds.max - refBounds.min) * 8));
                                 if (doLog) Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: minDist = {minDist} - refBounds = {refBounds.min} {refBounds.max} - lod = {lod} - minLod = {minLod} - m_LodParameters = {m_LodParameters}");
                                 if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                 {

@@ -33,7 +33,7 @@ namespace WriteEverywhere.Sprites
             };
             foreach (var imgFile in Directory.GetFiles(folder, "*.png"))
             {
-                if (excludeFileSuffixes.Any(x => imgFile.EndsWith(x))) continue;
+                if (excludeFileSuffixes.Any(x => imgFile.EndsWith(x)) || imgFile.StartsWith("__")) continue;
                 var fileData = File.ReadAllBytes(imgFile);
                 var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
                 var xmlInfoFileName = imgFile.Replace(".png", "_info.xml");

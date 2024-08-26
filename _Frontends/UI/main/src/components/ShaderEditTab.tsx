@@ -74,11 +74,9 @@ export const ShaderEditTab = (props: {}) => {
                   <Cs2Checkbox isChecked={() => x.Value === "True"} onValueToggle={async (y) => { x.Value = await engine.call("k45::we.test.setCurrentMaterialSettings", (x.Type == ShaderPropertyType.Keyword ? "k" : "p") + x.Name, y ? "True" : "False"); }} />
                 </Cs2FormLine>
               } else if (x.Type == ShaderPropertyType.RenderQueue) {
-                return <Input key={x.Idx} title={x.Name} subtitle={<div style={{ display: "flex" }}><b style={{ color: "lime" }}>Int</b> - {x.Description}</div>} getValue={() => x.Value} onValueChanged={async (y) => await engine.call("k45::we.test.setCurrentMaterialSettings", x.Type, y)}>
-                </Input>
+                return <Input key={x.Idx} title={x.Name} subtitle={<div style={{ display: "flex" }}><b style={{ color: "lime" }}>Int</b> - {x.Description}</div>} getValue={() => x.Value} onValueChanged={async (y) => await engine.call("k45::we.test.setCurrentMaterialSettings", x.Type, y)} />
               } else {
-                return <Input key={x.Idx} title={x.Name} subtitle={<div style={{ display: "flex" }}><b style={{ color: "lime" }}>{x.Type}</b> - {x.Description}</div>} getValue={() => x.Value} onValueChanged={async (y) => await engine.call("k45::we.test.setCurrentMaterialSettings", x.Idx + "", y)}>
-                </Input>
+                return <Input key={x.Idx} title={x.Name} subtitle={<div style={{ display: "flex" }}><b style={{ color: "lime" }}>{x.Type}</b> - {x.Description}</div>} getValue={() => x.Value} onValueChanged={async (y) => await engine.call("k45::we.test.setCurrentMaterialSettings", x.Idx + "", y)} />
               }
             })}
         </>

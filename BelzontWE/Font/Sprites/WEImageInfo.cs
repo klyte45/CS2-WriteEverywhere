@@ -18,8 +18,6 @@ namespace WriteEverywhere.Layout
         public Texture2D Normal { get; set; }
         public Texture2D Emissive { get; set; }
         public float PixelsPerMeter { get; set; }
-        public RectOffset OffsetBorders => new RectOffset(Mathf.RoundToInt(Borders.x * Texture.width), Mathf.RoundToInt(Borders.y * Texture.width), Mathf.RoundToInt(Borders.z * Texture.height), Mathf.RoundToInt(Borders.w * Texture.height));
-
         public void Dispose()
         {
             if (Texture) GameObject.Destroy(Texture);

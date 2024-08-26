@@ -79,7 +79,7 @@ class ErrorBoundary extends Component {
       // You can render any custom fallback UI
       return <h1>Something went wrong.</h1>;
     }
-    return this.props.children;
+    return (this.props as any).children;
   }
 }
 

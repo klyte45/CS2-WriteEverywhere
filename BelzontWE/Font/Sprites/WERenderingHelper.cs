@@ -5,6 +5,7 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 using WriteEverywhere.Layout;
+using WriteEverywhere.Sprites;
 
 namespace BelzontWE
 {
@@ -15,6 +16,8 @@ namespace BelzontWE
         public static readonly int NormalMap = Shader.PropertyToID("_NormalMap");
         public static readonly int EmissionMap = Shader.PropertyToID("_EmissiveColorMap");
         public static readonly int DecalLayerMask = Shader.PropertyToID("colossal_DecalLayerMask");
+        public static readonly int UV0Offset = Shader.PropertyToID("_UV0Offset");
+        public static readonly int TileOffset = Shader.PropertyToID("_TileOffset");
         public static readonly int Transmittance = -1;
         public static readonly int IOR = -1;
 
@@ -126,5 +129,37 @@ namespace BelzontWE
             return material;
         }
 
+        internal static BasicRenderInformation GenerateBri(string spriteName, WETextureAtlas textureAtlas, WESpriteInfo spriteInfo)
+        {
+            var proportion = spriteInfo.Region.size.x / spriteInfo.Region.size.y;
+            var min = new Vector2(spriteInfo.Region.position.x / textureAtlas.Width, spriteInfo.Region.position.y / textureAtlas.Height);
+            var max = min + new Vector2(spriteInfo.Region.size.x / textureAtlas.Width, spriteInfo.Region.size.y / textureAtlas.Height);
+            var bri = new BasicRenderInformation(spriteName,
+                new[]
+                    {
+                        new Vector3(-.5f * proportion, -.5f, 0f),
+                        new Vector3(-.5f * proportion, .5f, 0f),
+                        new Vector3(.5f * proportion, .5f, 0f),
+                        new Vector3(.5f * proportion, -.5f, 0f),
+                    },
+                uv: new[]
+                    {
+                        new Vector2(max.x, min.y),
+                        max,
+                        new Vector2(min.x, max.y),
+                        min
+                    },
+                triangles: kTriangleIndices,
+                 main: textureAtlas.Main,
+                 normal: spriteInfo.HasNormal ? textureAtlas.Normal : null,
+                 control: spriteInfo.HasControl ? textureAtlas.Control : null,
+                 emissive: spriteInfo.HasEmissive ? textureAtlas.Emissive : null,
+                 mask: spriteInfo.HasMask ? textureAtlas.Mask : null
+                )
+            {
+                m_sizeMetersUnscaled = new Vector2(proportion, 1),
+            };
+            return bri;
+        }
     }
 }
