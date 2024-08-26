@@ -1,10 +1,12 @@
 import { Entity, HierarchyViewport, LocElementType, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { ContextButtonMenuItemArray, ContextMenuButton } from "common/ContextMenuButton";
 import { DropdownDialog } from "common/DropdownDialog";
+import { FilePickerDialog } from "common/FilePickerDialog";
 import { StringInputDialog } from "common/StringInputDialog";
 import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
 import { ConfirmationDialog, Dropdown, Panel, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
+import { FileService } from "services/FileService";
 import { LayoutsService } from "services/LayoutsService";
 import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeElement";
 import { WorldPickerService } from "services/WorldPickerService";
@@ -82,6 +84,18 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const Button = VanillaComponentResolver.instance.ToolButton;
     const FocusDisabled = VanillaComponentResolver.instance.FOCUS_DISABLED;
     const buttonClass = VanillaComponentResolver.instance.toolButtonTheme.button;
+
+
+    const [layoutFolder, setLayoutFolder] = useState("")
+    const [extensionsImport, setExtensionsImport] = useState("")
+    useEffect(() => {
+        FileService.getLayoutFolder().then(setLayoutFolder);
+        (async () => {
+            const prefabLayoutExt = await FileService.getPrefabLayoutExtension()
+            const storedLayoutExt = await FileService.getStoredLayoutExtension()
+            return [prefabLayoutExt, storedLayoutExt].map(x => "*." + x).join("|")
+        })().then(setExtensionsImport)
+    }, [])
 
     const [clipboardIsCut, setClipboardIsCut] = useState(false)
     const doPaste = async (parent: Entity) => {
@@ -290,7 +304,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}
             actionOnSuccess={onSaveTemplate}
         />
-        <StringInputDialog dialogTitle={T_loadingFromXmlDialogTitle} dialogPromptText={T_loadingFromXmlDialogPromptText} isActive={loadingFromXml} setIsActive={setLoadingFromXml} actionOnSuccess={onLoadFromXml} />
+        <FilePickerDialog dialogTitle={T_loadingFromXmlDialogTitle} dialogPromptText={T_loadingFromXmlDialogPromptText} isActive={loadingFromXml} setIsActive={setLoadingFromXml} actionOnSuccess={onLoadFromXml} allowedExtensions={extensionsImport} initialFolder={layoutFolder} />
 
         <StringInputDialog dialogTitle={T_exportXmlDialogTitle} dialogPromptText={T_exportXmlDialogText} isActive={exportingAsXml} setIsActive={setExportingAsXml} actionOnSuccess={onExportAsXml} />
         {nameExportedAsXml &&

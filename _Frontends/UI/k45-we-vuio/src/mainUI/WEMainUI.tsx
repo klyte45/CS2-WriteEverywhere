@@ -51,6 +51,7 @@ export const WEMainPanel = (props: MainPanelProps) => {
             <TabNav tabs={tabs} selectedTab={selectedTab}>
                 {selectedTab == Tabs.CityLayouts && <CityLayoutsTab />}
                 {selectedTab == Tabs.CityFonts && <FontsTab />}
+                {/* {selectedTab == Tabs.CityAtlases && <CityAtlasesTab />} */}
             </TabNav>
         </Panel>
     </div >;

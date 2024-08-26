@@ -1,9 +1,11 @@
 import { VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { FilePickerDialog } from "common/FilePickerDialog";
 import { StringInputDialog } from "common/StringInputDialog";
 import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
 import { ListActionTypeArray, WEListWithPreviewTab } from "common/WEListWithPreviewTab";
 import { ConfirmationDialog, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
+import { FileService } from "services/FileService";
 import { FontDetailResponse, FontService } from "services/FontService";
 import "style/mainUi/fontsTab.scss";
 import { translate } from "utils/translate";
@@ -54,6 +56,11 @@ export const FontsTab = (props: Props) => {
     const [fontDetail, setFontDetail] = useState(null as FontDetailResponse | null);
     const [currentModal, setCurrentModal] = useState(Modals.NONE);
     const [stylesheetToRemove, setStylesheetToRemove] = useState(-1);
+
+    const [fontsFolder, setFontsFolder] = useState("")
+    useEffect(() => {
+        FileService.getFontDefaultLocation().then(setFontsFolder);
+    }, [])
 
     async function loadFontFace() {
         const oldStyle = document.getElementById(WE_DYNAMIC_CSS_ID)
@@ -165,10 +172,9 @@ export const FontsTab = (props: Props) => {
             checkIfExistsFn={FontService.checkFontExists}
             actionOnSuccess={onDuplicateLayout}
         />
-        <StringInputDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText}
-            isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd}
-            actionOnSuccess={onAskPathAdd}
-        />
+
+        <FilePickerDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText} isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd}
+            actionOnSuccess={onAskPathAdd} allowedExtensions={"*.ttf"} initialFolder={fontsFolder} />
         <Portal>
             {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissable={false} message={alertToDisplay} confirm={"OK"} />}
             {displayingModal()}

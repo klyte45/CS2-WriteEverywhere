@@ -7,6 +7,7 @@ import { translate } from "utils/translate";
 import { WEFormulaeEditor } from "./WEFormulaeEditor";
 import { WESimulationTextType } from "services/WEFormulaeElement";
 import { FontService } from "services/FontService";
+import { TextureAtlasService } from "services/TextureAtlasService";
 
 
 const i_addFont = "coui://uil/Colored/Folder.svg";
@@ -32,25 +33,19 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const [buildIdx, setBuild] = useState(0);
 
     useEffect(() => { WorldPickerService.instance.registerBindings(() => setBuild(buildIdx + 1)) }, [buildIdx])
-    useEffect(() => { WorldPickerService.listAtlasImages(wps.ImageAtlasName.value).then(x => setImgOptions(x ?? [])); }, [wps.ImageAtlasName.value, wps.CurrentSubEntity.value])
-    useEffect(() => { WorldPickerService.listAvailableLibraries().then(x => setAtlases(x ?? [])); }, [wps.CurrentSubEntity.value])
+    useEffect(() => { TextureAtlasService.listAtlasImages(wps.ImageAtlasName.value).then(x => setImgOptions(x ?? [])); }, [wps.ImageAtlasName.value, wps.CurrentSubEntity.value])
+    useEffect(() => { TextureAtlasService.listAvailableLibraries().then(x => setAtlases(x ?? [])); }, [wps.CurrentSubEntity.value])
 
     const EditorItemRow = VanillaWidgets.instance.EditorItemRow;
     const DropdownField = VanillaWidgets.instance.DropdownField<string>();
     const NumberDropdownField = VanillaWidgets.instance.DropdownField<number>();
     const StringInputField = VanillaWidgets.instance.StringInputField;
     const CommonButton = VanillaComponentResolver.instance.CommonButton;
-    const Tooltip = VanillaComponentResolver.instance.Tooltip;
     const ToggleField = VanillaWidgets.instance.ToggleField;
     const FloatInputField = VanillaWidgets.instance.FloatInputField;
     const Float2InputField = VanillaWidgets.instance.Float2InputField;
     const editorTheme = VanillaWidgets.instance.editorItemModule;
     const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
-    const onFontSelectWindow = async () => {
-        const res = await FontService.requireFontInstallation("");
-        console.log(res);
-        return wps.SelectedFont.set(res);
-    }
 
     const [formulaeTyping, setFormulaeTyping] = useState(wps.FormulaeStr.value);
     const [fixedTextTyping, setFixedTextTyping] = useState(wps.CurrentItemText.value);

@@ -1,0 +1,82 @@
+.k45_we_currentFolder {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    align-items: stretch;
+
+    div.k45_we_currentPath {
+        flex-grow: 1;
+        border-left-color: var(--accentColorLight);
+        border-left-style: solid;
+        border-left-width: 1px;
+        border-right-color: var(--accentColorLight);
+        border-right-style: solid;
+        border-right-width: 1px;
+        border-top-color: var(--accentColorLight);
+        border-top-style: solid;
+        border-top-width: 1px;
+        border-bottom-color: var(--accentColorLight);
+        border-bottom-style: solid;
+        border-bottom-width: 1px;
+        font-size: var(--fontSizeS);
+        align-items: center;
+        display: flex;
+        justify-content: center;
+
+        &:hover {
+            background-color: var(--panelColorNormal);
+            backdrop-filter: var(--panelBlur);
+        }
+    }
+
+    button {
+        width: 32rem;
+        height: 32rem;
+        margin-left: 8rem;
+    }
+
+    input {
+        flex-grow: 1;
+        width: 0%;
+    }
+
+}
+
+.k45_we_fileItemsListing {
+    height: 40vh;
+    background-color: var(--panelColorNormal);
+    backdrop-filter: var(--panelBlur);
+
+    >[class^=content_] {
+        display: flex;
+        flex-wrap: wrap;
+        padding-left: 10rem;
+        padding-right: 10rem;
+        padding-top: 10rem;
+        padding-bottom: 10rem;
+
+        .k45_we_fileItemsListing_item {
+            display: flex;
+            width: 50%;
+            align-items: center;
+            font-size: var(--fontSizeS);
+            padding: 5rem;
+
+            img {
+                height: 20rem;
+                width: 20rem;
+                margin-right: 5rem;
+            }
+
+            &.selected {
+                background-color: var(--dialogButtonNoColor-active) !important;
+                color: var(--selectedTextColorDark) !important
+            }
+
+            &:hover {
+                background-color: var(--menuControl2);
+                color: var(--menuActiveColorBright)
+            }
+        }
+    }
+}

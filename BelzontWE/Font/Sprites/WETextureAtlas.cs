@@ -34,7 +34,7 @@ namespace BelzontWE.Font
         public IEnumerable<FixedString32Bytes> Keys => Sprites.Keys;
 
         private MaxRectsBinPack rectsPack;
-        private WETextureAtlas() : this(width: 2, height: 2) { }
+        internal WETextureAtlas() { }
         public WETextureAtlas(int size) : this(width: size, height: size) { }
 
         public WETextureAtlas(int width, int height, HeuristicMethod method = HeuristicMethod.RectBestShortSideFit)
@@ -44,7 +44,7 @@ namespace BelzontWE.Font
             Control = new Texture2D(width, height, TextureFormat.RGBA32, false);
             Mask = new Texture2D(width, height, TextureFormat.RGBA32, false);
             Normal = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            this.Method = method;
+            Method = method;
             rectsPack = new MaxRectsBinPack(width, height, false);
         }
 
@@ -52,7 +52,7 @@ namespace BelzontWE.Font
 
         internal int Insert(WEImageInfo entry)
         {
-            return Insert(entry.Name, entry.Texture, entry.Emissive, entry.ControlMask, entry.MaskMap, entry.Normal);
+            return Insert(entry.Name, entry.Main, entry.Emissive, entry.ControlMask, entry.MaskMap, entry.Normal);
         }
         public int Insert(string spriteName, Texture2D main, Texture2D emissive = null, Texture2D control = null, Texture2D mask = null, Texture2D normal = null)
         {
@@ -101,11 +101,6 @@ namespace BelzontWE.Font
 
 
         #endregion
-
-        #region Read
-        public BasicRenderInformation this[string index] => Sprites.TryGetValue(index, out var spriteInfo) ? spriteInfo.CachedBRI : null;
-        #endregion
-
         public void Dispose()
         {
             if (Main) GameObject.Destroy(Main);
@@ -279,6 +274,23 @@ namespace BelzontWE.Font
             File.WriteAllBytes(Path.Combine(baseFolder, "__Normal.png"), Normal.EncodeToPNG());
             File.WriteAllText(Path.Combine(baseFolder, "__AtlasData.xml"), XmlUtils.DefaultXmlSerialize(Sprites.Values.ToArray()));
 
+        }
+
+        public WEImageInfo[] ToImageInfoArray()
+        {
+            return Sprites.Keys.Select(x =>
+            {
+                GetAsSingleImage(x.ToString(), out var main, out var emissive, out var control, out var mask, out var normal);
+                return new WEImageInfo
+                {
+                    ControlMask = control,
+                    Emissive = emissive,
+                    MaskMap = mask,
+                    Normal = normal,
+                    Main = Main,
+                    Name = x.ToString()
+                };
+            }).ToArray();
         }
     }
 }

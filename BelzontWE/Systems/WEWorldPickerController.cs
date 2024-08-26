@@ -30,8 +30,6 @@ namespace BelzontWE
             callBinder($"{PREFIX}enableTool", OnEnableTool);
             callBinder($"{PREFIX}addItem", AddItem);
             callBinder($"{PREFIX}removeItem", RemoveItem);
-            callBinder($"{PREFIX}listAvailableLibraries", ListAvailableLibraries);
-            callBinder($"{PREFIX}listAtlasImages", ListAtlasImages);
             callBinder($"{PREFIX}changeParent", ChangeParent);
             callBinder($"{PREFIX}cloneAsChild", CloneAsChild);
             callBinder($"{PREFIX}dumpBris", DumpBris);
@@ -74,8 +72,6 @@ namespace BelzontWE
             }
             return result;
         }
-        private string[] ListAvailableLibraries() => m_AtlasLibrary.ListLocalAtlases();
-        private string[] ListAtlasImages(string atlas) => m_AtlasLibrary.ListLocalAtlasImages(atlas);
 
 
         private bool ChangeParent(Entity target, Entity newParent)
@@ -457,12 +453,10 @@ namespace BelzontWE
         #region System overrides
 
         private ModificationEndBarrier m_EndBarrier;
-        private WEAtlasesLibrary m_AtlasLibrary;
 
         protected override void OnCreate()
         {
             m_EndBarrier = World.GetExistingSystemManaged<ModificationEndBarrier>();
-            m_AtlasLibrary = World.GetOrCreateSystemManaged<WEAtlasesLibrary>();
 
             GameManager.instance.userInterface.view.Listener.BindingsReleased += () => m_initialized = false;
         }

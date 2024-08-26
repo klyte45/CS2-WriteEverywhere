@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 import { CityDetailResponse, LayoutsService } from "services/LayoutsService";
 import "style/mainUi/tabStructure.scss";
 import { translate } from "utils/translate";
+import { FilePickerDialog } from "common/FilePickerDialog";
+import { FileService } from "services/FileService";
 
 type Props = {}
 
@@ -55,6 +57,17 @@ export const CityLayoutsTab = (props: Props) => {
     const [currentModal, setCurrentModal] = useState(Modals.NONE);
     const [lastXmlExportedLayoutName, setLastXmlExportedLayoutName] = useState("");
     const [buildIdx, setBuildIdx] = useState(0);
+
+
+    const [layoutFolder, setLayoutFolder] = useState("")
+    const [extensionsImport, setExtensionsImport] = useState("")
+    useEffect(() => {
+        FileService.getLayoutFolder().then(setLayoutFolder);
+        (async () => {
+            const storedLayoutExt = await FileService.getStoredLayoutExtension()
+            return "*." + storedLayoutExt
+        })().then(setExtensionsImport)
+    }, [])
 
     useEffect(() => { LayoutsService.listCityTemplates().then(setLayoutList) }, [selectedTemplate])
     useEffect(() => {
@@ -143,10 +156,9 @@ export const CityLayoutsTab = (props: Props) => {
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}
             actionOnSuccess={onDuplicateLayout}
         />
-        <StringInputDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText}
-            isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd}
-            actionOnSuccess={onAskPathAdd}
-        />
+        <FilePickerDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText} isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd}
+            actionOnSuccess={onAskPathAdd} allowedExtensions={extensionsImport} initialFolder={layoutFolder} />
+
         <Portal>
             {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissable={false} message={alertToDisplay} confirm={"OK"} />}
             {displayingModal()}

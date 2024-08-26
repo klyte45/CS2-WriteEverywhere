@@ -12,3 +12,4 @@ export type FontDetailResponse = {
     name: string;
     guid: string;
 }
+

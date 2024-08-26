@@ -70,7 +70,6 @@ namespace BelzontWE
         public const string kActionCycleEditAxisLock = "K45_WE_CycleEditAxisLock";
         public const string kActionToggleLockCameraRotation = "K45_WE_ToggleLockCameraRotation";
 
-
         private static readonly int[] m_qualityArray = new[] { 50, 75, 100, 125, 150, 200, 400, 800 };
         private static readonly int[] m_framesUpdate = new[] { 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff };
 

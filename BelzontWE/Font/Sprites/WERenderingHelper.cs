@@ -53,7 +53,7 @@ namespace BelzontWE
         };
         public static BasicRenderInformation GenerateBri(FixedString32Bytes refName, WEImageInfo imageInfo)
         {
-            return GenerateBri(refName, imageInfo.Texture, imageInfo.Normal, imageInfo.ControlMask, imageInfo.Emissive, imageInfo.MaskMap);
+            return GenerateBri(refName, imageInfo.Main, imageInfo.Normal, imageInfo.ControlMask, imageInfo.Emissive, imageInfo.MaskMap);
         }
 
         public static BasicRenderInformation GenerateBri(FixedString32Bytes refName, Texture main, Texture normal, Texture control, Texture emissive, Texture mask)

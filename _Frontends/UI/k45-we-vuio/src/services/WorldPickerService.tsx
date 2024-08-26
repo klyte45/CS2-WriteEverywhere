@@ -161,12 +161,6 @@ export class WorldPickerService {
         })
     }
 
-    static async listAvailableLibraries() {
-        return await engine.call("k45::we.wpicker.listAvailableLibraries");
-    }
-    static async listAtlasImages(atlas: string) {
-        return await engine.call("k45::we.wpicker.listAtlasImages", atlas);
-    }
     static async changeParent(target: Entity, newParent: Entity): Promise<boolean> {
         return await engine.call("k45::we.wpicker.changeParent", target, newParent);
     }

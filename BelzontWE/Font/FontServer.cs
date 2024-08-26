@@ -6,7 +6,6 @@ using BelzontWE.Font;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.SceneFlow;
-using Kwytto.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,19 +15,17 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
-using UnityEngine.Rendering.HighDefinition;
 
 namespace BelzontWE
 {
     public partial class FontServer : GameSystemBase, IBelzontSerializableSingleton<FontServer>
     {
         public const int CURRENT_VERSION = 0;
-        public static string FOLDER_PATH => BasicIMod.ModSettingsRootFolder;
         #region Fonts
         public const string DEFAULT_FONT_KEY = "/DEFAULT/";
-        public const string FONTS_FILES_FOLDER = "Fonts";
+        private const string FONTS_FILES_FOLDER = "Fonts";
         public static int DefaultTextureSizeFont => 512 << (WEModData.InstanceWE?.StartTextureSizeFont ?? 1);
-        public static string FontFilesPath { get; } = FOLDER_PATH + Path.DirectorySeparatorChar + FONTS_FILES_FOLDER;
+        public static string FontFilesPath { get; } = Path.Combine(BasicIMod.ModSettingsRootFolder, FONTS_FILES_FOLDER);
         public event Action OnFontsLoadedChanged;
 
         public static int QualitySize
@@ -62,7 +59,7 @@ namespace BelzontWE
         protected override void OnCreate()
         {
             base.OnCreate();
-            Instance = this;      
+            Instance = this;
             DefaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY, true);
             m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
             dictPtr = GCHandle.Alloc(LoadedFonts);
