@@ -388,12 +388,13 @@ namespace BelzontWE
 
         private IEnumerator LoadTemplatesFromFolder(int offsetPercentage, float totalStep)
         {
-            var currentValues = PrefabTemplates.GetValueArray(Allocator.Temp);
+            var currentValues = PrefabTemplates.GetKeyArray(Allocator.Temp);
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.01f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.erasingCachedLayouts");
             yield return 0;
             for (int i = 0; i < currentValues.Length; i++)
             {
-                currentValues[i].Dispose();
+                PrefabTemplates[currentValues[i]].Dispose();
+                PrefabTemplates.Remove(currentValues[i]);
                 if (i % 3 == 0)
                 {
                     NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + ((.01f + (.09f * ((i + 1f) / currentValues.Length))) * totalStep)),

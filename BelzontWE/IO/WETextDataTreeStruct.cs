@@ -82,11 +82,14 @@ namespace BelzontWE
 
         public void Dispose()
         {
-            for (int i = 0; i < children.Length; i++)
+            if (children.IsCreated)
             {
-                children[i].Dispose();
+                for (int i = 0; i < children.Length; i++)
+                {
+                    children[i].Dispose();
+                }
+                children.Dispose();
             }
-            if (children.IsCreated) children.Dispose();
         }
 
         public readonly WETextDataTreeStruct WithNewGuid()

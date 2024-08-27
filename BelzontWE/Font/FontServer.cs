@@ -119,7 +119,9 @@ namespace BelzontWE
             if (LoadedFonts.TryGetValue(oldName, out var data))
             {
                 if (LoadedFonts.TryGetValue(newName, out var item)) item.Dispose();
+                data.Name = newName;
                 LoadedFonts[newName] = data;
+                LoadedFonts.Remove(oldName);
                 data.FontSystem.Reset();
                 DefaultFont.FontSystem.Reset();
             }
