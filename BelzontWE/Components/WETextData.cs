@@ -637,7 +637,7 @@ namespace BelzontWE
                     weData.smoothness = xml.defaultStyle.smoothness;
                     weData.colorMask1 = xml.defaultStyle.colorMask1;
                     weData.colorMask2 = xml.defaultStyle.colorMask2;
-                    weData.colorMask2 = xml.defaultStyle.colorMask3;
+                    weData.colorMask3 = xml.defaultStyle.colorMask3;
                     break;
             }
             FontServer.Instance.EnsureFont(weData.fontName);
@@ -701,7 +701,7 @@ namespace BelzontWE
                     weData.smoothness = xml.defaultStyle.smoothness;
                     weData.colorMask1 = xml.defaultStyle.colorMask1;
                     weData.colorMask2 = xml.defaultStyle.colorMask2;
-                    weData.colorMask2 = xml.defaultStyle.colorMask3;
+                    weData.colorMask3 = xml.defaultStyle.colorMask3;
                     break;
             }
             return weData;
