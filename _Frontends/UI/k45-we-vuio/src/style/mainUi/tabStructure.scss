@@ -11,6 +11,22 @@
         left: 5rem;
         bottom: 5rem;
 
+        .k45_listSection {
+            font-size: 100%;
+            color: var(--accentColorNormal-hover);
+            text-align: center;
+            padding-top: 10rem;
+            padding-bottom: 5rem;
+        }
+
+        .k45_emptyPlaceholder {
+            font-size: 80%;
+            color: var(--selectedTextColorLocked);
+            text-align: center;
+            padding-top: 5rem;
+            padding-bottom: 5rem;
+        }
+
         .k45_we_tabWithPreview_listActions {
             padding: 10rem;
             display: flex;

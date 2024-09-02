@@ -4,6 +4,7 @@ using Belzont.Utils;
 using BelzontWE.Font;
 using BelzontWE.Font.Utility;
 using BelzontWE.Layout;
+using Colossal.OdinSerializer.Utilities;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.Common;
@@ -84,7 +85,7 @@ namespace BelzontWE.Sprites
 
         public Dictionary<string, bool> ListAvailableAtlases() => LocalAtlases.Where(x => x.Key != INTERNAL_ATLAS_NAME && !CityAtlases.ContainsKey(x.Key) && x.Value.Count > 0).Select(x => (x.Key.ToString(), false)).Concat(CityAtlases.Select(x => (x.Key.ToString(), true))).ToDictionary(x => x.Item1, x => x.Item2);
 
-        public string[] ListAvailableAtlasImages(string atlasName) => CityAtlases.TryGetValue(atlasName ?? "", out var arr) || LocalAtlases.TryGetValue(atlasName ?? "", out arr) ? arr.Keys.Select(x => x.ToString()).ToArray() : new string[0];
+        public string[] ListAvailableAtlasImages(string atlasName) => !atlasName.IsNullOrWhitespace() && (CityAtlases.TryGetValue(atlasName, out var arr) || LocalAtlases.TryGetValue(atlasName, out arr)) ? arr.Keys.Select(x => x.ToString()).ToArray() : new string[0];
 
         internal BasicRenderInformation GetFromLocalAtlases(WEImages image) => GetFromAvailableAtlases(INTERNAL_ATLAS_NAME, image.ToString());
 
@@ -124,23 +125,22 @@ namespace BelzontWE.Sprites
             yield return 0;
             ClearAtlasDict(LocalAtlases);
             var errors = new List<string>();
-            var folders = new string[] { IMAGES_FOLDER }.Concat(Directory.GetDirectories(IMAGES_FOLDER)).ToArray();
+            var folders = Directory.GetDirectories(IMAGES_FOLDER);
             for (int i = 0; i < folders.Length; i++)
             {
                 string dir = folders[i];
-                bool isRoot = dir == IMAGES_FOLDER;
                 var argsNotif = new Dictionary<string, ILocElement>()
                 {
                     ["progress"] = LocalizedString.Value($"{i + 1}/{folders.Length}"),
-                    ["atlasName"] = LocalizedString.Value(isRoot ? "<ROOT>" : dir[(IMAGES_FOLDER.Length + 1)..])
+                    ["atlasName"] = LocalizedString.Value(dir[(IMAGES_FOLDER.Length + 1)..])
                 };
                 NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * i / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
                 yield return 0;
                 var spritesToAdd = new List<WEImageInfo>();
                 WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, ref errors);
-                if (isRoot || spritesToAdd.Count > 0)
+                if (spritesToAdd.Count > 0)
                 {
-                    var atlasName = isRoot ? string.Empty : Path.GetFileNameWithoutExtension(dir);
+                    var atlasName = Path.GetFileNameWithoutExtension(dir);
                     LocalAtlases[atlasName] = new(512);
                     for (int j = 0; j < spritesToAdd.Count; j++)
                     {

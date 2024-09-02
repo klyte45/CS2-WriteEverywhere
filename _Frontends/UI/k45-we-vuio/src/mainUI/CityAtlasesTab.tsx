@@ -36,7 +36,10 @@ export const CityAtlasesTab = (props: Props) => {
     const T_addToCityDialogTitle = translate("cityAtlasesTab.addToCityDialog.title")
     const T_addToCityDialogText = translate("cityAtlasesTab.addToCityDialog.text")
     const T_confirmDeleteText = translate("cityAtlasesTab.confirmDeleteText")
-
+    const T_cityAtlasesSection = translate("cityAtlasesTab.cityAtlasesSection")
+    const T_localAtlasesSection = translate("cityAtlasesTab.localAtlasesSection")
+    const T_noCityAtlases = translate("cityAtlasesTab.noCityAtlases")
+    const T_noLocalAtlases = translate("cityAtlasesTab.noLocalAtlases")
 
 
     const units = VanillaFnResolver.instance.unit.Unit;
@@ -102,8 +105,19 @@ export const CityAtlasesTab = (props: Props) => {
     const [alertToDisplay, setAlertToDisplay] = useState(undefined as string | undefined)
     const listActions: ListActionTypeArray = []
 
+    function getItems(atlasList: Record<string, boolean>): Parameters<typeof WEListWithPreviewTab>[0]['listItems'] {
+        const cityAtlases = Object.entries(atlasList ?? {}).filter(x => x[1]).map(x => x[0]).sort((a, b) => a.toLowerCase().normalize("NFKD").localeCompare(b.toLowerCase().normalize("NFKD")))
+        const localAtlases = Object.entries(atlasList ?? {}).filter(x => !x[1]).map(x => x[0]).sort((a, b) => a.toLowerCase().normalize("NFKD").localeCompare(b.toLowerCase().normalize("NFKD")))
+        return [
+            { section: T_cityAtlasesSection },
+            ...(cityAtlases.length ? cityAtlases : [{ emptyPlaceholder: T_noCityAtlases }]),
+            { section: T_localAtlasesSection },
+            ...(localAtlases.length ? localAtlases : [{ emptyPlaceholder: T_noLocalAtlases }]),
+        ]
+    }
+
     return <>
-        <WEListWithPreviewTab listActions={listActions} itemActions={actions} detailsFields={detailsFields} listItems={Object.entries(atlasList ?? {}).sort((a, b) => (a[1] ? 0 : 1) - (b[1] ? 0 : 1)).map(x => x[0])} selectedKey={selectedAtlas!} onChangeSelection={setSelectedAtlas} >
+        <WEListWithPreviewTab listActions={listActions} itemActions={actions} detailsFields={detailsFields} listItems={getItems(atlasList)} selectedKey={selectedAtlas!} onChangeSelection={setSelectedAtlas} >
             {selectedAtlas && <div className="k45_we_atlasPreviewImg" style={{ backgroundImage: `url(coui://we.k45/_textureAtlas/${selectedAtlas})` }} />}
         </WEListWithPreviewTab>
         <StringInputDialog dialogTitle={T_addToCityDialogTitle} dialogPromptText={T_addToCityDialogText} validationFn={(x) => !!x && !atlasList[x] && x.length <= 30} initialValue={selectedAtlas!}

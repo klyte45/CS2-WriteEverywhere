@@ -7,7 +7,7 @@ import { ContextMenuButton, ContextMenuButtonProps } from "./ContextMenuButton";
 export type ListActionTypeArray = (({ isContext: false } & PropsToolButton) | ({ isContext: true } & ContextMenuButtonProps) | null)[];
 
 type Props = {
-    listItems: (string | { section: string })[],
+    listItems: (string | { section?: string, emptyPlaceholder?: string })[],
     detailsFields?: {
         key: ReactNode,
         value: ReactNode
@@ -31,17 +31,24 @@ export const WEListWithPreviewTab = ({ listItems, detailsFields, listActions, it
 
     return <div className="k45_we_tabWithPreview_content">
         <div className="k45_we_tabWithPreview_list">
-            <div className="k45_we_tabWithPreview_listActions">
+            {!!listActions?.length && <div className="k45_we_tabWithPreview_listActions">
                 {listActions?.map(x =>
                     x == null ? <div style={{ flexGrow: 1 }} />
                         : x.isContext ? <ContextMenuButton {...x} />
                             : <Button {...x} />
                 )}
-            </div>
+            </div>}
             {listItems.length ? <VanillaWidgets.instance.EditorScrollable className="k45_we_tabWithPreview_listContent">
                 {listItems.map(x => {
                     if (typeof x == "string") {
                         return <button onClick={() => onChangeSelection(x)} className={classNames(x == selectedKey ? "selected" : "")}>{x}</button>
+                    } else {
+                        if (x.section) {
+                            return <div className="k45_listSection">{x.section}</div>
+                        }
+                        if (x.emptyPlaceholder) {
+                            return <div className="k45_emptyPlaceholder">{x.emptyPlaceholder}</div>
+                        }
                     }
                 })}
             </VanillaWidgets.instance.EditorScrollable> : <div className="k45_we_tabWithPreview_emptyListMsg">{emptyListMsg ?? "List is empty"}</div>}
