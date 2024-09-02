@@ -6,7 +6,7 @@ using System.Xml.Serialization;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace WriteEverywhere.Sprites
+namespace BelzontWE.Sprites
 {
     public class WESpriteInfo : IComparable<WESpriteInfo>, IEquatable<WESpriteInfo>, ISerializable, IDisposable
     {

@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using WriteEverywhere.Layout;
+using BelzontWE.Layout;
 
-namespace WriteEverywhere.Sprites
+namespace BelzontWE.Sprites
 {
     public static class WEAtlasLoadingUtils
     {

@@ -10,7 +10,7 @@ using Game.UI.Widgets;
 using System;
 using System.Globalization;
 using System.Linq;
-using WriteEverywhere.Sprites;
+using BelzontWE.Sprites;
 
 namespace BelzontWE
 {

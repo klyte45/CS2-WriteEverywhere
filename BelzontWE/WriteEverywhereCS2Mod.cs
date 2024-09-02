@@ -6,7 +6,7 @@ using Game.Modding;
 using Game.SceneFlow;
 using Game.UI.InGame;
 using Unity.Entities;
-using WriteEverywhere.Sprites;
+using BelzontWE.Sprites;
 
 namespace BelzontWE
 {

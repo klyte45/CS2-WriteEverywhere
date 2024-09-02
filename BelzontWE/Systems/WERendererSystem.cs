@@ -8,7 +8,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using BelzontWE.Font.Utility;
-using WriteEverywhere.Sprites;
+using BelzontWE.Sprites;
 using Belzont.Utils;
 using Game.Tools;
 using Game.Common;

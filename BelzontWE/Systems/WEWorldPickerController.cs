@@ -9,7 +9,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
-using WriteEverywhere.Sprites;
+using BelzontWE.Sprites;
 
 namespace BelzontWE
 {

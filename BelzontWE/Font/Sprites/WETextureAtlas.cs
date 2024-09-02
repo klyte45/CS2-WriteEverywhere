@@ -1,6 +1,8 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font.Utility;
+using BelzontWE.Layout;
+using BelzontWE.Sprites;
 using Colossal.Serialization.Entities;
 using System;
 using System.Collections.Generic;
@@ -8,8 +10,6 @@ using System.IO;
 using System.Linq;
 using Unity.Collections;
 using UnityEngine;
-using WriteEverywhere.Layout;
-using WriteEverywhere.Sprites;
 using HeuristicMethod = MaxRectsBinPack.FreeRectChoiceHeuristic;
 
 namespace BelzontWE.Font
@@ -17,8 +17,8 @@ namespace BelzontWE.Font
     public class WETextureAtlas : IDisposable, ISerializable
     {
         public const uint CURRENT_VERSION = 0;
-        public int Width => Main.width;
-        public int Height => Main.height;
+        public int Width => width;
+        public int Height => height;
         public Dictionary<FixedString32Bytes, WESpriteInfo> Sprites { get; } = new();
         public Texture2D Main { get; set; }
         public Texture2D Emissive { get; set; }
@@ -30,15 +30,25 @@ namespace BelzontWE.Font
         public HeuristicMethod Method { get; private set; }
         public float Occupancy => rectsPack.Occupancy();
         public int Count => Sprites.Count;
+        public bool WillSerialize { get; private set; }
+        private byte[][] m_serializationOrder;
 
         public IEnumerable<FixedString32Bytes> Keys => Sprites.Keys;
 
         private MaxRectsBinPack rectsPack;
-        internal WETextureAtlas() { }
-        public WETextureAtlas(int size) : this(width: size, height: size) { }
+        private int width;
+        private int height;
 
-        public WETextureAtlas(int width, int height, HeuristicMethod method = HeuristicMethod.RectBestShortSideFit)
+        internal WETextureAtlas()
         {
+            WillSerialize = true;
+        }
+        public WETextureAtlas(int size, bool willSerialize = false) : this(width: size, height: size, willSerialize: willSerialize) { }
+
+        public WETextureAtlas(int width, int height, HeuristicMethod method = HeuristicMethod.RectBestShortSideFit, bool willSerialize = false)
+        {
+            this.width = width;
+            this.height = height;
             Main = new Texture2D(width, height, TextureFormat.RGBA32, false);
             Emissive = new Texture2D(width, height, TextureFormat.RGBA32, false);
             Control = new Texture2D(width, height, TextureFormat.RGBA32, false);
@@ -46,6 +56,7 @@ namespace BelzontWE.Font
             Normal = new Texture2D(width, height, TextureFormat.RGBA32, false);
             Method = method;
             rectsPack = new MaxRectsBinPack(width, height, false);
+            WillSerialize = willSerialize;
         }
 
         #region Write
@@ -60,7 +71,7 @@ namespace BelzontWE.Font
             var spriteInfo = Write(main, emissive, control, mask, normal);
             if (spriteInfo == null) return 2;
             spriteInfo.Name = spriteName;
-            spriteInfo.CachedBRI = WERenderingHelper.GenerateBri(spriteName, this, spriteInfo);
+            spriteInfo.CachedBRI = WERenderingHelper.GenerateBri(this, spriteInfo);
             Sprites[spriteName] = spriteInfo;
             return 0;
         }
@@ -72,6 +83,16 @@ namespace BelzontWE.Font
             Control.Apply();
             Mask.Apply();
             Normal.Apply();
+            if (WillSerialize)
+            {
+                m_serializationOrder = new byte[][] {
+                    Main.EncodeToPNG(),
+                    Emissive.EncodeToPNG(),
+                    Control.EncodeToPNG(),
+                    Mask.EncodeToPNG(),
+                    Normal.EncodeToPNG(),
+                };
+            }
             IsApplied = true;
         }
 
@@ -183,23 +204,22 @@ namespace BelzontWE.Font
                 if (mask) GameObject.Destroy(mask);
                 if (normal) GameObject.Destroy(normal);
             }
+            Apply();
         }
 
         #region Serialization
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
+            if (!WillSerialize) throw new NotSupportedException("This texture atlas isn't marked to serialize");
+            if (m_serializationOrder is null) throw new InvalidDataException("Texture atlas has no data to serialize. Forgot Apply()?");
             writer.Write(CURRENT_VERSION);
             writer.Write((int)Method);
             writer.Write(rectsPack);
-            var textureOrder = new[] { Main, Emissive, Control, Mask, Normal };
-            foreach (var tex in textureOrder)
+            writer.Write(Width);
+            writer.Write(Height);
+            foreach (var tex in m_serializationOrder)
             {
-                if (!tex)
-                {
-                    writer.Write(0);
-                    continue;
-                }
-                var mainTexBytes = new NativeArray<byte>(ZipUtils.ZipBytes(tex.EncodeToPNG()), Allocator.Temp);
+                var mainTexBytes = new NativeArray<byte>(tex, Allocator.Temp);
                 writer.Write(mainTexBytes.Length);
                 writer.Write(mainTexBytes);
                 mainTexBytes.Dispose();
@@ -213,27 +233,35 @@ namespace BelzontWE.Font
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
         {
+            throw new InvalidOperationException("Use the method that returns the actions to load the images");
+        }
+        private struct ImageLoadInfo
+        {
+            public byte[] pngData;
+        }
+        public bool Deserialize<TReader>(TReader reader, FixedString32Bytes name, out Action imageLoadAction) where TReader : IReader
+        {
             reader.Read(out uint version);
             if (version > CURRENT_VERSION)
             {
                 LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
-                return;
+                imageLoadAction = null;
+                return false;
             }
             reader.Read(out int method);
             Method = (HeuristicMethod)method;
             rectsPack = new MaxRectsBinPack();
             reader.Read(rectsPack);
-            var textureOrder = new[] { Main, Emissive, Control, Mask, Normal };
-            for (int i = 0; i < textureOrder.Length; i++)
+            reader.Read(out width);
+            reader.Read(out height);
+            var bytesArrays = new ImageLoadInfo[5];
+            for (int i = 0; i < bytesArrays.Length; i++)
             {
-                Texture2D tex = textureOrder[i];
                 reader.Read(out int length);
+                if (length == 0) continue;
                 var texBytes = new NativeArray<byte>(length, Allocator.Temp);
                 reader.Read(texBytes);
-                if (!tex.LoadImage(ZipUtils.UnzipBytes(texBytes.ToArray())))
-                {
-                    return;
-                }
+                bytesArrays[i].pngData = texBytes.ToArray();
                 texBytes.Dispose();
             }
             ClearSprites();
@@ -244,6 +272,22 @@ namespace BelzontWE.Font
                 reader.Read(info);
                 Sprites[info.Name] = info;
             }
+            imageLoadAction = () =>
+            {
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Loading texture atlas '{name}'!");
+                if (Main) GameObject.Destroy(Main); Main = new Texture2D(width, height, TextureFormat.RGBA32, false); Main.LoadImage(bytesArrays[0].pngData);
+                if (Emissive) GameObject.Destroy(Emissive); Emissive = new Texture2D(width, height, TextureFormat.RGBA32, false); Emissive.LoadImage(bytesArrays[1].pngData);
+                if (Control) GameObject.Destroy(Control); Control = new Texture2D(width, height, TextureFormat.RGBA32, false); Control.LoadImage(bytesArrays[2].pngData);
+                if (Mask) GameObject.Destroy(Mask); Mask = new Texture2D(width, height, TextureFormat.RGBA32, false); Mask.LoadImage(bytesArrays[3].pngData);
+                if (Normal) GameObject.Destroy(Normal); Normal = new Texture2D(width, height, TextureFormat.RGBA32, false); Normal.LoadImage(bytesArrays[4].pngData);
+                foreach (var sprite in Sprites)
+                {
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Calculating BRI for sprite {name}.{sprite.Key}");
+                    sprite.Value.CachedBRI = WERenderingHelper.GenerateBri(this, sprite.Value);
+                }
+                Apply();
+            };
+            return true;
         }
 
         #endregion
@@ -291,6 +335,11 @@ namespace BelzontWE.Font
                     Name = x.ToString()
                 };
             }).ToArray();
+        }
+
+        internal void Init()
+        {
+
         }
     }
 }

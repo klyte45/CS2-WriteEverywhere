@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
-using WriteEverywhere.Sprites;
+using BelzontWE.Sprites;
 
-namespace WriteEverywhere.Layout
+namespace BelzontWE.Layout
 {
     public class WEImageInfo : IDisposable
     {
@@ -38,17 +38,6 @@ namespace WriteEverywhere.Layout
             if (MaskMap) GameObject.Destroy(MaskMap);
             if (Normal) GameObject.Destroy(Normal);
             if (Emissive) GameObject.Destroy(Emissive);
-        }
-
-        internal void ExportAt(string targetDir)
-        {
-            KFileUtils.EnsureFolderCreation(targetDir);
-            var baseName = Path.Combine(targetDir, string.Join("_", Name.Split(Path.GetInvalidFileNameChars())));
-            File.WriteAllBytes($"{baseName}.png", Main.EncodeToPNG());
-            if (ControlMask) File.WriteAllBytes($"{baseName}{CONTROL_MASK_MAP_EXTENSION}", ControlMask.EncodeToPNG());
-            if (MaskMap) File.WriteAllBytes($"{baseName}{MASK_MAP_EXTENSION}", MaskMap.EncodeToPNG());
-            if (Normal) File.WriteAllBytes($"{baseName}{NORMAL_MAP_EXTENSION}", Normal.EncodeToPNG());
-            if (Emissive) File.WriteAllBytes($"{baseName}{EMISSIVE_MAP_EXTENSION}", Emissive.EncodeToPNG());
         }
 
         public static WEImageInfo CreateFromBaseImageFile(List<string> errors, string imgFile)

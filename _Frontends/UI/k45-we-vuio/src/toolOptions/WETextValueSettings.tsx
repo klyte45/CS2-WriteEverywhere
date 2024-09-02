@@ -34,7 +34,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     useEffect(() => { WorldPickerService.instance.registerBindings(() => setBuild(buildIdx + 1)) }, [buildIdx])
     useEffect(() => { TextureAtlasService.listAtlasImages(wps.ImageAtlasName.value).then(x => setImgOptions(x ?? [])); }, [wps.ImageAtlasName.value, wps.CurrentSubEntity.value])
-    useEffect(() => { TextureAtlasService.listAvailableLibraries().then(x => setAtlases(x ?? [])); }, [wps.CurrentSubEntity.value])
+    useEffect(() => { TextureAtlasService.listAvailableLibraries().then(x => setAtlases(Object.keys(x ?? {}))); }, [wps.CurrentSubEntity.value])
 
     const EditorItemRow = VanillaWidgets.instance.EditorItemRow;
     const DropdownField = VanillaWidgets.instance.DropdownField<string>();
@@ -51,8 +51,8 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const [fixedTextTyping, setFixedTextTyping] = useState(wps.CurrentItemText.value);
     const [usingFormulae, setUsingFormulae] = useState(!!wps.FormulaeStr.value);
 
-    const [atlases, setAtlases] = useState([]);
-    const [imgOptions, setImgOptions] = useState([]);
+    const [atlases, setAtlases] = useState([] as string[]);
+    const [imgOptions, setImgOptions] = useState([] as string[]);
 
     const [height, setHeight] = useState(wps.CurrentScale.value[1]);
     const [widthDistortion, setWidthDistortion] = useState(wps.CurrentScale.value[0] / wps.CurrentScale.value[1]);

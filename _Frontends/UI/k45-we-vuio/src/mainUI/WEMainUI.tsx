@@ -7,6 +7,7 @@ import "style/mainUi/mainUi.scss"
 import { translate } from "utils/translate";
 import { CityLayoutsTab } from "./CityLayoutsTab";
 import { FontsTab } from "./FontsTab";
+import { CityAtlasesTab } from "./CityAtlasesTab";
 
 export const WeMainPanelId = "BelzontWE.UI.WEMainPanel";
 
@@ -26,7 +27,7 @@ type MainPanelProps = { selectedTab: number, onClose: () => any }
 enum Tabs {
     CityLayouts = "CityLayouts",
     CityFonts = "CityFonts",
-    // CityAtlases = "CityAtlases",
+    CityAtlases = "CityAtlases",
     // PrefabTemplates = "PrefabTemplates"
 }
 export const WEMainPanel = (props: MainPanelProps) => {
@@ -51,7 +52,7 @@ export const WEMainPanel = (props: MainPanelProps) => {
             <TabNav tabs={tabs} selectedTab={selectedTab}>
                 {selectedTab == Tabs.CityLayouts && <CityLayoutsTab />}
                 {selectedTab == Tabs.CityFonts && <FontsTab />}
-                {/* {selectedTab == Tabs.CityAtlases && <CityAtlasesTab />} */}
+                {selectedTab == Tabs.CityAtlases && <CityAtlasesTab />}
             </TabNav>
         </Panel>
     </div >;

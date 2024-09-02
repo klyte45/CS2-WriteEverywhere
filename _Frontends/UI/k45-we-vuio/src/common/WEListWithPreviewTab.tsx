@@ -7,7 +7,7 @@ import { ContextMenuButton, ContextMenuButtonProps } from "./ContextMenuButton";
 export type ListActionTypeArray = (({ isContext: false } & PropsToolButton) | ({ isContext: true } & ContextMenuButtonProps) | null)[];
 
 type Props = {
-    listItems: string[],
+    listItems: (string | { section: string })[],
     detailsFields?: {
         key: ReactNode,
         value: ReactNode
@@ -39,7 +39,11 @@ export const WEListWithPreviewTab = ({ listItems, detailsFields, listActions, it
                 )}
             </div>
             {listItems.length ? <VanillaWidgets.instance.EditorScrollable className="k45_we_tabWithPreview_listContent">
-                {listItems.map(x => <button onClick={() => onChangeSelection(x)} className={classNames(x == selectedKey ? "selected" : "")}>{x}</button>)}
+                {listItems.map(x => {
+                    if (typeof x == "string") {
+                        return <button onClick={() => onChangeSelection(x)} className={classNames(x == selectedKey ? "selected" : "")}>{x}</button>
+                    }
+                })}
             </VanillaWidgets.instance.EditorScrollable> : <div className="k45_we_tabWithPreview_emptyListMsg">{emptyListMsg ?? "List is empty"}</div>}
         </div>
         <div className="k45_we_tabWithPreview_body">

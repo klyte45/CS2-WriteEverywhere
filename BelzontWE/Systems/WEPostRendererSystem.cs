@@ -9,7 +9,7 @@ using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
-using WriteEverywhere.Sprites;
+using BelzontWE.Sprites;
 using Unity.Jobs;
 using BelzontWE.Font.Utility;
 using System.Runtime.InteropServices;

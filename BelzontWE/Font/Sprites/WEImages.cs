@@ -1,4 +1,4 @@
-﻿namespace WriteEverywhere.Sprites
+﻿namespace BelzontWE.Sprites
 {
     internal enum WEImages
     {

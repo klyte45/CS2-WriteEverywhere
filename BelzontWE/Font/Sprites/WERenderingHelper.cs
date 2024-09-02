@@ -4,8 +4,8 @@ using BelzontWE.Font.Utility;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
-using WriteEverywhere.Layout;
-using WriteEverywhere.Sprites;
+using BelzontWE.Layout;
+using BelzontWE.Sprites;
 
 namespace BelzontWE
 {
@@ -129,12 +129,12 @@ namespace BelzontWE
             return material;
         }
 
-        internal static BasicRenderInformation GenerateBri(string spriteName, WETextureAtlas textureAtlas, WESpriteInfo spriteInfo)
+        internal static BasicRenderInformation GenerateBri(WETextureAtlas textureAtlas, WESpriteInfo spriteInfo)
         {
             var proportion = spriteInfo.Region.size.x / spriteInfo.Region.size.y;
             var min = new Vector2(spriteInfo.Region.position.x / textureAtlas.Width, spriteInfo.Region.position.y / textureAtlas.Height);
             var max = min + new Vector2(spriteInfo.Region.size.x / textureAtlas.Width, spriteInfo.Region.size.y / textureAtlas.Height);
-            var bri = new BasicRenderInformation(spriteName,
+            var bri = new BasicRenderInformation(spriteInfo.Name,
                 new[]
                     {
                         new Vector3(-.5f * proportion, -.5f, 0f),

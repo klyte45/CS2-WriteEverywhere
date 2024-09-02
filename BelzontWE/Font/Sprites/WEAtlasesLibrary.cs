@@ -1,38 +1,69 @@
 using Belzont.Interfaces;
 using Belzont.Serialization;
 using Belzont.Utils;
-using BelzontWE;
 using BelzontWE.Font;
 using BelzontWE.Font.Utility;
+using BelzontWE.Layout;
 using Colossal.Serialization.Entities;
 using Game;
+using Game.Common;
 using Game.SceneFlow;
+using Game.Tools;
 using Game.UI.Localization;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Unity.Burst;
+using Unity.Burst.Intrinsics;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
-using WriteEverywhere.Layout;
 
-namespace WriteEverywhere.Sprites
+namespace BelzontWE.Sprites
 {
     public partial class WEAtlasesLibrary : GameSystemBase, IBelzontSerializableSingleton<WEAtlasesLibrary>
     {
         public static string IMAGES_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "imageAtlases");
+        public static string ATLAS_EXPORT_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "exportedAtlases");
         private const string GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID = "generatingAtlasesCache";
 
         public static WEAtlasesLibrary Instance { get; private set; }
         private readonly Queue<Action> actionQueue = new();
+        private EntityQuery m_atlasUsageQuery;
 
         protected override void OnCreate()
         {
             Instance = this;
             KFileUtils.EnsureFolderCreation(IMAGES_FOLDER);
             actionQueue.Enqueue(() => LoadImagesFromLocalFolders());
+            m_atlasUsageQuery = GetEntityQuery(new EntityQueryDesc[]
+              {
+                    new ()
+                    {
+                        All = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<WETextData>(),
+                        },
+                        None = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<WEWaitingRendering>(),
+                            ComponentType.ReadOnly<Temp>(),
+                            ComponentType.ReadOnly<Deleted>(),
+        }
+                    }
+              });
+        }
+
+        protected override void OnStartRunning()
+        {
+            base.OnStartRunning();
+            foreach (var atlas in CityAtlases.Values)
+            {
+                atlas.Init();
+            }
         }
 
         protected override void OnDestroy()
@@ -51,11 +82,13 @@ namespace WriteEverywhere.Sprites
 
         #region Getters
 
-        public string[] ListAvailableAtlases() => LocalAtlases.Where(x => x.Key != INTERNAL_ATLAS_NAME && !CityAtlases.ContainsKey(x.Key) && x.Value.Count > 0).Concat(CityAtlases).Select(x => x.Key.ToString()).ToArray();
+        public Dictionary<string, bool> ListAvailableAtlases() => LocalAtlases.Where(x => x.Key != INTERNAL_ATLAS_NAME && !CityAtlases.ContainsKey(x.Key) && x.Value.Count > 0).Select(x => (x.Key.ToString(), false)).Concat(CityAtlases.Select(x => (x.Key.ToString(), true))).ToDictionary(x => x.Item1, x => x.Item2);
 
         public string[] ListAvailableAtlasImages(string atlasName) => CityAtlases.TryGetValue(atlasName ?? "", out var arr) || LocalAtlases.TryGetValue(atlasName ?? "", out arr) ? arr.Keys.Select(x => x.ToString()).ToArray() : new string[0];
 
         internal BasicRenderInformation GetFromLocalAtlases(WEImages image) => GetFromAvailableAtlases(INTERNAL_ATLAS_NAME, image.ToString());
+
+        public bool TryGetAtlas(string atlasName, out WETextureAtlas atlas) => CityAtlases.TryGetValue(atlasName, out atlas) || LocalAtlases.TryGetValue(atlasName, out atlas);
 
         public BasicRenderInformation GetFromAvailableAtlases(FixedString32Bytes atlasName, FixedString32Bytes spriteName, bool fallbackOnInvalid = false)
             => spriteName.Trim().Length == 0
@@ -89,18 +122,7 @@ namespace WriteEverywhere.Sprites
         {
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 0);
             yield return 0;
-            var values = LocalAtlases.Values.ToArray();
-            for (int i = 0; i < values.Length; i++)
-            {
-                var item = values[i];
-                if (item != null)
-                {
-                    item.Dispose();
-                    NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((i + 1f) / values.Length * 25), textI18n: "generatingAtlasesCache.deletingOld");
-                    yield return 0;
-                }
-            }
-            LocalAtlases.Clear();
+            ClearAtlasDict(LocalAtlases);
             var errors = new List<string>();
             var folders = new string[] { IMAGES_FOLDER }.Concat(Directory.GetDirectories(IMAGES_FOLDER)).ToArray();
             for (int i = 0; i < folders.Length; i++)
@@ -174,6 +196,16 @@ namespace WriteEverywhere.Sprites
             currentJobRunning = null;
         }
 
+        private void ClearAtlasDict(Dictionary<FixedString32Bytes, WETextureAtlas> atlasDict)
+        {
+            var values = atlasDict.Values.ToArray();
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i]?.Dispose();
+            }
+            atlasDict.Clear();
+        }
+
 
         #endregion
 
@@ -184,7 +216,7 @@ namespace WriteEverywhere.Sprites
             {
                 return false;
             }
-            CityAtlases[newName] = new WETextureAtlas(atlas.Width);
+            CityAtlases[newName] = new WETextureAtlas(atlas.Width, true);
             CityAtlases[newName].InsertAll(atlas);
             return true;
         }
@@ -200,22 +232,29 @@ namespace WriteEverywhere.Sprites
         public string ExportCityAtlas(FixedString32Bytes atlasName, string folderName)
         {
             if (!CityAtlases.TryGetValue(atlasName, out var atlas)) return null;
-            KFileUtils.EnsureFolderCreation(IMAGES_FOLDER);
-            var targetDir = Path.Combine(IMAGES_FOLDER, folderName);
+            KFileUtils.EnsureFolderCreation(ATLAS_EXPORT_FOLDER);
+            var targetDir = Path.Combine(ATLAS_EXPORT_FOLDER, folderName);
+            var targetFolderName = folderName;
             if (Directory.Exists(targetDir))
             {
                 for (int i = 1; Directory.Exists(targetDir); i++)
                 {
-                    targetDir = Path.Combine(WETemplateManager.SAVED_PREFABS_FOLDER, $"{folderName}_{i}");
+                    targetFolderName = $"{folderName}_{i}";
+                    targetDir = Path.Combine(ATLAS_EXPORT_FOLDER, $"{targetFolderName}");
                 }
             }
-            var weInfoArray = atlas.ToImageInfoArray();
-            foreach (var info in weInfoArray)
+            KFileUtils.EnsureFolderCreation(targetDir);
+            foreach (var sprite in atlas.Sprites)
             {
-                info.ExportAt(targetDir);
-                info.Dispose();
+                atlas.GetAsSingleImage(sprite.Value.Name, out var main, out var emissive, out var control, out var mask, out var normal);
+                var baseName = Path.Combine(targetDir, string.Join("_", sprite.Value.Name.Split(Path.GetInvalidFileNameChars())));
+                File.WriteAllBytes($"{baseName}.png", main.EncodeToPNG());
+                if (control) File.WriteAllBytes($"{baseName}{WEImageInfo.CONTROL_MASK_MAP_EXTENSION}", control.EncodeToPNG());
+                if (mask) File.WriteAllBytes($"{baseName}{WEImageInfo.MASK_MAP_EXTENSION}", mask.EncodeToPNG());
+                if (normal) File.WriteAllBytes($"{baseName}{WEImageInfo.NORMAL_MAP_EXTENSION}", normal.EncodeToPNG());
+                if (emissive) File.WriteAllBytes($"{baseName}{WEImageInfo.EMISSIVE_MAP_EXTENSION}", emissive.EncodeToPNG());
             }
-            return targetDir;
+            return targetFolderName;
         }
         #endregion
 
@@ -271,20 +310,63 @@ namespace WriteEverywhere.Sprites
                 return;
             }
             reader.Read(out int count);
-            CityAtlases.Clear();
+            ClearAtlasDict(CityAtlases);
             for (int i = 0; i < count; i++)
             {
                 reader.Read(out FixedString32Bytes key);
                 var atlas = new WETextureAtlas();
-                reader.Read(atlas);
+                if (atlas.Deserialize(reader, key, out var action))
+                {
+                    actionQueue.Enqueue(action);
+                }
                 CityAtlases[key] = atlas;
             }
         }
 
         public JobHandle SetDefaults(Context context)
         {
-            CityAtlases.Clear();
+            ClearAtlasDict(CityAtlases);
             return Dependency;
+        }
+        #endregion
+
+        #region UI extra
+        public bool AtlasExists(string name) => name != null && (CityAtlases.ContainsKey(name) || LocalAtlases.ContainsKey(name));
+
+        public unsafe int GetAtlasUsageCount(string name)
+        {
+            if (m_atlasUsageQuery.IsEmptyIgnoreFilter || !AtlasExists(name)) return 0;
+            var counterResult = 0;
+            var job = new WEPlaceholcerAtlasesUsageCount
+            {
+                atlasToCheck = name,
+                m_textDataHdl = GetComponentTypeHandle<WETextData>(),
+                m_counter = &counterResult
+            };
+            job.Schedule(m_atlasUsageQuery, Dependency).Complete();
+            return counterResult;
+
+        }
+        public bool AtlasExistsInSavegame(string name) => name != null && CityAtlases.ContainsKey(name);
+
+        public int GetAtlasImageSize(string name) => TryGetAtlas(name, out var atlas) ? atlas.Main.width : -1;
+
+        [BurstCompile]
+        private unsafe struct WEPlaceholcerAtlasesUsageCount : IJobChunk
+        {
+            public FixedString32Bytes atlasToCheck;
+            public ComponentTypeHandle<WETextData> m_textDataHdl;
+            public int* m_counter;
+
+            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+            {
+                var data = chunk.GetNativeArray(ref m_textDataHdl);
+                for (int i = 0; i < data.Length; i++)
+                {
+                    if (data[i].TextType == WESimulationTextType.Image && data[i].Atlas == atlasToCheck) *m_counter += 1;
+                }
+            }
+
         }
         #endregion
     }

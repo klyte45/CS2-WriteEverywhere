@@ -1,7 +1,10 @@
 ﻿using Belzont.Interfaces;
+using Colossal;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using Unity.Entities;
-using WriteEverywhere.Sprites;
+using BelzontWE.Sprites;
 
 namespace BelzontWE
 {
@@ -22,20 +25,44 @@ namespace BelzontWE
             callBinder($"{PREFIX}exportCityAtlas", ExportCityAtlas);
             callBinder($"{PREFIX}copyToCity", CopyToCity);
             callBinder($"{PREFIX}removeFromCity", RemoveFromCity);
+            callBinder($"{PREFIX}getCityAtlasDetail", GetCityAtlasDetail);
+            callBinder($"{PREFIX}openExportFolder", OpenExportFolder);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
 
         public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
 
-
-        private string[] ListAvailableLibraries() => m_AtlasLibrary.ListAvailableAtlases();
+        private Dictionary<string, bool> ListAvailableLibraries() => m_AtlasLibrary.ListAvailableAtlases();
         private string[] ListAtlasImages(string atlas) => m_AtlasLibrary.ListAvailableAtlasImages(atlas);
         private string ExportCityAtlas(string atlas, string folder) => m_AtlasLibrary.ExportCityAtlas(atlas ?? "", folder);
         private bool CopyToCity(string atlas, string newName) => m_AtlasLibrary.CopyToCity(atlas ?? "", newName);
         private bool RemoveFromCity(string atlas) => m_AtlasLibrary.RemoveFromCity(atlas ?? "");
+        private void OpenExportFolder(string exportFolder)
+        {
+            var targetDir = Path.Combine(WEAtlasesLibrary.ATLAS_EXPORT_FOLDER, exportFolder);
+            if (Directory.Exists(targetDir)) RemoteProcess.OpenFolder(targetDir);
+        }
 
-
+        private AtlasCityDetailResponse GetCityAtlasDetail(string name)
+            => name == null || !m_AtlasLibrary.AtlasExists(name)
+                ? null
+                : new AtlasCityDetailResponse
+                {
+                    name = name,
+                    usages = m_AtlasLibrary.GetAtlasUsageCount(name),
+                    isFromSavegame = m_AtlasLibrary.AtlasExistsInSavegame(name),
+                    imageCount = m_AtlasLibrary.ListAvailableAtlasImages(name).Length,
+                    textureSize = m_AtlasLibrary.GetAtlasImageSize(name),
+                };
+        private class AtlasCityDetailResponse
+        {
+            public string name;
+            public bool isFromSavegame;
+            public int usages;
+            public int imageCount;
+            public int textureSize;
+        }
         protected override void OnUpdate()
         {
         }

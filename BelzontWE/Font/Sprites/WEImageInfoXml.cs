@@ -1,7 +1,7 @@
 ﻿using System.Xml.Serialization;
 using UnityEngine;
 
-namespace WriteEverywhere.Sprites
+namespace BelzontWE.Sprites
 {
     [XmlRoot("ImageInformation")]
     public class WEImageInfoXml

@@ -5,6 +5,9 @@ using Colossal.UI;
 using Game.UI;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Web;
+using UnityEngine;
+using BelzontWE.Sprites;
 
 namespace BelzontWE
 {
@@ -21,7 +24,7 @@ namespace BelzontWE
         private static bool BeforeOnResourceRequest(ref IResourceRequest request, ref IResourceResponse response)
         {
             var url = request.GetURL();
-            if (BasicIMod.TraceMode) LogUtils.DoTraceLog("URL = " + url);
+            if (BasicIMod.TraceMode) LogUtils.DoTraceLog("RES URL = " + url);
             if (url.StartsWith("coui://we.k45/_fonts/"))
             {
                 var fontName = url["coui://we.k45/_fonts/".Length..];
@@ -49,12 +52,27 @@ namespace BelzontWE
                     return false;
                 }
             }
+            else if (url.StartsWith("coui://we.k45/_textureAtlas/"))
+            {
+                var atlasName = HttpUtility.UrlDecode(url["coui://we.k45/_textureAtlas/".Length..]);
+
+                if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas))
+                {
+                    response.SetStatus(200);
+                    var data = textureAtlas.Main.EncodeToPNG();
+                    var size = (ulong)data.Length;
+                    var space = response.GetSpace(size);
+                    Marshal.Copy(data, 0, space, data.Length);
+                    response.Finish(ResourceResponse.Status.Success);
+                    return false;
+                }
+            }
             return true;
         }
         private static bool BeforeOnResourceStreamRequest(ref IResourceRequest request, ref IResourceStreamResponse response)
         {
             var url = request.GetURL();
-            if (BasicIMod.TraceMode) LogUtils.DoTraceLog("URL = " + url);
+            if (BasicIMod.TraceMode) LogUtils.DoTraceLog("STR URL = " + url);
             if (url.StartsWith("coui://we.k45/_fonts/"))
             {
                 var fontName = url["coui://we.k45/_fonts/".Length..];
@@ -73,6 +91,17 @@ namespace BelzontWE
                 {
                     var data = Encoding.UTF8.GetBytes($"  @font-face {{\r\n        font-family: \"K45WE_{entity.Guid}\";\r\n        src: url(coui://we.k45/_fonts/{fontName}) format('truetype');\r\n    }}");
                     response.SetStreamReader(new StreamReader(data));
+                    response.Finish(ResourceStreamResponse.Status.Success);
+                    return false;
+                }
+            }
+            else if (url.StartsWith("coui://we.k45/_textureAtlas/"))
+            {
+                var atlasName = HttpUtility.UrlDecode(url["coui://we.k45/_textureAtlas/".Length..]);
+
+                if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas))
+                {
+                    response.SetStreamReader(new StreamReader(textureAtlas.Main.EncodeToPNG()));
                     response.Finish(ResourceStreamResponse.Status.Success);
                     return false;
                 }
