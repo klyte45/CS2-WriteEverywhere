@@ -1,6 +1,7 @@
 ﻿using Belzont.Utils;
 using Colossal.Entities;
 using Colossal.Serialization.Entities;
+using Game.Prefabs;
 using System;
 using System.Linq;
 using Unity.Collections;
@@ -57,11 +58,22 @@ namespace BelzontWE
 
         public static WETextDataTreeStruct FromEntity(Entity e, EntityManager em)
         {
-            if (!em.TryGetComponent<WETextData>(e, out var weTextData)) return default;
-            var result = new WETextDataTreeStruct
+            WETextDataTreeStruct result;
+            if (em.HasComponent<PrefabRef>(e))
             {
-                self = weTextData.ToDataStruct(em)
-            };
+                result = new WETextDataTreeStruct
+                {
+                    self = default
+                };
+            }
+            else
+            {
+                if (!em.TryGetComponent<WETextData>(e, out var weTextData)) return default;
+                result = new WETextDataTreeStruct
+                {
+                    self = weTextData.ToDataStruct(em)
+                };
+            }
             if (em.TryGetBuffer<WESubTextRef>(e, true, out var subTextData))
             {
                 result.children = new NativeArray<WETextDataTreeStruct>(subTextData.Length, Allocator.Persistent);

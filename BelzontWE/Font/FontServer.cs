@@ -27,6 +27,7 @@ namespace BelzontWE
         public static int DefaultTextureSizeFont => 512 << (WEModData.InstanceWE?.StartTextureSizeFont ?? 1);
         public static string FontFilesPath { get; } = Path.Combine(BasicIMod.ModSettingsRootFolder, FONTS_FILES_FOLDER);
         public event Action OnFontsLoadedChanged;
+        private readonly Queue<Action> OnUpdateActionQueue = new Queue<Action>();
 
         public static int QualitySize
         {
@@ -63,6 +64,7 @@ namespace BelzontWE
             DefaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY, true);
             m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
             dictPtr = GCHandle.Alloc(LoadedFonts);
+
         }
 
         #endregion
@@ -144,6 +146,10 @@ namespace BelzontWE
         protected override void OnUpdate()
         {
             if (GameManager.instance.isLoading) return;
+            while (OnUpdateActionQueue.TryDequeue(out var action))
+            {
+                action();
+            }
             EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
             var keysToDispose = new List<FixedString32Bytes>();
             foreach (var (key, data) in LoadedFonts)
@@ -220,7 +226,11 @@ namespace BelzontWE
         {
             foreach (var item in LoadedFonts)
             {
-                item.Value.Dispose();
+                if (item.Value != DefaultFont)
+                {
+                    var font = item.Value;
+                    OnUpdateActionQueue.Enqueue(() => font.Dispose());
+                }
             }
             LoadedFonts.Clear();
             reader.Read(out int version);
