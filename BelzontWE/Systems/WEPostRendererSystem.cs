@@ -236,7 +236,7 @@ namespace BelzontWE
             }
             private void UpdatePlaceholder(Entity e, ref WETextData weCustomData, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
             {
-                var targetTemplate = m_templateManager[new FixedString128Bytes(weCustomData.Text512)];
+                var targetTemplate = m_templateManager[new FixedString128Bytes(weCustomData.Text)];
                 if (m_templateUpdaterLkp.TryGetComponent(e, out var templateUpdated) && templateUpdated.childEntity != Entity.Null)
                 {
 #if !BURST

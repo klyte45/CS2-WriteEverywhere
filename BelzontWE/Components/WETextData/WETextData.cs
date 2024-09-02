@@ -15,107 +15,33 @@ using UnityEngine.Rendering.HighDefinition;
 
 namespace BelzontWE
 {
-    public struct WETextData : IDisposable, IComponentData
+    public partial struct WETextData : IDisposable, IComponentData
     {
-        private struct WETextDataMaterial
-        {
-            public Color32 color;
-            public Color32 emissiveColor;
-            public Color32 glassColor;
-            public float normalStrength;
-            public bool dirty;
-            public float glassRefraction;
-            public float metallic;
-            public float smoothness;
-            public float emissiveIntensity;
-            public float emissiveExposureWeight;
-            public float coatStrength;
-            public float glassThickness;
-            public Color colorMask1;
-            public Color colorMask2;
-            public Color colorMask3;
-            public GCHandle ownMaterial;
-            public Colossal.Hash128 ownMaterialGuid;
-
-            public readonly void UpdateDefaultMaterial(Material material, WESimulationTextType textType)
-            {
-                material.SetColor("_BaseColor", color);
-                material.SetFloat("_Metallic", metallic);
-                material.SetColor("_EmissiveColor", emissiveColor);
-                material.SetFloat("_EmissiveIntensity", emissiveIntensity);
-                material.SetFloat("_EmissiveExposureWeight", emissiveExposureWeight);
-                material.SetFloat("_CoatStrength", coatStrength);
-                material.SetFloat("_Smoothness", smoothness);
-                if (textType == WESimulationTextType.Image)
-                {
-                    material.SetColor("colossal_ColorMask0", colorMask1);
-                    material.SetColor("colossal_ColorMask1", colorMask2);
-                    material.SetColor("colossal_ColorMask2", colorMask3);
-                }
-                else
-                {
-                    material.SetColor("colossal_ColorMask0", UnityEngine.Color.white);
-                    material.SetColor("colossal_ColorMask1", UnityEngine.Color.white);
-                    material.SetColor("colossal_ColorMask2", UnityEngine.Color.white);
-                }
-            }
-
-            public readonly void UpdateGlassMaterial(Material material)
-            {
-                material.SetColor("_BaseColor", color);
-                material.SetFloat("_Metallic", metallic);
-                material.SetFloat("_Smoothness", smoothness);
-                material.SetFloat(WERenderingHelper.IOR, glassRefraction);
-                material.SetColor(WERenderingHelper.Transmittance, glassColor);
-                material.SetFloat("_NormalStrength", normalStrength);
-                material.SetFloat("_Thickness", glassThickness);
-            }
-            public void ResetMaterial()
-            {
-                if (ownMaterial.IsAllocated)
-                {
-                    GameObject.Destroy(ownMaterial.Target as Material);
-                    ownMaterial.Free();
-                }
-            }
-        }
-
-        private struct WETextDataShader
-        {
-            public WEShader shader;
-            public int decalFlags;
-        }
-
-
-
-
-
         public const int DEFAULT_DECAL_FLAGS = 8;
         public unsafe static int Size => sizeof(WETextData);
 
         private WETextDataMaterial materialData;
         private WETextDataShader shaderData;
+        private WETextDataTransform transformData;
+        private WETextDataValueString valueData;
+
         public bool templateDirty;
 
         private GCHandle basicRenderInformation;
         private WESimulationTextType type;
         private FixedString32Bytes atlas;
-        private FixedString512Bytes formulaeHandlerStr;
-        private bool loadingFnDone;
         private FixedString32Bytes fontName;
+
+        private FixedString32Bytes itemName;
         private Entity targetEntity;
         private Entity parentEntity;
-        private FixedString32Bytes itemName;
-        private FixedString512Bytes m_text;
+
         private bool dirtyBRI;
-        public float3 offsetPosition;
-        public quaternion offsetRotation;
-        public float3 scale;
         public int lastLodValue;
         public float maxWidthMeters;
-        public bool useAbsoluteSizeEditing;
-        public bool InitializedEffectiveText { get; private set; }
-        public readonly FixedString512Bytes Text512 => m_text;
+
+        #region Public getters & setters
+        public readonly bool InitializedEffectiveText => valueData.InitializedEffectiveText;
 
         public bool DirtyBRI => dirtyBRI || !basicRenderInformation.IsAllocated || basicRenderInformation.Target is null;
 
@@ -213,24 +139,17 @@ namespace BelzontWE
             }
         }
 
-        private void ResetBri()
-        {
-            materialData.ResetMaterial();
-            basicRenderInformation.Free();
-        }
-
-
         public FixedString512Bytes Text
         {
-            readonly get => m_text;
+            readonly get => valueData.m_text;
             set
             {
-                if (m_text != value && TextType == WESimulationTextType.Placeholder)
+                if (valueData.m_text != value && TextType == WESimulationTextType.Placeholder)
                 {
                     templateDirty = true;
                 }
-                m_text = value;
-                EffectiveText = value;
+                valueData.m_text = value;
+                valueData.EffectiveText = value;
                 dirtyBRI = true;
             }
         }
@@ -259,6 +178,10 @@ namespace BelzontWE
             }
         }
 
+        public float3 OffsetPosition { readonly get => transformData.offsetPosition; set => transformData.offsetPosition = value; }
+        public quaternion OffsetRotation { readonly get => transformData.offsetRotation; set => transformData.offsetRotation = value; }
+        public float3 Scale { readonly get => transformData.scale; set => transformData.scale = value; }
+        public bool UseAbsoluteSizeEditing { get => transformData.useAbsoluteSizeEditing; set => transformData.useAbsoluteSizeEditing = value; }
         public Color32 Color
         {
             readonly get => materialData.color; set
@@ -386,27 +309,39 @@ namespace BelzontWE
         }
         public FixedString512Bytes Formulae
         {
-            get => formulaeHandlerStr;
-            private set => formulaeHandlerStr = value;
+            get => valueData.formulaeHandlerStr;
+            private set => valueData.formulaeHandlerStr = value;
         }
+        public readonly FixedString512Bytes EffectiveText => valueData.EffectiveText;
         public bool HasBRI => basicRenderInformation.IsAllocated;
         public Bounds3 Bounds { get; private set; }
-        private readonly Func<EntityManager, Entity, string> FormulaeFn => WEFormulaeHelper.GetCached(formulaeHandlerStr);
 
         public FixedString32Bytes ItemName
         {
             readonly get => itemName; set => itemName = value;
         }
+#endregion
 
+        private void ResetBri()
+        {
+            materialData.ResetMaterial();
+            basicRenderInformation.Free();
+        }
+
+
+        public int SetFormulae(string value, out string[] cmpErr) => valueData.SetFormulae(value, out cmpErr);
         public static WETextData CreateDefault(Entity target, Entity? parent = null)
         {
             return new WETextData
             {
                 targetEntity = target,
                 parentEntity = parent ?? target,
-                offsetPosition = new(0, 0, 0),
-                offsetRotation = new(),
-                scale = new(1, 1, 1),
+                transformData = new()
+                {
+                    offsetPosition = new(0, 0, 0),
+                    offsetRotation = new(),
+                    scale = new(1, 1, 1),
+                },
                 shaderData = new()
                 {
                     shader = WEShader.Default,
@@ -428,7 +363,10 @@ namespace BelzontWE
                     glassThickness = .5f,
                     coatStrength = 0f,
                 },
-                m_text = "NEW TEXT",
+                valueData = new()
+                {
+                    m_text = "NEW TEXT"
+                },
                 itemName = "New item",
             };
         }
@@ -487,33 +425,10 @@ namespace BelzontWE
             return this;
         }
 
-        public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
-        {
-            var result = WEFormulaeHelper.SetFormulae(newFormulae ?? "", out errorFmtArgs, out formulaeHandlerStr, out var resultFormulaeFn);
-            if (result == 0)
-            {
-                dirtyBRI = true;
-                if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
-            }
-            return result;
-        }
 
         public void UpdateEffectiveText(EntityManager em, Entity geometryEntity)
         {
-            InitializedEffectiveText = true;
-            if (!loadingFnDone)
-            {
-                if (formulaeHandlerStr.Length > 0)
-                {
-                    SetFormulae(formulaeHandlerStr.ToString(), out _);
-                }
-                loadingFnDone = true;
-            }
-            string oldEffText = (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText;
-            EffectiveText = FormulaeFn is Func<EntityManager, Entity, string> fn
-                ? fn(em, geometryEntity)?.ToString().Trim().Truncate(500) ?? "<InvlidFn>"
-                : formulaeHandlerStr.Length > 0 ? "<InvalidFn>" : Text;
-            var result = EffectiveText.ToString() != oldEffText;
+            var result = valueData.UpdateEffectiveText(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText);
             if (result) dirtyBRI = true;
         }
 
@@ -528,20 +443,15 @@ namespace BelzontWE
                 : target;
         }
 
-        public FixedString512Bytes EffectiveText { get; private set; }
-
-
-
-
 
         #region Serialize
         public WETextDataXml ToDataXml(EntityManager em)
         {
             return new WETextDataXml
             {
-                offsetPosition = (Vector3Xml)offsetPosition,
-                offsetRotation = (Vector3Xml)((Quaternion)offsetRotation).eulerAngles,
-                scale = (Vector3Xml)scale,
+                offsetPosition = (Vector3Xml)transformData.offsetPosition,
+                offsetRotation = (Vector3Xml)((Quaternion)transformData.offsetRotation).eulerAngles,
+                scale = (Vector3Xml)transformData.scale,
                 itemName = ItemName.ToString(),
                 shader = Shader,
                 atlas = Atlas.ToString(),
@@ -580,9 +490,9 @@ namespace BelzontWE
         {
             return new WETextDataStruct
             {
-                offsetPosition = (Vector3Xml)offsetPosition,
-                offsetRotation = (Vector3Xml)((Quaternion)offsetRotation).eulerAngles,
-                scale = (Vector3Xml)scale,
+                offsetPosition = (Vector3Xml)transformData.offsetPosition,
+                offsetRotation = (Vector3Xml)((Quaternion)transformData.offsetRotation).eulerAngles,
+                scale = (Vector3Xml)transformData.scale,
                 itemName = ItemName.ToString(),
                 shader = Shader,
                 atlas = Atlas.ToString(),
@@ -634,9 +544,12 @@ namespace BelzontWE
             {
                 targetEntity = target,
                 parentEntity = parent,
-                offsetPosition = (float3)xml.offsetPosition,
-                offsetRotation = Quaternion.Euler(xml.offsetRotation),
-                scale = (float3)xml.scale,
+                transformData = new()
+                {
+                    offsetPosition = (float3)xml.offsetPosition,
+                    offsetRotation = Quaternion.Euler(xml.offsetRotation),
+                    scale = (float3)xml.scale
+                },
                 ItemName = xml.itemName ?? "",
                 shaderData = new()
                 {
@@ -687,15 +600,7 @@ namespace BelzontWE
 
         public static WETextData FromDataStruct(WETextDataStruct xml, Entity parent, EntityManager em)
         {
-            Entity target;
-            if (em.TryGetComponent(parent, out WETextData parentData))
-            {
-                target = parentData.targetEntity;
-            }
-            else
-            {
-                target = parent;
-            }
+            Entity target = em.TryGetComponent(parent, out WETextData parentData) ? parentData.targetEntity : parent;
             var weData = FromDataStruct(xml, parent, target);
             FontServer.Instance.EnsureFont(weData.fontName);
             weData.UpdateEffectiveText(em, target);
@@ -707,10 +612,13 @@ namespace BelzontWE
 
             weData.targetEntity = target;
             weData.parentEntity = parent;
-            weData.offsetPosition = xml.offsetPosition;
-            weData.offsetRotation = Quaternion.Euler(xml.offsetRotation);
-            weData.scale = xml.scale;
             weData.itemName = xml.itemName;
+            weData.transformData = new()
+            {
+                offsetPosition = xml.offsetPosition,
+                offsetRotation = Quaternion.Euler(xml.offsetRotation),
+                scale = xml.scale
+            };
             weData.shaderData = new()
             {
                 shader = xml.shader,
@@ -755,6 +663,7 @@ namespace BelzontWE
             }
             return weData;
         }
+
 
         #endregion
     }

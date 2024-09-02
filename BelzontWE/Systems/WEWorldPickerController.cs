@@ -227,9 +227,9 @@ namespace BelzontWE
             NormalStrength = new(default, $"{PREFIX}{nameof(NormalStrength)}", m_eventCaller, m_callBinder);
 
 
-            CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
-            CurrentRotation.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.offsetRotation = KMathUtils.UnityEulerToQuaternion(x); return currentItem; });
-            CurrentPosition.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.offsetPosition = x; return currentItem; });
+            CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Scale = x; return currentItem; });
+            CurrentRotation.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.OffsetRotation = KMathUtils.UnityEulerToQuaternion(x); return currentItem; });
+            CurrentPosition.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.OffsetPosition = x; return currentItem; });
             CurrentItemName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.ItemName = x.Truncate(24); m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
             CurrentItemText.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Text = x.Truncate(500); return currentItem; });
             CurrentSubEntity.OnScreenValueChanged += (x) => OnCurrentItemChanged();
@@ -248,7 +248,7 @@ namespace BelzontWE
             TextSourceType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
             ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
             DecalFlags.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.DecalFlags = x; return currentItem; });
-            UseAbsoluteSizeEditing.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.useAbsoluteSizeEditing = x; return currentItem; });
+            UseAbsoluteSizeEditing.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.UseAbsoluteSizeEditing = x; return currentItem; });
             ShaderType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Shader = x; return currentItem; });
             GlassRefraction.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.GlassRefraction = x; return currentItem; });
             GlassColor.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.GlassColor = x; return currentItem; });
@@ -273,9 +273,9 @@ namespace BelzontWE
 
         private void OnCurrentItemChanged(WETextData currentItem)
         {
-            CurrentPosition.Value = currentItem.offsetPosition;
-            CurrentRotation.Value = KMathUtils.UnityQuaternionToEuler(currentItem.offsetRotation);
-            CurrentScale.Value = currentItem.scale;
+            CurrentPosition.Value = currentItem.OffsetPosition;
+            CurrentRotation.Value = KMathUtils.UnityQuaternionToEuler(currentItem.OffsetRotation);
+            CurrentScale.Value = currentItem.Scale;
             CurrentItemText.Value = currentItem.Text.ToString();
             CurrentItemName.Value = currentItem.ItemName.ToString();
             MaxWidth.Value = currentItem.maxWidthMeters;
@@ -292,7 +292,7 @@ namespace BelzontWE
             TextSourceType.Value = (int)currentItem.TextType;
             ImageAtlasName.Value = currentItem.Atlas.ToString();
             DecalFlags.Value = currentItem.DecalFlags;
-            UseAbsoluteSizeEditing.Value = currentItem.useAbsoluteSizeEditing;
+            UseAbsoluteSizeEditing.Value = currentItem.UseAbsoluteSizeEditing;
             ShaderType.Value = currentItem.Shader;
             GlassColor.Value = currentItem.GlassColor;
             GlassRefraction.Value = currentItem.GlassRefraction;

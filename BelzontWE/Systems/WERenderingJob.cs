@@ -111,17 +111,17 @@ namespace BelzontWE
                         }
                         if (isAtWeEditor)
                         {
-                            var scale2 = weCustomData.scale;
+                            var scale2 = weCustomData.Scale;
                             availToDraw.Enqueue(new WERenderData
                             {
                                 textDataEntity = nextEntity,
                                 geometryEntity = geometryEntity,
                                 weComponent = weCustomData,
-                                transformMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.offsetPosition + (float3)Matrix4x4.Rotate(weCustomData.offsetRotation).MultiplyPoint(new float3(0, 0, -.001f)), weCustomData.offsetRotation, scale2)
+                                transformMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.OffsetPosition + (float3)Matrix4x4.Rotate(weCustomData.OffsetRotation).MultiplyPoint(new float3(0, 0, -.001f)), weCustomData.OffsetRotation, scale2)
                             });
                         }
 
-                        DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, Vector3.one), unfilteredChunkIndex, true);
+                        DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(weCustomData.OffsetPosition, weCustomData.OffsetRotation, Vector3.one), unfilteredChunkIndex, true);
                         break;
                     case WESimulationTextType.WhiteTexture:
                         availToDraw.Enqueue(new WERenderData
@@ -129,12 +129,12 @@ namespace BelzontWE
                             textDataEntity = nextEntity,
                             geometryEntity = geometryEntity,
                             weComponent = weCustomData,
-                            transformMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, weCustomData.scale)
+                            transformMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.OffsetPosition, weCustomData.OffsetRotation, weCustomData.Scale)
                         });
 
                         if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayoutWt))
                         {
-                            var itemMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.offsetPosition, weCustomData.offsetRotation, Vector3.one);
+                            var itemMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.OffsetPosition, weCustomData.OffsetRotation, Vector3.one);
                             for (int j = 0; j < subLayoutWt.Length; j++)
                             {
                                 DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, unfilteredChunkIndex);
@@ -147,13 +147,13 @@ namespace BelzontWE
                             m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
                             return;
                         }
-                        var scale = weCustomData.scale;
+                        var scale = weCustomData.Scale;
                         if (weCustomData.HasBRI && weCustomData.TextType == WESimulationTextType.Text && weCustomData.maxWidthMeters > 0 && weCustomData.BriWidthMetersUnscaled * scale.x > weCustomData.maxWidthMeters)
                         {
                             scale.x = weCustomData.maxWidthMeters / weCustomData.BriWidthMetersUnscaled;
                         }
-                        var refPos = parentIsPlaceholder ? default : weCustomData.offsetPosition;
-                        var refRot = parentIsPlaceholder ? default : weCustomData.offsetRotation;
+                        var refPos = parentIsPlaceholder ? default : weCustomData.OffsetPosition;
+                        var refRot = parentIsPlaceholder ? default : weCustomData.OffsetRotation;
                         var matrix = prevMatrix * Matrix4x4.TRS(refPos, refRot, scale);
                         if (weCustomData.HasBRI)
                         {

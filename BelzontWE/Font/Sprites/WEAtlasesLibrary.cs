@@ -201,7 +201,8 @@ namespace BelzontWE.Sprites
             var values = atlasDict.Values.ToArray();
             for (int i = 0; i < values.Length; i++)
             {
-                values[i]?.Dispose();
+                var item = values[i];
+                actionQueue.Enqueue(() => item?.Dispose());
             }
             atlasDict.Clear();
         }
