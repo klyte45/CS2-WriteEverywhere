@@ -54,6 +54,12 @@ namespace BelzontWE.Font
             Control = new Texture2D(width, height, TextureFormat.RGBA32, false);
             Mask = new Texture2D(width, height, TextureFormat.RGBA32, false);
             Normal = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            var pixelsToSet = new Color[width * height];
+            Main.SetPixels(pixelsToSet);
+            Emissive.SetPixels(pixelsToSet);
+            Control.SetPixels(pixelsToSet);
+            Mask.SetPixels(pixelsToSet);
+            Normal.SetPixels(pixelsToSet);
             Method = method;
             rectsPack = new MaxRectsBinPack(width, height, false);
             WillSerialize = willSerialize;

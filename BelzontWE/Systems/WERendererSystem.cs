@@ -135,7 +135,7 @@ namespace BelzontWE
                     {
                         if (!item.mesh.ValueData.InitializedEffectiveText)
                         {
-                            item.mesh.UpdateEffectiveText(EntityManager, item.geometryEntity);
+                            item.mesh.UpdateFormulaes(EntityManager, item.geometryEntity);
                             cmd.SetComponent(item.textDataEntity, item.mesh);
                         }
                         switch (item.main.TextType)
@@ -162,7 +162,8 @@ namespace BelzontWE
                     {
                         if (((FrameCounter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
                         {
-                            item.mesh.UpdateEffectiveText(EntityManager, item.geometryEntity);
+                            item.mesh.UpdateFormulaes(EntityManager, item.geometryEntity);
+                            item.material.UpdateFormulaes(EntityManager, item.geometryEntity);
                         }
 
                         if (item.mesh.IsDirty() && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
@@ -187,9 +188,12 @@ namespace BelzontWE
                         Graphics.DrawMesh(bri.Mesh, item.transformMatrix, material, 0, null, 0);
                         if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {item.main.TargetEntity} P: {item.main.ParentEntity}\n{item.main.ItemName} - {item.main.TextType} - '{item.mesh.ValueData.EffectiveValue}'\nBRI: {item.mesh.RenderInformation?.m_refText} | {item.mesh.RenderInformation?.Mesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
                     }
-                    cmd.SetComponent(item.textDataEntity, item.main);
-                    cmd.SetComponent(item.textDataEntity, item.material);
-                    cmd.SetComponent(item.textDataEntity, item.mesh);
+                    if (!briWasNull)
+                    {
+                        cmd.SetComponent(item.textDataEntity, item.main);
+                        cmd.SetComponent(item.textDataEntity, item.material);
+                        cmd.SetComponent(item.textDataEntity, item.mesh);
+                    }
                 }
                 dumpNextFrame = false;
             }

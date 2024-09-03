@@ -16,8 +16,11 @@ namespace BelzontWE
 
         public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
             => WEFormulaeHelper.SetFormulae<string>(newFormulae ?? "", out errorFmtArgs, out formulaeStr, out var resultFormulaeFn);
-
-        public bool UpdateEffectiveText(EntityManager em, Entity geometryEntity, string oldEffText)
+        public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity)
+        {
+            return UpdateEffectiveValue(em, geometryEntity, EffectiveValue.ToString());
+        }
+        public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity, string oldEffText)
         {
             InitializedEffectiveText = true;
             var loadedFnNow = false;

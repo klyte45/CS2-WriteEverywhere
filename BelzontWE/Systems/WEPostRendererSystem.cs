@@ -147,14 +147,14 @@ namespace BelzontWE
                         case WESimulationTextType.Text:
                             if (UpdateTextMesh(entity, ref weMeshData, weMeshData.ValueData.EffectiveValue.ToString(), unfilteredChunkIndex, m_CommandBuffer, fontDict))
                             {
-                                m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
+                                m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
                                 m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             }
                             break;
                         case WESimulationTextType.Image:
                             if (UpdateImageMesh(entity, ref weMeshData, weMeshData.ValueData.EffectiveValue.ToString(), unfilteredChunkIndex, m_CommandBuffer))
                             {
-                                m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
+                                m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
                                 m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             }
                             break;

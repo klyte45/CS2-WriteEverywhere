@@ -35,7 +35,7 @@ namespace BelzontWE
         public float BriWidthMetersUnscaled { get; private set; }
         public FixedString512Bytes LastErrorStr { get; private set; }
 
-        public int SetFormulae(string value, out string[] cmpErr) => ValueData.SetFormulae(value, out cmpErr);
+        public int SetFormulae(string value, out string[] cmpErr) => valueData.SetFormulae(value, out cmpErr);
 
         public void ResetBri()
         {
@@ -77,12 +77,12 @@ namespace BelzontWE
         public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity)
         {
             FontServer.Instance.EnsureFont(fontName);
-            UpdateEffectiveText(em, targetEntity);
+            UpdateFormulaes(em, targetEntity);
             return this;
         }
-        public void UpdateEffectiveText(EntityManager em, Entity geometryEntity)
+        public void UpdateFormulaes(EntityManager em, Entity geometryEntity)
         {
-            var result = ValueData.UpdateEffectiveText(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText);
+            var result = valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText);
             if (result) templateDirty = dirty = true;
         }
         public static Entity GetTargetEntityEffective(Entity target, EntityManager em, bool fullRecursive = false)
@@ -187,20 +187,38 @@ namespace BelzontWE
         private GCHandle ownMaterial;
         private Colossal.Hash128 ownMaterialGuid;
 
-        public Color Color { readonly get => color.defaultValue; set { color.defaultValue = value; dirty = true; } }
-        public Color EmissiveColor { readonly get => emissiveColor.defaultValue; set { emissiveColor.defaultValue = value; dirty = true; } }
-        public Color GlassColor { readonly get => glassColor.defaultValue; set { glassColor.defaultValue = value; dirty = true; } }
-        public float NormalStrength { readonly get => normalStrength.defaultValue; set { normalStrength.defaultValue = value; dirty = true; } }
-        public float GlassRefraction { readonly get => glassRefraction.defaultValue; set { glassRefraction.defaultValue = value; dirty = true; } }
-        public float Metallic { readonly get => metallic.defaultValue; set { metallic.defaultValue = value; dirty = true; } }
-        public float Smoothness { readonly get => smoothness.defaultValue; set { smoothness.defaultValue = value; dirty = true; } }
-        public float EmissiveIntensity { readonly get => emissiveIntensity.defaultValue; set { emissiveIntensity.defaultValue = value; dirty = true; } }
-        public float EmissiveExposureWeight { readonly get => emissiveExposureWeight.defaultValue; set { emissiveExposureWeight.defaultValue = value; dirty = true; } }
-        public float CoatStrength { readonly get => coatStrength.defaultValue; set { coatStrength.defaultValue = value; dirty = true; } }
-        public float GlassThickness { readonly get => glassThickness.defaultValue; set { glassThickness.defaultValue = value; dirty = true; } }
-        public Color ColorMask1 { readonly get => colorMask1.defaultValue; set { colorMask1.defaultValue = value; dirty = true; } }
-        public Color ColorMask2 { readonly get => colorMask2.defaultValue; set { colorMask2.defaultValue = value; dirty = true; } }
-        public Color ColorMask3 { readonly get => colorMask3.defaultValue; set { colorMask3.defaultValue = value; dirty = true; } }
+        public Color Color { readonly get => color.defaultValue; set { color.defaultValue = value; } }
+        public Color EmissiveColor { readonly get => emissiveColor.defaultValue; set { emissiveColor.defaultValue = value; } }
+        public Color GlassColor { readonly get => glassColor.defaultValue; set { glassColor.defaultValue = value; } }
+        public float NormalStrength { readonly get => normalStrength.defaultValue; set { normalStrength.defaultValue = math.clamp(value, 0, 1); } }
+        public float GlassRefraction { readonly get => glassRefraction.defaultValue; set { glassRefraction.defaultValue = math.clamp(value, 1, 1000); } }
+        public float Metallic { readonly get => metallic.defaultValue; set { metallic.defaultValue = math.clamp(value, 0, 1); } }
+        public float Smoothness { readonly get => smoothness.defaultValue; set { smoothness.defaultValue = math.clamp(value, 0, 1); } }
+        public float EmissiveIntensity { readonly get => emissiveIntensity.defaultValue; set { emissiveIntensity.defaultValue = math.clamp(value, 0, 100); } }
+        public float EmissiveExposureWeight { readonly get => emissiveExposureWeight.defaultValue; set { emissiveExposureWeight.defaultValue = math.clamp(value, 0, 1); } }
+        public float CoatStrength { readonly get => coatStrength.defaultValue; set { coatStrength.defaultValue = math.clamp(value, 0, 1); } }
+        public float GlassThickness { readonly get => glassThickness.defaultValue; set { glassThickness.defaultValue = math.clamp(value, 0, 10); } }
+        public Color ColorMask1 { readonly get => colorMask1.defaultValue; set { colorMask1.defaultValue = value; } }
+        public Color ColorMask2 { readonly get => colorMask2.defaultValue; set { colorMask2.defaultValue = value; } }
+        public Color ColorMask3 { readonly get => colorMask3.defaultValue; set { colorMask3.defaultValue = value; } }
+
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity)
+        {
+            return dirty |= color.UpdateEffectiveValue(em, geometryEntity)
+              | emissiveColor.UpdateEffectiveValue(em, geometryEntity)
+              | glassColor.UpdateEffectiveValue(em, geometryEntity)
+              | normalStrength.UpdateEffectiveValue(em, geometryEntity)
+              | glassRefraction.UpdateEffectiveValue(em, geometryEntity)
+              | metallic.UpdateEffectiveValue(em, geometryEntity)
+              | smoothness.UpdateEffectiveValue(em, geometryEntity)
+              | emissiveIntensity.UpdateEffectiveValue(em, geometryEntity)
+              | emissiveExposureWeight.UpdateEffectiveValue(em, geometryEntity)
+              | coatStrength.UpdateEffectiveValue(em, geometryEntity)
+              | glassThickness.UpdateEffectiveValue(em, geometryEntity)
+              | colorMask1.UpdateEffectiveValue(em, geometryEntity)
+              | colorMask2.UpdateEffectiveValue(em, geometryEntity)
+              | colorMask3.UpdateEffectiveValue(em, geometryEntity);
+        }
 
         public readonly void UpdateDefaultMaterial(Material material, WESimulationTextType textType)
         {
@@ -247,8 +265,8 @@ namespace BelzontWE
             => new()
             {
                 dirty = true,
-                color = new() { defaultValue = new(0xff, 0xff, 0xff, 0xff) },
-                emissiveColor = new() { defaultValue = new(0xff, 0xff, 0xff, 0xff) },
+                color = new() { defaultValue = Color.white },
+                emissiveColor = new() { defaultValue = Color.white },
                 metallic = new() { defaultValue = 0 },
                 smoothness = new() { defaultValue = 0 },
                 emissiveIntensity = new() { defaultValue = 0 },
@@ -319,6 +337,7 @@ namespace BelzontWE
                 dirty = false;
                 requireUpdate = true;
             }
+            result = material;
             return requireUpdate;
         }
 

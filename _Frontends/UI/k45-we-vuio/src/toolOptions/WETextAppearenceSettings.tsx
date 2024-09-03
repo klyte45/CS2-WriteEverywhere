@@ -44,8 +44,8 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
                     <VanillaWidgets.instance.ColorPicker value={wps.ColorMask2.value} onChange={(x) => { x.a = 1, wps.ColorMask2.set(x) }} label={T_colorMask2} />
                     <VanillaWidgets.instance.ColorPicker value={wps.ColorMask3.value} onChange={(x) => { x.a = 1, wps.ColorMask3.set(x) }} label={T_colorMask3} />
                 </>}
-                <VanillaWidgets.instance.ColorPicker value={wps.EmissiveColor.value} onChange={(x) => { x.a = 1, wps.EmissiveColor.set(x) }} label={T_emissiveColor} />
-                <VanillaWidgets.instance.FloatSlider value={wps.EmissiveIntensity.value} onChange={(x) => { wps.EmissiveIntensity.set(x) }} label={T_EmissiveIntensity} max={1} min={0} />
+                <VanillaWidgets.instance.ColorPicker value={wps.EmissiveColor.value} onChange={(x) => { wps.EmissiveColor.set(x) }} label={T_emissiveColor} />
+                <VanillaWidgets.instance.FloatSlider value={wps.EmissiveIntensity.value} onChange={(x) => { wps.EmissiveIntensity.set(x) }} label={T_EmissiveIntensity} max={100} min={0} />
                 <VanillaWidgets.instance.FloatSlider value={wps.EmissiveExposureWeight.value} onChange={(x) => { wps.EmissiveExposureWeight.set(x) }} label={T_EmissiveExposureWeight} max={1} min={0} />
                 <VanillaWidgets.instance.FloatSlider value={wps.Metallic.value} onChange={(x) => { wps.Metallic.set(x) }} label={T_Metallic} max={1} min={0} />
                 <VanillaWidgets.instance.FloatSlider value={wps.CoatStrength.value} onChange={(x) => { wps.CoatStrength.set(x) }} label={T_CoatStrength} max={1} min={0} />
