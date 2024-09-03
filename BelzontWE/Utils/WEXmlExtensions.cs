@@ -112,11 +112,11 @@ namespace BelzontWE.Utils
                 scale = (Vector3Xml)value.scale
             };
         public static WETextDataTransform ToComponent(this WETextDataXml.TransformXml value)
-            => new()
+            => value is null ? default : new()
             {
-                offsetPosition = value.offsetPosition,
-                offsetRotation = Quaternion.Euler(value.offsetRotation),
-                scale = value.scale
+                offsetPosition = value.offsetPosition ?? default,
+                offsetRotation = Quaternion.Euler(value.offsetRotation ?? default),
+                scale = value.scale ?? Vector3.one
             };
 
 
@@ -128,11 +128,11 @@ namespace BelzontWE.Utils
                 text = value.ValueData.ToXml()
             };
         public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataTextXml value)
-            => new()
+            => value is null ? default : new()
             {
                 FontName = value.fontName ?? "",
                 MaxWidthMeters = value.maxWidthMeters,
-                ValueData = value.text.ToComponent()
+                ValueData = value.text?.ToComponent() ?? default
             };
         public static WETextDataXml.MeshDataImageXml ToImageMeshXml(this WETextDataMesh value)
             => new()
@@ -141,10 +141,10 @@ namespace BelzontWE.Utils
                 image = value.ValueData.ToXml()
             };
         public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataImageXml value)
-            => new()
+            => value is null ? default : new()
             {
-                Atlas = value.atlas.ToString(),
-                ValueData = value.image.ToComponent()
+                Atlas = value.atlas ?? "",
+                ValueData = value.image?.ToComponent() ?? default
             };
         public static WETextDataXml.MeshDataPlaceholderXml ToPlaceholderXml(this WETextDataMesh value)
             => new()
@@ -152,7 +152,7 @@ namespace BelzontWE.Utils
                 layout = value.ValueData.ToXml()
             };
         public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataPlaceholderXml value)
-            => new()
+            => value is null ? default : new()
             {
                 ValueData = value.layout.ToComponent()
             };
@@ -182,25 +182,25 @@ namespace BelzontWE.Utils
             formulae = value.formulaeStr.ToString()
         };
 
-        public static WETextDataValueString ToComponent(this WETextDataXml.FormulaeXml<string> value) => new()
+        public static WETextDataValueString ToComponent(this WETextDataXml.FormulaeXml<string> value) => value is null ? default : new()
         {
-            defaultValue = value.defaultValue,
-            formulaeStr = value.formulae
+            defaultValue = value.defaultValue ?? "",
+            formulaeStr = value.formulae ?? ""
         };
-        public static WETextDataValueFloat ToComponent(this WETextDataXml.FormulaeXml<float> value) => new()
+        public static WETextDataValueFloat ToComponent(this WETextDataXml.FormulaeXml<float> value) => value is null ? default : new()
         {
             defaultValue = value.defaultValue,
-            formulaeStr = value.formulae
+            formulaeStr = value.formulae ?? ""
         };
-        public static WETextDataValueColor ToComponent(this WETextDataXml.FormulaeColorRgbaXml value) => new()
+        public static WETextDataValueColor ToComponent(this WETextDataXml.FormulaeColorRgbaXml value) => value is null ? default : new()
         {
             defaultValue = value.defaultValue,
-            formulaeStr = value.formulae
+            formulaeStr = value.formulae ?? ""
         };
-        public static WETextDataValueColor ToComponent(this WETextDataXml.FormulaeColorRgbXml value) => new()
+        public static WETextDataValueColor ToComponent(this WETextDataXml.FormulaeColorRgbXml value) => value is null ? default : new()
         {
             defaultValue = value.defaultValue,
-            formulaeStr = value.formulae
+            formulaeStr = value.formulae ?? ""
         };
     }
 }

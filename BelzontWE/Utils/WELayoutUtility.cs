@@ -30,7 +30,7 @@ namespace BelzontWE
                     m_weTextData = newEntity
                 });
             }
-            if (weData.TextType != WESimulationTextType.Placeholder && toCopy.children.Length > 0)
+            if (weData.TextType != WESimulationTextType.Placeholder && toCopy.children?.Length > 0)
             {
                 for (int i = 0; i < toCopy.children.Length; i++)
                 {
