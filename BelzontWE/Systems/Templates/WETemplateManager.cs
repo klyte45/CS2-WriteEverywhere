@@ -45,6 +45,7 @@ namespace BelzontWE
         private EntityQuery m_dirtyWePrefabLayoutQuery;
         private EntityQuery m_prefabsToMarkDirty;
         private EntityQuery m_prefabsDataToSerialize;
+        private EntityQuery m_entitiesToBeUpdatedInMain;
         private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
         private bool m_templatesDirty;
@@ -160,6 +161,25 @@ namespace BelzontWE
                         }
                     }
             });
+            m_entitiesToBeUpdatedInMain = GetEntityQuery(new EntityQueryDesc[]
+            {
+                    new ()
+                    {
+                        All = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<WETextDataMain>(),
+                            ComponentType.ReadOnly<WETextDataMaterial>(),
+                            ComponentType.ReadOnly<WETextDataMesh>(),
+                            ComponentType.ReadOnly<WETextDataTransform>(),
+                            ComponentType.ReadOnly<WEToBeProcessedInMain>(),
+                        },
+                        None = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<Temp>(),
+                            ComponentType.ReadOnly<Deleted>(),
+                        }
+                    }
+            });
         }
 
         protected override void OnDestroy()
@@ -186,6 +206,10 @@ namespace BelzontWE
                 EntityManager.AddComponent<WEWaitingRenderingPlaceholder>(m_templateBasedEntities);
                 m_templatesDirty = false;
             }
+            //else if (!m_entitiesToBeUpdatedInMain.IsEmpty)
+            //{
+            //    //m_entitiesToBeUpdatedInMain
+            //}
             else if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
             {
                 var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);

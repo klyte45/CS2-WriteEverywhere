@@ -263,7 +263,7 @@ namespace BelzontWE
 
                     if (!InputManager.instance.mouseOverUI && m_MoveAction.WasPressedThisFrame())
                     {
-                        var currentItem = EntityManager.GetComponentData<WETextDataTransform>(m_Controller.CurrentEntity.Value);
+                        var currentItem = EntityManager.GetComponentData<WETextDataTransform>(m_Controller.CurrentSubEntity.Value);
                         m_mousePositionRef = new float2(InputManager.instance.mousePosition.x, InputManager.instance.mousePosition.y);
                         m_originalPositionText = currentItem.offsetPosition;
                         m_isDragging = true;
@@ -293,7 +293,7 @@ namespace BelzontWE
 
                     if (!InputManager.instance.mouseOverUI && m_RotateAction.WasPressedThisFrame())
                     {
-                        var currentItem = EntityManager.GetComponentData<WETextDataTransform>(m_Controller.CurrentEntity.Value);
+                        var currentItem = EntityManager.GetComponentData<WETextDataTransform>(m_Controller.CurrentSubEntity.Value);
                         m_mousePositionRefRot = InputManager.instance.mousePosition.x;
                         m_originalRotationText = ((Quaternion)currentItem.offsetRotation).eulerAngles;
                         m_isRotating = true;
@@ -393,7 +393,7 @@ namespace BelzontWE
                 );
             if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) offsetRef *= 10;
 
-            var currentItem = EntityManager.GetComponentData<WETextDataTransform>(m_Controller.CurrentEntity.Value);
+            var currentItem = EntityManager.GetComponentData<WETextDataTransform>(m_Controller.CurrentSubEntity.Value);
             ApplyPosition(currentItem.offsetPosition, offsetRef);
         }
 
@@ -430,7 +430,7 @@ namespace BelzontWE
             var offset = m_rotateClockwise.IsPressed() ? 1 : m_rotateCounterClockwise.IsPressed() ? -1 : 0;
             if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) offset *= 10;
 
-            var currentItem = EntityManager.GetComponentData<WETextDataTransform>(m_Controller.CurrentEntity.Value);
+            var currentItem = EntityManager.GetComponentData<WETextDataTransform>(m_Controller.CurrentSubEntity.Value);
             ApplyRotation(((Quaternion)currentItem.offsetRotation).eulerAngles, offset);
         }
         private void ApplyRotation(float3 originalRotation, float value)

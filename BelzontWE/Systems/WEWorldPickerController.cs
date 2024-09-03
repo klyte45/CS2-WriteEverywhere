@@ -357,11 +357,10 @@ namespace BelzontWE
                        {
                            m_weTextData = EntityManager.CreateEntity(typeof(WEWaitingRendering))
                        };
-                       var cmd = m_EndBarrier.CreateCommandBuffer();
-                       cmd.AddComponent(subref.m_weTextData, WETextDataMain.CreateDefault(currentEntity, targetParent));
-                       cmd.AddComponent(subref.m_weTextData, WETextDataMesh.CreateDefault(currentEntity, targetParent));
-                       cmd.AddComponent(subref.m_weTextData, WETextDataMaterial.CreateDefault(currentEntity, targetParent));
-                       cmd.AddComponent(subref.m_weTextData, WETextDataTransform.CreateDefault(currentEntity, targetParent));
+                       EntityManager.AddComponentData(subref.m_weTextData, WETextDataMain.CreateDefault(currentEntity, targetParent));
+                       EntityManager.AddComponentData(subref.m_weTextData, WETextDataMesh.CreateDefault(currentEntity, targetParent));
+                       EntityManager.AddComponentData(subref.m_weTextData, WETextDataMaterial.CreateDefault(currentEntity, targetParent));
+                       EntityManager.AddComponentData(subref.m_weTextData, WETextDataTransform.CreateDefault(currentEntity, targetParent));
                        buff.Add(subref);
                        CurrentSubEntity.ChangeValueWithEffects(subref.m_weTextData);
                        UpdateTree();
@@ -446,7 +445,7 @@ namespace BelzontWE
         internal void OnCurrentItemChanged()
         {
             ReloadTree();
-            OnCurrentItemChanged(CurrentEntity.Value);
+            OnCurrentItemChanged(CurrentSubEntity.Value);
         }
 
         private void ReloadTree()
