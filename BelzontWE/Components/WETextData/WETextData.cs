@@ -40,6 +40,127 @@ namespace BelzontWE
         public int lastLodValue;
         public float maxWidthMeters;
 
+
+        private void ResetBri()
+        {
+            materialData.ResetMaterial();
+            basicRenderInformation.Free();
+        }
+
+        public int SetFormulae(string value, out string[] cmpErr) => valueData.SetFormulae(value, out cmpErr);
+
+        public static WETextData CreateDefault(Entity target, Entity? parent = null)
+        {
+            return new WETextData
+            {
+                targetEntity = target,
+                parentEntity = parent ?? target,
+                transformData = new()
+                {
+                    offsetPosition = new(0, 0, 0),
+                    offsetRotation = new(),
+                    scale = new(1, 1, 1),
+                },
+                shaderData = new()
+                {
+                    shader = WEShader.Default,
+                    decalFlags = DEFAULT_DECAL_FLAGS,
+                },
+                materialData = new()
+                {
+                    dirty = true,
+                    color = new() { defaultValue = new(0xff, 0xff, 0xff, 0xff) },
+                    emissiveColor = new() { defaultValue = new(0xff, 0xff, 0xff, 0xff) },
+                    metallic = new() { defaultValue = 0 },
+                    smoothness = new() { defaultValue = 0 },
+                    emissiveIntensity = new() { defaultValue = 0 },
+                    glassRefraction = new() { defaultValue = 1f },
+                    colorMask1 = new() { defaultValue = UnityEngine.Color.white },
+                    colorMask2 = new() { defaultValue = UnityEngine.Color.white },
+                    colorMask3 = new() { defaultValue = UnityEngine.Color.white },
+                    glassColor = new() { defaultValue = UnityEngine.Color.white },
+                    glassThickness = new() { defaultValue = .5f },
+                    coatStrength = new() { defaultValue = 0f },
+                },
+                valueData = new()
+                {
+                    defaultValue = "NEW TEXT"
+                },
+                itemName = "New item",
+            };
+        }
+
+        public bool SetNewParent(Entity e, EntityManager em)
+        {
+            if ((e != targetEntity && e != Entity.Null && (!em.TryGetComponent<WETextData>(e, out var weData) || weData.TextType == WESimulationTextType.Placeholder || (weData.targetEntity != Entity.Null && weData.targetEntity != targetEntity))))
+            {
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"NOPE: e = {e}; weData = {weData}; targetEntity = {targetEntity}; weData.targetEntity = {weData.targetEntity}");
+                return false;
+            }
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"YEP: e = {e};  targetEntity = {targetEntity}");
+            parentEntity = e;
+            return true;
+        }
+        public void SetNewParentForced(Entity e)
+        {
+            parentEntity = e;
+        }
+
+        public readonly bool IsTemplateDirty() => templateDirty;
+        public void ClearTemplateDirty() => templateDirty = false;
+        public WETextData UpdateBRI(BasicRenderInformation bri, string text)
+        {
+            materialData.dirty = true;
+            if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
+            basicRenderInformation = default;
+            basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
+            Bounds = bri.m_bounds;
+            BriWidthMetersUnscaled = bri.m_sizeMetersUnscaled.x;
+            if (bri.m_isError)
+            {
+                LastErrorStr = text;
+            }
+            dirtyBRI = false;
+            return this;
+        }
+
+        public void Dispose()
+        {
+            if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
+            if (materialData.ownMaterial.IsAllocated)
+            {
+                GameObject.Destroy(materialData.ownMaterial.Target as Material);
+                materialData.ownMaterial.Free();
+            }
+            basicRenderInformation = default;
+            materialData.ownMaterial = default;
+        }
+
+        public WETextData OnPostInstantiate(EntityManager em)
+        {
+            FontServer.Instance.EnsureFont(fontName);
+            UpdateEffectiveText(em, targetEntity);
+            return this;
+        }
+
+
+        public void UpdateEffectiveText(EntityManager em, Entity geometryEntity)
+        {
+            var result = valueData.UpdateEffectiveText(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText);
+            if (result) dirtyBRI = true;
+        }
+
+        public static Entity GetTargetEntityEffective(Entity target, EntityManager em, bool fullRecursive = false)
+        {
+            return em.TryGetComponent<WETextData>(target, out var weData)
+                ? (fullRecursive || weData.TextType == WESimulationTextType.Archetype) && weData.TargetEntity != target
+                    ? GetTargetEntityEffective(weData.TargetEntity, em)
+                    : em.TryGetComponent<WETextData>(weData.ParentEntity, out var weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder
+                    ? GetTargetEntityEffective(weDataParent.targetEntity, em)
+                    : weData.TargetEntity
+                : target;
+        }
+
         #region Public getters & setters
         public readonly bool InitializedEffectiveText => valueData.InitializedEffectiveText;
 
@@ -141,15 +262,14 @@ namespace BelzontWE
 
         public FixedString512Bytes Text
         {
-            readonly get => valueData.m_text;
+            readonly get => valueData.defaultValue;
             set
             {
-                if (valueData.m_text != value && TextType == WESimulationTextType.Placeholder)
+                if (valueData.defaultValue != value && TextType == WESimulationTextType.Placeholder)
                 {
                     templateDirty = true;
                 }
-                valueData.m_text = value;
-                valueData.EffectiveText = value;
+                valueData.defaultValue = value;
                 dirtyBRI = true;
             }
         }
@@ -184,113 +304,113 @@ namespace BelzontWE
         public bool UseAbsoluteSizeEditing { get => transformData.useAbsoluteSizeEditing; set => transformData.useAbsoluteSizeEditing = value; }
         public Color32 Color
         {
-            readonly get => materialData.color; set
+            readonly get => materialData.color.defaultValue; set
             {
-                materialData.color = value;
+                materialData.color.defaultValue = value;
                 materialData.dirty = true;
             }
         }
         public Color32 EmissiveColor
         {
-            readonly get => materialData.emissiveColor; set
+            readonly get => materialData.emissiveColor.defaultValue; set
             {
-                materialData.emissiveColor = value;
+                materialData.emissiveColor.defaultValue = value;
                 materialData.dirty = true;
             }
         }
         public float Metallic
         {
-            readonly get => materialData.metallic; set
+            readonly get => materialData.metallic.defaultValue; set
             {
-                materialData.metallic = Mathf.Clamp01(value);
+                materialData.metallic.defaultValue = Mathf.Clamp01(value);
                 materialData.dirty = true;
             }
         }
         public float Smoothness
         {
-            readonly get => materialData.smoothness; set
+            readonly get => materialData.smoothness.defaultValue; set
             {
-                materialData.smoothness = Mathf.Clamp01(value);
+                materialData.smoothness.defaultValue = Mathf.Clamp01(value);
                 materialData.dirty = true;
             }
         }
         public float EmissiveIntensity
         {
-            readonly get => materialData.emissiveIntensity; set
+            readonly get => materialData.emissiveIntensity.defaultValue; set
             {
-                materialData.emissiveIntensity = Mathf.Clamp01(value);
+                materialData.emissiveIntensity.defaultValue = Mathf.Clamp01(value);
                 materialData.dirty = true;
             }
         }
         public float EmissiveExposureWeight
         {
-            readonly get => materialData.emissiveExposureWeight; set
+            readonly get => materialData.emissiveExposureWeight.defaultValue; set
             {
-                materialData.emissiveExposureWeight = Mathf.Clamp01(value);
+                materialData.emissiveExposureWeight.defaultValue = Mathf.Clamp01(value);
                 materialData.dirty = true;
             }
         }
         public float CoatStrength
         {
-            readonly get => materialData.coatStrength; set
+            readonly get => materialData.coatStrength.defaultValue; set
             {
-                materialData.coatStrength = Mathf.Clamp01(value);
+                materialData.coatStrength.defaultValue = Mathf.Clamp01(value);
                 materialData.dirty = true;
             }
         }
         public float GlassRefraction
         {
-            readonly get => materialData.glassRefraction; set
+            readonly get => materialData.glassRefraction.defaultValue; set
             {
-                materialData.glassRefraction = Mathf.Clamp(value, 1, 1000);
+                materialData.glassRefraction.defaultValue = Mathf.Clamp(value, 1, 1000);
                 materialData.dirty = true;
             }
         }
         public Color GlassColor
         {
-            readonly get => materialData.glassColor; set
+            readonly get => materialData.glassColor.defaultValue; set
             {
-                materialData.glassColor = value;
+                materialData.glassColor.defaultValue = value;
                 materialData.dirty = true;
             }
         }
         public Color ColorMask1
         {
-            readonly get => materialData.colorMask1; set
+            readonly get => materialData.colorMask1.defaultValue; set
             {
-                materialData.colorMask1 = value;
+                materialData.colorMask1.defaultValue = value;
                 materialData.dirty = true;
             }
         }
         public Color ColorMask2
         {
-            readonly get => materialData.colorMask2; set
+            readonly get => materialData.colorMask2.defaultValue; set
             {
-                materialData.colorMask2 = value;
+                materialData.colorMask2.defaultValue = value;
                 materialData.dirty = true;
             }
         }
         public Color ColorMask3
         {
-            readonly get => materialData.colorMask3; set
+            readonly get => materialData.colorMask3.defaultValue; set
             {
-                materialData.colorMask3 = value;
+                materialData.colorMask3.defaultValue = value;
                 materialData.dirty = true;
             }
         }
         public float NormalStrength
         {
-            readonly get => materialData.normalStrength; set
+            readonly get => materialData.normalStrength.defaultValue; set
             {
-                materialData.normalStrength = Mathf.Clamp(value, 0, 10);
+                materialData.normalStrength.defaultValue = Mathf.Clamp(value, 0, 10);
                 materialData.dirty = true;
             }
         }
         public float GlassThickness
         {
-            readonly get => materialData.glassThickness; set
+            readonly get => materialData.glassThickness.defaultValue; set
             {
-                materialData.glassThickness = Mathf.Clamp(value, 0.01f, 100);
+                materialData.glassThickness.defaultValue = Mathf.Clamp(value, 0.01f, 100);
                 materialData.dirty = true;
             }
         }
@@ -309,10 +429,10 @@ namespace BelzontWE
         }
         public FixedString512Bytes Formulae
         {
-            get => valueData.formulaeHandlerStr;
-            private set => valueData.formulaeHandlerStr = value;
+            get => valueData.formulaeStr;
+            private set => valueData.formulaeStr = value;
         }
-        public readonly FixedString512Bytes EffectiveText => valueData.EffectiveText;
+        public readonly FixedString512Bytes EffectiveText => valueData.EffectiveValue;
         public bool HasBRI => basicRenderInformation.IsAllocated;
         public Bounds3 Bounds { get; private set; }
 
@@ -320,172 +440,10 @@ namespace BelzontWE
         {
             readonly get => itemName; set => itemName = value;
         }
-#endregion
-
-        private void ResetBri()
-        {
-            materialData.ResetMaterial();
-            basicRenderInformation.Free();
-        }
-
-
-        public int SetFormulae(string value, out string[] cmpErr) => valueData.SetFormulae(value, out cmpErr);
-        public static WETextData CreateDefault(Entity target, Entity? parent = null)
-        {
-            return new WETextData
-            {
-                targetEntity = target,
-                parentEntity = parent ?? target,
-                transformData = new()
-                {
-                    offsetPosition = new(0, 0, 0),
-                    offsetRotation = new(),
-                    scale = new(1, 1, 1),
-                },
-                shaderData = new()
-                {
-                    shader = WEShader.Default,
-                    decalFlags = DEFAULT_DECAL_FLAGS,
-                },
-                materialData = new()
-                {
-                    dirty = true,
-                    color = new(0xff, 0xff, 0xff, 0xff),
-                    emissiveColor = new(0xff, 0xff, 0xff, 0xff),
-                    metallic = 0,
-                    smoothness = 0,
-                    emissiveIntensity = 0,
-                    glassRefraction = 1f,
-                    colorMask1 = UnityEngine.Color.white,
-                    colorMask2 = UnityEngine.Color.white,
-                    colorMask3 = UnityEngine.Color.white,
-                    glassColor = UnityEngine.Color.white,
-                    glassThickness = .5f,
-                    coatStrength = 0f,
-                },
-                valueData = new()
-                {
-                    m_text = "NEW TEXT"
-                },
-                itemName = "New item",
-            };
-        }
-
-        public bool SetNewParent(Entity e, EntityManager em)
-        {
-            if ((e != targetEntity && e != Entity.Null && (!em.TryGetComponent<WETextData>(e, out var weData) || weData.TextType == WESimulationTextType.Placeholder || (weData.targetEntity != Entity.Null && weData.targetEntity != targetEntity))))
-            {
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"NOPE: e = {e}; weData = {weData}; targetEntity = {targetEntity}; weData.targetEntity = {weData.targetEntity}");
-                return false;
-            }
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"YEP: e = {e};  targetEntity = {targetEntity}");
-            parentEntity = e;
-            return true;
-        }
-        public void SetNewParentForced(Entity e)
-        {
-            parentEntity = e;
-        }
-
-        public readonly bool IsDirty() => materialData.dirty;
-        public readonly bool IsTemplateDirty() => templateDirty;
-        public void ClearTemplateDirty() => templateDirty = false;
-        public WETextData UpdateBRI(BasicRenderInformation bri, string text)
-        {
-            materialData.dirty = true;
-            if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
-            basicRenderInformation = default;
-            basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
-            Bounds = bri.m_bounds;
-            BriWidthMetersUnscaled = bri.m_sizeMetersUnscaled.x;
-            if (bri.m_isError)
-            {
-                LastErrorStr = text;
-            }
-            dirtyBRI = false;
-            return this;
-        }
-
-        public void Dispose()
-        {
-            if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
-            if (materialData.ownMaterial.IsAllocated)
-            {
-                GameObject.Destroy(materialData.ownMaterial.Target as Material);
-                materialData.ownMaterial.Free();
-            }
-            basicRenderInformation = default;
-            materialData.ownMaterial = default;
-        }
-
-        public WETextData OnPostInstantiate(EntityManager em)
-        {
-            FontServer.Instance.EnsureFont(fontName);
-            UpdateEffectiveText(em, targetEntity);
-            return this;
-        }
-
-
-        public void UpdateEffectiveText(EntityManager em, Entity geometryEntity)
-        {
-            var result = valueData.UpdateEffectiveText(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText);
-            if (result) dirtyBRI = true;
-        }
-
-        public static Entity GetTargetEntityEffective(Entity target, EntityManager em, bool fullRecursive = false)
-        {
-            return em.TryGetComponent<WETextData>(target, out var weData)
-                ? (fullRecursive || weData.TextType == WESimulationTextType.Archetype) && weData.TargetEntity != target
-                    ? GetTargetEntityEffective(weData.TargetEntity, em)
-                    : em.TryGetComponent<WETextData>(weData.ParentEntity, out var weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder
-                    ? GetTargetEntityEffective(weDataParent.targetEntity, em)
-                    : weData.TargetEntity
-                : target;
-        }
-
+        #endregion
 
         #region Serialize
-        public WETextDataXml ToDataXml(EntityManager em)
-        {
-            return new WETextDataXml
-            {
-                offsetPosition = (Vector3Xml)transformData.offsetPosition,
-                offsetRotation = (Vector3Xml)((Quaternion)transformData.offsetRotation).eulerAngles,
-                scale = (Vector3Xml)transformData.scale,
-                itemName = ItemName.ToString(),
-                shader = Shader,
-                atlas = Atlas.ToString(),
-                formulae = Formulae.ToString(),
-                text = Text.ToString(),
-                textType = TextType,
-                maxWidthMeters = maxWidthMeters,
-                decalFlags = DecalFlags,
-                fontName = fontName.ToString(),
-                defaultStyle = new WETextDataXml.WETextDataDefaultStyleXml
-                {
-                    coatStrength = CoatStrength,
-                    color = Color,
-                    emissiveColor = EmissiveColor,
-                    emissiveExposureWeight = EmissiveExposureWeight,
-                    emissiveIntensity = EmissiveIntensity,
-                    metallic = Metallic,
-                    smoothness = Smoothness,
-                    colorMask1 = ColorMask1,
-                    colorMask2 = ColorMask2,
-                    colorMask3 = ColorMask3,
-                },
-                glassStyle = new WETextDataXml.WETextDataGlassStyleXml
-                {
-                    color = Color,
-                    glassColor = GlassColor,
-                    glassRefraction = GlassRefraction,
-                    metallic = Metallic,
-                    smoothness = Smoothness,
-                    normalStrength = NormalStrength,
-                    thickness = GlassThickness
-                }
-            };
-        }
+        public WETextDataXml ToDataXml(EntityManager em) => ToDataStruct(em).ToXml();
         public WETextDataStruct ToDataStruct(EntityManager em)
         {
             return new WETextDataStruct
@@ -504,108 +462,30 @@ namespace BelzontWE
                 fontName = fontName.ToString(),
                 defaultStyle = new()
                 {
-                    coatStrength = CoatStrength,
-                    color = Color,
-                    emissiveColor = EmissiveColor,
-                    emissiveExposureWeight = EmissiveExposureWeight,
-                    emissiveIntensity = EmissiveIntensity,
-                    metallic = Metallic,
-                    smoothness = Smoothness,
-                    colorMask1 = ColorMask1,
-                    colorMask2 = ColorMask2,
-                    colorMask3 = ColorMask3
+                    coatStrength = materialData.coatStrength.ToDataStruct(),
+                    color = materialData.color.ToDataStruct(),
+                    emissiveColor = materialData.emissiveColor.ToDataStruct(),
+                    emissiveExposureWeight = materialData.emissiveExposureWeight.ToDataStruct(),
+                    emissiveIntensity = materialData.emissiveIntensity.ToDataStruct(),
+                    metallic = materialData.metallic.ToDataStruct(),
+                    smoothness = materialData.smoothness.ToDataStruct(),
+                    colorMask1 = materialData.colorMask1.ToDataStruct(),
+                    colorMask2 = materialData.colorMask2.ToDataStruct(),
+                    colorMask3 = materialData.colorMask3.ToDataStruct(),
                 },
                 glassStyle = new()
                 {
-                    color = Color,
-                    glassColor = GlassColor,
-                    glassRefraction = GlassRefraction,
-                    metallic = Metallic,
-                    smoothness = Smoothness,
-                    normalStrength = NormalStrength,
-                    thickness = GlassThickness
+                    color = materialData.color.ToDataStruct(),
+                    glassColor = materialData.glassColor.ToDataStruct(),
+                    glassRefraction = materialData.glassRefraction.ToDataStruct(),
+                    metallic = materialData.metallic.ToDataStruct(),
+                    smoothness = materialData.smoothness.ToDataStruct(),
+                    normalStrength = materialData.normalStrength.ToDataStruct(),
+                    thickness = materialData.glassThickness.ToDataStruct()
                 },
             };
         }
 
-        public static WETextData FromDataXml(WETextDataXml xml, Entity parent, EntityManager em)
-        {
-            Entity target;
-            if (em.TryGetComponent(parent, out WETextData parentData))
-            {
-                target = parentData.targetEntity;
-            }
-            else
-            {
-                target = parent;
-            }
-
-            var weData = new WETextData
-            {
-                targetEntity = target,
-                parentEntity = parent,
-                transformData = new()
-                {
-                    offsetPosition = (float3)xml.offsetPosition,
-                    offsetRotation = Quaternion.Euler(xml.offsetRotation),
-                    scale = (float3)xml.scale
-                },
-                ItemName = xml.itemName ?? "",
-                shaderData = new()
-                {
-                    shader = xml.shader,
-                    decalFlags = xml.decalFlags,
-                },
-                Atlas = xml.atlas ?? "",
-                Formulae = xml.formulae ?? "",
-                Text = xml.text ?? "",
-                TextType = xml.textType,
-                maxWidthMeters = xml.maxWidthMeters,
-                fontName = xml.fontName?.Trim() ?? "",
-            };
-            switch (xml.shader)
-            {
-                case WEShader.Glass:
-                    weData.materialData = new()
-                    {
-                        color = xml.glassStyle.color,
-                        glassColor = xml.glassStyle.glassColor,
-                        glassRefraction = xml.glassStyle.glassRefraction,
-                        metallic = xml.glassStyle.metallic,
-                        smoothness = xml.glassStyle.smoothness,
-                        normalStrength = xml.glassStyle.normalStrength,
-                        glassThickness = xml.glassStyle.thickness,
-                    };
-                    break;
-                default:
-                    weData.materialData = new()
-                    {
-                        coatStrength = xml.defaultStyle.coatStrength,
-                        color = xml.defaultStyle.color,
-                        emissiveColor = xml.defaultStyle.emissiveColor,
-                        emissiveExposureWeight = xml.defaultStyle.emissiveExposureWeight,
-                        emissiveIntensity = xml.defaultStyle.emissiveIntensity,
-                        metallic = xml.defaultStyle.metallic,
-                        smoothness = xml.defaultStyle.smoothness,
-                        colorMask1 = xml.defaultStyle.colorMask1,
-                        colorMask2 = xml.defaultStyle.colorMask2,
-                        colorMask3 = xml.defaultStyle.colorMask3,
-                    };
-                    break;
-            }
-            FontServer.Instance.EnsureFont(weData.fontName);
-            weData.UpdateEffectiveText(em, target);
-            return weData;
-        }
-
-        public static WETextData FromDataStruct(WETextDataStruct xml, Entity parent, EntityManager em)
-        {
-            Entity target = em.TryGetComponent(parent, out WETextData parentData) ? parentData.targetEntity : parent;
-            var weData = FromDataStruct(xml, parent, target);
-            FontServer.Instance.EnsureFont(weData.fontName);
-            weData.UpdateEffectiveText(em, target);
-            return weData;
-        }
         public static WETextData FromDataStruct(WETextDataStruct xml, Entity parent, Entity target)
         {
             var weData = CreateDefault(default, default);
@@ -636,28 +516,28 @@ namespace BelzontWE
                 case WEShader.Glass:
                     weData.materialData = new()
                     {
-                        color = xml.glassStyle.color,
-                        glassColor = xml.glassStyle.glassColor,
-                        glassRefraction = xml.glassStyle.glassRefraction,
-                        metallic = xml.glassStyle.metallic,
-                        smoothness = xml.glassStyle.smoothness,
-                        normalStrength = xml.glassStyle.normalStrength,
-                        glassThickness = xml.glassStyle.thickness,
+                        color = WETextDataValueColor.FromStruct(xml.glassStyle.color),
+                        glassColor = WETextDataValueColor.FromStruct(xml.glassStyle.glassColor),
+                        glassRefraction = WETextDataValueFloat.FromStruct(xml.glassStyle.glassRefraction),
+                        metallic = WETextDataValueFloat.FromStruct(xml.glassStyle.metallic),
+                        smoothness = WETextDataValueFloat.FromStruct(xml.glassStyle.smoothness),
+                        normalStrength = WETextDataValueFloat.FromStruct(xml.glassStyle.normalStrength),
+                        glassThickness = WETextDataValueFloat.FromStruct(xml.glassStyle.thickness),
                     };
                     break;
                 default:
                     weData.materialData = new()
                     {
-                        coatStrength = xml.defaultStyle.coatStrength,
-                        color = xml.defaultStyle.color,
-                        emissiveColor = xml.defaultStyle.emissiveColor,
-                        emissiveExposureWeight = xml.defaultStyle.emissiveExposureWeight,
-                        emissiveIntensity = xml.defaultStyle.emissiveIntensity,
-                        metallic = xml.defaultStyle.metallic,
-                        smoothness = xml.defaultStyle.smoothness,
-                        colorMask1 = xml.defaultStyle.colorMask1,
-                        colorMask2 = xml.defaultStyle.colorMask2,
-                        colorMask3 = xml.defaultStyle.colorMask3,
+                        color = WETextDataValueColor.FromStruct(xml.defaultStyle.color),
+                        emissiveColor = WETextDataValueColor.FromStruct(xml.defaultStyle.emissiveColor),
+                        colorMask1 = WETextDataValueColor.FromStruct(xml.defaultStyle.colorMask1),
+                        colorMask2 = WETextDataValueColor.FromStruct(xml.defaultStyle.colorMask2),
+                        colorMask3 = WETextDataValueColor.FromStruct(xml.defaultStyle.colorMask3),
+                        coatStrength = WETextDataValueFloat.FromStruct(xml.defaultStyle.coatStrength),
+                        emissiveExposureWeight = WETextDataValueFloat.FromStruct(xml.defaultStyle.emissiveExposureWeight),
+                        emissiveIntensity = WETextDataValueFloat.FromStruct(xml.defaultStyle.emissiveIntensity),
+                        metallic = WETextDataValueFloat.FromStruct(xml.defaultStyle.metallic),
+                        smoothness = WETextDataValueFloat.FromStruct(xml.defaultStyle.smoothness),
                     };
                     break;
             }

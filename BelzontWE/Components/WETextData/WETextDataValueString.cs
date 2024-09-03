@@ -9,15 +9,15 @@ namespace BelzontWE
     {
         private struct WETextDataValueString
         {
-            public FixedString512Bytes formulaeHandlerStr;
-            public bool loadingFnDone;
-            public FixedString512Bytes m_text;
-            public readonly Func<EntityManager, Entity, string> FormulaeFn => WEFormulaeHelper.GetCached(formulaeHandlerStr);
+            public FixedString512Bytes defaultValue;
+            public FixedString512Bytes formulaeStr;
+            public readonly Func<EntityManager, Entity, string> FormulaeFn => WEFormulaeHelper.GetCachedStringFn(formulaeStr);
             public bool InitializedEffectiveText { get; private set; }
-            public FixedString512Bytes EffectiveText { get; set; }
+            public FixedString512Bytes EffectiveValue { get; private set; }
+            private bool loadingFnDone;
 
             public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
-                => WEFormulaeHelper.SetFormulae(newFormulae ?? "", out errorFmtArgs, out formulaeHandlerStr, out var resultFormulaeFn);
+                => WEFormulaeHelper.SetFormulae<string>(newFormulae ?? "", out errorFmtArgs, out formulaeStr, out var resultFormulaeFn);
 
             public bool UpdateEffectiveText(EntityManager em, Entity geometryEntity, string oldEffText)
             {
@@ -25,18 +25,17 @@ namespace BelzontWE
                 var loadedFnNow = false;
                 if (!loadingFnDone)
                 {
-                    if (formulaeHandlerStr.Length > 0)
+                    if (formulaeStr.Length > 0)
                     {
-                        SetFormulae(formulaeHandlerStr.ToString(), out _);
+                        SetFormulae(formulaeStr.ToString(), out _);
                     }
                     loadedFnNow = loadingFnDone = true;
                 }
-                EffectiveText = FormulaeFn is Func<EntityManager, Entity, string> fn
+                EffectiveValue = FormulaeFn is Func<EntityManager, Entity, string> fn
                     ? fn(em, geometryEntity)?.ToString().Trim().Truncate(500) ?? "<InvlidFn>"
-                    : formulaeHandlerStr.Length > 0 ? "<InvalidFn>" : m_text;
-                return loadedFnNow || EffectiveText.ToString() != oldEffText;
+                    : formulaeStr.Length > 0 ? "<InvalidFn>" : defaultValue;
+                return loadedFnNow || EffectiveValue.ToString() != oldEffText;
             }
         }
-
     }
 }

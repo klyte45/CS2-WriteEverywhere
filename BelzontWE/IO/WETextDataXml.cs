@@ -1,4 +1,6 @@
 ﻿using Belzont.Utils;
+using Colossal.OdinSerializer.Utilities;
+using System;
 using System.ComponentModel;
 
 
@@ -15,14 +17,14 @@ namespace BelzontWE
         public Vector3Xml scale = (Vector3Xml)Vector3.one;
         [XmlAttribute] public string itemName;
         [XmlAttribute] public WEShader shader;
-        [XmlAttribute] public string text;
-        [XmlAttribute] public string layoutName { get => text; set => text = value; }
-        [XmlAttribute] public string imageName { get => text; set => text = value; }
-        [XmlAttribute] public string atlas;
+        [XmlElement] public WETextDataFormulae<string> text;
+        [XmlElement] public WETextDataFormulae<string> layoutName { get => text; set => text = value; }
+        [XmlElement] public WETextDataFormulae<string> imageName { get => text; set => text = value; }
+
         [XmlAttribute] public WESimulationTextType textType;
         [XmlElement] public WETextDataDefaultStyleXml defaultStyle;
         [XmlElement] public WETextDataGlassStyleXml glassStyle;
-        [XmlAttribute] public string formulae;
+        [XmlAttribute] public string atlas;
         [XmlAttribute] public string fontName;
         [XmlAttribute][DefaultValue(0f)] public float maxWidthMeters;
         [XmlAttribute][DefaultValue(WETextData.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextData.DEFAULT_DECAL_FLAGS;
@@ -41,34 +43,48 @@ namespace BelzontWE
 
         public class WETextDataDefaultStyleXml
         {
-            [XmlIgnore] public Color32 color;
-            [XmlIgnore] public Color32 emissiveColor;
-            [XmlAttribute][DefaultValue("00000000")] public string colorRGBA { get => color.ToRGBA(); set => color = ColorExtensions.FromRGBA(value); }
-            [XmlAttribute][DefaultValue("00000000")] public string emissiveColorRGBA { get => emissiveColor.ToRGBA(); set => emissiveColor = ColorExtensions.FromRGBA(value); }
-            [XmlAttribute][DefaultValue(0f)] public float metallic;
-            [XmlAttribute][DefaultValue(0f)] public float smoothness;
-            [XmlAttribute][DefaultValue(0f)] public float emissiveIntensity;
-            [XmlAttribute][DefaultValue(0f)] public float emissiveExposureWeight;
-            [XmlAttribute][DefaultValue(0f)] public float coatStrength;
-            [XmlIgnore] public Color32 colorMask1 = Color.white;
-            [XmlIgnore] public Color32 colorMask2 = Color.white;
-            [XmlIgnore] public Color32 colorMask3 = Color.white;
-            [XmlAttribute][DefaultValue("FFFFFF")] public string colorMask1RGB { get => colorMask1.ToRGB(); set => colorMask1 = ColorExtensions.FromRGB(value); }
-            [XmlAttribute][DefaultValue("FFFFFF")] public string colorMask2RGB { get => colorMask2.ToRGB(); set => colorMask2 = ColorExtensions.FromRGB(value); }
-            [XmlAttribute][DefaultValue("FFFFFF")] public string colorMask3RGB { get => colorMask3.ToRGB(); set => colorMask3 = ColorExtensions.FromRGB(value); }
+            [XmlElement] public WETextDataFormulaeColorRGBA color;
+            [XmlElement] public WETextDataFormulaeColorRGBA emissiveColor;
+            [XmlElement] public WETextDataFormulae<float> metallic;
+            [XmlElement] public WETextDataFormulae<float> smoothness;
+            [XmlElement] public WETextDataFormulae<float> emissiveIntensity;
+            [XmlElement] public WETextDataFormulae<float> emissiveExposureWeight;
+            [XmlElement] public WETextDataFormulae<float> coatStrength;
+            [XmlElement] public WETextDataFormulaeColorRGB colorMask1 = new() { defaultValue = Color.white };
+            [XmlElement] public WETextDataFormulaeColorRGB colorMask2 = new() { defaultValue = Color.white };
+            [XmlElement] public WETextDataFormulaeColorRGB colorMask3 = new() { defaultValue = Color.white };
         }
 
         public class WETextDataGlassStyleXml
         {
-            [XmlIgnore] public Color32 color;
-            [XmlIgnore] public Color32 glassColor;
-            [XmlAttribute][DefaultValue("00000000")] public string colorRGBA { get => color.ToRGBA(); set => color = ColorExtensions.FromRGBA(value); }
-            [XmlAttribute][DefaultValue("000000")] public string glassColorRGB { get => glassColor.ToRGB(); set => glassColor = ColorExtensions.FromRGB(value); }
-            [XmlAttribute][DefaultValue(0f)] public float glassRefraction;
-            [XmlAttribute][DefaultValue(0f)] public float metallic;
-            [XmlAttribute][DefaultValue(0f)] public float smoothness;
-            [XmlAttribute][DefaultValue(0f)] public float normalStrength;
-            [XmlAttribute][DefaultValue(0f)] public float thickness = 1;
+            [XmlElement] public WETextDataFormulaeColorRGBA color;
+            [XmlElement] public WETextDataFormulaeColorRGB glassColor;
+            [XmlElement] public WETextDataFormulae<float> glassRefraction;
+            [XmlElement] public WETextDataFormulae<float> metallic;
+            [XmlElement] public WETextDataFormulae<float> smoothness;
+            [XmlElement] public WETextDataFormulae<float> normalStrength;
+            [XmlElement] public WETextDataFormulae<float> thickness = new() { defaultValue = .5f };
+        }
+
+        public class WETextDataFormulae<T>
+        {
+            [XmlAttribute] public T defaultValue;
+            [XmlAttribute] public string formulae;
+            public bool ShouldSerializeformulae() => !formulae.IsNullOrWhitespace();         
+        }
+        public class WETextDataFormulaeColorRGB
+        {
+            [XmlIgnore] public Color32 defaultValue;
+            [XmlAttribute] public string defaultValueRGB { get => defaultValue.ToRGB(); set => defaultValue = ColorExtensions.FromRGB(value); }
+            [XmlAttribute] public string formulae;
+            public bool ShouldSerializeformulae() => !formulae.IsNullOrWhitespace();
+        }
+        public class WETextDataFormulaeColorRGBA
+        {
+            [XmlIgnore] public Color32 defaultValue;
+            [XmlAttribute] public string defaultValueRGBA { get => defaultValue.ToRGBA(); set => defaultValue = ColorExtensions.FromRGBA(value); }
+            [XmlAttribute] public string formulae;
+            public bool ShouldSerializeformulae() => !formulae.IsNullOrWhitespace();
         }
     }
 }

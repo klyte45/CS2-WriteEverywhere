@@ -358,11 +358,13 @@ namespace BelzontWE
         private Coroutine LoadingPrefabLayoutsCoroutine;
         private const string LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID = "loadingPrefabTemplates";
         private const string ERRORS_LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID = "errorLoadingPrefabTemplates";
-        private void UpdatePrefabIndexDictionary()
+        private unsafe void UpdatePrefabIndexDictionary()
         {
             if (!isPrefabListDirty) return;
             if (LoadingPrefabLayoutsCoroutine != null) GameManager.instance.StopCoroutine(LoadingPrefabLayoutsCoroutine);
             if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"UpdatePrefabIndexDictionary!!!");
+
+            LogUtils.DoInfoLog($"sizeof(WETextDataTreeStruct) = {sizeof(WETextDataTreeStruct)}");
             LoadingPrefabLayoutsCoroutine = GameManager.instance.StartCoroutine(UpdatePrefabIndexDictionary_Coroutine());
         }
         private IEnumerator UpdatePrefabIndexDictionary_Coroutine()

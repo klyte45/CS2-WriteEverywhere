@@ -4,6 +4,7 @@ using Belzont.Interfaces;
 using Belzont.Utils;
 using MonoMod.Utils;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -11,6 +12,7 @@ using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 using Unity.Collections;
 using Unity.Entities;
+using UnityEngine;
 
 namespace BelzontWE
 {
@@ -23,12 +25,22 @@ namespace BelzontWE
         private static MethodInfo r_HasComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
             .First(x => x.Name == "HasComponent" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 1 && pi[0].ParameterType == typeof(Entity));
 
-        private static readonly Dictionary<FixedString512Bytes, Func<EntityManager, Entity, string>> cachedFns = new();
+        private static readonly Dictionary<FixedString512Bytes, Func<EntityManager, Entity, string>> cachedFnsString = new();
+        private static readonly Dictionary<FixedString512Bytes, Func<EntityManager, Entity, float>> cachedFnsFloat = new();
+        private static readonly Dictionary<FixedString512Bytes, Func<EntityManager, Entity, Color>> cachedFnsColor = new();
 
-        public static Func<EntityManager, Entity, string> GetCached(FixedString512Bytes formulae) => cachedFns.TryGetValue(formulae, out var cached) ? cached : null;
-        public static bool HasCached(FixedString512Bytes formulae) => cachedFns.ContainsKey(formulae);
-        public static byte SetFormulae(FixedString512Bytes newFormulae512, out string[] errorFmtArgs, out FixedString512Bytes resultFormulaeStr, out Func<EntityManager, Entity, string> resultFormulaeFn)
+        public static Func<EntityManager, Entity, string> GetCachedStringFn(FixedString512Bytes formulae) => cachedFnsString.TryGetValue(formulae, out var cached) ? cached : null;
+        public static Func<EntityManager, Entity, float> GetCachedFloatFn(FixedString512Bytes formulae) => cachedFnsFloat.TryGetValue(formulae, out var cached) ? cached : null;
+        public static Func<EntityManager, Entity, Color> GetCachedColorFn(FixedString512Bytes formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached : null;
+
+        public static byte SetFormulae<T>(FixedString512Bytes newFormulae512, out string[] errorFmtArgs, out FixedString512Bytes resultFormulaeStr, out Func<EntityManager, Entity, T> resultFormulaeFn)
         {
+            IDictionary refDic;
+            if (typeof(T) == typeof(string)) refDic = cachedFnsString;
+            else if (typeof(T) != typeof(float)) refDic = cachedFnsFloat;
+            else if (typeof(T) != typeof(Color)) refDic = cachedFnsColor;
+            else throw new InvalidCastException("Formulae only support types float, string or UnityEngine.Color");
+
             resultFormulaeStr = default;
             resultFormulaeFn = default;
             if (newFormulae512.Trim() == default)
@@ -36,19 +48,23 @@ namespace BelzontWE
                 errorFmtArgs = null;
                 return 0;
             }
-            if (cachedFns.TryGetValue(newFormulae512, out var handle) && handle != null)
+            if (refDic.Contains(newFormulae512))
             {
-                resultFormulaeStr = (newFormulae512);
-                resultFormulaeFn = (handle.Target as Func<EntityManager, Entity, string>);
-                errorFmtArgs = null;
-                return 0;
+                var handle = refDic[newFormulae512];
+                if (handle != null)
+                {
+                    resultFormulaeStr = newFormulae512;
+                    resultFormulaeFn = handle as Func<EntityManager, Entity, T>;
+                    errorFmtArgs = null;
+                    return 0;
+                }
             }
-            cachedFns[newFormulae512] = null;
+            refDic[newFormulae512] = null;
             var newFormulae = newFormulae512.ToString();
             var path = GetPathParts(newFormulae);
             DynamicMethodDefinition dynamicMethodDefinition = new(
                 $"__WE_CS2_{nameof(WETextData)}_formulae_{new Regex("[^A-Za-z0-9_]").Replace(newFormulae, "_")}",
-                typeof(string),
+                typeof(T),
                 new Type[] { typeof(EntityManager), typeof(Entity) }
                 );
             ILGenerator iLGenerator = dynamicMethodDefinition.GetILGenerator();
@@ -116,25 +132,34 @@ namespace BelzontWE
                     iLGenerator.Emit(OpCodes.Box, currentComponentType);
                     iLGenerator.EmitCall(OpCodes.Call, toStringMethod, null);
                 }
-                else if (currentComponentType != typeof(string))
+                else if (currentComponentType != typeof(T))
                 {
-                    var toStringMethod = currentComponentType.GetMethod("ToString", ReflectionUtils.allFlags & ~BindingFlags.DeclaredOnly, null, new Type[0], null);
-                    if (currentComponentType.IsValueType)
+                    if (typeof(T) != typeof(string))
                     {
-                        if (!skipValueTypeVar)
-                        {
-                            var local0 = iLGenerator.DeclareLocal(currentComponentType);
-                            iLGenerator.Emit(OpCodes.Stloc, local0);
-                            iLGenerator.Emit(OpCodes.Ldloca, local0);
-                        }
-                        iLGenerator.Emit(OpCodes.Constrained, currentComponentType);
+                        iLGenerator.Emit(OpCodes.Pop);
+                        if (typeof(T) == typeof(float)) iLGenerator.Emit(OpCodes.Ldc_R4, float.NaN);
+                        if (typeof(T) == typeof(Color)) iLGenerator.Emit(OpCodes.Call, typeof(Color).GetProperty("magenta", RedirectorUtils.allFlags).GetMethod);
                     }
-                    iLGenerator.EmitCall(OpCodes.Callvirt, toStringMethod, null);
+                    else
+                    {
+                        var toStringMethod = currentComponentType.GetMethod("ToString", ReflectionUtils.allFlags & ~BindingFlags.DeclaredOnly, null, new Type[0], null);
+                        if (currentComponentType.IsValueType)
+                        {
+                            if (!skipValueTypeVar)
+                            {
+                                var local0 = iLGenerator.DeclareLocal(currentComponentType);
+                                iLGenerator.Emit(OpCodes.Stloc, local0);
+                                iLGenerator.Emit(OpCodes.Ldloca, local0);
+                            }
+                            iLGenerator.Emit(OpCodes.Constrained, currentComponentType);
+                        }
+                        iLGenerator.EmitCall(OpCodes.Callvirt, toStringMethod, null);
+                    }
                 }
                 iLGenerator.Emit(OpCodes.Ret);
                 resultFormulaeStr = newFormulae;
                 var generatedMethod = dynamicMethodDefinition.Generate();
-                cachedFns[newFormulae512] = resultFormulaeFn = (x, e) => generatedMethod.Invoke(null, new object[] { x, e }) as string;
+                refDic[newFormulae512] = resultFormulaeFn = (x, e) => (T)generatedMethod.Invoke(null, new object[] { x, e });
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => (" + string.Join(", ", dynamicMethodDefinition.Definition.Parameters.Select(x => $"{(x.IsIn ? "in " : x.IsOut ? "out " : "")}{x.ParameterType} {x.Name}")) + ")");
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => \n" + string.Join("\n", dynamicMethodDefinition.Definition.Body.Instructions.Select(x => x.ToString())));
 
