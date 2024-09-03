@@ -1,6 +1,7 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font.Utility;
+using BelzontWE.Utils;
 using Colossal.Entities;
 using Colossal.Mathematics;
 using System;
@@ -9,6 +10,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Rendering.HighDefinition;
 
 namespace BelzontWE
 {
@@ -20,6 +22,7 @@ namespace BelzontWE
         private FixedString32Bytes fontName;
         private WETextDataValueString valueData;
         private bool dirty;
+        private bool templateDirty;
 
         public FixedString32Bytes Atlas { readonly get => atlas; set => atlas = value; }
         public FixedString32Bytes FontName { readonly get => fontName; set => fontName = value; }
@@ -48,6 +51,8 @@ namespace BelzontWE
             };
 
         public bool IsDirty() => dirty;
+        public bool IsTemplateDirty() => templateDirty;
+        public void ClearTemplateDirty() => templateDirty = false;
 
         public WETextDataMesh UpdateBRI(BasicRenderInformation bri, string text)
         {
@@ -78,7 +83,7 @@ namespace BelzontWE
         public void UpdateEffectiveText(EntityManager em, Entity geometryEntity)
         {
             var result = ValueData.UpdateEffectiveText(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText);
-            if (result) dirty = true;
+            if (result) templateDirty = dirty = true;
         }
         public static Entity GetTargetEntityEffective(Entity target, EntityManager em, bool fullRecursive = false)
         {
@@ -106,6 +111,8 @@ namespace BelzontWE
                 }
             }
         }
+
+        public string Text { readonly get => valueData.defaultValue.ToString(); set { valueData.defaultValue = value; dirty = true; } }
     }
 
     public struct WETextDataMain : IComponentData
@@ -161,24 +168,39 @@ namespace BelzontWE
 
     public struct WETextDataMaterial : IComponentData, IDisposable
     {
-        public WETextDataValueColor color;
-        public WETextDataValueColor emissiveColor;
-        public WETextDataValueColor glassColor;
-        public WETextDataValueFloat normalStrength;
-        public WETextDataValueFloat glassRefraction;
-        public WETextDataValueFloat metallic;
-        public WETextDataValueFloat smoothness;
-        public WETextDataValueFloat emissiveIntensity;
-        public WETextDataValueFloat emissiveExposureWeight;
-        public WETextDataValueFloat coatStrength;
-        public WETextDataValueFloat glassThickness;
-        public WETextDataValueColor colorMask1;
-        public WETextDataValueColor colorMask2;
-        public WETextDataValueColor colorMask3;
+        private WETextDataValueColor color;
+        private WETextDataValueColor emissiveColor;
+        private WETextDataValueColor glassColor;
+        private WETextDataValueFloat normalStrength;
+        private WETextDataValueFloat glassRefraction;
+        private WETextDataValueFloat metallic;
+        private WETextDataValueFloat smoothness;
+        private WETextDataValueFloat emissiveIntensity;
+        private WETextDataValueFloat emissiveExposureWeight;
+        private WETextDataValueFloat coatStrength;
+        private WETextDataValueFloat glassThickness;
+        private WETextDataValueColor colorMask1;
+        private WETextDataValueColor colorMask2;
+        private WETextDataValueColor colorMask3;
 
-        public bool dirty;
-        public GCHandle ownMaterial;
-        public Colossal.Hash128 ownMaterialGuid;
+        private bool dirty;
+        private GCHandle ownMaterial;
+        private Colossal.Hash128 ownMaterialGuid;
+
+        public Color Color { readonly get => color.defaultValue; set { color.defaultValue = value; dirty = true; } }
+        public Color EmissiveColor { readonly get => emissiveColor.defaultValue; set { emissiveColor.defaultValue = value; dirty = true; } }
+        public Color GlassColor { readonly get => glassColor.defaultValue; set { glassColor.defaultValue = value; dirty = true; } }
+        public float NormalStrength { readonly get => normalStrength.defaultValue; set { normalStrength.defaultValue = value; dirty = true; } }
+        public float GlassRefraction { readonly get => glassRefraction.defaultValue; set { glassRefraction.defaultValue = value; dirty = true; } }
+        public float Metallic { readonly get => metallic.defaultValue; set { metallic.defaultValue = value; dirty = true; } }
+        public float Smoothness { readonly get => smoothness.defaultValue; set { smoothness.defaultValue = value; dirty = true; } }
+        public float EmissiveIntensity { readonly get => emissiveIntensity.defaultValue; set { emissiveIntensity.defaultValue = value; dirty = true; } }
+        public float EmissiveExposureWeight { readonly get => emissiveExposureWeight.defaultValue; set { emissiveExposureWeight.defaultValue = value; dirty = true; } }
+        public float CoatStrength { readonly get => coatStrength.defaultValue; set { coatStrength.defaultValue = value; dirty = true; } }
+        public float GlassThickness { readonly get => glassThickness.defaultValue; set { glassThickness.defaultValue = value; dirty = true; } }
+        public Color ColorMask1 { readonly get => colorMask1.defaultValue; set { colorMask1.defaultValue = value; dirty = true; } }
+        public Color ColorMask2 { readonly get => colorMask2.defaultValue; set { colorMask2.defaultValue = value; dirty = true; } }
+        public Color ColorMask3 { readonly get => colorMask3.defaultValue; set { colorMask3.defaultValue = value; dirty = true; } }
 
         public readonly void UpdateDefaultMaterial(Material material, WESimulationTextType textType)
         {
@@ -248,6 +270,110 @@ namespace BelzontWE
             }
             ownMaterial = default;
         }
+
+        public bool GetOwnMaterial(ref WETextDataMesh mesh, ref WETextDataMain main, out Material result)
+        {
+            var bri = mesh.RenderInformation;
+            result = null;
+            bool requireUpdate = false;
+            if (!mesh.HasBRI || bri is null) return false;
+            if (bri.Guid != ownMaterialGuid)
+            {
+                ResetMaterial();
+                ownMaterialGuid = bri.Guid;
+                dirty = true;
+            }
+            if (!ownMaterial.IsAllocated || ownMaterial.Target is not Material material || !material)
+            {
+                if (!bri.IsValid())
+                {
+                    mesh.ResetBri();
+                    return true;
+                }
+                ResetMaterial();
+                material = WERenderingHelper.GenerateMaterial(bri, main.shader);
+                ownMaterial = GCHandle.Alloc(material);
+                dirty = true;
+            }
+            if (dirty)
+            {
+                switch (main.shader)
+                {
+                    case WEShader.Default:
+                        if (!bri.m_isError)
+                        {
+                            UpdateDefaultMaterial(material, main.TextType);
+                        }
+                        break;
+                    case WEShader.Glass:
+                        if (!bri.m_isError)
+                        {
+                            UpdateGlassMaterial(material);
+                        }
+                        break;
+                    default:
+                        return false;
+                }
+                material.SetFloat(WERenderingHelper.DecalLayerMask, main.decalFlags.ToFloatBitFlags());
+                HDMaterial.ValidateMaterial(material);
+                dirty = false;
+                requireUpdate = true;
+            }
+            return requireUpdate;
+        }
+
+
+        public WETextDataXml.DefaultStyleXml ToDefaultXml()
+            => new()
+            {
+                color = color.ToRgbaXml(),
+                emissiveColor = emissiveColor.ToRgbaXml(),
+                metallic = metallic.ToXml(),
+                smoothness = smoothness.ToXml(),
+                emissiveIntensity = emissiveIntensity.ToXml(),
+                emissiveExposureWeight = emissiveExposureWeight.ToXml(),
+                coatStrength = coatStrength.ToXml(),
+                colorMask1 = colorMask1.ToRgbXml(),
+                colorMask2 = colorMask2.ToRgbXml(),
+                colorMask3 = colorMask3.ToRgbXml(),
+
+            };
+        public WETextDataXml.GlassStyleXml ToGlassXml()
+            => new()
+            {
+                color = color.ToRgbaXml(),
+                glassColor = glassColor.ToRgbXml(),
+                glassRefraction = glassRefraction.ToXml(),
+                metallic = metallic.ToXml(),
+                smoothness = smoothness.ToXml(),
+                normalStrength = normalStrength.ToXml(),
+                glassThickness = glassThickness.ToXml(),
+            };
+        public static WETextDataMaterial ToComponent(WETextDataXml.DefaultStyleXml value)
+            => new()
+            {
+                color = value.color.ToComponent(),
+                emissiveColor = value.emissiveColor.ToComponent(),
+                metallic = value.metallic.ToComponent(),
+                smoothness = value.smoothness.ToComponent(),
+                emissiveIntensity = value.emissiveIntensity.ToComponent(),
+                emissiveExposureWeight = value.emissiveExposureWeight.ToComponent(),
+                coatStrength = value.coatStrength.ToComponent(),
+                colorMask1 = value.colorMask1.ToComponent(),
+                colorMask2 = value.colorMask2.ToComponent(),
+                colorMask3 = value.colorMask3.ToComponent(),
+            };
+        public static WETextDataMaterial ToComponent(WETextDataXml.GlassStyleXml value)
+            => new()
+            {
+                color = value.color.ToComponent(),
+                glassColor = value.glassColor.ToComponent(),
+                glassRefraction = value.glassRefraction.ToComponent(),
+                metallic = value.metallic.ToComponent(),
+                smoothness = value.smoothness.ToComponent(),
+                normalStrength = value.normalStrength.ToComponent(),
+                glassThickness = value.glassThickness.ToComponent(),
+            };
     }
     public struct WETextDataTransform : IComponentData
     {

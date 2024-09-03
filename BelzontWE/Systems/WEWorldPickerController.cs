@@ -9,7 +9,6 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
-using BelzontWE.Sprites;
 
 namespace BelzontWE
 {
@@ -68,7 +67,7 @@ namespace BelzontWE
             string[] result = new string[buffer.Length];
             for (int i = 0; i < result.Length; i++)
             {
-                result[i] = $"{EntityManager.GetComponentData<WETextData_>(buffer[i].m_weTextData).ItemName.ToString().TrimToNull() ?? "N/A"}";
+                result[i] = $"{EntityManager.GetComponentData<WETextDataMain>(buffer[i].m_weTextData).ItemName.ToString().TrimToNull() ?? "N/A"}";
             }
             return result;
         }
@@ -78,15 +77,15 @@ namespace BelzontWE
         {
             if (target == newParent) return false;
             var parentCheck = newParent;
-            while (EntityManager.TryGetComponent<WETextData_>(parentCheck, out var data))
+            while (EntityManager.TryGetComponent<WETextDataMain>(parentCheck, out var data))
             {
                 if (data.ParentEntity == target) return false;
                 parentCheck = data.ParentEntity;
             }
-            if (!EntityManager.TryGetComponent<WETextData_>(target, out var weData)) return false;
+            if (!EntityManager.TryGetComponent<WETextDataMain>(target, out var weData)) return false;
 
             if (weData.ParentEntity == newParent) return true;
-            if (weData.TargetEntity != newParent && (!EntityManager.TryGetComponent<WETextData_>(newParent, out var weDataParent) || weDataParent.TargetEntity != weData.TargetEntity)) return false;
+            if (weData.TargetEntity != newParent && (!EntityManager.TryGetComponent<WETextDataMain>(newParent, out var weDataParent) || weDataParent.TargetEntity != weData.TargetEntity)) return false;
             if (!EntityManager.TryGetBuffer<WESubTextRef>(weData.ParentEntity, false, out var buff)) return false;
             if (!EntityManager.HasBuffer<WESubTextRef>(newParent))
             {
@@ -109,7 +108,7 @@ namespace BelzontWE
 
         private bool CloneAsChild(Entity target, Entity newParent)
         {
-            if (!EntityManager.TryGetComponent<WETextData_>(target, out var weData)) return false;
+            if (!EntityManager.TryGetComponent<WETextDataMain>(target, out var weData)) return false;
             if (!EntityManager.HasBuffer<WESubTextRef>(newParent))
             {
                 EntityManager.AddBuffer<WESubTextRef>(newParent);
@@ -117,7 +116,7 @@ namespace BelzontWE
             var newBuff = EntityManager.GetBuffer<WESubTextRef>(newParent, false);
             newBuff.Add(new WESubTextRef
             {
-                m_weTextData = WELayoutUtility.DoCreateLayoutItem(WETextDataTreeStruct.FromEntity(target, EntityManager), newParent, weData.TargetEntity, EntityManager)
+                m_weTextData = WELayoutUtility.DoCreateLayoutItem(WETextDataXmlTree.FromEntity(target, EntityManager), newParent, weData.TargetEntity, EntityManager)
             });
             ReloadTree();
             return true;
@@ -227,37 +226,37 @@ namespace BelzontWE
             NormalStrength = new(default, $"{PREFIX}{nameof(NormalStrength)}", m_eventCaller, m_callBinder);
 
 
-            CurrentScale.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Scale = x; return currentItem; });
-            CurrentRotation.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.OffsetRotation = KMathUtils.UnityEulerToQuaternion(x); return currentItem; });
-            CurrentPosition.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.OffsetPosition = x; return currentItem; });
-            CurrentItemName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.ItemName = x.Truncate(24); m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
-            CurrentItemText.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Text = x.Truncate(500); return currentItem; });
             CurrentSubEntity.OnScreenValueChanged += (x) => OnCurrentItemChanged();
-            MaxWidth.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.maxWidthMeters = x; return currentItem; });
+            CurrentScale.OnScreenValueChanged += (x) => EnqueueModification<float3, WETextDataTransform>(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
+            CurrentRotation.OnScreenValueChanged += (x) => EnqueueModification<float3, WETextDataTransform>(x, (x, currentItem) => { currentItem.offsetRotation = KMathUtils.UnityEulerToQuaternion(x); return currentItem; });
+            CurrentPosition.OnScreenValueChanged += (x) => EnqueueModification<float3, WETextDataTransform>(x, (x, currentItem) => { currentItem.offsetPosition = x; return currentItem; });
+            CurrentItemName.OnScreenValueChanged += (x) => EnqueueModification<string, WETextDataMain>(x, (x, currentItem) => { currentItem.ItemName = x.Truncate(24); m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
+            CurrentItemText.OnScreenValueChanged += (x) => EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Text = x.Truncate(500); return currentItem; });
+            MaxWidth.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMesh>(x, (x, currentItem) => { currentItem.MaxWidthMeters = x; return currentItem; });
 
-            MainColor.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Color = x; return currentItem; });
-            EmissiveColor.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveColor = x; return currentItem; });
-            Metallic.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Metallic = x; return currentItem; });
-            Smoothness.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Smoothness = x; return currentItem; });
-            EmissiveIntensity.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveIntensity = x; return currentItem; });
-            CoatStrength.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.CoatStrength = x; return currentItem; });
-            EmissiveExposureWeight.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.EmissiveExposureWeight = x; return currentItem; });
+            MainColor.OnScreenValueChanged += (x) => EnqueueModification<Color, WETextDataMaterial>(x, (x, currentItem) => { currentItem.Color = x; return currentItem; });
+            EmissiveColor.OnScreenValueChanged += (x) => EnqueueModification<Color, WETextDataMaterial>(x, (x, currentItem) => { currentItem.EmissiveColor = x; return currentItem; });
+            Metallic.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.Metallic = x; return currentItem; });
+            Smoothness.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.Smoothness = x; return currentItem; });
+            EmissiveIntensity.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.EmissiveIntensity = x; return currentItem; });
+            CoatStrength.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.CoatStrength = x; return currentItem; });
+            EmissiveExposureWeight.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.EmissiveExposureWeight = x; return currentItem; });
 
-            SelectedFont.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Font = FontServer.Instance.TryGetFont(x, out var data) ? data.Name : default(FixedString32Bytes); return currentItem; });
-            FormulaeStr.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { FormulaeCompileResult.Value = currentItem.SetFormulae(FormulaeStr.Value, out var cmpErr); FormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
-            TextSourceType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
-            ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
-            DecalFlags.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.DecalFlags = x; return currentItem; });
-            UseAbsoluteSizeEditing.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.UseAbsoluteSizeEditing = x; return currentItem; });
-            ShaderType.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.Shader = x; return currentItem; });
-            GlassRefraction.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.GlassRefraction = x; return currentItem; });
-            GlassColor.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.GlassColor = x; return currentItem; });
-            GlassThickness.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.GlassThickness = x; return currentItem; });
+            SelectedFont.OnScreenValueChanged += (x) => EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.FontName = FontServer.Instance.TryGetFont(x, out var data) ? data.Name : default(FixedString32Bytes); return currentItem; });
+            FormulaeStr.OnScreenValueChanged += (x) => EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { FormulaeCompileResult.Value = currentItem.SetFormulae(FormulaeStr.Value, out var cmpErr); FormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
+            TextSourceType.OnScreenValueChanged += (x) => EnqueueModification<int, WETextDataMain>(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
+            ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
+            DecalFlags.OnScreenValueChanged += (x) => EnqueueModification<int, WETextDataMain>(x, (x, currentItem) => { currentItem.decalFlags = x; return currentItem; });
+            UseAbsoluteSizeEditing.OnScreenValueChanged += (x) => EnqueueModification<bool, WETextDataTransform>(x, (x, currentItem) => { currentItem.useAbsoluteSizeEditing = x; return currentItem; });
+            ShaderType.OnScreenValueChanged += (x) => EnqueueModification<WEShader, WETextDataMain>(x, (x, currentItem) => { currentItem.shader = x; return currentItem; });
+            GlassRefraction.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.GlassRefraction = x; return currentItem; });
+            GlassColor.OnScreenValueChanged += (x) => EnqueueModification<Color, WETextDataMaterial>(x, (x, currentItem) => { currentItem.GlassColor = x; return currentItem; });
+            GlassThickness.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.GlassThickness = x; return currentItem; });
 
-            ColorMask1.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.ColorMask1 = x; return currentItem; });
-            ColorMask2.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.ColorMask2 = x; return currentItem; });
-            ColorMask3.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.ColorMask3 = x; return currentItem; });
-            NormalStrength.OnScreenValueChanged += (x) => EnqueueModification(x, (x, currentItem) => { currentItem.NormalStrength = x; return currentItem; });
+            ColorMask1.OnScreenValueChanged += (x) => EnqueueModification<Color, WETextDataMaterial>(x, (x, currentItem) => { currentItem.ColorMask1 = x; return currentItem; });
+            ColorMask2.OnScreenValueChanged += (x) => EnqueueModification<Color, WETextDataMaterial>(x, (x, currentItem) => { currentItem.ColorMask2 = x; return currentItem; });
+            ColorMask3.OnScreenValueChanged += (x) => EnqueueModification<Color, WETextDataMaterial>(x, (x, currentItem) => { currentItem.ColorMask3 = x; return currentItem; });
+            NormalStrength.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.NormalStrength = x; return currentItem; });
 
             FontList.Value = FontServer.Instance.GetLoadedFontsNames();
             FontList.UpdateUIs();
@@ -271,36 +270,41 @@ namespace BelzontWE
             m_initialized = true;
         }
 
-        private void OnCurrentItemChanged(WETextData_ currentItem)
+        private void OnCurrentItemChanged(Entity entity)
         {
-            CurrentPosition.Value = currentItem.OffsetPosition;
-            CurrentRotation.Value = KMathUtils.UnityQuaternionToEuler(currentItem.OffsetRotation);
-            CurrentScale.Value = currentItem.Scale;
-            CurrentItemText.Value = currentItem.Text.ToString();
-            CurrentItemName.Value = currentItem.ItemName.ToString();
-            MaxWidth.Value = currentItem.maxWidthMeters;
+            EntityManager.TryGetComponent<WETextDataMain>(entity, out var main);
+            EntityManager.TryGetComponent<WETextDataMesh>(entity, out var mesh);
+            EntityManager.TryGetComponent<WETextDataMaterial>(entity, out var material);
+            EntityManager.TryGetComponent<WETextDataTransform>(entity, out var transform);
 
-            MainColor.Value = currentItem.Color;
-            EmissiveColor.Value = currentItem.EmissiveColor;
-            Metallic.Value = currentItem.Metallic;
-            Smoothness.Value = currentItem.Smoothness;
-            EmissiveIntensity.Value = currentItem.EmissiveIntensity;
-            CoatStrength.Value = currentItem.CoatStrength;
+            CurrentPosition.Value = transform.offsetPosition;
+            CurrentRotation.Value = KMathUtils.UnityQuaternionToEuler(transform.offsetRotation);
+            CurrentScale.Value = transform.scale;
+            CurrentItemText.Value = mesh.ValueData.defaultValue.ToString();
+            CurrentItemName.Value = main.ItemName.ToString();
+            MaxWidth.Value = mesh.MaxWidthMeters;
 
-            SelectedFont.Value = FontServer.Instance.TryGetFont(currentItem.Font, out var fsd) ? fsd.Name : "";
-            FormulaeStr.Value = currentItem.Formulae.ToString();
-            TextSourceType.Value = (int)currentItem.TextType;
-            ImageAtlasName.Value = currentItem.Atlas.ToString();
-            DecalFlags.Value = currentItem.DecalFlags;
-            UseAbsoluteSizeEditing.Value = currentItem.UseAbsoluteSizeEditing;
-            ShaderType.Value = currentItem.Shader;
-            GlassColor.Value = currentItem.GlassColor;
-            GlassRefraction.Value = currentItem.GlassRefraction;
-            ColorMask1.Value = currentItem.ColorMask1;
-            ColorMask2.Value = currentItem.ColorMask2;
-            ColorMask3.Value = currentItem.ColorMask3;
-            NormalStrength.Value = currentItem.NormalStrength;
-            GlassThickness.Value = currentItem.GlassThickness;
+            MainColor.Value = material.Color;
+            EmissiveColor.Value = material.EmissiveColor;
+            Metallic.Value = material.Metallic;
+            Smoothness.Value = material.Smoothness;
+            EmissiveIntensity.Value = material.EmissiveIntensity;
+            CoatStrength.Value = material.CoatStrength;
+
+            SelectedFont.Value = FontServer.Instance.TryGetFont(mesh.FontName, out var fsd) ? fsd.Name : "";
+            FormulaeStr.Value = mesh.ValueData.formulaeStr.ToString();
+            TextSourceType.Value = (int)main.TextType;
+            ImageAtlasName.Value = mesh.Atlas.ToString();
+            DecalFlags.Value = main.decalFlags;
+            UseAbsoluteSizeEditing.Value = transform.useAbsoluteSizeEditing;
+            ShaderType.Value = main.shader;
+            GlassColor.Value = material.GlassColor;
+            GlassRefraction.Value = material.GlassRefraction;
+            ColorMask1.Value = material.ColorMask1;
+            ColorMask2.Value = material.ColorMask2;
+            ColorMask3.Value = material.ColorMask3;
+            NormalStrength.Value = material.NormalStrength;
+            GlassThickness.Value = material.GlassThickness;
         }
 
         #endregion
@@ -309,7 +313,7 @@ namespace BelzontWE
 
         private readonly Queue<System.Action> m_executionQueue = new();
 
-        private void EnqueueModification<T>(T newVal, Func<T, WETextData_, WETextData_> x)
+        private void EnqueueModification<T, W>(T newVal, Func<T, W, W> x) where W : unmanaged, IComponentData
         {
             if (IsValidEditingItem())
             {
@@ -317,8 +321,8 @@ namespace BelzontWE
                 m_executionQueue.Enqueue(() =>
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"CurrentSubEntity => {subEntity}");
-                    var currentItem = EntityManager.GetComponentData<WETextData_>(subEntity);
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"x = {x}; CurrentSubEntity = {currentItem.ItemName}");
+                    var currentItem = EntityManager.GetComponentData<W>(subEntity);
+                    //  if (BasicIMod.DebugMode) LogUtils.DoLog($"x = {x}; CurrentSubEntity = {currentItem.ItemName}");
                     currentItem = x(newVal, currentItem);
                     EntityManager.SetComponentData(subEntity, currentItem);
                 });
@@ -353,8 +357,11 @@ namespace BelzontWE
                        {
                            m_weTextData = EntityManager.CreateEntity(typeof(WEWaitingRendering))
                        };
-                       var newData = WETextData_.CreateDefault(currentEntity, targetParent);
-                       EntityManager.AddComponentData(subref.m_weTextData, newData);
+                       var cmd = m_EndBarrier.CreateCommandBuffer();
+                       cmd.AddComponent(subref.m_weTextData, WETextDataMain.CreateDefault(currentEntity, targetParent));
+                       cmd.AddComponent(subref.m_weTextData, WETextDataMesh.CreateDefault(currentEntity, targetParent));
+                       cmd.AddComponent(subref.m_weTextData, WETextDataMaterial.CreateDefault(currentEntity, targetParent));
+                       cmd.AddComponent(subref.m_weTextData, WETextDataTransform.CreateDefault(currentEntity, targetParent));
                        buff.Add(subref);
                        CurrentSubEntity.ChangeValueWithEffects(subref.m_weTextData);
                        UpdateTree();
@@ -372,8 +379,9 @@ namespace BelzontWE
             if (IsValidEditingItem())
             {
                 var subEntity = CurrentSubEntity.Value;
-                var parent = CurrentEditingItem.ParentEntity;
-                m_executionQueue.Enqueue(() => DoWithBuffer(CurrentEditingItem.ParentEntity
+                var main = EntityManager.GetComponentData<WETextDataMain>(CurrentEntity.Value);
+                var parent = main.ParentEntity;
+                m_executionQueue.Enqueue(() => DoWithBuffer(main.ParentEntity
                     , (Action<DynamicBuffer<WESubTextRef>>)((buff) =>
                     {
                         if (RemoveSubItemRef(buff, subEntity, parent, true))
@@ -387,9 +395,7 @@ namespace BelzontWE
         #endregion
 
         #region Utility
-        public bool IsValidEditingItem() => CurrentItemIsValid.Value = CurrentEntity.Value != default && EntityManager.HasComponent<WETextData_>(CurrentSubEntity.Value);
-
-        public WETextData_ CurrentEditingItem => EntityManager.TryGetComponent<WETextData_>(CurrentSubEntity.Value, out var item) ? item : default;
+        public bool IsValidEditingItem() => CurrentItemIsValid.Value = CurrentEntity.Value != default && EntityManager.HasComponent<WETextDataMain>(CurrentSubEntity.Value);
 
         private WETextItemResume[] GetTextTreeForEntity(Entity e)
         {
@@ -397,7 +403,7 @@ namespace BelzontWE
             var result = new WETextItemResume[refSubs.Length];
             for (int i = 0; i < refSubs.Length; i++)
             {
-                if (!EntityManager.TryGetComponent<WETextData_>(refSubs[i].m_weTextData, out var data)) continue;
+                if (!EntityManager.TryGetComponent<WETextDataMain>(refSubs[i].m_weTextData, out var data)) continue;
                 result[i] = new()
                 {
                     name = data.ItemName.ToString(),
@@ -439,9 +445,8 @@ namespace BelzontWE
 
         internal void OnCurrentItemChanged()
         {
-            var currentItem = CurrentEditingItem;
             ReloadTree();
-            OnCurrentItemChanged(currentItem);
+            OnCurrentItemChanged(CurrentEntity.Value);
         }
 
         private void ReloadTree()

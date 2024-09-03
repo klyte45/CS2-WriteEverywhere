@@ -11,4 +11,5 @@ namespace BelzontWE
     }
     public struct WETemplateForPrefabDirty : ICleanupComponentData, IQueryTypeParameter { }
     public struct WETemplateForPrefabEmpty : ICleanupComponentData, IQueryTypeParameter { }
+    public struct WETemplateForPrefabToRunOnMain : ICleanupComponentData, IQueryTypeParameter { }
 }

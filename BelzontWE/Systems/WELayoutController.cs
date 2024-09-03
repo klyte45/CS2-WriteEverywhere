@@ -86,10 +86,10 @@ namespace BelzontWE
             var targetEntity = parent;
             if (!isTarget)
             {
-                if (!EntityManager.TryGetComponent<WETextData_>(parent, out var weData)) return false;
+                if (!EntityManager.TryGetComponent<WETextDataMain>(parent, out var weData)) return false;
                 targetEntity = weData.TargetEntity;
             }
-            WELayoutUtility.DoCreateLayoutItem(WETextDataTreeStruct.FromXml(tree), parent, targetEntity, EntityManager);
+            WELayoutUtility.DoCreateLayoutItem(tree, parent, targetEntity, EntityManager);
             m_controller.UpdateTree();
             return true;
         }
@@ -100,7 +100,7 @@ namespace BelzontWE
             var targetEntity = parent;
             if (!isTarget)
             {
-                if (!EntityManager.TryGetComponent<WETextData_>(parent, out var weData)) return false;
+                if (!EntityManager.TryGetComponent<WETextDataMain>(parent, out var weData)) return false;
                 targetEntity = weData.TargetEntity;
             }
             var layout = m_templateManager[templateName];
@@ -124,7 +124,7 @@ namespace BelzontWE
             }
             try
             {
-                return m_templateManager.SaveCityTemplate(name, WETextDataXmlTree.FromXML(File.ReadAllText(path)).ToStruct()) ? name : null;
+                return m_templateManager.SaveCityTemplate(name, WETextDataXmlTree.FromXML(File.ReadAllText(path))) ? name : null;
             }
             catch (Exception e)
             {
@@ -136,12 +136,12 @@ namespace BelzontWE
         private int ExportComponentAsPrefabDefault(Entity e, bool force = false)
         {
             var xml = WESelflessTextDataTree.FromEntity(e, EntityManager);
-            var validationResults = m_templateManager.CanBePrefabLayout(xml.ToStruct());
+            var validationResults = m_templateManager.CanBePrefabLayout(xml);
             if (validationResults != 0)
             {
                 return -1000 - validationResults;
             }
-            var effTarget = WETextData_.GetTargetEntityEffective(e, EntityManager, true);
+            var effTarget = WETextDataMesh.GetTargetEntityEffective(e, EntityManager, true);
             KFileUtils.EnsureFolderCreation(WETemplateManager.SAVED_PREFABS_FOLDER);
             if (!EntityManager.TryGetComponent(effTarget, out PrefabRef prefabRef))
             {
@@ -192,7 +192,7 @@ namespace BelzontWE
         private string ExportCityLayoutAsXml(string layoutName, string saveName)
                     => layoutName.TrimToNull() == null || !m_templateManager.CityTemplateExists(layoutName)
                         ? null
-                        : CommonExportAsXml(saveName, m_templateManager[layoutName].ToXml());
+                        : CommonExportAsXml(saveName, m_templateManager[layoutName]);
 
         private void OpenExportedFilesFolder() => RemoteProcess.OpenFolder(WETemplateManager.SAVED_PREFABS_FOLDER);
 

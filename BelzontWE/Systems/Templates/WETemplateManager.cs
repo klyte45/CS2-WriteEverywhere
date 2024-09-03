@@ -1,5 +1,4 @@
 ﻿using Belzont.Interfaces;
-using Belzont.Serialization;
 using Belzont.Utils;
 using Colossal.Entities;
 using Colossal.Serialization.Entities;
@@ -19,7 +18,6 @@ using System.Linq;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
@@ -37,9 +35,9 @@ namespace BelzontWE
         public static readonly string SAVED_PREFABS_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "prefabs");
         public static WETemplateManager Instance { get; private set; }
 
-        public const int CURRENT_VERSION = 0;       
+        public const int CURRENT_VERSION = 0;
 
-        private UnsafeParallelHashMap<FixedString128Bytes, Entity> RegisteredTemplates;
+        private Dictionary<FixedString128Bytes, WETextDataXmlTree> RegisteredTemplates;
         private PrefabSystem m_prefabSystem;
         private EndFrameBarrier m_endFrameBarrier;
         private EntityQuery m_templateBasedEntities;
@@ -47,14 +45,13 @@ namespace BelzontWE
         private EntityQuery m_dirtyWePrefabLayoutQuery;
         private EntityQuery m_prefabsToMarkDirty;
         private EntityQuery m_prefabsDataToSerialize;
-        private UnsafeParallelHashMap<long, Entity> PrefabTemplates;
+        private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
         private bool m_templatesDirty;
 
+        public FixedString128Bytes[] GetTemplateAvailableKeys() => RegisteredTemplates.Keys.ToArray();
 
-        public ref UnsafeParallelHashMap<FixedString128Bytes, Entity> RegisteredTemplatesRef => ref RegisteredTemplates;
-
-        public Entity this[FixedString128Bytes idx]
+        public WETextDataXmlTree this[FixedString128Bytes idx]
         {
             get
             {
@@ -67,8 +64,8 @@ namespace BelzontWE
         protected override void OnCreate()
         {
             Instance = this;
-            RegisteredTemplates = new(0, Allocator.Persistent);
-            PrefabTemplates = new(0, Allocator.Persistent);
+            RegisteredTemplates = new();
+            PrefabTemplates = new();
             m_prefabSystem = World.GetExistingSystemManaged<PrefabSystem>();
             m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
             m_templateBasedEntities = GetEntityQuery(new EntityQueryDesc[]
@@ -167,8 +164,6 @@ namespace BelzontWE
 
         protected override void OnDestroy()
         {
-            RegisteredTemplates.Dispose();
-            PrefabTemplates.Dispose();
         }
 
         protected override void OnUpdate()
@@ -193,6 +188,11 @@ namespace BelzontWE
             }
             else if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
             {
+                var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
+                foreach (var i in PrefabTemplates)
+                {
+                    keysWithTemplate[i.Key] = i.Value.Guid;
+                }
                 Dependency = new WEPrefabTemplateFilterJob
                 {
                     m_EntityType = GetEntityTypeHandle(),
@@ -202,14 +202,20 @@ namespace BelzontWE
                     m_prefabDirtyLkp = GetComponentLookup<WETemplateForPrefabDirty>(true),
                     m_prefabLayoutLkp = GetComponentLookup<WETemplateForPrefab>(true),
                     m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
-                    m_TextDataLkp = GetComponentLookup<WETextData_>(true),
+                    m_TextDataLkp = GetComponentLookup<WETextDataMain>(true),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-                    m_indexesWithLayout = PrefabTemplates,
+                    m_indexesWithLayout = keysWithTemplate,
                     m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
                 }.ScheduleParallel(m_uncheckedWePrefabLayoutQuery, Dependency);
+                keysWithTemplate.Dispose(Dependency);
             }
             else if (!m_dirtyWePrefabLayoutQuery.IsEmpty)
             {
+                var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
+                foreach (var i in PrefabTemplates)
+                {
+                    keysWithTemplate[i.Key] = i.Value.Guid;
+                }
                 Dependency = new WEPrefabTemplateFilterJob
                 {
                     m_EntityType = GetEntityTypeHandle(),
@@ -219,11 +225,12 @@ namespace BelzontWE
                     m_prefabDirtyLkp = GetComponentLookup<WETemplateForPrefabDirty>(true),
                     m_prefabLayoutLkp = GetComponentLookup<WETemplateForPrefab>(true),
                     m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
-                    m_TextDataLkp = GetComponentLookup<WETextData_>(true),
+                    m_TextDataLkp = GetComponentLookup<WETextDataMain>(true),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-                    m_indexesWithLayout = PrefabTemplates,
+                    m_indexesWithLayout = keysWithTemplate,
                     m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
                 }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
+                keysWithTemplate.Dispose(Dependency);
             }
             Dependency.Complete();
         }
@@ -240,15 +247,17 @@ namespace BelzontWE
         private bool isPrefabListDirty = true;
 
         public int CanBePrefabLayout(WETextDataXmlTree data) => CanBePrefabLayout(data, true);
-        public int CanBePrefabLayout(WETextDataXmlTree data, bool isRoot)
+        public int CanBePrefabLayout(WETextDataXmlTree data, bool isRoot) => CanBePrefabLayout(data.self, data.children, isRoot);
+        public int CanBePrefabLayout(WESelflessTextDataTree data) => CanBePrefabLayout(null, data.children, true);
+        private int CanBePrefabLayout(WETextDataXml self, WETextDataXmlTree[] children, bool isRoot)
         {
             if (isRoot)
             {
-                if (data.children.Length > 0)
+                if (children?.Length > 0)
                 {
-                    for (int i = 0; i < data.children.Length; i++)
+                    for (int i = 0; i < children.Length; i++)
                     {
-                        if (CanBePrefabLayout(data.children[i], false) != 0)
+                        if (CanBePrefabLayout(children[i], false) != 0)
                         {
                             LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: A child node ({i}) failed validation");
                             return 2;
@@ -263,13 +272,12 @@ namespace BelzontWE
             }
             else
             {
-                var weData = data.self;
-                if ((weData.textType < 0 || weData.textType > WESimulationTextType.Placeholder) && weData.textType != WESimulationTextType.WhiteTexture)
+                if ((self.textType < 0 || self.textType > WESimulationTextType.Placeholder) && self.textType != WESimulationTextType.WhiteTexture)
                 {
                     LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: All children must have type 'Placeholder', 'WhiteTexture', 'Image' or 'Text'.");
                     return 4;
                 };
-                if (weData.textType == WESimulationTextType.Placeholder && data.children.Length > 0)
+                if (self.textType == WESimulationTextType.Placeholder && children?.Length > 0)
                 {
                     LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: The node must not have children, as any Placeholder item don't.");
                     return 5;
@@ -287,7 +295,6 @@ namespace BelzontWE
             if (LoadingPrefabLayoutsCoroutine != null) GameManager.instance.StopCoroutine(LoadingPrefabLayoutsCoroutine);
             if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"UpdatePrefabIndexDictionary!!!");
 
-            LogUtils.DoInfoLog($"sizeof(WETextDataTree) = {sizeof(WETextDataXmlTree)}");
             LoadingPrefabLayoutsCoroutine = GameManager.instance.StartCoroutine(UpdatePrefabIndexDictionary_Coroutine());
         }
         private IEnumerator UpdatePrefabIndexDictionary_Coroutine()
@@ -313,12 +320,11 @@ namespace BelzontWE
 
         private IEnumerator LoadTemplatesFromFolder(int offsetPercentage, float totalStep)
         {
-            var currentValues = PrefabTemplates.GetKeyArray(Allocator.Temp);
+            var currentValues = PrefabTemplates.Keys.ToArray();
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.01f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.erasingCachedLayouts");
             yield return 0;
             for (int i = 0; i < currentValues.Length; i++)
             {
-                PrefabTemplates[currentValues[i]].Dispose();
                 PrefabTemplates.Remove(currentValues[i]);
                 if (i % 3 == 0)
                 {
@@ -330,7 +336,6 @@ namespace BelzontWE
                     yield return 0;
                 }
             }
-            currentValues.Dispose();
             PrefabTemplates.Clear();
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.11f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.searchingForFiles");
             yield return 0;
@@ -362,33 +367,24 @@ namespace BelzontWE
                 if (tree is null) continue;
                 tree.self = new WETextDataXml
                 {
-                    textType = WESimulationTextType.Archetype,
-                    offsetPosition = default,
-                    offsetRotation = default,
-                    text = null
+                    textType = WESimulationTextType.Archetype
                 };
-                var generatedEntity = WETextDataXmlTree.FromXml(tree);
-                var validationResults = CanBePrefabLayout(generatedEntity);
+                var validationResults = CanBePrefabLayout(tree);
                 if (validationResults == 0)
                 {
 
                     if (PrefabTemplates.ContainsKey(idx))
                     {
-                        var newXml = PrefabTemplates[idx].ToXml();
-                        newXml.MergeChildren(tree);
-                        generatedEntity.Dispose();
-                        PrefabTemplates[idx].Dispose();
-                        PrefabTemplates[idx] = newXml;
+                        PrefabTemplates[idx].MergeChildren(tree);
                     }
                     else
                     {
-                        PrefabTemplates[idx] = generatedEntity;
+                        PrefabTemplates[idx] = tree;
                     }
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {generatedEntity} from {fileItem[SAVED_PREFABS_FOLDER.Length..]}");
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {tree} from {fileItem[SAVED_PREFABS_FOLDER.Length..]}");
                 }
                 else
                 {
-                    generatedEntity.Dispose();
                     errorsList.Add(relativePath, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidFileContent]", null, new Dictionary<string, ILocElement>()
                     {
                         ["fileName"] = LocalizedString.Value(relativePath),
@@ -427,7 +423,7 @@ namespace BelzontWE
         #region City Templates
         public int CanBeTransformedToTemplate(Entity e)
         {
-            if (!EntityManager.TryGetComponent<WETextData_>(e, out var weData))
+            if (!EntityManager.TryGetComponent<WETextDataMain>(e, out var weData))
             {
                 LogUtils.DoInfoLog($"Failed validation to transform to City Template: No text data found");
                 return 1;
@@ -497,7 +493,6 @@ namespace BelzontWE
         {
             if (RegisteredTemplates.TryGetValue(name, out var obsoleteTemplate))
             {
-                obsoleteTemplate.Dispose();
                 RegisteredTemplates.Remove(name);
             }
             RegisteredTemplates.Add(name, templateEntity);
@@ -507,9 +502,8 @@ namespace BelzontWE
         public bool CityTemplateExists(string name) => RegisteredTemplates.ContainsKey(name);
         public Dictionary<string, string> ListCityTemplates()
         {
-            var arr = RegisteredTemplates.GetKeyArray(Allocator.Temp);
+            var arr = RegisteredTemplates.Keys;
             var result = arr.ToArray().OrderBy(x => x).ToDictionary(x => x.ToString(), x => RegisteredTemplates[x].Guid.ToString());
-            arr.Dispose();
             return result;
         }
         public unsafe int GetCityTemplateUsageCount(string name)
@@ -538,7 +532,6 @@ namespace BelzontWE
         {
             if (name != null && CityTemplateExists(name))
             {
-                RegisteredTemplates[name].Dispose();
                 RegisteredTemplates.Remove(name);
                 m_templatesDirty = true;
             }
@@ -548,9 +541,8 @@ namespace BelzontWE
             if (srcName == newName || srcName.TrimToNull() == null || newName.TrimToNull() == null || !CityTemplateExists(srcName)) return;
             if (RegisteredTemplates.ContainsKey(newName))
             {
-                RegisteredTemplates[newName].Dispose();
             }
-            RegisteredTemplates[newName] = RegisteredTemplates[srcName].WithNewGuid();
+            RegisteredTemplates[newName] = RegisteredTemplates[srcName].Clone();
             m_templatesDirty = true;
         }
         #endregion

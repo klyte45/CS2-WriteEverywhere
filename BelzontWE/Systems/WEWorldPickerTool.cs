@@ -263,9 +263,9 @@ namespace BelzontWE
 
                     if (!InputManager.instance.mouseOverUI && m_MoveAction.WasPressedThisFrame())
                     {
-                        var currentItem = m_Controller.CurrentEditingItem;
+                        var currentItem = EntityManager.GetComponentData<WETextDataTransform>(m_Controller.CurrentEntity.Value);
                         m_mousePositionRef = new float2(InputManager.instance.mousePosition.x, InputManager.instance.mousePosition.y);
-                        m_originalPositionText = currentItem.OffsetPosition;
+                        m_originalPositionText = currentItem.offsetPosition;
                         m_isDragging = true;
                     }
                     else if (m_isDragging && m_MoveAction.WasReleasedThisFrame())
@@ -293,9 +293,9 @@ namespace BelzontWE
 
                     if (!InputManager.instance.mouseOverUI && m_RotateAction.WasPressedThisFrame())
                     {
-                        var currentItem = m_Controller.CurrentEditingItem;
+                        var currentItem = EntityManager.GetComponentData<WETextDataTransform>(m_Controller.CurrentEntity.Value);
                         m_mousePositionRefRot = InputManager.instance.mousePosition.x;
-                        m_originalRotationText = ((Quaternion)currentItem.OffsetRotation).eulerAngles;
+                        m_originalRotationText = ((Quaternion)currentItem.offsetRotation).eulerAngles;
                         m_isRotating = true;
                     }
                     else if (m_isRotating && m_RotateAction.WasReleasedThisFrame())
@@ -393,7 +393,8 @@ namespace BelzontWE
                 );
             if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) offsetRef *= 10;
 
-            ApplyPosition(m_Controller.CurrentEditingItem.OffsetPosition, offsetRef);
+            var currentItem = EntityManager.GetComponentData<WETextDataTransform>(m_Controller.CurrentEntity.Value);
+            ApplyPosition(currentItem.offsetPosition, offsetRef);
         }
 
         private void ApplyPosition(float3 originalPosition, Vector2 offsetPosition)
@@ -401,16 +402,16 @@ namespace BelzontWE
             var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value];
             var offsetWithAdjust = offsetPosition * currentPrecision;
-            if (!EntityManager.TryGetComponent<WETextData_>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
+            if (!EntityManager.TryGetComponent<WETextDataTransform>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
 
             var itemAngles = m_Controller.CurrentRotation.Value;
             var isRotationLocked = m_Controller.CameraRotationLocked.Value;
 
-            m_Controller.CurrentPosition.Value = currentItem.OffsetPosition = originalPosition + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
+            m_Controller.CurrentPosition.Value = currentItem.offsetPosition = originalPosition + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {
-                ToolEditMode.PlaneXY => math.mul((Matrix4x4.Rotate(currentItem.OffsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 0, 0))).rotation, new float3(offsetWithAdjust, 0)),
-                ToolEditMode.PlaneXZ => math.mul((Matrix4x4.Rotate(currentItem.OffsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, isRotationLocked ? -itemAngles.y : 0, 0))).rotation, new float3(offsetWithAdjust.x, 0, -offsetWithAdjust.y)),
-                ToolEditMode.PlaneZY => math.mul((Matrix4x4.Rotate(currentItem.OffsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, 0, isRotationLocked ? -itemAngles.z : 0))).rotation, new float3(0, offsetWithAdjust.y, -offsetWithAdjust.x)),
+                ToolEditMode.PlaneXY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 0, 0))).rotation, new float3(offsetWithAdjust, 0)),
+                ToolEditMode.PlaneXZ => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, isRotationLocked ? -itemAngles.y : 0, 0))).rotation, new float3(offsetWithAdjust.x, 0, -offsetWithAdjust.y)),
+                ToolEditMode.PlaneZY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, 0, isRotationLocked ? -itemAngles.z : 0))).rotation, new float3(0, offsetWithAdjust.y, -offsetWithAdjust.x)),
                 _ => default
             };
             EntityManager.SetComponentData(m_Controller.CurrentSubEntity.Value, currentItem);
@@ -428,7 +429,9 @@ namespace BelzontWE
         {
             var offset = m_rotateClockwise.IsPressed() ? 1 : m_rotateCounterClockwise.IsPressed() ? -1 : 0;
             if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) offset *= 10;
-            ApplyRotation(((Quaternion)m_Controller.CurrentEditingItem.OffsetRotation).eulerAngles, offset);
+
+            var currentItem = EntityManager.GetComponentData<WETextDataTransform>(m_Controller.CurrentEntity.Value);
+            ApplyRotation(((Quaternion)currentItem.offsetRotation).eulerAngles, offset);
         }
         private void ApplyRotation(float3 originalRotation, float value)
         {
@@ -436,7 +439,7 @@ namespace BelzontWE
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value] * 10;
             var offsetWithAdjust = value * currentPrecision;
 
-            if (!EntityManager.TryGetComponent<WETextData_>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
+            if (!EntityManager.TryGetComponent<WETextDataTransform>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
 
             m_Controller.CurrentRotation.Value = originalRotation + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {
@@ -445,7 +448,7 @@ namespace BelzontWE
                 ToolEditMode.PlaneZY => new float3(offsetWithAdjust, 0, 0),
                 _ => default
             };
-            currentItem.OffsetRotation = Quaternion.Euler(m_Controller.CurrentRotation.Value);
+            currentItem.offsetRotation = Quaternion.Euler(m_Controller.CurrentRotation.Value);
             EntityManager.SetComponentData(m_Controller.CurrentSubEntity.Value, currentItem);
             cmdBuff.AddComponent<BatchesUpdated>(m_Controller.CurrentEntity.Value);
         }

@@ -1,10 +1,10 @@
 ﻿using Belzont.Utils;
+using BelzontWE.Utils;
 using Colossal.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Serialization;
-using Unity.Collections;
 using Unity.Entities;
 
 namespace BelzontWE
@@ -13,6 +13,7 @@ namespace BelzontWE
     public class WETextDataXmlTree : IEquatable<WETextDataXmlTree>
     {
         public WETextDataXml self;
+        [XmlIgnore] public Colossal.Hash128 Guid { get; } = System.Guid.NewGuid();
         [XmlElement("children")]
         public WETextDataXmlTree[] children;
 
@@ -21,10 +22,9 @@ namespace BelzontWE
 
         public static WETextDataXmlTree FromEntity(Entity e, EntityManager em)
         {
-            if (!em.TryGetComponent<WETextDataMain>(e, out var weTextData)) return default;
             var result = new WETextDataXmlTree
             {
-                self = weTextData.ToDataXml(em)
+                self = WEXmlExtensions.ToXml(e, em)
             };
             if (em.TryGetBuffer<WESubTextRef>(e, true, out var subTextData))
             {
@@ -63,5 +63,8 @@ namespace BelzontWE
         {
             children = children.Concat(other.children).ToArray();
         }
+
+        public WETextDataXmlTree Clone() => XmlUtils.CloneViaXml(this);
+
     }
 }

@@ -18,7 +18,8 @@ namespace BelzontWE
                 {
                     All = new ComponentType[]
                     {
-                        ComponentType.ReadWrite<WETextData_>(),
+                        ComponentType.ReadWrite<WETextDataMesh>(),
+                        ComponentType.ReadWrite<WETextDataMain>(),
                         ComponentType.ReadOnly<WEWaitingPostInstantiation>(),
                     },
                     None = new ComponentType[]
@@ -34,19 +35,20 @@ namespace BelzontWE
         protected override void OnUpdate()
         {
             var entities = m_pendingPostInstantiate.ToEntityArray(Allocator.Temp);
-            var weData = m_pendingPostInstantiate.ToComponentDataArray<WETextData_>(Allocator.Temp);
+            var meshData = m_pendingPostInstantiate.ToComponentDataArray<WETextDataMesh>(Allocator.Temp);
+            var mainData = m_pendingPostInstantiate.ToComponentDataArray<WETextDataMain>(Allocator.Temp);
             try
             {
                 for (int i = 0; i < entities.Length; i++)
                 {
-                    weData[i].OnPostInstantiate(EntityManager);
-                    EntityManager.SetComponentData(entities[i], weData[i]);
+                    meshData[i].OnPostInstantiate(EntityManager, mainData[i].TargetEntity);
+                    EntityManager.SetComponentData(entities[i], meshData[i]);
                     EntityManager.RemoveComponent<WEWaitingPostInstantiation>(entities[i]);
                 }
             }
             finally
             {
-                weData.Dispose();
+                meshData.Dispose();
                 entities.Dispose();
             }
         }

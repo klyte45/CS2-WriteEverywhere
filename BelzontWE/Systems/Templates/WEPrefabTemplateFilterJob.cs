@@ -1,7 +1,8 @@
 ﻿using Game.Prefabs;
 using Unity.Burst.Intrinsics;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
+using Unity.Collections;
+
 #if BURST
 using Unity.Burst;
 #endif
@@ -25,7 +26,7 @@ namespace BelzontWE
             public ComponentLookup<WETextDataMain> m_TextDataLkp;
             public BufferLookup<WESubTextRef> m_subRefLkp;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
-            public UnsafeParallelHashMap<long, WETextDataTreeStruct> m_indexesWithLayout;
+            public NativeHashMap<long, Colossal.Hash128> m_indexesWithLayout;
             public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
                 var entities = chunk.GetNativeArray(m_EntityType);
@@ -37,7 +38,7 @@ namespace BelzontWE
                     if (m_prefabDataLkp.TryGetComponent(prefabRef.m_Prefab, out var prefabData))
                     {
                         bool needUpdate = !m_prefabLayoutLkp.HasComponent(entity);
-                        if (m_prefabLayoutLkp.TryGetComponent(entity, out var layoutData) && (m_indexesWithLayout.TryGetValue(prefabData.m_Index, out var newTemplate) ? layoutData.templateRef != newTemplate.Guid : layoutData.templateRef != default))
+                        if (m_prefabLayoutLkp.TryGetComponent(entity, out var layoutData) && (m_indexesWithLayout.TryGetValue(prefabData.m_Index, out var newTemplate) ? layoutData.templateRef != newTemplate : layoutData.templateRef != default))
                         {
                             if (layoutData.childEntity != Entity.Null) DestroyRecursive(layoutData.childEntity, unfilteredChunkIndex);
                             m_CommandBuffer.RemoveComponent<WETemplateForPrefab>(unfilteredChunkIndex, entities[i]);
@@ -48,13 +49,7 @@ namespace BelzontWE
 
                             if (m_indexesWithLayout.TryGetValue(prefabData.m_Index, out newTemplate))
                             {
-                                var childEntity = WELayoutUtility.DoCreateLayoutItem(newTemplate, entities[i], Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, unfilteredChunkIndex, m_CommandBuffer, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_FOR_PARENT);
-                                if (m_prefabEmptyLkp.HasComponent(entity)) m_CommandBuffer.RemoveComponent<WETemplateForPrefabEmpty>(unfilteredChunkIndex, entity);
-                                m_CommandBuffer.AddComponent<WETemplateForPrefab>(unfilteredChunkIndex, entities[i], new()
-                                {
-                                    templateRef = newTemplate.Guid,
-                                    childEntity = childEntity
-                                });
+                                m_CommandBuffer.AddComponent<WETemplateForPrefabToRunOnMain>(unfilteredChunkIndex, entity);
                             }
                             else
                             {
@@ -65,6 +60,7 @@ namespace BelzontWE
                                 });
                                 if (!m_prefabEmptyLkp.HasComponent(entity)) m_CommandBuffer.AddComponent<WETemplateForPrefabEmpty>(unfilteredChunkIndex, entity);
                             }
+
                         }
                     }
                     else if (!m_prefabEmptyLkp.HasComponent(entity))

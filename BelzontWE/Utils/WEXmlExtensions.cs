@@ -45,31 +45,47 @@ namespace BelzontWE.Utils
         public static Entity ToEntity(this WETextDataXml xml, EntityManager em, out WETextDataMain main)
         {
             var result = em.CreateEntity();
-            em.AddComponentData(result, main = xml.ToComponent());
-            em.AddComponentData(result, xml.transform.ToComponent());
+            ToComponents(xml, out main, out WETextDataMesh mesh, out WETextDataMaterial material, out WETextDataTransform transform);
+            em.AddComponentData(result, main);
+            em.AddComponentData(result, mesh);
+            em.AddComponentData(result, material);
+            em.AddComponentData(result, transform);
+            return result;
+        }
+
+        public static void ToComponents(this WETextDataXml xml, out WETextDataMain main, out WETextDataMesh mesh, out WETextDataMaterial material, out WETextDataTransform transform)
+        {
+            main = xml.ToComponent();
+            transform = xml.transform.ToComponent();
             switch (xml.shader)
             {
                 case WEShader.Default:
-                    em.AddComponentData(result, xml.defaultStyle.ToComponent());
+                    material = WETextDataMaterial.ToComponent(xml.defaultStyle);
                     break;
                 case WEShader.Glass:
-                    em.AddComponentData(result, xml.glassStyle.ToComponent());
+                    material = WETextDataMaterial.ToComponent(xml.glassStyle);
+                    break;
+                default:
+                    material = default;
                     break;
             }
             switch (xml.textType)
             {
                 case WESimulationTextType.Text:
-                    em.AddComponentData(result, xml.textMesh.ToComponent());
+                    mesh = xml.textMesh.ToComponent();
                     break;
                 case WESimulationTextType.Image:
-                    em.AddComponentData(result, xml.imageMesh.ToComponent());
+                    mesh = xml.imageMesh.ToComponent();
                     break;
                 case WESimulationTextType.Placeholder:
-                    em.AddComponentData(result, xml.layoutMesh.ToComponent());
+                    mesh = xml.layoutMesh.ToComponent();
+                    break;
+                default:
+                    mesh = default;
                     break;
             }
-            return result;
         }
+
 
         public static WETextDataXml ToXml(this WETextDataMain value)
             => new()
@@ -142,57 +158,6 @@ namespace BelzontWE.Utils
             };
 
 
-        public static WETextDataXml.DefaultStyleXml ToDefaultXml(this WETextDataMaterial value)
-            => new()
-            {
-                color = value.color.ToRgbaXml(),
-                emissiveColor = value.emissiveColor.ToRgbaXml(),
-                metallic = value.metallic.ToXml(),
-                smoothness = value.smoothness.ToXml(),
-                emissiveIntensity = value.emissiveIntensity.ToXml(),
-                emissiveExposureWeight = value.emissiveExposureWeight.ToXml(),
-                coatStrength = value.coatStrength.ToXml(),
-                colorMask1 = value.colorMask1.ToRgbXml(),
-                colorMask2 = value.colorMask2.ToRgbXml(),
-                colorMask3 = value.colorMask3.ToRgbXml(),
-
-            };
-        public static WETextDataMaterial ToComponent(this WETextDataXml.DefaultStyleXml value)
-            => new()
-            {
-                color = value.color.ToComponent(),
-                emissiveColor = value.emissiveColor.ToComponent(),
-                metallic = value.metallic.ToComponent(),
-                smoothness = value.smoothness.ToComponent(),
-                emissiveIntensity = value.emissiveIntensity.ToComponent(),
-                emissiveExposureWeight = value.emissiveExposureWeight.ToComponent(),
-                coatStrength = value.coatStrength.ToComponent(),
-                colorMask1 = value.colorMask1.ToComponent(),
-                colorMask2 = value.colorMask2.ToComponent(),
-                colorMask3 = value.colorMask3.ToComponent(),
-            };
-        public static WETextDataXml.GlassStyleXml ToGlassXml(this WETextDataMaterial value)
-            => new()
-            {
-                color = value.color.ToRgbaXml(),
-                glassColor = value.glassColor.ToRgbXml(),
-                glassRefraction = value.glassRefraction.ToXml(),
-                metallic = value.metallic.ToXml(),
-                smoothness = value.smoothness.ToXml(),
-                normalStrength = value.normalStrength.ToXml(),
-                glassThickness = value.glassThickness.ToXml(),
-            };
-        public static WETextDataMaterial ToComponent(this WETextDataXml.GlassStyleXml value)
-            => new()
-            {
-                color = value.color.ToComponent(),
-                glassColor = value.glassColor.ToComponent(),
-                glassRefraction = value.glassRefraction.ToComponent(),
-                metallic = value.metallic.ToComponent(),
-                smoothness = value.smoothness.ToComponent(),
-                normalStrength = value.normalStrength.ToComponent(),
-                glassThickness = value.glassThickness.ToComponent(),
-            };
 
 
 

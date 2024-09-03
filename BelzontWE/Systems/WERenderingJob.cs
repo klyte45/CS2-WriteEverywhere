@@ -22,7 +22,7 @@ namespace BelzontWE
         private struct WERenderingJob : IJobChunk
         {
             public ComponentTypeHandle<CullingInfo> m_cullingInfo;
-            public ComponentLookup<WETextData_> m_weDataLookup;
+            public ComponentLookup<WETextDataMain> m_weMainLookup;
             public BufferLookup<WESubTextRef> m_weSubRefLookup;
             public ComponentLookup<WETemplateUpdater> m_weTemplateUpdaterLookup;
             public ComponentLookup<WETemplateForPrefab> m_weTemplateForPrefabLookup;
@@ -38,6 +38,9 @@ namespace BelzontWE
             public Entity m_selectedEntity;
             public bool isAtWeEditor;
             public bool doLog;
+            public ComponentLookup<WETextDataMaterial> m_weMaterialLookup;
+            public ComponentLookup<WETextDataMesh> m_weMeshLookup;
+            public ComponentLookup<WETextDataTransform> m_weTransformLookup;
 
             public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -86,13 +89,14 @@ namespace BelzontWE
             }
             private void DrawTree(Entity geometryEntity, Entity nextEntity, Matrix4x4 prevMatrix, int unfilteredChunkIndex, bool parentIsPlaceholder = false)
             {
-                if (!m_weDataLookup.TryGetComponent(nextEntity, out var weCustomData))
+                if (!m_weMainLookup.TryGetComponent(nextEntity, out var main))
                 {
                     DestroyRecursive(nextEntity, unfilteredChunkIndex);
                     return;
                 }
+                var transform = m_weTransformLookup[nextEntity];
 
-                switch (weCustomData.TextType)
+                switch (main.TextType)
                 {
                     case WESimulationTextType.Archetype:
                         if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout2))
@@ -111,30 +115,34 @@ namespace BelzontWE
                         }
                         if (isAtWeEditor)
                         {
-                            var scale2 = weCustomData.Scale;
+                            var scale2 = transform.scale;
                             availToDraw.Enqueue(new WERenderData
                             {
                                 textDataEntity = nextEntity,
                                 geometryEntity = geometryEntity,
-                                weComponent = weCustomData,
-                                transformMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.OffsetPosition + (float3)Matrix4x4.Rotate(weCustomData.OffsetRotation).MultiplyPoint(new float3(0, 0, -.001f)), weCustomData.OffsetRotation, scale2)
+                                main = main,
+                                material = m_weMaterialLookup[nextEntity],
+                                mesh = m_weMeshLookup[nextEntity],
+                                transformMatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, -.001f)), transform.offsetRotation, scale2)
                             });
                         }
 
-                        DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(weCustomData.OffsetPosition, weCustomData.OffsetRotation, Vector3.one), unfilteredChunkIndex, true);
+                        DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one), unfilteredChunkIndex, true);
                         break;
                     case WESimulationTextType.WhiteTexture:
                         availToDraw.Enqueue(new WERenderData
                         {
                             textDataEntity = nextEntity,
                             geometryEntity = geometryEntity,
-                            weComponent = weCustomData,
-                            transformMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.OffsetPosition, weCustomData.OffsetRotation, weCustomData.Scale)
+                            main = main,
+                            material = m_weMaterialLookup[nextEntity],
+                            mesh = m_weMeshLookup[nextEntity],
+                            transformMatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, transform.scale)
                         });
 
                         if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayoutWt))
                         {
-                            var itemMatrix = prevMatrix * Matrix4x4.TRS(weCustomData.OffsetPosition, weCustomData.OffsetRotation, Vector3.one);
+                            var itemMatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one);
                             for (int j = 0; j < subLayoutWt.Length; j++)
                             {
                                 DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, unfilteredChunkIndex);
@@ -147,19 +155,20 @@ namespace BelzontWE
                             m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
                             return;
                         }
-                        var scale = weCustomData.Scale;
-                        if (weCustomData.HasBRI && weCustomData.TextType == WESimulationTextType.Text && weCustomData.maxWidthMeters > 0 && weCustomData.BriWidthMetersUnscaled * scale.x > weCustomData.maxWidthMeters)
+                        var scale = transform.scale;
+                        var mesh = m_weMeshLookup[nextEntity];
+                        if (mesh.HasBRI && main.TextType == WESimulationTextType.Text && mesh.MaxWidthMeters > 0 && mesh.BriWidthMetersUnscaled * scale.x > mesh.MaxWidthMeters)
                         {
-                            scale.x = weCustomData.maxWidthMeters / weCustomData.BriWidthMetersUnscaled;
+                            scale.x = mesh.MaxWidthMeters / mesh.BriWidthMetersUnscaled;
                         }
-                        var refPos = parentIsPlaceholder ? default : weCustomData.OffsetPosition;
-                        var refRot = parentIsPlaceholder ? default : weCustomData.OffsetRotation;
+                        var refPos = parentIsPlaceholder ? default : transform.offsetPosition;
+                        var refRot = parentIsPlaceholder ? default : transform.offsetRotation;
                         var matrix = prevMatrix * Matrix4x4.TRS(refPos, refRot, scale);
-                        if (weCustomData.HasBRI)
+                        if (mesh.HasBRI)
                         {
                             if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
                             {
-                                var refBounds = new Colossal.Mathematics.Bounds3(matrix.MultiplyPoint(weCustomData.Bounds.min), matrix.MultiplyPoint(weCustomData.Bounds.max));
+                                var refBounds = new Colossal.Mathematics.Bounds3(matrix.MultiplyPoint(mesh.Bounds.min), matrix.MultiplyPoint(mesh.Bounds.max));
                                 float minDist = RenderingUtils.CalculateMinDistance(refBounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
 
                                 int lod = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
@@ -172,7 +181,9 @@ namespace BelzontWE
                                     {
                                         textDataEntity = nextEntity,
                                         geometryEntity = geometryEntity,
-                                        weComponent = weCustomData,
+                                        main = main,
+                                        material = m_weMaterialLookup[nextEntity],
+                                        mesh = mesh,
                                         transformMatrix = matrix
                                     });
                                 }
@@ -184,7 +195,9 @@ namespace BelzontWE
                             {
                                 textDataEntity = nextEntity,
                                 geometryEntity = geometryEntity,
-                                weComponent = weCustomData,
+                                main = main,
+                                material = m_weMaterialLookup[nextEntity],
+                                mesh = mesh,
                                 transformMatrix = matrix
                             });
                         }

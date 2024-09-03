@@ -63,7 +63,7 @@ namespace BelzontWE
             var newFormulae = newFormulae512.ToString();
             var path = GetPathParts(newFormulae);
             DynamicMethodDefinition dynamicMethodDefinition = new(
-                $"__WE_CS2_{nameof(WETextData_)}_formulae_{new Regex("[^A-Za-z0-9_]").Replace(newFormulae, "_")}",
+                $"__WE_CS2_{typeof(T).Name}_formulae_{new Regex("[^A-Za-z0-9_]").Replace(newFormulae, "_")}",
                 typeof(T),
                 new Type[] { typeof(EntityManager), typeof(Entity) }
                 );
