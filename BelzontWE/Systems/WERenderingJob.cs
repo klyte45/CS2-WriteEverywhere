@@ -22,7 +22,7 @@ namespace BelzontWE
         private struct WERenderingJob : IJobChunk
         {
             public ComponentTypeHandle<CullingInfo> m_cullingInfo;
-            public ComponentLookup<WETextData> m_weDataLookup;
+            public ComponentLookup<WETextData_> m_weDataLookup;
             public BufferLookup<WESubTextRef> m_weSubRefLookup;
             public ComponentLookup<WETemplateUpdater> m_weTemplateUpdaterLookup;
             public ComponentLookup<WETemplateForPrefab> m_weTemplateForPrefabLookup;

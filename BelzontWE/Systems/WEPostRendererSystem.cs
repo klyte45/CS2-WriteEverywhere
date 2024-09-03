@@ -42,7 +42,7 @@ namespace BelzontWE
                 {
                     All = new ComponentType[]
                     {
-                        ComponentType.ReadWrite<WETextData>(),
+                        ComponentType.ReadWrite<WETextData_>(),
                         ComponentType.ReadOnly<WEWaitingRendering>(),
                     },
                     None = new ComponentType[]
@@ -60,7 +60,7 @@ namespace BelzontWE
                 {
                     All = new ComponentType[]
                     {
-                        ComponentType.ReadWrite<WETextData>(),
+                        ComponentType.ReadWrite<WETextData_>(),
                         ComponentType.ReadOnly<WEWaitingRenderingPlaceholder>(),
                     },
                     None = new ComponentType[]
@@ -82,7 +82,7 @@ namespace BelzontWE
                 Dependency = new WETextImageDataUpdateJob
                 {
                     m_EntityType = GetEntityTypeHandle(),
-                    m_WETextDataHdl = GetComponentTypeHandle<WETextData>(true),
+                    m_WETextDataHdl = GetComponentTypeHandle<WETextData_>(true),
                     m_entityLookup = GetEntityStorageInfoLookup(),
                     m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
                     FontDictPtr = FontServer.Instance.DictPtr,
@@ -94,12 +94,12 @@ namespace BelzontWE
                 Dependency = JobHandle.CombineDependencies(Dependency, new WEPlaceholderTemplateFilterJob
                 {
                     m_EntityType = GetEntityTypeHandle(),
-                    m_WETextDataHdl = GetComponentTypeHandle<WETextData>(true),
+                    m_WETextDataHdl = GetComponentTypeHandle<WETextData_>(true),
                     m_templateManager = m_templateManager.RegisteredTemplatesRef,
                     m_entityLookup = GetEntityStorageInfoLookup(),
                     m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
                     m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
-                    m_TextDataLkp = GetComponentLookup<WETextData>(true),
+                    m_TextDataLkp = GetComponentLookup<WETextData_>(true),
                     m_CommandBuffer = cmdBuff.AsParallelWriter()
                 }.Schedule(m_pendingQueuePlaceholders, Dependency));
             }
@@ -109,7 +109,7 @@ namespace BelzontWE
         private unsafe struct WETextImageDataUpdateJob : IJobChunk
         {
             public EntityTypeHandle m_EntityType;
-            public ComponentTypeHandle<WETextData> m_WETextDataHdl;
+            public ComponentTypeHandle<WETextData_> m_WETextDataHdl;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
             public GCHandle FontDictPtr;
             public EntityStorageInfoLookup m_entityLookup;
@@ -155,7 +155,7 @@ namespace BelzontWE
                     }
                 }
             }
-            private bool UpdateImageMesh(Entity e, ref WETextData weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+            private bool UpdateImageMesh(Entity e, ref WETextData_ weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
             {
                 if (m_templateUpdaterLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
                 var bri = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<WEAtlasesLibrary>().GetFromAvailableAtlases(weCustomData.Atlas, text, true);
@@ -170,7 +170,7 @@ namespace BelzontWE
             }
 
 
-            private bool UpdateTextMesh(Entity e, ref WETextData weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, Dictionary<FixedString32Bytes, FontSystemData> fontDict)
+            private bool UpdateTextMesh(Entity e, ref WETextData_ weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, Dictionary<FixedString32Bytes, FontSystemData> fontDict)
             {
                 if (m_templateUpdaterLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
                 if (text.Trim() == "")
@@ -202,9 +202,9 @@ namespace BelzontWE
         private unsafe struct WEPlaceholderTemplateFilterJob : IJobChunk
         {
             public EntityTypeHandle m_EntityType;
-            public ComponentTypeHandle<WETextData> m_WETextDataHdl;
+            public ComponentTypeHandle<WETextData_> m_WETextDataHdl;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
-            public ComponentLookup<WETextData> m_TextDataLkp;
+            public ComponentLookup<WETextData_> m_TextDataLkp;
             public BufferLookup<WESubTextRef> m_subRefLkp;
             public EntityStorageInfoLookup m_entityLookup;
             public UnsafeParallelHashMap<FixedString128Bytes, WETextDataTreeStruct> m_templateManager;
@@ -234,7 +234,7 @@ namespace BelzontWE
                     m_CommandBuffer.RemoveComponent<WEWaitingRenderingPlaceholder>(unfilteredChunkIndex, entity);
                 }
             }
-            private void UpdatePlaceholder(Entity e, ref WETextData weCustomData, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+            private void UpdatePlaceholder(Entity e, ref WETextData_ weCustomData, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
             {
                 var targetTemplate = m_templateManager[new FixedString128Bytes(weCustomData.Text)];
                 if (m_templateUpdaterLkp.TryGetComponent(e, out var templateUpdated) && templateUpdated.childEntity != Entity.Null)

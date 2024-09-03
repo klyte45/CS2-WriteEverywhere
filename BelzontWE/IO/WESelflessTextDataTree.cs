@@ -11,17 +11,17 @@ namespace BelzontWE
     public class WESelflessTextDataTree : IEquatable<WESelflessTextDataTree>
     {
         [XmlElement("children")]
-        public WETextDataTree[] children;
+        public WETextDataXmlTree[] children;
 
         public static WESelflessTextDataTree FromEntity(Entity e, EntityManager em)
         {
             var result = new WESelflessTextDataTree();
             if (em.TryGetBuffer<WESubTextRef>(e, true, out var subTextData))
             {
-                result.children = new WETextDataTree[subTextData.Length];
+                result.children = new WETextDataXmlTree[subTextData.Length];
                 for (int i = 0; i < subTextData.Length; i++)
                 {
-                    result.children[i] = WETextDataTree.FromEntity(subTextData[i].m_weTextData, em);
+                    result.children[i] = WETextDataXmlTree.FromEntity(subTextData[i].m_weTextData, em);
                 }
             }
             return result;
@@ -29,7 +29,6 @@ namespace BelzontWE
 
         public string ToXML(bool pretty = true) => XmlUtils.DefaultXmlSerialize(this, pretty);
 
-        public WETextDataTreeStruct ToStruct() => new WETextDataTree { children = children }.ToStruct();
         public static WESelflessTextDataTree FromXML(string text)
         {
             try
@@ -42,7 +41,7 @@ namespace BelzontWE
         public override bool Equals(object obj) => Equals(obj as WESelflessTextDataTree);
 
         public bool Equals(WESelflessTextDataTree other) => other is not null &&
-                   EqualityComparer<WETextDataTree[]>.Default.Equals(children, other.children);
+                   EqualityComparer<WETextDataXmlTree[]>.Default.Equals(children, other.children);
 
         public override int GetHashCode() => HashCode.Combine(children);
 

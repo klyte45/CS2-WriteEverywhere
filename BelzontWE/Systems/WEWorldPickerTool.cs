@@ -401,7 +401,7 @@ namespace BelzontWE
             var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value];
             var offsetWithAdjust = offsetPosition * currentPrecision;
-            if (!EntityManager.TryGetComponent<WETextData>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
+            if (!EntityManager.TryGetComponent<WETextData_>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
 
             var itemAngles = m_Controller.CurrentRotation.Value;
             var isRotationLocked = m_Controller.CameraRotationLocked.Value;
@@ -436,7 +436,7 @@ namespace BelzontWE
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value] * 10;
             var offsetWithAdjust = value * currentPrecision;
 
-            if (!EntityManager.TryGetComponent<WETextData>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
+            if (!EntityManager.TryGetComponent<WETextData_>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
 
             m_Controller.CurrentRotation.Value = originalRotation + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {

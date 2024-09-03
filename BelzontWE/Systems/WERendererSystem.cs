@@ -203,7 +203,7 @@ namespace BelzontWE
                     m_cullingInfo = GetComponentTypeHandle<CullingInfo>(true),
                     m_transform = GetComponentLookup<Game.Objects.Transform>(true),
                     m_iTransform = GetComponentLookup<InterpolatedTransform>(true),
-                    m_weDataLookup = GetComponentLookup<WETextData>(true),
+                    m_weDataLookup = GetComponentLookup<WETextData_>(true),
                     m_weTemplateUpdaterLookup = GetComponentLookup<WETemplateUpdater>(true),
                     m_weTemplateForPrefabLookup = GetComponentLookup<WETemplateForPrefab>(true),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
@@ -226,7 +226,7 @@ namespace BelzontWE
         {
             public Entity textDataEntity;
             public Entity geometryEntity;
-            public WETextData weComponent;
+            public WETextData_ weComponent;
             public Matrix4x4 transformMatrix;
         }
 #if BURST

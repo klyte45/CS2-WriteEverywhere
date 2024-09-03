@@ -10,26 +10,25 @@ using Unity.Entities;
 namespace BelzontWE
 {
     [XmlRoot("WELayout")]
-    public class WETextDataTree : IEquatable<WETextDataTree>
+    public class WETextDataXmlTree : IEquatable<WETextDataXmlTree>
     {
         public WETextDataXml self;
         [XmlElement("children")]
-        public WETextDataTree[] children;
+        public WETextDataXmlTree[] children;
 
         public bool ShouldSerializechildren() => self?.textType != WESimulationTextType.Placeholder;
 
-        public WETextDataTreeStruct ToStruct() => WETextDataTreeStruct.FromXml(this);
 
-        public static WETextDataTree FromEntity(Entity e, EntityManager em)
+        public static WETextDataXmlTree FromEntity(Entity e, EntityManager em)
         {
-            if (!em.TryGetComponent<WETextData>(e, out var weTextData)) return default;
-            var result = new WETextDataTree
+            if (!em.TryGetComponent<WETextDataMain>(e, out var weTextData)) return default;
+            var result = new WETextDataXmlTree
             {
                 self = weTextData.ToDataXml(em)
             };
             if (em.TryGetBuffer<WESubTextRef>(e, true, out var subTextData))
             {
-                result.children = new WETextDataTree[subTextData.Length];
+                result.children = new WETextDataXmlTree[subTextData.Length];
                 for (int i = 0; i < subTextData.Length; i++)
                 {
                     result.children[i] = FromEntity(subTextData[i].m_weTextData, em);
@@ -39,28 +38,28 @@ namespace BelzontWE
         }
 
         public string ToXML(bool pretty = true) => XmlUtils.DefaultXmlSerialize(this, pretty);
-        public static WETextDataTree FromXML(string text)
+        public static WETextDataXmlTree FromXML(string text)
         {
             try
             {
-                return XmlUtils.DefaultXmlDeserialize<WETextDataTree>(text);
+                return XmlUtils.DefaultXmlDeserialize<WETextDataXmlTree>(text);
             }
             catch { return null; }
         }
 
-        public override bool Equals(object obj) => Equals(obj as WETextDataTree);
+        public override bool Equals(object obj) => Equals(obj as WETextDataXmlTree);
 
-        public bool Equals(WETextDataTree other) => other is not null &&
+        public bool Equals(WETextDataXmlTree other) => other is not null &&
                    EqualityComparer<WETextDataXml>.Default.Equals(self, other.self) &&
-                   EqualityComparer<WETextDataTree[]>.Default.Equals(children, other.children);
+                   EqualityComparer<WETextDataXmlTree[]>.Default.Equals(children, other.children);
 
         public override int GetHashCode() => HashCode.Combine(self, children);
 
-        public static bool operator ==(WETextDataTree left, WETextDataTree right) => EqualityComparer<WETextDataTree>.Default.Equals(left, right);
+        public static bool operator ==(WETextDataXmlTree left, WETextDataXmlTree right) => EqualityComparer<WETextDataXmlTree>.Default.Equals(left, right);
 
-        public static bool operator !=(WETextDataTree left, WETextDataTree right) => !(left == right);
+        public static bool operator !=(WETextDataXmlTree left, WETextDataXmlTree right) => !(left == right);
 
-        public void MergeChildren(WETextDataTree other)
+        public void MergeChildren(WETextDataXmlTree other)
         {
             children = children.Concat(other.children).ToArray();
         }

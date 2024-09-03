@@ -18,7 +18,7 @@ namespace BelzontWE
                 {
                     All = new ComponentType[]
                     {
-                        ComponentType.ReadWrite<WETextData>(),
+                        ComponentType.ReadWrite<WETextData_>(),
                         ComponentType.ReadOnly<WEWaitingPostInstantiation>(),
                     },
                     None = new ComponentType[]
@@ -34,7 +34,7 @@ namespace BelzontWE
         protected override void OnUpdate()
         {
             var entities = m_pendingPostInstantiate.ToEntityArray(Allocator.Temp);
-            var weData = m_pendingPostInstantiate.ToComponentDataArray<WETextData>(Allocator.Temp);
+            var weData = m_pendingPostInstantiate.ToComponentDataArray<WETextData_>(Allocator.Temp);
             try
             {
                 for (int i = 0; i < entities.Length; i++)

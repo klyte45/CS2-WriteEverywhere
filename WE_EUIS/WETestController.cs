@@ -75,7 +75,7 @@ namespace BelzontWE
         private List<PropertyDescriptor> ListCurrentMaterialSettings()
         {
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-            if (EntityManager.TryGetComponent<WETextData>(targetEntity, out var weComponent))
+            if (EntityManager.TryGetComponent<WETextData_>(targetEntity, out var weComponent))
             {
                 var mat = weComponent.OwnMaterial;
                 var propertyCount = mat.shader.GetPropertyCount();
@@ -172,7 +172,7 @@ namespace BelzontWE
         {
 
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-            if (EntityManager.TryGetComponent<WETextData>(targetEntity, out var weComponent))
+            if (EntityManager.TryGetComponent<WETextData_>(targetEntity, out var weComponent))
             {
                 var mat = weComponent.OwnMaterial;
                 if (!int.TryParse(propertyIdxStr, out var propertyIdx))
@@ -313,14 +313,14 @@ namespace BelzontWE
 
         private void SetShader(string shaderName)
         {
-            if (EntityManager.TryGetComponent<WETextData>(targetEntity, out var weComponent) && Shader.Find(shaderName) is Shader sh)
+            if (EntityManager.TryGetComponent<WETextData_>(targetEntity, out var weComponent) && Shader.Find(shaderName) is Shader sh)
             {
                 weComponent.OwnMaterial.shader = sh;
             }
         }
         private string GetShader()
         {
-            return EntityManager.TryGetComponent<WETextData>(targetEntity, out var weComponent) ? weComponent.OwnMaterial.shader.name : null;
+            return EntityManager.TryGetComponent<WETextData_>(targetEntity, out var weComponent) ? weComponent.OwnMaterial.shader.name : null;
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller)

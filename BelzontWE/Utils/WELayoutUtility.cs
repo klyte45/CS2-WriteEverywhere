@@ -13,10 +13,10 @@ namespace BelzontWE
             TARGET_IS_SELF_PARENT_HAS_TARGET,
             TARGET_IS_PARENT
         }
-        public static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, EntityManager em, ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET)
+        public static Entity DoCreateLayoutItem(WETextDataXmlTree toCopy, Entity parentEntity, Entity targetEntity, EntityManager em, ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET)
         {
             var newEntity = em.CreateEntity();
-            var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, newEntity, out WETextData weData);
+            var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, newEntity, out WETextData_ weData);
             em.AddComponentData(newEntity, weData);
             if (childTargetMode == ParentEntityMode.TARGET_IS_TARGET)
             {
@@ -35,7 +35,7 @@ namespace BelzontWE
             }
             return newEntity;
         }
-        public static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextData> tdLookup,
+        public static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextData_> tdLookup,
                    ref BufferLookup<WESubTextRef> subTextLookup, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd,
                    ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET)
         {
@@ -43,12 +43,12 @@ namespace BelzontWE
             return DoCreateLayoutItem(toCopy, parentEntity, targetEntity, ref tdLookup, ref subTextLookup, unfilteredChunkIndex, cmd, ref buff, childTargetMode);
         }
 
-        private static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextData> tdLookup,
+        private static Entity DoCreateLayoutItem(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextData_> tdLookup,
         ref BufferLookup<WESubTextRef> subTextLookup, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd,
         ref DynamicBuffer<WESubTextRef> parentSubRefArray, ParentEntityMode childTargetMode)
         {
             var newEntity = cmd.CreateEntity(unfilteredChunkIndex);
-            var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, newEntity, out WETextData weData);
+            var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, newEntity, out WETextData_ weData);
             cmd.AddComponent(unfilteredChunkIndex, newEntity, weData);
             cmd.AddComponent<WEWaitingPostInstantiation>(unfilteredChunkIndex, newEntity);
 
@@ -71,10 +71,10 @@ namespace BelzontWE
             return newEntity;
         }
 
-        private static Entity CommonDataSetup(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ParentEntityMode childTargetMode, Entity newEntity, out WETextData weData)
+        private static Entity CommonDataSetup(WETextDataTreeStruct toCopy, Entity parentEntity, Entity targetEntity, ParentEntityMode childTargetMode, Entity newEntity, out WETextData_ weData)
         {
             var parentTarget = ParentEntityMode.TARGET_IS_SELF_FOR_PARENT == childTargetMode || ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET == childTargetMode ? newEntity : targetEntity;
-            weData = WETextData.FromDataStruct(toCopy.self, newEntity, parentTarget);
+            weData = WETextData_.FromDataStruct(toCopy.self, newEntity, parentTarget);
             var childTarget = childTargetMode switch
             {
                 ParentEntityMode.TARGET_IS_SELF => newEntity,

@@ -5,37 +5,34 @@ using Unity.Entities;
 
 namespace BelzontWE
 {
-    public partial struct WETextData
+    public struct WETextDataValueString
     {
-        private struct WETextDataValueString
+        public FixedString512Bytes defaultValue;
+        public FixedString512Bytes formulaeStr;
+        public readonly Func<EntityManager, Entity, string> FormulaeFn => WEFormulaeHelper.GetCachedStringFn(formulaeStr);
+        public bool InitializedEffectiveText { get; private set; }
+        public FixedString512Bytes EffectiveValue { get; private set; }
+        private bool loadingFnDone;
+
+        public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
+            => WEFormulaeHelper.SetFormulae<string>(newFormulae ?? "", out errorFmtArgs, out formulaeStr, out var resultFormulaeFn);
+
+        public bool UpdateEffectiveText(EntityManager em, Entity geometryEntity, string oldEffText)
         {
-            public FixedString512Bytes defaultValue;
-            public FixedString512Bytes formulaeStr;
-            public readonly Func<EntityManager, Entity, string> FormulaeFn => WEFormulaeHelper.GetCachedStringFn(formulaeStr);
-            public bool InitializedEffectiveText { get; private set; }
-            public FixedString512Bytes EffectiveValue { get; private set; }
-            private bool loadingFnDone;
-
-            public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
-                => WEFormulaeHelper.SetFormulae<string>(newFormulae ?? "", out errorFmtArgs, out formulaeStr, out var resultFormulaeFn);
-
-            public bool UpdateEffectiveText(EntityManager em, Entity geometryEntity, string oldEffText)
+            InitializedEffectiveText = true;
+            var loadedFnNow = false;
+            if (!loadingFnDone)
             {
-                InitializedEffectiveText = true;
-                var loadedFnNow = false;
-                if (!loadingFnDone)
+                if (formulaeStr.Length > 0)
                 {
-                    if (formulaeStr.Length > 0)
-                    {
-                        SetFormulae(formulaeStr.ToString(), out _);
-                    }
-                    loadedFnNow = loadingFnDone = true;
+                    SetFormulae(formulaeStr.ToString(), out _);
                 }
-                EffectiveValue = FormulaeFn is Func<EntityManager, Entity, string> fn
-                    ? fn(em, geometryEntity)?.ToString().Trim().Truncate(500) ?? "<InvlidFn>"
-                    : formulaeStr.Length > 0 ? "<InvalidFn>" : defaultValue;
-                return loadedFnNow || EffectiveValue.ToString() != oldEffText;
+                loadedFnNow = loadingFnDone = true;
             }
+            EffectiveValue = FormulaeFn is Func<EntityManager, Entity, string> fn
+                ? fn(em, geometryEntity)?.ToString().Trim().Truncate(500) ?? "<InvlidFn>"
+                : formulaeStr.Length > 0 ? "<InvalidFn>" : defaultValue;
+            return loadedFnNow || EffectiveValue.ToString() != oldEffText;
         }
     }
 }

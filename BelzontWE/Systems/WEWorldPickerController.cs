@@ -68,7 +68,7 @@ namespace BelzontWE
             string[] result = new string[buffer.Length];
             for (int i = 0; i < result.Length; i++)
             {
-                result[i] = $"{EntityManager.GetComponentData<WETextData>(buffer[i].m_weTextData).ItemName.ToString().TrimToNull() ?? "N/A"}";
+                result[i] = $"{EntityManager.GetComponentData<WETextData_>(buffer[i].m_weTextData).ItemName.ToString().TrimToNull() ?? "N/A"}";
             }
             return result;
         }
@@ -78,15 +78,15 @@ namespace BelzontWE
         {
             if (target == newParent) return false;
             var parentCheck = newParent;
-            while (EntityManager.TryGetComponent<WETextData>(parentCheck, out var data))
+            while (EntityManager.TryGetComponent<WETextData_>(parentCheck, out var data))
             {
                 if (data.ParentEntity == target) return false;
                 parentCheck = data.ParentEntity;
             }
-            if (!EntityManager.TryGetComponent<WETextData>(target, out var weData)) return false;
+            if (!EntityManager.TryGetComponent<WETextData_>(target, out var weData)) return false;
 
             if (weData.ParentEntity == newParent) return true;
-            if (weData.TargetEntity != newParent && (!EntityManager.TryGetComponent<WETextData>(newParent, out var weDataParent) || weDataParent.TargetEntity != weData.TargetEntity)) return false;
+            if (weData.TargetEntity != newParent && (!EntityManager.TryGetComponent<WETextData_>(newParent, out var weDataParent) || weDataParent.TargetEntity != weData.TargetEntity)) return false;
             if (!EntityManager.TryGetBuffer<WESubTextRef>(weData.ParentEntity, false, out var buff)) return false;
             if (!EntityManager.HasBuffer<WESubTextRef>(newParent))
             {
@@ -109,7 +109,7 @@ namespace BelzontWE
 
         private bool CloneAsChild(Entity target, Entity newParent)
         {
-            if (!EntityManager.TryGetComponent<WETextData>(target, out var weData)) return false;
+            if (!EntityManager.TryGetComponent<WETextData_>(target, out var weData)) return false;
             if (!EntityManager.HasBuffer<WESubTextRef>(newParent))
             {
                 EntityManager.AddBuffer<WESubTextRef>(newParent);
@@ -271,7 +271,7 @@ namespace BelzontWE
             m_initialized = true;
         }
 
-        private void OnCurrentItemChanged(WETextData currentItem)
+        private void OnCurrentItemChanged(WETextData_ currentItem)
         {
             CurrentPosition.Value = currentItem.OffsetPosition;
             CurrentRotation.Value = KMathUtils.UnityQuaternionToEuler(currentItem.OffsetRotation);
@@ -309,7 +309,7 @@ namespace BelzontWE
 
         private readonly Queue<System.Action> m_executionQueue = new();
 
-        private void EnqueueModification<T>(T newVal, Func<T, WETextData, WETextData> x)
+        private void EnqueueModification<T>(T newVal, Func<T, WETextData_, WETextData_> x)
         {
             if (IsValidEditingItem())
             {
@@ -317,7 +317,7 @@ namespace BelzontWE
                 m_executionQueue.Enqueue(() =>
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"CurrentSubEntity => {subEntity}");
-                    var currentItem = EntityManager.GetComponentData<WETextData>(subEntity);
+                    var currentItem = EntityManager.GetComponentData<WETextData_>(subEntity);
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"x = {x}; CurrentSubEntity = {currentItem.ItemName}");
                     currentItem = x(newVal, currentItem);
                     EntityManager.SetComponentData(subEntity, currentItem);
@@ -353,7 +353,7 @@ namespace BelzontWE
                        {
                            m_weTextData = EntityManager.CreateEntity(typeof(WEWaitingRendering))
                        };
-                       var newData = WETextData.CreateDefault(currentEntity, targetParent);
+                       var newData = WETextData_.CreateDefault(currentEntity, targetParent);
                        EntityManager.AddComponentData(subref.m_weTextData, newData);
                        buff.Add(subref);
                        CurrentSubEntity.ChangeValueWithEffects(subref.m_weTextData);
@@ -387,9 +387,9 @@ namespace BelzontWE
         #endregion
 
         #region Utility
-        public bool IsValidEditingItem() => CurrentItemIsValid.Value = CurrentEntity.Value != default && EntityManager.HasComponent<WETextData>(CurrentSubEntity.Value);
+        public bool IsValidEditingItem() => CurrentItemIsValid.Value = CurrentEntity.Value != default && EntityManager.HasComponent<WETextData_>(CurrentSubEntity.Value);
 
-        public WETextData CurrentEditingItem => EntityManager.TryGetComponent<WETextData>(CurrentSubEntity.Value, out var item) ? item : default;
+        public WETextData_ CurrentEditingItem => EntityManager.TryGetComponent<WETextData_>(CurrentSubEntity.Value, out var item) ? item : default;
 
         private WETextItemResume[] GetTextTreeForEntity(Entity e)
         {
@@ -397,7 +397,7 @@ namespace BelzontWE
             var result = new WETextItemResume[refSubs.Length];
             for (int i = 0; i < refSubs.Length; i++)
             {
-                if (!EntityManager.TryGetComponent<WETextData>(refSubs[i].m_weTextData, out var data)) continue;
+                if (!EntityManager.TryGetComponent<WETextData_>(refSubs[i].m_weTextData, out var data)) continue;
                 result[i] = new()
                 {
                     name = data.ItemName.ToString(),

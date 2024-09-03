@@ -22,7 +22,7 @@ namespace BelzontWE
             public ComponentLookup<WETemplateForPrefabDirty> m_prefabDirtyLkp;
             public ComponentLookup<WETemplateForPrefab> m_prefabLayoutLkp;
             public ComponentLookup<WETemplateUpdater> m_templateUpdaterLkp;
-            public ComponentLookup<WETextData> m_TextDataLkp;
+            public ComponentLookup<WETextDataMain> m_TextDataLkp;
             public BufferLookup<WESubTextRef> m_subRefLkp;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
             public UnsafeParallelHashMap<long, WETextDataTreeStruct> m_indexesWithLayout;

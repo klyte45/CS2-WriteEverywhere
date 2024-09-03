@@ -46,7 +46,8 @@ namespace BelzontWE.Sprites
                     {
                         All = new ComponentType[]
                         {
-                            ComponentType.ReadOnly<WETextData>(),
+                            ComponentType.ReadOnly<WETextDataMesh>(),
+                            ComponentType.ReadOnly<WETextDataMain>(),
                         },
                         None = new ComponentType[]
                         {
@@ -341,7 +342,8 @@ namespace BelzontWE.Sprites
             var job = new WEPlaceholcerAtlasesUsageCount
             {
                 atlasToCheck = name,
-                m_textDataHdl = GetComponentTypeHandle<WETextData>(),
+                m_textDataMeshHdl = GetComponentTypeHandle<WETextDataMesh>(),
+                m_textDataMainHdl = GetComponentTypeHandle<WETextDataMain>(),
                 m_counter = &counterResult
             };
             job.Schedule(m_atlasUsageQuery, Dependency).Complete();
@@ -356,15 +358,17 @@ namespace BelzontWE.Sprites
         private unsafe struct WEPlaceholcerAtlasesUsageCount : IJobChunk
         {
             public FixedString32Bytes atlasToCheck;
-            public ComponentTypeHandle<WETextData> m_textDataHdl;
+            public ComponentTypeHandle<WETextDataMesh> m_textDataMeshHdl;
+            public ComponentTypeHandle<WETextDataMain> m_textDataMainHdl;
             public int* m_counter;
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
-                var data = chunk.GetNativeArray(ref m_textDataHdl);
-                for (int i = 0; i < data.Length; i++)
+                var dataMain = chunk.GetNativeArray(ref m_textDataMainHdl);
+                var dataMesh = chunk.GetNativeArray(ref m_textDataMeshHdl);
+                for (int i = 0; i < dataMain.Length; i++)
                 {
-                    if (data[i].TextType == WESimulationTextType.Image && data[i].Atlas == atlasToCheck) *m_counter += 1;
+                    if (dataMain[i].TextType == WESimulationTextType.Image && dataMesh[i].Atlas == atlasToCheck) *m_counter += 1;
                 }
             }
 
