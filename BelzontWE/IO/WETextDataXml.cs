@@ -14,10 +14,10 @@ namespace BelzontWE
         [XmlAttribute] public string itemName;
 
         [XmlElement] public TransformXml transform;
-        [XmlElement] public MeshDataTextXml textMesh;
-        [XmlElement] public MeshDataImageXml imageMesh;
-        [XmlElement] public MeshDataPlaceholderXml layoutMesh;
-        [XmlElement] public MeshDataWhiteTextureXml whiteMesh;
+        [XmlElement][DefaultValue(null)] public MeshDataTextXml textMesh;
+        [XmlElement][DefaultValue(null)] public MeshDataImageXml imageMesh;
+        [XmlElement][DefaultValue(null)] public MeshDataPlaceholderXml layoutMesh;
+        [XmlElement][DefaultValue(null)] public MeshDataWhiteTextureXml whiteMesh;
         [XmlElement] public DefaultStyleXml defaultStyle;
         [XmlElement] public GlassStyleXml glassStyle;
 
@@ -31,7 +31,7 @@ namespace BelzontWE
         public bool ShouldSerializeimageMesh() => imageMesh != null;
         public bool ShouldSerializelayoutMesh() => layoutMesh != null;
         public bool ShouldSerializewhiteMesh() => whiteMesh != null;
-        public bool ShouldSerializedefaultStyle() => layoutMesh is null &&  defaultStyle != null;
+        public bool ShouldSerializedefaultStyle() => layoutMesh is null && defaultStyle != null;
         public bool ShouldSerializeglassStyle() => layoutMesh is null && glassStyle != null;
 
         public class TransformXml
@@ -40,6 +40,7 @@ namespace BelzontWE
             public Vector3Xml offsetRotation = new();
             public Vector3Xml scale = (Vector3Xml)Vector3.one;
         }
+
 
         public class MeshDataWhiteTextureXml
         {
@@ -83,9 +84,9 @@ namespace BelzontWE
 
         public class GlassStyleXml
         {
-            [XmlElement] public FormulaeColorRgbaXml color = new() { defaultValue = Color.white };
+            [XmlElement] public FormulaeColorRgbaXml color = new() { defaultValue = Color.clear };
             [XmlElement] public FormulaeColorRgbXml glassColor = new() { defaultValue = Color.white };
-            [XmlElement] public FormulaeXml<float> glassRefraction;
+            [XmlElement] public FormulaeXml<float> glassRefraction = new() { defaultValue = 1 };
             [XmlElement] public FormulaeXml<float> metallic;
             [XmlElement] public FormulaeXml<float> smoothness;
             [XmlElement] public FormulaeXml<float> normalStrength;

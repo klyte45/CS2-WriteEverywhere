@@ -161,8 +161,7 @@ namespace BelzontWE
                             break;
                         case WESimulationTextType.WhiteTexture:
                             var bri = WEAtlasesLibrary.GetWhiteTextureBRI();
-                            weMeshData.UpdateBRI(bri, bri.m_refText);
-                            m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
+                            m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData.UpdateBRI(bri, bri.m_refText));
                             m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             break;
                         default:

@@ -244,7 +244,7 @@ namespace BelzontWE
             ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
             DecalFlags.OnScreenValueChanged += (x) => EnqueueModification<int, WETextDataMaterial>(x, (x, currentItem) => { currentItem.decalFlags = x; return currentItem; });
             UseAbsoluteSizeEditing.OnScreenValueChanged += (x) => EnqueueModification<bool, WETextDataTransform>(x, (x, currentItem) => { currentItem.useAbsoluteSizeEditing = x; return currentItem; });
-            ShaderType.OnScreenValueChanged += (x) => EnqueueModification<WEShader, WETextDataMaterial>(x, (x, currentItem) => { currentItem.shader = x; return currentItem; });
+            ShaderType.OnScreenValueChanged += (x) => EnqueueModification<WEShader, WETextDataMaterial>(x, (x, currentItem) => { currentItem.Shader = x; return currentItem; });
             GlassRefraction.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.GlassRefraction = x; return currentItem; });
             GlassColor.OnScreenValueChanged += (x) => EnqueueModification<Color, WETextDataMaterial>(x, (x, currentItem) => { currentItem.GlassColor = x; return currentItem; });
             GlassThickness.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.GlassThickness = x; return currentItem; });
@@ -293,7 +293,7 @@ namespace BelzontWE
             ImageAtlasName.Value = mesh.Atlas.ToString();
             DecalFlags.Value = material.decalFlags;
             UseAbsoluteSizeEditing.Value = transform.useAbsoluteSizeEditing;
-            ShaderType.Value = material.shader;
+            ShaderType.Value = material.Shader;
             GlassColor.Value = material.GlassColor;
             GlassRefraction.Value = material.GlassRefraction;
             ColorMask1.Value = material.ColorMask1;

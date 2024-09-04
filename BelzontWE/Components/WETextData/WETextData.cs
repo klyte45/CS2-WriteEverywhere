@@ -90,7 +90,7 @@ namespace BelzontWE
         }
         public void UpdateFormulaes(EntityManager em, Entity geometryEntity)
         {
-            if (textType != WESimulationTextType.Text && textType != WESimulationTextType.Image) return;
+            if (valueData.InitializedEffectiveText && textType != WESimulationTextType.Text && textType != WESimulationTextType.Image) return;
             var result = valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText);
             if (result) templateDirty = dirty = true;
         }
@@ -175,7 +175,8 @@ namespace BelzontWE
         private WETextDataValueColor colorMask1;
         private WETextDataValueColor colorMask2;
         private WETextDataValueColor colorMask3;
-        public WEShader shader;
+        private WEShader shader;
+        public WEShader Shader { readonly get => shader; set { shader = value; ResetMaterial(); } }
         public int decalFlags;
 
         private bool dirty;
@@ -378,6 +379,8 @@ namespace BelzontWE
                 colorMask1 = value.colorMask1.ToComponent(),
                 colorMask2 = value.colorMask2.ToComponent(),
                 colorMask3 = value.colorMask3.ToComponent(),
+                shader = value.shader,
+                decalFlags = value.decalFlags
             };
         public static WETextDataMaterial ToComponent(WETextDataXml.GlassStyleXml value)
             => new()
@@ -389,6 +392,8 @@ namespace BelzontWE
                 smoothness = value.smoothness.ToComponent(),
                 normalStrength = value.normalStrength.ToComponent(),
                 glassThickness = value.glassThickness.ToComponent(),
+                shader = value.shader,
+                decalFlags = value.decalFlags
             };
     }
     public struct WETextDataTransform : IComponentData

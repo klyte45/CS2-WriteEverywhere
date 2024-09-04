@@ -81,7 +81,7 @@ namespace BelzontWE
         private static Entity CommonDataSetup(WETextDataXmlTree toCopy, Entity parentEntity, Entity targetEntity, ParentEntityMode childTargetMode, Entity newEntity, out WETextDataMain main, out WETextDataMesh mesh, out WETextDataMaterial material, out WETextDataTransform transform)
         {
             var parentTarget = ParentEntityMode.TARGET_IS_SELF_FOR_PARENT == childTargetMode || ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET == childTargetMode ? newEntity : targetEntity;
-            FromDataStruct(toCopy.self, newEntity, parentTarget, out main, out mesh, out material, out transform);
+            FromXml(toCopy.self, newEntity, parentTarget, out main, out mesh, out material, out transform);
             var childTarget = childTargetMode switch
             {
                 ParentEntityMode.TARGET_IS_SELF => newEntity,
@@ -97,7 +97,7 @@ namespace BelzontWE
 
 
 
-        private static void FromDataStruct(WETextDataXml xml, Entity parent, Entity target, out WETextDataMain main, out WETextDataMesh mesh, out WETextDataMaterial material, out WETextDataTransform transform)
+        private static void FromXml(WETextDataXml xml, Entity parent, Entity target, out WETextDataMain main, out WETextDataMesh mesh, out WETextDataMaterial material, out WETextDataTransform transform)
         {
             xml.ToComponents(out main, out mesh, out material, out transform);
             main.ParentEntity = parent;

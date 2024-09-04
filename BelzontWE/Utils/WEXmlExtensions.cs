@@ -13,7 +13,7 @@ namespace BelzontWE.Utils
             if (result is null) return result;
             if (em.TryGetComponent<WETextDataMaterial>(e, out var weMat))
             {
-                switch (weMat.shader)
+                switch (weMat.Shader)
                 {
                     case WEShader.Default:
                         result.defaultStyle = weMat.ToDefaultXml();
@@ -36,6 +36,9 @@ namespace BelzontWE.Utils
                     case WESimulationTextType.Placeholder:
                         result.layoutMesh = weMesh.ToPlaceholderXml();
                         break;
+                    case WESimulationTextType.WhiteTexture:
+                        result.whiteMesh = weMesh.ToWhiteTextureXml();
+                        break;
                 }
             }
             result.transform = em.TryGetComponent<WETextDataTransform>(e, out var weTransf) ? weTransf.ToXml() : default;
@@ -55,6 +58,14 @@ namespace BelzontWE.Utils
 
         public static void ToComponents(this WETextDataXml xml, out WETextDataMain main, out WETextDataMesh mesh, out WETextDataMaterial material, out WETextDataTransform transform)
         {
+            if (xml is null)
+            {
+                main = new() { ItemName = "<EMPTY NODE>" };
+                material = default;
+                mesh = default;
+                transform = default;
+                return;
+            }
             main = xml.ToComponent();
             transform = xml.transform.ToComponent();
             if (xml.defaultStyle != null)
