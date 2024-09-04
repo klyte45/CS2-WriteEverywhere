@@ -31,8 +31,8 @@ namespace BelzontWE
         public bool ShouldSerializeimageMesh() => imageMesh != null;
         public bool ShouldSerializelayoutMesh() => layoutMesh != null;
         public bool ShouldSerializewhiteMesh() => whiteMesh != null;
-        public bool ShouldSerializedefaultStyle() => defaultStyle != null;
-        public bool ShouldSerializeglassStyle() => glassStyle != null;
+        public bool ShouldSerializedefaultStyle() => layoutMesh is null &&  defaultStyle != null;
+        public bool ShouldSerializeglassStyle() => layoutMesh is null && glassStyle != null;
 
         public class TransformXml
         {

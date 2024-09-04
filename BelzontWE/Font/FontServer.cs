@@ -22,8 +22,8 @@ namespace BelzontWE
     {
         public const int CURRENT_VERSION = 0;
         #region Fonts
-        public const string DEFAULT_FONT_KEY = "/DEFAULT/";
-        private const string FONTS_FILES_FOLDER = "Fonts";
+        public const string DEFAULT_FONT_KEY = "\0DEFAULT\0";
+        private const string FONTS_FILES_FOLDER = "fonts";
         public static int DefaultTextureSizeFont => 512 << (WEModData.InstanceWE?.StartTextureSizeFont ?? 1);
         public static string FontFilesPath { get; } = Path.Combine(BasicIMod.ModSettingsRootFolder, FONTS_FILES_FOLDER);
         public event Action OnFontsLoadedChanged;
