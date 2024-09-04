@@ -40,24 +40,24 @@ namespace BelzontWE
             return newEntity;
         }
         public static Entity DoCreateLayoutItem(WETextDataXmlTree toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextDataMain> tdLookup,
-                   ref BufferLookup<WESubTextRef> subTextLookup, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd,
+                   ref BufferLookup<WESubTextRef> subTextLookup, EntityCommandBuffer cmd,
                    ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET)
         {
-            if (!subTextLookup.TryGetBuffer(parentEntity, out var buff)) buff = childTargetMode == ParentEntityMode.TARGET_IS_TARGET ? cmd.AddBuffer<WESubTextRef>(unfilteredChunkIndex, parentEntity) : default;
-            return DoCreateLayoutItem(toCopy, parentEntity, targetEntity, ref tdLookup, ref subTextLookup, unfilteredChunkIndex, cmd, ref buff, childTargetMode);
+            if (!subTextLookup.TryGetBuffer(parentEntity, out var buff)) buff = childTargetMode == ParentEntityMode.TARGET_IS_TARGET ? cmd.AddBuffer<WESubTextRef>(parentEntity) : default;
+            return DoCreateLayoutItem(toCopy, parentEntity, targetEntity, ref tdLookup, ref subTextLookup, cmd, ref buff, childTargetMode);
         }
 
         private static Entity DoCreateLayoutItem(WETextDataXmlTree toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextDataMain> tdLookup,
-        ref BufferLookup<WESubTextRef> subTextLookup, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd,
+        ref BufferLookup<WESubTextRef> subTextLookup, EntityCommandBuffer cmd,
         ref DynamicBuffer<WESubTextRef> parentSubRefArray, ParentEntityMode childTargetMode)
         {
-            var newEntity = cmd.CreateEntity(unfilteredChunkIndex);
+            var newEntity = cmd.CreateEntity();
             var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, newEntity, out WETextDataMain weData, out WETextDataMesh mesh, out WETextDataMaterial material, out WETextDataTransform transform);
-            cmd.AddComponent(unfilteredChunkIndex, newEntity, weData);
-            cmd.AddComponent(unfilteredChunkIndex, newEntity, mesh);
-            cmd.AddComponent(unfilteredChunkIndex, newEntity, material);
-            cmd.AddComponent(unfilteredChunkIndex, newEntity, transform);
-            cmd.AddComponent<WEWaitingPostInstantiation>(unfilteredChunkIndex, newEntity);
+            cmd.AddComponent(newEntity, weData);
+            cmd.AddComponent(newEntity, mesh);
+            cmd.AddComponent(newEntity, material);
+            cmd.AddComponent(newEntity, transform);
+            cmd.AddComponent<WEWaitingPostInstantiation>(newEntity);
 
             if (childTargetMode == ParentEntityMode.TARGET_IS_TARGET)
             {
@@ -67,12 +67,12 @@ namespace BelzontWE
                 });
             }
 
-            if (mesh.TextType != WESimulationTextType.Placeholder && toCopy.children.Length > 0)
+            if (mesh.TextType != WESimulationTextType.Placeholder && toCopy.children?.Length > 0)
             {
-                var buff = cmd.AddBuffer<WESubTextRef>(unfilteredChunkIndex, newEntity);
+                var buff = cmd.AddBuffer<WESubTextRef>(newEntity);
                 for (int i = 0; i < toCopy.children.Length; i++)
                 {
-                    DoCreateLayoutItem(toCopy.children[i], newEntity, childTarget, ref tdLookup, ref subTextLookup, unfilteredChunkIndex, cmd, ref buff, ParentEntityMode.TARGET_IS_TARGET);
+                    DoCreateLayoutItem(toCopy.children[i], newEntity, childTarget, ref tdLookup, ref subTextLookup, cmd, ref buff, ParentEntityMode.TARGET_IS_TARGET);
                 }
             }
             return newEntity;

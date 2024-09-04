@@ -110,7 +110,7 @@ namespace BelzontWE
                     case WESimulationTextType.Placeholder:
                         if (!m_weTemplateUpdaterLookup.TryGetComponent(nextEntity, out var updater))
                         {
-                            m_CommandBuffer.AddComponent<WEWaitingRenderingPlaceholder>(unfilteredChunkIndex, nextEntity);
+                            m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
                             return;
                         }
                         if (isAtWeEditor)

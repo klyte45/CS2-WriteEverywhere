@@ -30,6 +30,11 @@ namespace BelzontWE
             {
                 textType = value;
                 dirty = true;
+                templateDirty = true;
+                if (value == WESimulationTextType.Placeholder)
+                {
+                    ResetBri();
+                }
             }
         }
         public FixedString32Bytes Atlas { readonly get => atlas; set => atlas = value; }
@@ -90,8 +95,19 @@ namespace BelzontWE
         }
         public void UpdateFormulaes(EntityManager em, Entity geometryEntity)
         {
-            if (valueData.InitializedEffectiveText && textType != WESimulationTextType.Text && textType != WESimulationTextType.Image) return;
-            var result = valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText);
+            bool result;
+            switch (textType)
+            {
+                case WESimulationTextType.Text:
+                case WESimulationTextType.Image:
+                    result = valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText);
+                    break;
+                case WESimulationTextType.Placeholder:
+                    result = valueData.UpdateEffectiveValue(em, geometryEntity);
+                    break;
+                default:
+                    return;
+            }
             if (result) templateDirty = dirty = true;
         }
         public static Entity GetTargetEntityEffective(Entity target, EntityManager em, bool fullRecursive = false)

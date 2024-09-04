@@ -62,6 +62,7 @@ namespace BelzontWE
                     {
                         ComponentType.ReadOnly<Temp>(),
                         ComponentType.ReadOnly<Deleted>(),
+                        ComponentType.ReadOnly<WEPlaceholderToBeProcessedInMain>(),
                     }
                 },
                 new ()
@@ -77,6 +78,7 @@ namespace BelzontWE
                         ComponentType.ReadOnly<Temp>(),
                         ComponentType.ReadOnly<Deleted>(),
                         ComponentType.ReadOnly<WETemplateForPrefabEmpty>(),
+                        ComponentType.ReadOnly<WEPlaceholderToBeProcessedInMain>(),
                     }
                 }
             });
@@ -135,14 +137,35 @@ namespace BelzontWE
                     {
                         m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
                     }
-                    if (item.mesh.TextType == WESimulationTextType.Placeholder && item.mesh.IsTemplateDirty())
+
+                    switch (item.mesh.TextType)
                     {
-                        item.mesh.ClearTemplateDirty();
-                        cmd.AddComponent<WEWaitingRenderingPlaceholder>(item.textDataEntity);
-                        cmd.SetComponent(item.textDataEntity, item.mesh);
-                        if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {item.main.TargetEntity} P: {item.main.ParentEntity}\n{item.main.ItemName} - {item.mesh.TextType}\nTEMPLATE DIRTY");
-                        continue;
+                        case WESimulationTextType.Text:
+                        case WESimulationTextType.Image:
+                        case WESimulationTextType.WhiteTexture:
+                        case WESimulationTextType.Placeholder:
+                            if (((FrameCounter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
+                            {
+                                item.mesh.UpdateFormulaes(EntityManager, item.geometryEntity);
+                                item.material.UpdateFormulaes(EntityManager, item.geometryEntity);
+                            }
+                            if (item.mesh.TextType != WESimulationTextType.Placeholder && item.mesh.IsDirty() && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
+                            {
+                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! +WEWaitingRendering");
+                                cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                            }
+                            else if (item.mesh.TextType == WESimulationTextType.Placeholder && item.mesh.IsTemplateDirty())
+                            {
+                                item.mesh.ClearTemplateDirty();
+                                cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                                cmd.SetComponent(item.textDataEntity, item.mesh);
+                                cmd.SetComponent(item.textDataEntity, item.material);
+                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {item.main.TargetEntity} P: {item.main.ParentEntity}\n{item.main.ItemName} - {item.mesh.TextType}\nTEMPLATE DIRTY");
+                                continue;
+                            }
+                            break;
                     }
+                    if (item.mesh.TextType == WESimulationTextType.Placeholder && !m_pickerController.Enabled) continue;
                     BasicRenderInformation bri;
                     if ((bri = item.mesh.RenderInformation) == null)
                     {
@@ -165,25 +188,7 @@ namespace BelzontWE
                                     }
                                 }
                                 break;
-
                         }
-                    }
-                    switch (item.mesh.TextType)
-                    {
-                        case WESimulationTextType.Text:
-                        case WESimulationTextType.Image:
-                        case WESimulationTextType.WhiteTexture:
-                            if (((FrameCounter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
-                            {
-                                item.mesh.UpdateFormulaes(EntityManager, item.geometryEntity);
-                                item.material.UpdateFormulaes(EntityManager, item.geometryEntity);
-                            }
-                            if (item.mesh.IsDirty() && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
-                            {
-                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! +WEWaitingRendering");
-                                cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
-                            }
-                            break;
                     }
 
                     bool briWasNull = false;

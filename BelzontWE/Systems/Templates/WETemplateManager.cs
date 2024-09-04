@@ -1,6 +1,7 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
 using Colossal.Entities;
+using Colossal.IO.AssetDatabase.Internal;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.Common;
@@ -171,7 +172,7 @@ namespace BelzontWE
                             ComponentType.ReadOnly<WETextDataMaterial>(),
                             ComponentType.ReadOnly<WETextDataMesh>(),
                             ComponentType.ReadOnly<WETextDataTransform>(),
-                            ComponentType.ReadOnly<WEToBeProcessedInMain>(),
+                            ComponentType.ReadOnly<WEPlaceholderToBeProcessedInMain>(),
                         },
                         None = new ComponentType[]
                         {
@@ -184,6 +185,51 @@ namespace BelzontWE
 
         protected override void OnDestroy()
         {
+        }
+
+        private Coroutine m_updatingEntitiesOnMain;
+
+        private IEnumerator UpdateLayouts(NativeArray<ArchetypeChunk> chunks)
+        {
+            var m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>();
+            var m_TextDataLkp = GetComponentLookup<WETextDataMain>();
+            var m_subRefLkp = GetBufferLookup<WESubTextRef>();
+            var toBeProcessedDataHdl = GetComponentTypeHandle<WEPlaceholderToBeProcessedInMain>();
+
+            for (int h = 0; h < chunks.Length; h++)
+            {
+                var chunk = chunks[h];
+                var entities = chunk.GetNativeArray(GetEntityTypeHandle());
+                var dataToBeProcessedArray = chunk.GetNativeArray(ref toBeProcessedDataHdl);
+                EntityCommandBuffer cmd = default;
+                for (int i = 0; i < entities.Length; i++)
+                {
+                    if (i % 200 == 0)
+                    {
+                        yield return 0;
+                        cmd = m_endFrameBarrier.CreateCommandBuffer();
+                    }
+                    var e = entities[i];
+                    var dataToBeProcessed = dataToBeProcessedArray[i];
+                    var newData = RegisteredTemplates.TryGetValue(dataToBeProcessed.layoutName, out var targetTemplate) ? new WETemplateUpdater()
+                    {
+                        templateEntity = targetTemplate.Guid,
+                        childEntity = WELayoutUtility.DoCreateLayoutItem(targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
+                    } : default;
+                    if (m_templateUpdaterLkp.TryGetComponent(e, out var oldCmp))
+                    {
+                        cmd.AddComponent<Deleted>(oldCmp.childEntity);
+                        cmd.SetComponent(e, newData);
+                    }
+                    else
+                    {
+                        cmd.AddComponent(e, newData);
+                    }
+                    cmd.RemoveComponent<WEPlaceholderToBeProcessedInMain>(e);
+                }
+            }
+            chunks.Dispose();
+            m_updatingEntitiesOnMain = null;
         }
 
         protected override void OnUpdate()
@@ -203,58 +249,62 @@ namespace BelzontWE
 
             if (m_templatesDirty)
             {
-                EntityManager.AddComponent<WEWaitingRenderingPlaceholder>(m_templateBasedEntities);
+                EntityManager.AddComponent<WEWaitingRendering>(m_templateBasedEntities);
                 m_templatesDirty = false;
             }
-            //else if (!m_entitiesToBeUpdatedInMain.IsEmpty)
-            //{
-            //    //m_entitiesToBeUpdatedInMain
-            //}
-            else if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
+            if (m_updatingEntitiesOnMain is null)
             {
-                var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
-                foreach (var i in PrefabTemplates)
+                if (!m_entitiesToBeUpdatedInMain.IsEmpty)
                 {
-                    keysWithTemplate[i.Key] = i.Value.Guid;
+                    var entitiesToUpdate = m_entitiesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
+                    m_updatingEntitiesOnMain = GameManager.instance.StartCoroutine(UpdateLayouts(entitiesToUpdate));
                 }
-                Dependency = new WEPrefabTemplateFilterJob
+                else if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
                 {
-                    m_EntityType = GetEntityTypeHandle(),
-                    m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>(true),
-                    m_prefabDataLkp = GetComponentLookup<PrefabData>(true),
-                    m_prefabEmptyLkp = GetComponentLookup<WETemplateForPrefabEmpty>(true),
-                    m_prefabDirtyLkp = GetComponentLookup<WETemplateForPrefabDirty>(true),
-                    m_prefabLayoutLkp = GetComponentLookup<WETemplateForPrefab>(true),
-                    m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
-                    m_TextDataLkp = GetComponentLookup<WETextDataMain>(true),
-                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-                    m_indexesWithLayout = keysWithTemplate,
-                    m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
-                }.ScheduleParallel(m_uncheckedWePrefabLayoutQuery, Dependency);
-                keysWithTemplate.Dispose(Dependency);
-            }
-            else if (!m_dirtyWePrefabLayoutQuery.IsEmpty)
-            {
-                var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
-                foreach (var i in PrefabTemplates)
-                {
-                    keysWithTemplate[i.Key] = i.Value.Guid;
+                    var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
+                    foreach (var i in PrefabTemplates)
+                    {
+                        keysWithTemplate[i.Key] = i.Value.Guid;
+                    }
+                    Dependency = new WEPrefabTemplateFilterJob
+                    {
+                        m_EntityType = GetEntityTypeHandle(),
+                        m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>(true),
+                        m_prefabDataLkp = GetComponentLookup<PrefabData>(true),
+                        m_prefabEmptyLkp = GetComponentLookup<WETemplateForPrefabEmpty>(true),
+                        m_prefabDirtyLkp = GetComponentLookup<WETemplateForPrefabDirty>(true),
+                        m_prefabLayoutLkp = GetComponentLookup<WETemplateForPrefab>(true),
+                        m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
+                        m_TextDataLkp = GetComponentLookup<WETextDataMain>(true),
+                        m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+                        m_indexesWithLayout = keysWithTemplate,
+                        m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
+                    }.ScheduleParallel(m_uncheckedWePrefabLayoutQuery, Dependency);
+                    keysWithTemplate.Dispose(Dependency);
                 }
-                Dependency = new WEPrefabTemplateFilterJob
+                else if (!m_dirtyWePrefabLayoutQuery.IsEmpty)
                 {
-                    m_EntityType = GetEntityTypeHandle(),
-                    m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>(true),
-                    m_prefabDataLkp = GetComponentLookup<PrefabData>(true),
-                    m_prefabEmptyLkp = GetComponentLookup<WETemplateForPrefabEmpty>(true),
-                    m_prefabDirtyLkp = GetComponentLookup<WETemplateForPrefabDirty>(true),
-                    m_prefabLayoutLkp = GetComponentLookup<WETemplateForPrefab>(true),
-                    m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
-                    m_TextDataLkp = GetComponentLookup<WETextDataMain>(true),
-                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-                    m_indexesWithLayout = keysWithTemplate,
-                    m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
-                }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
-                keysWithTemplate.Dispose(Dependency);
+                    var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
+                    foreach (var i in PrefabTemplates)
+                    {
+                        keysWithTemplate[i.Key] = i.Value.Guid;
+                    }
+                    Dependency = new WEPrefabTemplateFilterJob
+                    {
+                        m_EntityType = GetEntityTypeHandle(),
+                        m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>(true),
+                        m_prefabDataLkp = GetComponentLookup<PrefabData>(true),
+                        m_prefabEmptyLkp = GetComponentLookup<WETemplateForPrefabEmpty>(true),
+                        m_prefabDirtyLkp = GetComponentLookup<WETemplateForPrefabDirty>(true),
+                        m_prefabLayoutLkp = GetComponentLookup<WETemplateForPrefab>(true),
+                        m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
+                        m_TextDataLkp = GetComponentLookup<WETextDataMain>(true),
+                        m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+                        m_indexesWithLayout = keysWithTemplate,
+                        m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
+                    }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
+                    keysWithTemplate.Dispose(Dependency);
+                }
             }
             Dependency.Complete();
         }
@@ -476,7 +526,7 @@ namespace BelzontWE
                 LogUtils.DoInfoLog($"Failed validation to transform to City Template: Only white textures, text and image items are allowed in a city template");
                 return 2;
             }
-            for (int i = 0; i < treeStruct.children.Length; i++)
+            for (int i = 0; i < treeStruct.children?.Length; i++)
             {
                 if (CanBeTransformedToTemplate(treeStruct.children[i]) != 0)
                 {
