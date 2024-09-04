@@ -7,6 +7,7 @@ using System.Linq;
 using System.Xml.Serialization;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace BelzontWE.Font.Utility
@@ -24,6 +25,11 @@ namespace BelzontWE.Font.Utility
                 m_triangles = triangles;
                 m_uv = uv;
                 m_bounds = vertices.Length == 0 ? default : new Bounds3(vertices.Aggregate((x, y) => Vector3.Min(x, y)), vertices.Aggregate((x, y) => Vector3.Max(x, y)));
+                if ((m_bounds.min - m_bounds.max).z == 0)
+                {
+                    m_bounds.min = new float3(m_bounds.min.xy, -((Vector3)m_bounds.min).magnitude * .5f);
+                    m_bounds.max = new float3(m_bounds.max.xy, ((Vector3)m_bounds.max).magnitude * .5f);
+                }
             }
             else if (triangles != null && vertices != null)
             {

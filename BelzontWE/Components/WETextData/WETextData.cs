@@ -1,5 +1,6 @@
 ﻿using Belzont.Utils;
 using BelzontWE.Font.Utility;
+using BelzontWE.Sprites;
 using BelzontWE.Utils;
 using Colossal.Entities;
 using Colossal.Mathematics;
@@ -93,7 +94,7 @@ namespace BelzontWE
             UpdateFormulaes(em, targetEntity);
             return this;
         }
-        public void UpdateFormulaes(EntityManager em, Entity geometryEntity)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity)
         {
             bool result;
             switch (textType)
@@ -105,10 +106,14 @@ namespace BelzontWE
                 case WESimulationTextType.Placeholder:
                     result = valueData.UpdateEffectiveValue(em, geometryEntity);
                     break;
+                case WESimulationTextType.WhiteTexture:
+                    templateDirty = dirty = false;
+                    return false;
                 default:
-                    return;
+                    return false;
             }
             if (result) templateDirty = dirty = true;
+            return result;
         }
         public static Entity GetTargetEntityEffective(Entity target, EntityManager em, bool fullRecursive = false)
         {
@@ -206,7 +211,7 @@ namespace BelzontWE
         public float GlassRefraction { readonly get => glassRefraction.defaultValue; set { glassRefraction.defaultValue = math.clamp(value, 1, 1000); } }
         public float Metallic { readonly get => metallic.defaultValue; set { metallic.defaultValue = math.clamp(value, 0, 1); } }
         public float Smoothness { readonly get => smoothness.defaultValue; set { smoothness.defaultValue = math.clamp(value, 0, 1); } }
-        public float EmissiveIntensity { readonly get => emissiveIntensity.defaultValue; set { emissiveIntensity.defaultValue = math.clamp(value, 0, 100); } }
+        public float EmissiveIntensity { readonly get => emissiveIntensity.defaultValue; set { emissiveIntensity.defaultValue = math.clamp(value, 0, 1000); } }
         public float EmissiveExposureWeight { readonly get => emissiveExposureWeight.defaultValue; set { emissiveExposureWeight.defaultValue = math.clamp(value, 0, 1); } }
         public float CoatStrength { readonly get => coatStrength.defaultValue; set { coatStrength.defaultValue = math.clamp(value, 0, 1); } }
         public float GlassThickness { readonly get => glassThickness.defaultValue; set { glassThickness.defaultValue = math.clamp(value, 0, 10); } }
@@ -305,10 +310,14 @@ namespace BelzontWE
 
         public bool GetOwnMaterial(ref WETextDataMesh mesh, out Material result)
         {
-            var bri = mesh.RenderInformation;
+            var bri = (mesh.TextType) switch
+            {
+                WESimulationTextType.Text or WESimulationTextType.Image => mesh.RenderInformation,
+                _ => WEAtlasesLibrary.GetWhiteTextureBRI()
+            };
             result = null;
             bool requireUpdate = false;
-            if (!mesh.HasBRI || bri is null) return false;
+            if (bri is null) return false;
             if (bri.Guid != ownMaterialGuid)
             {
                 ResetMaterial();
@@ -317,10 +326,16 @@ namespace BelzontWE
             }
             if (!ownMaterial.IsAllocated || ownMaterial.Target is not Material material || !material)
             {
-                if (!bri.IsValid())
+                switch (mesh.TextType)
                 {
-                    mesh.ResetBri();
-                    return true;
+                    case WESimulationTextType.Text:
+                    case WESimulationTextType.Image:
+                        if (!bri.IsValid())
+                        {
+                            mesh.ResetBri();
+                            return true;
+                        }
+                        break;
                 }
                 ResetMaterial();
                 material = WERenderingHelper.GenerateMaterial(bri, shader);

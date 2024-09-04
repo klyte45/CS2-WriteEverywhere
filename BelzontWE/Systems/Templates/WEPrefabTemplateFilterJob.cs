@@ -2,6 +2,8 @@
 using Unity.Burst.Intrinsics;
 using Unity.Entities;
 using Unity.Collections;
+using System;
+
 
 #if BURST
 using Unity.Burst;
@@ -31,7 +33,8 @@ namespace BelzontWE
             {
                 var entities = chunk.GetNativeArray(m_EntityType);
                 var prefabRefs = chunk.GetNativeArray(ref m_prefabRefHdl);
-                for (int i = 0; i < entities.Length; i++)
+                var checkCount = Math.Min(1000, entities.Length);
+                for (int i = 0; i < checkCount; i++)
                 {
                     var entity = entities[i];
                     var prefabRef = prefabRefs[i];

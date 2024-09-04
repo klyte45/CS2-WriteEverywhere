@@ -131,6 +131,10 @@ namespace BelzontWE
                 cmd = m_endFrameBarrier.CreateCommandBuffer();
                 while (availToDraw.TryDequeue(out var item))
                 {
+                    ref var main = ref item.main;
+                    ref var material = ref item.material;
+                    ref var mesh = ref item.mesh;
+
                     if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
                         && m_pickerController.CurrentSubEntity.Value == item.textDataEntity
                         && item.transformMatrix.ValidTRS())
@@ -138,81 +142,75 @@ namespace BelzontWE
                         m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
                     }
 
-                    switch (item.mesh.TextType)
+                    bool briWasNull = false;
+                    bool doRender = true;
+                    if (!mesh.ValueData.InitializedEffectiveText || ((FrameCounter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
+                    {
+                        mesh.UpdateFormulaes(EntityManager, item.geometryEntity);
+                        material.UpdateFormulaes(EntityManager, item.geometryEntity);
+                    }
+
+                    switch (mesh.TextType)
                     {
                         case WESimulationTextType.Text:
                         case WESimulationTextType.Image:
                         case WESimulationTextType.WhiteTexture:
-                        case WESimulationTextType.Placeholder:
-                            if (((FrameCounter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
-                            {
-                                item.mesh.UpdateFormulaes(EntityManager, item.geometryEntity);
-                                item.material.UpdateFormulaes(EntityManager, item.geometryEntity);
-                            }
-                            if (item.mesh.TextType != WESimulationTextType.Placeholder && item.mesh.IsDirty() && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
+                            if (mesh.IsDirty() && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
                             {
                                 if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! +WEWaitingRendering");
                                 cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
                             }
-                            else if (item.mesh.TextType == WESimulationTextType.Placeholder && item.mesh.IsTemplateDirty())
+                            break;
+                        case WESimulationTextType.Placeholder:
+                            if (mesh.TextType == WESimulationTextType.Placeholder && mesh.IsTemplateDirty())
                             {
-                                item.mesh.ClearTemplateDirty();
+                                mesh.ClearTemplateDirty();
                                 cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
-                                cmd.SetComponent(item.textDataEntity, item.mesh);
-                                cmd.SetComponent(item.textDataEntity, item.material);
-                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {item.main.TargetEntity} P: {item.main.ParentEntity}\n{item.main.ItemName} - {item.mesh.TextType}\nTEMPLATE DIRTY");
-                                continue;
+                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType}\nTEMPLATE DIRTY");
                             }
+                            doRender = m_pickerTool.IsSelected;
                             break;
                     }
-                    if (item.mesh.TextType == WESimulationTextType.Placeholder && !m_pickerController.Enabled) continue;
-                    BasicRenderInformation bri;
-                    if ((bri = item.mesh.RenderInformation) == null)
+                    if (doRender)
                     {
-                        if (!item.mesh.ValueData.InitializedEffectiveText)
+                        BasicRenderInformation bri;
+                        if ((bri = mesh.RenderInformation) == null)
                         {
-                            item.mesh.UpdateFormulaes(EntityManager, item.geometryEntity);
-                            cmd.SetComponent(item.textDataEntity, item.mesh);
-                        }
-                        switch (item.mesh.TextType)
-                        {
-                            case WESimulationTextType.Text:
-                            case WESimulationTextType.Image:
-                            case WESimulationTextType.WhiteTexture:
-                                if (!EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
-                                {
-                                    cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
-                                    if (dumpNextFrame)
+                            switch (mesh.TextType)
+                            {
+                                case WESimulationTextType.Text:
+                                case WESimulationTextType.Image:
+                                    if (mesh.ValueData.EffectiveValue.Length > 0 && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
                                     {
-                                        LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E =  {item.textDataEntity}; T: {item.main.TargetEntity} P: {item.main.ParentEntity}\n{item.main.ItemName} - {item.mesh.TextType} - '{item.mesh.ValueData.EffectiveValue}'\nMARKED TO RE-RENDER");
+                                        cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                                        if (dumpNextFrame)
+                                        {
+                                            LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E =  {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nMARKED TO RE-RENDER");
+                                        }
                                     }
-                                }
-                                break;
+                                    goto case WESimulationTextType.Placeholder;
+                                case WESimulationTextType.Placeholder:
+                                    doRender = m_pickerTool.IsSelected;
+                                    briWasNull = true;
+                                    goto case WESimulationTextType.WhiteTexture;
+                                case WESimulationTextType.WhiteTexture:
+                                    bri = WEAtlasesLibrary.GetWhiteTextureBRI();
+                                    break;
+                            }
+                        }
+                        if (doRender && bri.m_refText != "")
+                        {
+                            Material ownMaterial;
+                            if (briWasNull) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
+                            else material.GetOwnMaterial(ref mesh, out ownMaterial);
+                            Graphics.DrawMesh(bri.Mesh, item.transformMatrix, ownMaterial, 0, null, 0);
+                            if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {mesh.RenderInformation?.m_refText} | {mesh.RenderInformation?.Mesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
                         }
                     }
+                    if (EntityManager.HasComponent<WETextDataMain>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, main);
+                    if (EntityManager.HasComponent<WETextDataMaterial>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, material);
+                    if (EntityManager.HasComponent<WETextDataMesh>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, mesh);
 
-                    bool briWasNull = false;
-                    if (bri is null)
-                    {
-                        if (!m_pickerTool.IsSelected) continue;
-                        bri = WEAtlasesLibrary.GetWhiteTextureBRI();
-                        briWasNull = true;
-                    }
-
-                    if (bri.m_refText != "")
-                    {
-                        Material material;
-                        if (briWasNull) material = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
-                        else item.material.GetOwnMaterial(ref item.mesh, out material);
-                        Graphics.DrawMesh(bri.Mesh, item.transformMatrix, material, 0, null, 0);
-                        if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {item.main.TargetEntity} P: {item.main.ParentEntity}\n{item.main.ItemName} - {item.mesh.TextType} - '{item.mesh.ValueData.EffectiveValue}'\nBRI: {item.mesh.RenderInformation?.m_refText} | {item.mesh.RenderInformation?.Mesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
-                    }
-                    if (!briWasNull)
-                    {
-                        cmd.SetComponent(item.textDataEntity, item.main);
-                        cmd.SetComponent(item.textDataEntity, item.material);
-                        cmd.SetComponent(item.textDataEntity, item.mesh);
-                    }
                 }
                 dumpNextFrame = false;
             }

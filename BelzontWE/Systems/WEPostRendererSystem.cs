@@ -129,13 +129,7 @@ namespace BelzontWE
                                 m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             }
                             break;
-                        case WESimulationTextType.WhiteTexture:
-                            var bri = WEAtlasesLibrary.GetWhiteTextureBRI();
-                            m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData.UpdateBRI(bri, bri.m_refText));
-                            m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
-                            break;
                         case WESimulationTextType.Placeholder:
-
                             if (UpdatePlaceholder(entity, ref weCustomData, weMeshData.ValueData.EffectiveValue.ToString(), unfilteredChunkIndex, m_CommandBuffer))
                             {
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
@@ -174,7 +168,7 @@ namespace BelzontWE
                     {
                         m_CommandBuffer.AddComponent<WEPlaceholderToBeProcessedInMain>(unfilteredChunkIndex, e, new() { layoutName = text });
                     }
-                    else if (!m_templateUpdaterLkp.HasComponent(e)) 
+                    else if (!m_templateUpdaterLkp.HasComponent(e))
                     {
                         m_CommandBuffer.AddComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
                     }
@@ -218,6 +212,13 @@ namespace BelzontWE
                     return false;
                 }
                 weCustomData = weCustomData.UpdateBRI(bri, text);
+                return true;
+
+            }
+            private readonly bool UpdateWhiteMesh(ref WETextDataMesh weCustomData)
+            {
+                var bri = WEAtlasesLibrary.GetWhiteTextureBRI();
+                weCustomData.UpdateBRI(bri, bri.m_refText);
                 return true;
 
             }

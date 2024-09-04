@@ -1,7 +1,7 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
+using BelzontWE.Sprites;
 using Colossal.Entities;
-using Colossal.IO.AssetDatabase.Internal;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.Common;
@@ -47,6 +47,7 @@ namespace BelzontWE
         private EntityQuery m_prefabsToMarkDirty;
         private EntityQuery m_prefabsDataToSerialize;
         private EntityQuery m_entitiesToBeUpdatedInMain;
+        private EntityQuery m_prefabArchetypesToBeUpdatedInMain;
         private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
         private bool m_templatesDirty;
@@ -181,6 +182,25 @@ namespace BelzontWE
                         }
                     }
             });
+            m_prefabArchetypesToBeUpdatedInMain = GetEntityQuery(new EntityQueryDesc[]
+            {
+                    new ()
+                    {
+                        All = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<PrefabRef>(),
+                            ComponentType.ReadOnly<WETemplateForPrefabToRunOnMain>(),
+                        },
+                        None = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<Temp>(),
+                            ComponentType.ReadOnly<Deleted>(),
+                            ComponentType.ReadOnly<WETemplateForPrefab>(),
+                        }
+                    }
+            });
+
+            WEAtlasesLibrary.GetWhiteTextureBRI();
         }
 
         protected override void OnDestroy()
@@ -189,22 +209,73 @@ namespace BelzontWE
 
         private Coroutine m_updatingEntitiesOnMain;
 
+        private IEnumerator UpdatePrefabArchetypes(NativeArray<ArchetypeChunk> chunks)
+        {
+            var m_TextDataLkp = GetComponentLookup<WETextDataMain>();
+            var m_prefabDataLkp = GetComponentLookup<PrefabData>();
+            var m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>();
+            var m_subRefLkp = GetBufferLookup<WESubTextRef>();
+            var m_prefabEmptyLkp = GetComponentLookup<WETemplateForPrefabEmpty>();
+            var globalCounter = 0;
+            EntityCommandBuffer cmd = default;
+            for (int h = 0; h < chunks.Length; h++)
+            {
+                var chunk = chunks[h];
+                var entities = chunk.GetNativeArray(GetEntityTypeHandle());
+                var prefabRefs = chunk.GetNativeArray(ref m_prefabRefHdl);
+                for (int i = 0; i < entities.Length; i++, globalCounter++)
+                {
+                    if (globalCounter % 1000 == 0)
+                    {
+                        yield return 0;
+                        cmd = m_endFrameBarrier.CreateCommandBuffer();
+                    }
+                    var e = entities[i];
+                    var prefabRef = prefabRefs[i];
+
+                    cmd.RemoveComponent<WETemplateForPrefabToRunOnMain>(e);
+                    if (m_prefabDataLkp.TryGetComponent(prefabRef.m_Prefab, out var prefabData))
+                    {
+                        if (PrefabTemplates.TryGetValue(prefabData.m_Index, out var newTemplate))
+                        {
+                            var childEntity = WELayoutUtility.DoCreateLayoutItem(newTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_FOR_PARENT);
+                            if (m_prefabEmptyLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateForPrefabEmpty>(e);
+                            cmd.AddComponent<WETemplateForPrefab>(entities[i], new()
+                            {
+                                templateRef = newTemplate.Guid,
+                                childEntity = childEntity
+                            });
+                            continue;
+                        }
+                    }
+
+                    cmd.AddComponent<WETemplateForPrefab>(entities[i], new()
+                    {
+                        templateRef = default,
+                        childEntity = Entity.Null
+                    });
+                    if (!m_prefabEmptyLkp.HasComponent(e)) cmd.AddComponent<WETemplateForPrefabEmpty>(e);
+                }
+            }
+            chunks.Dispose();
+            m_updatingEntitiesOnMain = null;
+        }
         private IEnumerator UpdateLayouts(NativeArray<ArchetypeChunk> chunks)
         {
             var m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>();
             var m_TextDataLkp = GetComponentLookup<WETextDataMain>();
             var m_subRefLkp = GetBufferLookup<WESubTextRef>();
             var toBeProcessedDataHdl = GetComponentTypeHandle<WEPlaceholderToBeProcessedInMain>();
-
+            var globalCounter = 0;
+            EntityCommandBuffer cmd = default;
             for (int h = 0; h < chunks.Length; h++)
             {
                 var chunk = chunks[h];
                 var entities = chunk.GetNativeArray(GetEntityTypeHandle());
                 var dataToBeProcessedArray = chunk.GetNativeArray(ref toBeProcessedDataHdl);
-                EntityCommandBuffer cmd = default;
-                for (int i = 0; i < entities.Length; i++)
+                for (int i = 0; i < entities.Length; i++, globalCounter++)
                 {
-                    if (i % 200 == 0)
+                    if (globalCounter % 100 == 0)
                     {
                         yield return 0;
                         cmd = m_endFrameBarrier.CreateCommandBuffer();
@@ -258,6 +329,11 @@ namespace BelzontWE
                 {
                     var entitiesToUpdate = m_entitiesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
                     m_updatingEntitiesOnMain = GameManager.instance.StartCoroutine(UpdateLayouts(entitiesToUpdate));
+                }
+                else if (!m_prefabArchetypesToBeUpdatedInMain.IsEmpty)
+                {
+                    var entitiesToUpdate = m_prefabArchetypesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
+                    m_updatingEntitiesOnMain = GameManager.instance.StartCoroutine(UpdatePrefabArchetypes(entitiesToUpdate));
                 }
                 else if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
                 {

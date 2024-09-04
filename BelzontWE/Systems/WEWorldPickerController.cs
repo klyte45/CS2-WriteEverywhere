@@ -197,11 +197,11 @@ namespace BelzontWE
             MainColor = new(default, $"{PREFIX}{nameof(MainColor)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
             EmissiveColor = new(default, $"{PREFIX}{nameof(EmissiveColor)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
 
-            Metallic = new(default, $"{PREFIX}{nameof(Metallic)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
-            Smoothness = new(default, $"{PREFIX}{nameof(Smoothness)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
-            EmissiveIntensity = new(default, $"{PREFIX}{nameof(EmissiveIntensity)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 100));
-            CoatStrength = new(default, $"{PREFIX}{nameof(CoatStrength)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
-            EmissiveExposureWeight = new(default, $"{PREFIX}{nameof(EmissiveExposureWeight)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 0, 1));
+            Metallic = new(default, $"{PREFIX}{nameof(Metallic)}", m_eventCaller, m_callBinder);
+            Smoothness = new(default, $"{PREFIX}{nameof(Smoothness)}", m_eventCaller, m_callBinder);
+            EmissiveIntensity = new(default, $"{PREFIX}{nameof(EmissiveIntensity)}", m_eventCaller, m_callBinder);
+            CoatStrength = new(default, $"{PREFIX}{nameof(CoatStrength)}", m_eventCaller, m_callBinder);
+            EmissiveExposureWeight = new(default, $"{PREFIX}{nameof(EmissiveExposureWeight)}", m_eventCaller, m_callBinder);
             SelectedFont = new(default, $"{PREFIX}{nameof(SelectedFont)}", m_eventCaller, m_callBinder);
             FontList = new(default, $"{PREFIX}{nameof(FontList)}", m_eventCaller, m_callBinder);
             FormulaeStr = new(default, $"{PREFIX}{nameof(FormulaeStr)}", m_eventCaller, m_callBinder);
@@ -212,7 +212,7 @@ namespace BelzontWE
             DecalFlags = new(default, $"{PREFIX}{nameof(DecalFlags)}", m_eventCaller, m_callBinder);
             UseAbsoluteSizeEditing = new(default, $"{PREFIX}{nameof(UseAbsoluteSizeEditing)}", m_eventCaller, m_callBinder);
             ShaderType = new(default, $"{PREFIX}{nameof(ShaderType)}", m_eventCaller, m_callBinder, (x, _) => (int)x, (x, _) => (WEShader)x);
-            GlassRefraction = new(default, $"{PREFIX}{nameof(GlassRefraction)}", m_eventCaller, m_callBinder, (x, _) => math.clamp(x, 1, 1000));
+            GlassRefraction = new(default, $"{PREFIX}{nameof(GlassRefraction)}", m_eventCaller, m_callBinder);
             GlassColor = new(default, $"{PREFIX}{nameof(GlassColor)}", m_eventCaller, m_callBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
             GlassThickness = new(default, $"{PREFIX}{nameof(GlassThickness)}", m_eventCaller, m_callBinder);
 
