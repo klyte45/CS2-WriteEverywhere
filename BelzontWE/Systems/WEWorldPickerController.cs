@@ -244,11 +244,11 @@ namespace BelzontWE
 
             SelectedFont.OnScreenValueChanged += (x) => EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.FontName = FontServer.Instance.TryGetFont(x, out var data) ? data.Name : default(FixedString32Bytes); return currentItem; });
             FormulaeStr.OnScreenValueChanged += (x) => EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { FormulaeCompileResult.Value = currentItem.SetFormulae(FormulaeStr.Value, out var cmpErr); FormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
-            TextSourceType.OnScreenValueChanged += (x) => EnqueueModification<int, WETextDataMain>(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
+            TextSourceType.OnScreenValueChanged += (x) => EnqueueModification<int, WETextDataMesh>(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; m_executionQueue.Enqueue(() => ReloadTree()); return currentItem; });
             ImageAtlasName.OnScreenValueChanged += (x) => EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
-            DecalFlags.OnScreenValueChanged += (x) => EnqueueModification<int, WETextDataMain>(x, (x, currentItem) => { currentItem.decalFlags = x; return currentItem; });
+            DecalFlags.OnScreenValueChanged += (x) => EnqueueModification<int, WETextDataMaterial>(x, (x, currentItem) => { currentItem.decalFlags = x; return currentItem; });
             UseAbsoluteSizeEditing.OnScreenValueChanged += (x) => EnqueueModification<bool, WETextDataTransform>(x, (x, currentItem) => { currentItem.useAbsoluteSizeEditing = x; return currentItem; });
-            ShaderType.OnScreenValueChanged += (x) => EnqueueModification<WEShader, WETextDataMain>(x, (x, currentItem) => { currentItem.shader = x; return currentItem; });
+            ShaderType.OnScreenValueChanged += (x) => EnqueueModification<WEShader, WETextDataMaterial>(x, (x, currentItem) => { currentItem.shader = x; return currentItem; });
             GlassRefraction.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.GlassRefraction = x; return currentItem; });
             GlassColor.OnScreenValueChanged += (x) => EnqueueModification<Color, WETextDataMaterial>(x, (x, currentItem) => { currentItem.GlassColor = x; return currentItem; });
             GlassThickness.OnScreenValueChanged += (x) => EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.GlassThickness = x; return currentItem; });
@@ -293,11 +293,11 @@ namespace BelzontWE
 
             SelectedFont.Value = FontServer.Instance.TryGetFont(mesh.FontName, out var fsd) ? fsd.Name : "";
             FormulaeStr.Value = mesh.ValueData.formulaeStr.ToString();
-            TextSourceType.Value = (int)main.TextType;
+            TextSourceType.Value = (int)mesh.TextType;
             ImageAtlasName.Value = mesh.Atlas.ToString();
-            DecalFlags.Value = main.decalFlags;
+            DecalFlags.Value = material.decalFlags;
             UseAbsoluteSizeEditing.Value = transform.useAbsoluteSizeEditing;
-            ShaderType.Value = main.shader;
+            ShaderType.Value = material.shader;
             GlassColor.Value = material.GlassColor;
             GlassRefraction.Value = material.GlassRefraction;
             ColorMask1.Value = material.ColorMask1;
@@ -402,12 +402,12 @@ namespace BelzontWE
             var result = new WETextItemResume[refSubs.Length];
             for (int i = 0; i < refSubs.Length; i++)
             {
-                if (!EntityManager.TryGetComponent<WETextDataMain>(refSubs[i].m_weTextData, out var data)) continue;
+                if (!EntityManager.TryGetComponent<WETextDataMain>(refSubs[i].m_weTextData, out var data) || !EntityManager.TryGetComponent<WETextDataMesh>(refSubs[i].m_weTextData, out var mesh)) continue;
                 result[i] = new()
                 {
                     name = data.ItemName.ToString(),
                     id = refSubs[i].m_weTextData,
-                    type = (int)data.TextType,
+                    type = (int)mesh.TextType,
                     children = GetTextTreeForEntity(refSubs[i].m_weTextData)
                 };
             }

@@ -12,23 +12,27 @@ namespace BelzontWE
     public class WETextDataXml
     {
         [XmlAttribute] public string itemName;
-        [XmlAttribute] public WEShader shader;
-        [XmlAttribute][DefaultValue(WETextDataMain.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextDataMain.DEFAULT_DECAL_FLAGS;
 
-        [XmlAttribute] public WESimulationTextType textType;
         [XmlElement] public TransformXml transform;
         [XmlElement] public MeshDataTextXml textMesh;
         [XmlElement] public MeshDataImageXml imageMesh;
         [XmlElement] public MeshDataPlaceholderXml layoutMesh;
+        [XmlElement] public MeshDataWhiteTextureXml whiteMesh;
         [XmlElement] public DefaultStyleXml defaultStyle;
         [XmlElement] public GlassStyleXml glassStyle;
 
-        public bool ShouldSerializeshader() => textType != WESimulationTextType.Placeholder;
-        public bool ShouldSerializetextMesh() => textType == WESimulationTextType.Text;
-        public bool ShouldSerializeimageMesh() => textType == WESimulationTextType.Image;
-        public bool ShouldSerializelayoutMesh() => textType == WESimulationTextType.Placeholder;
-        public bool ShouldSerializedefaultStyle() => shader == WEShader.Default;
-        public bool ShouldSerializeglassStyle() => shader == WEShader.Glass;
+        internal WESimulationTextType EffectiveTextType => textMesh?.textType
+            ?? imageMesh?.textType
+            ?? layoutMesh?.textType
+            ?? whiteMesh?.textType
+            ?? WESimulationTextType.Archetype;
+
+        public bool ShouldSerializetextMesh() => textMesh != null;
+        public bool ShouldSerializeimageMesh() => imageMesh != null;
+        public bool ShouldSerializelayoutMesh() => layoutMesh != null;
+        public bool ShouldSerializewhiteMesh() => whiteMesh != null;
+        public bool ShouldSerializedefaultStyle() => defaultStyle != null;
+        public bool ShouldSerializeglassStyle() => glassStyle != null;
 
         public class TransformXml
         {
@@ -37,24 +41,34 @@ namespace BelzontWE
             public Vector3Xml scale = (Vector3Xml)Vector3.one;
         }
 
+        public class MeshDataWhiteTextureXml
+        {
+            [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.WhiteTexture;
+        }
+
         public class MeshDataTextXml
         {
+            [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.Text;
             [XmlAttribute] public string fontName;
             [XmlElement] public FormulaeXml<string> text;
             [XmlAttribute][DefaultValue(0f)] public float maxWidthMeters;
         }
         public class MeshDataImageXml
         {
+            [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.Image;
             [XmlAttribute] public string atlas;
             [XmlElement] public FormulaeXml<string> image;
         }
         public class MeshDataPlaceholderXml
         {
+            [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.Placeholder;
             [XmlElement] public FormulaeXml<string> layout;
         }
 
         public class DefaultStyleXml
         {
+            [XmlIgnore] public WEShader shader => WEShader.Default;
+            [XmlAttribute][DefaultValue(WETextDataMaterial.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextDataMaterial.DEFAULT_DECAL_FLAGS;
             [XmlElement] public FormulaeColorRgbaXml color;
             [XmlElement] public FormulaeColorRgbaXml emissiveColor;
             [XmlElement] public FormulaeXml<float> metallic;
@@ -76,6 +90,8 @@ namespace BelzontWE
             [XmlElement] public FormulaeXml<float> smoothness;
             [XmlElement] public FormulaeXml<float> normalStrength;
             [XmlElement] public FormulaeXml<float> glassThickness = new() { defaultValue = .5f };
+            [XmlIgnore] public WEShader shader => WEShader.Glass;
+            [XmlAttribute][DefaultValue(WETextDataMaterial.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextDataMaterial.DEFAULT_DECAL_FLAGS;
         }
 
         public class FormulaeXml<T>

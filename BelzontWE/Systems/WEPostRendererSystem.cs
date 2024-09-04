@@ -103,7 +103,8 @@ namespace BelzontWE
                     m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
                     m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
                     m_CommandBuffer = cmdBuff.AsParallelWriter(),
-                    m_WeMainHdl= GetComponentTypeHandle<WETextDataMain>(),
+                    m_WeMeshLkp = GetComponentLookup<WETextDataMesh>(true),
+                    m_WeMainHdl = GetComponentTypeHandle<WETextDataMain>(),
                     m_WeMeshHdl = GetComponentTypeHandle<WETextDataMesh>(),
                     m_WeMainLkp = GetComponentLookup<WETextDataMain>(true),
                     m_templateManagerEntries = layoutsAvailable
@@ -142,7 +143,7 @@ namespace BelzontWE
                         return;
                     }
 
-                    switch (weCustomData.TextType)
+                    switch (weMeshData.TextType)
                     {
                         case WESimulationTextType.Text:
                             if (UpdateTextMesh(entity, ref weMeshData, weMeshData.ValueData.EffectiveValue.ToString(), unfilteredChunkIndex, m_CommandBuffer, fontDict))
@@ -157,6 +158,12 @@ namespace BelzontWE
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
                                 m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             }
+                            break;
+                        case WESimulationTextType.WhiteTexture:
+                            var bri = WEAtlasesLibrary.GetWhiteTextureBRI();
+                            weMeshData.UpdateBRI(bri, bri.m_refText);
+                            m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
+                            m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             break;
                         default:
                             m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
@@ -216,6 +223,7 @@ namespace BelzontWE
             public ComponentTypeHandle<WETextDataMesh> m_WeMeshHdl;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
             public ComponentLookup<WETextDataMain> m_WeMainLkp;
+            public ComponentLookup<WETextDataMesh> m_WeMeshLkp;
             public BufferLookup<WESubTextRef> m_subRefLkp;
             public EntityStorageInfoLookup m_entityLookup;
             public NativeArray<FixedString128Bytes> m_templateManagerEntries;
@@ -232,8 +240,8 @@ namespace BelzontWE
                     var weCustomData = weTextDatas[i];
                     var meshData = weMeshDatas[i];
                     if (!m_entityLookup.Exists(weCustomData.TargetEntity)
-                        || (m_WeMainLkp.TryGetComponent(weCustomData.ParentEntity, out var weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder)
-                        || (m_WeMainLkp.TryGetComponent(weCustomData.TargetEntity, out weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder)
+                        || (m_WeMeshLkp.TryGetComponent(weCustomData.ParentEntity, out var weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder)
+                        || (m_WeMeshLkp.TryGetComponent(weCustomData.TargetEntity, out weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder)
                         || (weCustomData.TargetEntity == Entity.Null))
                     {
 #if !BURST
@@ -257,7 +265,7 @@ namespace BelzontWE
 #endif
                     cmd.AddComponent<Game.Common.Deleted>(unfilteredChunkIndex, templateUpdated.childEntity);
                 }
-                m_CommandBuffer.AddComponent<WEToBeProcessedInMain>(unfilteredChunkIndex, e);              
+                m_CommandBuffer.AddComponent<WEToBeProcessedInMain>(unfilteredChunkIndex, e);
             }
         }
     }

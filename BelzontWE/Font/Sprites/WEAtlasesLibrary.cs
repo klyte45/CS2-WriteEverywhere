@@ -343,7 +343,6 @@ namespace BelzontWE.Sprites
             {
                 atlasToCheck = name,
                 m_textDataMeshHdl = GetComponentTypeHandle<WETextDataMesh>(),
-                m_textDataMainHdl = GetComponentTypeHandle<WETextDataMain>(),
                 m_counter = &counterResult
             };
             job.Schedule(m_atlasUsageQuery, Dependency).Complete();
@@ -359,16 +358,14 @@ namespace BelzontWE.Sprites
         {
             public FixedString32Bytes atlasToCheck;
             public ComponentTypeHandle<WETextDataMesh> m_textDataMeshHdl;
-            public ComponentTypeHandle<WETextDataMain> m_textDataMainHdl;
             public int* m_counter;
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
-                var dataMain = chunk.GetNativeArray(ref m_textDataMainHdl);
                 var dataMesh = chunk.GetNativeArray(ref m_textDataMeshHdl);
-                for (int i = 0; i < dataMain.Length; i++)
+                for (int i = 0; i < dataMesh.Length; i++)
                 {
-                    if (dataMain[i].TextType == WESimulationTextType.Image && dataMesh[i].Atlas == atlasToCheck) *m_counter += 1;
+                    if (dataMesh[i].TextType == WESimulationTextType.Image && dataMesh[i].Atlas == atlasToCheck) *m_counter += 1;
                 }
             }
 

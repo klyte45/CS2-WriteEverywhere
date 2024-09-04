@@ -17,7 +17,7 @@ namespace BelzontWE
         [XmlElement("children")]
         public WETextDataXmlTree[] children;
 
-        public bool ShouldSerializechildren() => self?.textType != WESimulationTextType.Placeholder;
+        public bool ShouldSerializechildren() => self.layoutMesh is null;
 
 
         public static WETextDataXmlTree FromEntity(Entity e, EntityManager em)

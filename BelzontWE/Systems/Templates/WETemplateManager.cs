@@ -296,12 +296,12 @@ namespace BelzontWE
             }
             else
             {
-                if ((self.textType < 0 || self.textType > WESimulationTextType.Placeholder) && self.textType != WESimulationTextType.WhiteTexture)
+                if (self.layoutMesh is null && self.imageMesh is null && self.textMesh is null && self.whiteMesh is null)
                 {
                     LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: All children must have type 'Placeholder', 'WhiteTexture', 'Image' or 'Text'.");
                     return 4;
                 };
-                if (self.textType == WESimulationTextType.Placeholder && children?.Length > 0)
+                if (self.layoutMesh is not null && children?.Length > 0)
                 {
                     LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: The node must not have children, as any Placeholder item don't.");
                     return 5;
@@ -389,10 +389,7 @@ namespace BelzontWE
                 }
                 var tree = WETextDataXmlTree.FromXML(File.ReadAllText(fileItem));
                 if (tree is null) continue;
-                tree.self = new WETextDataXml
-                {
-                    textType = WESimulationTextType.Archetype
-                };
+                tree.self = null;
                 var validationResults = CanBePrefabLayout(tree);
                 if (validationResults == 0)
                 {
@@ -447,7 +444,7 @@ namespace BelzontWE
         #region City Templates
         public int CanBeTransformedToTemplate(Entity e)
         {
-            if (!EntityManager.TryGetComponent<WETextDataMain>(e, out var weData))
+            if (!EntityManager.TryGetComponent<WETextDataMesh>(e, out var weData))
             {
                 LogUtils.DoInfoLog($"Failed validation to transform to City Template: No text data found");
                 return 1;
@@ -474,7 +471,7 @@ namespace BelzontWE
         public int CanBeTransformedToTemplate(WETextDataXmlTree treeStruct)
         {
             var weData = treeStruct.self;
-            if (weData.textType != WESimulationTextType.Text && weData.textType != WESimulationTextType.Image && weData.textType != WESimulationTextType.WhiteTexture)
+            if (weData.textMesh is null && weData.imageMesh is null && weData.whiteMesh is null)
             {
                 LogUtils.DoInfoLog($"Failed validation to transform to City Template: Only white textures, text and image items are allowed in a city template");
                 return 2;

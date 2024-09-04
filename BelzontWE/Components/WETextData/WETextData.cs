@@ -1,5 +1,4 @@
-﻿using Belzont.Interfaces;
-using Belzont.Utils;
+﻿using Belzont.Utils;
 using BelzontWE.Font.Utility;
 using BelzontWE.Utils;
 using Colossal.Entities;
@@ -16,6 +15,7 @@ namespace BelzontWE
 {
     public struct WETextDataMesh : IComponentData, IDisposable
     {
+        private WESimulationTextType textType;
 
         private GCHandle basicRenderInformation;
         private FixedString32Bytes atlas;
@@ -24,6 +24,14 @@ namespace BelzontWE
         private bool dirty;
         private bool templateDirty;
 
+        public WESimulationTextType TextType
+        {
+            get => textType; set
+            {
+                textType = value;
+                dirty = true;
+            }
+        }
         public FixedString32Bytes Atlas { readonly get => atlas; set => atlas = value; }
         public FixedString32Bytes FontName { readonly get => fontName; set => fontName = value; }
         public WETextDataValueString ValueData { readonly get => valueData; set => valueData = value; }
@@ -39,7 +47,7 @@ namespace BelzontWE
 
         public void ResetBri()
         {
-            basicRenderInformation.Free();
+            if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
         }
         public static WETextDataMesh CreateDefault(Entity target, Entity? parent = null)
             => new()
@@ -82,15 +90,16 @@ namespace BelzontWE
         }
         public void UpdateFormulaes(EntityManager em, Entity geometryEntity)
         {
+            if (textType != WESimulationTextType.Text && textType != WESimulationTextType.Image) return;
             var result = valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText);
             if (result) templateDirty = dirty = true;
         }
         public static Entity GetTargetEntityEffective(Entity target, EntityManager em, bool fullRecursive = false)
         {
-            return em.TryGetComponent<WETextDataMain>(target, out var weDataMain)
-                ? (fullRecursive || weDataMain.TextType == WESimulationTextType.Archetype) && weDataMain.TargetEntity != target
+            return em.TryGetComponent<WETextDataMain>(target, out var weDataMain) && em.TryGetComponent<WETextDataMesh>(target, out var weDataMesh)
+                ? (fullRecursive || weDataMesh.textType == WESimulationTextType.Archetype) && weDataMain.TargetEntity != target
                     ? GetTargetEntityEffective(weDataMain.TargetEntity, em)
-                    : em.TryGetComponent<WETextDataMain>(weDataMain.ParentEntity, out var weDataParent) && weDataParent.TextType == WESimulationTextType.Placeholder
+                    : em.TryGetComponent<WETextDataMain>(weDataMain.ParentEntity, out var weDataParent) && weDataMesh.textType == WESimulationTextType.Placeholder
                     ? GetTargetEntityEffective(weDataParent.TargetEntity, em)
                     : weDataMain.TargetEntity
                 : target;
@@ -117,24 +126,11 @@ namespace BelzontWE
 
     public struct WETextDataMain : IComponentData
     {
-        public const int DEFAULT_DECAL_FLAGS = 8;
 
-        private WESimulationTextType textType;
         private FixedString32Bytes itemName;
         private Entity targetEntity;
         private Entity parentEntity;
-        private bool dirty;
-        public WEShader shader;
-        public int decalFlags;
 
-        public WESimulationTextType TextType
-        {
-            get => textType; set
-            {
-                textType = value;
-                dirty = true;
-            }
-        }
         public FixedString32Bytes ItemName { get => itemName; set => itemName = value; }
         public Entity TargetEntity { get => targetEntity; set => targetEntity = value; }
         public Entity ParentEntity { get => parentEntity; set => parentEntity = value; }
@@ -142,21 +138,16 @@ namespace BelzontWE
         public static WETextDataMain CreateDefault(Entity target, Entity? parent = null)
             => new()
             {
-                shader = WEShader.Default,
-                decalFlags = DEFAULT_DECAL_FLAGS,
                 targetEntity = target,
                 parentEntity = parent ?? target,
                 itemName = "New item",
             };
-        public bool IsDirty() => dirty;
         public bool SetNewParent(Entity e, EntityManager em)
         {
-            if ((e != TargetEntity && e != Entity.Null && (!em.TryGetComponent<WETextDataMain>(e, out var weData) || weData.textType == WESimulationTextType.Placeholder || (weData.TargetEntity != Entity.Null && weData.TargetEntity != TargetEntity))))
+            if ((e != TargetEntity && e != Entity.Null && (!em.TryGetComponent<WETextDataMesh>(e, out var mesh) || !em.TryGetComponent<WETextDataMain>(e, out var mainData) || mesh.TextType == WESimulationTextType.Placeholder || (mainData.TargetEntity != Entity.Null && mainData.TargetEntity != TargetEntity))))
             {
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"NOPE: e = {e}; weData = {weData}; targetEntity = {TargetEntity}; weData.targetEntity = {weData.TargetEntity}");
                 return false;
             }
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"YEP: e = {e};  targetEntity = {TargetEntity}");
             ParentEntity = e;
             return true;
         }
@@ -168,6 +159,8 @@ namespace BelzontWE
 
     public struct WETextDataMaterial : IComponentData, IDisposable
     {
+        public const int DEFAULT_DECAL_FLAGS = 8;
+
         private WETextDataValueColor color;
         private WETextDataValueColor emissiveColor;
         private WETextDataValueColor glassColor;
@@ -182,6 +175,8 @@ namespace BelzontWE
         private WETextDataValueColor colorMask1;
         private WETextDataValueColor colorMask2;
         private WETextDataValueColor colorMask3;
+        public WEShader shader;
+        public int decalFlags;
 
         private bool dirty;
         private GCHandle ownMaterial;
@@ -264,6 +259,8 @@ namespace BelzontWE
         public static WETextDataMaterial CreateDefault(Entity target, Entity? parent = null)
             => new()
             {
+                shader = WEShader.Default,
+                decalFlags = DEFAULT_DECAL_FLAGS,
                 dirty = true,
                 color = new() { defaultValue = Color.white },
                 emissiveColor = new() { defaultValue = Color.white },
@@ -289,7 +286,7 @@ namespace BelzontWE
             ownMaterial = default;
         }
 
-        public bool GetOwnMaterial(ref WETextDataMesh mesh, ref WETextDataMain main, out Material result)
+        public bool GetOwnMaterial(ref WETextDataMesh mesh, out Material result)
         {
             var bri = mesh.RenderInformation;
             result = null;
@@ -309,18 +306,18 @@ namespace BelzontWE
                     return true;
                 }
                 ResetMaterial();
-                material = WERenderingHelper.GenerateMaterial(bri, main.shader);
+                material = WERenderingHelper.GenerateMaterial(bri, shader);
                 ownMaterial = GCHandle.Alloc(material);
                 dirty = true;
             }
             if (dirty)
             {
-                switch (main.shader)
+                switch (shader)
                 {
                     case WEShader.Default:
                         if (!bri.m_isError)
                         {
-                            UpdateDefaultMaterial(material, main.TextType);
+                            UpdateDefaultMaterial(material, mesh.TextType);
                         }
                         break;
                     case WEShader.Glass:
@@ -332,7 +329,7 @@ namespace BelzontWE
                     default:
                         return false;
                 }
-                material.SetFloat(WERenderingHelper.DecalLayerMask, main.decalFlags.ToFloatBitFlags());
+                material.SetFloat(WERenderingHelper.DecalLayerMask, decalFlags.ToFloatBitFlags());
                 HDMaterial.ValidateMaterial(material);
                 dirty = false;
                 requireUpdate = true;

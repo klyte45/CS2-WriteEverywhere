@@ -13,7 +13,7 @@ namespace BelzontWE.Utils
             if (result is null) return result;
             if (em.TryGetComponent<WETextDataMaterial>(e, out var weMat))
             {
-                switch (result.shader)
+                switch (weMat.shader)
                 {
                     case WEShader.Default:
                         result.defaultStyle = weMat.ToDefaultXml();
@@ -25,7 +25,7 @@ namespace BelzontWE.Utils
             }
             if (em.TryGetComponent<WETextDataMesh>(e, out var weMesh))
             {
-                switch (weMain.TextType)
+                switch (weMesh.TextType)
                 {
                     case WESimulationTextType.Text:
                         result.textMesh = weMesh.ToTextMeshXml();
@@ -57,50 +57,29 @@ namespace BelzontWE.Utils
         {
             main = xml.ToComponent();
             transform = xml.transform.ToComponent();
-            switch (xml.shader)
-            {
-                case WEShader.Default:
-                    material = WETextDataMaterial.ToComponent(xml.defaultStyle);
-                    break;
-                case WEShader.Glass:
-                    material = WETextDataMaterial.ToComponent(xml.glassStyle);
-                    break;
-                default:
-                    material = default;
-                    break;
-            }
-            switch (xml.textType)
-            {
-                case WESimulationTextType.Text:
-                    mesh = xml.textMesh.ToComponent();
-                    break;
-                case WESimulationTextType.Image:
-                    mesh = xml.imageMesh.ToComponent();
-                    break;
-                case WESimulationTextType.Placeholder:
-                    mesh = xml.layoutMesh.ToComponent();
-                    break;
-                default:
-                    mesh = default;
-                    break;
-            }
+            if (xml.defaultStyle != null)
+                material = WETextDataMaterial.ToComponent(xml.defaultStyle);
+            else if (xml.glassStyle != null)
+                material = WETextDataMaterial.ToComponent(xml.glassStyle);
+            else material = default;
+
+            mesh = xml.textMesh?.ToComponent()
+                ?? xml.imageMesh?.ToComponent()
+                ?? xml.layoutMesh?.ToComponent()
+                ?? xml.whiteMesh?.ToComponent()
+                ?? default;
+
         }
 
 
         public static WETextDataXml ToXml(this WETextDataMain value)
             => new()
             {
-                decalFlags = value.decalFlags,
-                shader = value.shader,
-                textType = value.TextType,
                 itemName = value.ItemName.ToString(),
             };
         public static WETextDataMain ToComponent(this WETextDataXml value)
             => new()
             {
-                decalFlags = value.decalFlags,
-                shader = value.shader,
-                TextType = value.textType,
                 ItemName = value.itemName ?? ""
             };
 
@@ -132,7 +111,8 @@ namespace BelzontWE.Utils
             {
                 FontName = value.fontName ?? "",
                 MaxWidthMeters = value.maxWidthMeters,
-                ValueData = value.text?.ToComponent() ?? default
+                ValueData = value.text?.ToComponent() ?? default,
+                TextType = value.textType
             };
         public static WETextDataXml.MeshDataImageXml ToImageMeshXml(this WETextDataMesh value)
             => new()
@@ -144,7 +124,8 @@ namespace BelzontWE.Utils
             => value is null ? default : new()
             {
                 Atlas = value.atlas ?? "",
-                ValueData = value.image?.ToComponent() ?? default
+                ValueData = value.image?.ToComponent() ?? default,
+                TextType = value.textType
             };
         public static WETextDataXml.MeshDataPlaceholderXml ToPlaceholderXml(this WETextDataMesh value)
             => new()
@@ -154,7 +135,15 @@ namespace BelzontWE.Utils
         public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataPlaceholderXml value)
             => value is null ? default : new()
             {
-                ValueData = value.layout.ToComponent()
+                ValueData = value.layout.ToComponent(),
+                TextType = value.textType
+            };
+        public static WETextDataXml.MeshDataWhiteTextureXml ToWhiteTextureXml(this WETextDataMesh value)
+            => new() { };
+        public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataWhiteTextureXml value)
+            => value is null ? default : new()
+            {
+                TextType = value.textType
             };
 
 
