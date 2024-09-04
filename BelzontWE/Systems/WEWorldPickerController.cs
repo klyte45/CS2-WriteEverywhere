@@ -91,7 +91,7 @@ namespace BelzontWE
             {
                 EntityManager.AddBuffer<WESubTextRef>(newParent);
             }
-            if (!RemoveSubItemRef(buff, target, weData.ParentEntity, false)) return false;
+            if (!RemoveSubItemRef(buff, target, false)) return false;
             var newBuff = EntityManager.GetBuffer<WESubTextRef>(newParent, false);
             newBuff.Add(new WESubTextRef
             {
@@ -113,11 +113,7 @@ namespace BelzontWE
             {
                 EntityManager.AddBuffer<WESubTextRef>(newParent);
             }
-            var newBuff = EntityManager.GetBuffer<WESubTextRef>(newParent, false);
-            newBuff.Add(new WESubTextRef
-            {
-                m_weTextData = WELayoutUtility.DoCreateLayoutItem(WETextDataXmlTree.FromEntity(target, EntityManager), newParent, weData.TargetEntity, EntityManager)
-            });
+            WELayoutUtility.DoCreateLayoutItem(WETextDataXmlTree.FromEntity(target, EntityManager), newParent, weData.TargetEntity, EntityManager);
             ReloadTree();
             return true;
         }
@@ -378,12 +374,11 @@ namespace BelzontWE
             if (IsValidEditingItem())
             {
                 var subEntity = CurrentSubEntity.Value;
-                var main = EntityManager.GetComponentData<WETextDataMain>(CurrentEntity.Value);
-                var parent = main.ParentEntity;
+                var main = EntityManager.GetComponentData<WETextDataMain>(CurrentSubEntity.Value);
                 m_executionQueue.Enqueue(() => DoWithBuffer(main.ParentEntity
                     , (Action<DynamicBuffer<WESubTextRef>>)((buff) =>
                     {
-                        if (RemoveSubItemRef(buff, subEntity, parent, true))
+                        if (RemoveSubItemRef(buff, subEntity, true))
                         {
                             CurrentSubEntity.ChangeValueWithEffects(Entity.Null);
                             UpdateTree();
@@ -413,7 +408,7 @@ namespace BelzontWE
             }
             return result;
         }
-        private bool RemoveSubItemRef(DynamicBuffer<WESubTextRef> buff, Entity subEntity, Entity parent, bool destroy)
+        private bool RemoveSubItemRef(DynamicBuffer<WESubTextRef> buff, Entity subEntity, bool destroy)
         {
             for (int i = 0; i < buff.Length; i++)
             {

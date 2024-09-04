@@ -69,8 +69,8 @@ namespace BelzontWE
         {
             [XmlIgnore] public WEShader shader => WEShader.Default;
             [XmlAttribute][DefaultValue(WETextDataMaterial.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextDataMaterial.DEFAULT_DECAL_FLAGS;
-            [XmlElement] public FormulaeColorRgbaXml color;
-            [XmlElement] public FormulaeColorRgbaXml emissiveColor;
+            [XmlElement] public FormulaeColorRgbaXml color = new() { defaultValue = Color.white };
+            [XmlElement] public FormulaeColorRgbaXml emissiveColor = new() { defaultValue = Color.white };
             [XmlElement] public FormulaeXml<float> metallic;
             [XmlElement] public FormulaeXml<float> smoothness;
             [XmlElement] public FormulaeXml<float> emissiveIntensity;
@@ -83,8 +83,8 @@ namespace BelzontWE
 
         public class GlassStyleXml
         {
-            [XmlElement] public FormulaeColorRgbaXml color;
-            [XmlElement] public FormulaeColorRgbXml glassColor;
+            [XmlElement] public FormulaeColorRgbaXml color = new() { defaultValue = Color.white };
+            [XmlElement] public FormulaeColorRgbXml glassColor = new() { defaultValue = Color.white };
             [XmlElement] public FormulaeXml<float> glassRefraction;
             [XmlElement] public FormulaeXml<float> metallic;
             [XmlElement] public FormulaeXml<float> smoothness;
