@@ -78,7 +78,7 @@ namespace BelzontWE.Utils
                 ?? xml.imageMesh?.ToComponent()
                 ?? xml.layoutMesh?.ToComponent()
                 ?? xml.whiteMesh?.ToComponent()
-                ?? default;
+                ?? new() { TextType = WESimulationTextType.Archetype };
 
         }
 
@@ -161,12 +161,12 @@ namespace BelzontWE.Utils
 
 
 
-        public static WETextDataXml.FormulaeXml<string> ToXml(this WETextDataValueString value) => new()
+        public static WETextDataXml.FormulaeStringXml ToXml(this WETextDataValueString value) => new()
         {
             defaultValue = value.defaultValue.ToString(),
             formulae = value.formulaeStr.ToString()
         };
-        public static WETextDataXml.FormulaeXml<float> ToXml(this WETextDataValueFloat value) => new()
+        public static WETextDataXml.FormulaeFloatXml ToXml(this WETextDataValueFloat value) => new()
         {
             defaultValue = value.defaultValue,
             formulae = value.formulaeStr.ToString()
@@ -182,12 +182,12 @@ namespace BelzontWE.Utils
             formulae = value.formulaeStr.ToString()
         };
 
-        public static WETextDataValueString ToComponent(this WETextDataXml.FormulaeXml<string> value) => value is null ? default : new()
+        public static WETextDataValueString ToComponent(this WETextDataXml.FormulaeStringXml value) => value is null ? default : new()
         {
             defaultValue = value.defaultValue ?? "",
             formulaeStr = value.formulae ?? ""
         };
-        public static WETextDataValueFloat ToComponent(this WETextDataXml.FormulaeXml<float> value) => value is null ? default : new()
+        public static WETextDataValueFloat ToComponent(this WETextDataXml.FormulaeFloatXml value) => value is null ? default : new()
         {
             defaultValue = value.defaultValue,
             formulaeStr = value.formulae ?? ""

@@ -1,4 +1,5 @@
 ﻿using Belzont.Interfaces;
+using Belzont.Serialization;
 using Belzont.Utils;
 using BelzontWE.Sprites;
 using Colossal.Entities;
@@ -29,7 +30,7 @@ using UnityEngine;
 
 namespace BelzontWE
 {
-    public partial class WETemplateManager : SystemBase
+    public partial class WETemplateManager : SystemBase, IBelzontSerializableSingleton<WETemplateManager>
     {
         public const string SIMPLE_LAYOUT_EXTENSION = "welayout.xml";
         public const string PREFAB_LAYOUT_EXTENSION = "wedefault.xml";
@@ -64,6 +65,71 @@ namespace BelzontWE
             }
         }
 
+        public void Deserialize<TReader>(TReader reader) where TReader : IReader
+        {
+            reader.Read(out int version);
+            if (version > CURRENT_VERSION)
+            {
+                LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                return;
+            }
+            reader.Read(out int lengthTemplates);
+            var valueArr = RegisteredTemplates.Values;
+            RegisteredTemplates.Clear();
+            for (var i = 0; i < lengthTemplates; i++)
+            {
+                reader.Read(out string key);
+                reader.ReadNullCheck(out WETextDataXmlTree dataTree);
+                if (dataTree is not null) RegisteredTemplates[key] = dataTree;
+            }
+            reader.Read(out int lengthInstances);
+            for (var i = 0; i < lengthInstances; i++)
+            {
+                reader.Read(out Entity key);
+                reader.ReadNullCheck(out WETextDataXmlTree dataTree);
+                try
+                {
+                    if (dataTree?.children?.Length > 0)
+                    {
+                        var children = dataTree.children;
+                        foreach (var item in children)
+                        {
+                            WELayoutUtility.DoCreateLayoutItem(item, key, key, EntityManager);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    LogUtils.DoWarnLog($"IGNORING INSTANCE by exception: '{key}'\n{e}");
+                }
+            }
+            m_templatesDirty = true;
+        }
+
+        public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+        {
+            writer.Write(CURRENT_VERSION);
+            var length = RegisteredTemplates.Count();
+            writer.Write(length);
+            var keys = RegisteredTemplates.Keys.ToArray();
+            for (var i = 0; i < length; i++)
+            {
+                writer.Write(keys[i].ToString());
+                writer.WriteNullCheck(RegisteredTemplates[keys[i]]);
+            }
+            var prefabsWithLayout = m_prefabsDataToSerialize.ToEntityArray(Allocator.Temp);
+            writer.Write(prefabsWithLayout.Length);
+            if (prefabsWithLayout.Length > 0)
+            {
+                for (var j = 0; j < prefabsWithLayout.Length; j++)
+                {
+                    writer.Write(prefabsWithLayout[j]);
+                    var data = WETextDataXmlTree.FromEntity(prefabsWithLayout[j], EntityManager);
+                    writer.WriteNullCheck(data);
+                }
+            }
+            prefabsWithLayout.Dispose();
+        }
         protected override void OnCreate()
         {
             Instance = this;
@@ -209,15 +275,16 @@ namespace BelzontWE
 
         private Coroutine m_updatingEntitiesOnMain;
 
-        private IEnumerator UpdatePrefabArchetypes(NativeArray<ArchetypeChunk> chunks)
+        private void UpdatePrefabArchetypes(NativeArray<ArchetypeChunk> chunks)
         {
             var m_TextDataLkp = GetComponentLookup<WETextDataMain>();
+            var m_MeshDataLkp = GetComponentLookup<WETextDataMesh>();
             var m_prefabDataLkp = GetComponentLookup<PrefabData>();
             var m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>();
             var m_subRefLkp = GetBufferLookup<WESubTextRef>();
             var m_prefabEmptyLkp = GetComponentLookup<WETemplateForPrefabEmpty>();
             var globalCounter = 0;
-            EntityCommandBuffer cmd = default;
+            EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
             for (int h = 0; h < chunks.Length; h++)
             {
                 var chunk = chunks[h];
@@ -225,10 +292,10 @@ namespace BelzontWE
                 var prefabRefs = chunk.GetNativeArray(ref m_prefabRefHdl);
                 for (int i = 0; i < entities.Length; i++, globalCounter++)
                 {
-                    if (globalCounter % 1000 == 0)
+                    if (globalCounter >= 1000)
                     {
-                        yield return 0;
-                        cmd = m_endFrameBarrier.CreateCommandBuffer();
+                        m_updatingEntitiesOnMain = null;
+                        return;
                     }
                     var e = entities[i];
                     var prefabRef = prefabRefs[i];
@@ -257,17 +324,15 @@ namespace BelzontWE
                     if (!m_prefabEmptyLkp.HasComponent(e)) cmd.AddComponent<WETemplateForPrefabEmpty>(e);
                 }
             }
-            chunks.Dispose();
-            m_updatingEntitiesOnMain = null;
         }
-        private IEnumerator UpdateLayouts(NativeArray<ArchetypeChunk> chunks)
+        private void UpdateLayouts(NativeArray<ArchetypeChunk> chunks)
         {
             var m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>();
             var m_TextDataLkp = GetComponentLookup<WETextDataMain>();
             var m_subRefLkp = GetBufferLookup<WESubTextRef>();
             var toBeProcessedDataHdl = GetComponentTypeHandle<WEPlaceholderToBeProcessedInMain>();
             var globalCounter = 0;
-            EntityCommandBuffer cmd = default;
+            EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
             for (int h = 0; h < chunks.Length; h++)
             {
                 var chunk = chunks[h];
@@ -275,10 +340,10 @@ namespace BelzontWE
                 var dataToBeProcessedArray = chunk.GetNativeArray(ref toBeProcessedDataHdl);
                 for (int i = 0; i < entities.Length; i++, globalCounter++)
                 {
-                    if (globalCounter % 100 == 0)
+                    if (globalCounter >= 100)
                     {
-                        yield return 0;
-                        cmd = m_endFrameBarrier.CreateCommandBuffer();
+                        m_updatingEntitiesOnMain = null;
+                        return;
                     }
                     var e = entities[i];
                     var dataToBeProcessed = dataToBeProcessedArray[i];
@@ -299,8 +364,6 @@ namespace BelzontWE
                     cmd.RemoveComponent<WEPlaceholderToBeProcessedInMain>(e);
                 }
             }
-            chunks.Dispose();
-            m_updatingEntitiesOnMain = null;
         }
 
         protected override void OnUpdate()
@@ -328,12 +391,14 @@ namespace BelzontWE
                 if (!m_entitiesToBeUpdatedInMain.IsEmpty)
                 {
                     var entitiesToUpdate = m_entitiesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
-                    m_updatingEntitiesOnMain = GameManager.instance.StartCoroutine(UpdateLayouts(entitiesToUpdate));
+                    UpdateLayouts(entitiesToUpdate);
+                    entitiesToUpdate.Dispose();
                 }
                 else if (!m_prefabArchetypesToBeUpdatedInMain.IsEmpty)
                 {
                     var entitiesToUpdate = m_prefabArchetypesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
-                    m_updatingEntitiesOnMain = GameManager.instance.StartCoroutine(UpdatePrefabArchetypes(entitiesToUpdate));
+                    UpdatePrefabArchetypes(entitiesToUpdate);
+                    entitiesToUpdate.Dispose();
                 }
                 else if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
                 {
@@ -515,7 +580,7 @@ namespace BelzontWE
                 }
                 var tree = WETextDataXmlTree.FromXML(File.ReadAllText(fileItem));
                 if (tree is null) continue;
-                tree.self = null;
+                tree.self = new WETextDataXml { };
                 var validationResults = CanBePrefabLayout(tree);
                 if (validationResults == 0)
                 {

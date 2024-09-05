@@ -1,6 +1,8 @@
-﻿using Belzont.Utils;
+﻿using Belzont.Serialization;
+using Belzont.Utils;
 using BelzontWE.Utils;
 using Colossal.Entities;
+using Colossal.Serialization.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,8 +12,10 @@ using Unity.Entities;
 namespace BelzontWE
 {
     [XmlRoot("WELayout")]
-    public class WETextDataXmlTree : IEquatable<WETextDataXmlTree>
+    public class WETextDataXmlTree : IEquatable<WETextDataXmlTree>, ISerializable
     {
+        public const int CURRENT_VERSION = 0;
+
         public WETextDataXml self;
         [XmlIgnore] public Colossal.Hash128 Guid { get; } = System.Guid.NewGuid();
         [XmlElement("children")]
@@ -65,6 +69,35 @@ namespace BelzontWE
         }
 
         public WETextDataXmlTree Clone() => XmlUtils.CloneViaXml(this);
+
+        public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+        {
+            writer.Write(CURRENT_VERSION);
+            writer.WriteNullCheck(self);
+            writer.Write(children?.Length ?? 0);
+            for (int i = 0; i < children?.Length; i++)
+            {
+                writer.Write(children[i]);
+            }
+        }
+
+        public void Deserialize<TReader>(TReader reader) where TReader : IReader
+        {
+            reader.Read(out int version);
+            if (version > CURRENT_VERSION)
+            {
+                LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                return;
+            }
+            reader.ReadNullCheck(out self);
+            reader.Read(out int count);
+            children = new WETextDataXmlTree[count];
+            for (int i = 0; i < count; i++)
+            {
+                children[i] = new();
+                reader.Read(children[i]);
+            }
+        }
 
     }
 }

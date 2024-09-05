@@ -41,7 +41,9 @@ namespace BelzontWE
         public FixedString32Bytes Atlas { readonly get => atlas; set => atlas = value; }
         public FixedString32Bytes FontName { readonly get => fontName; set => fontName = value; }
         public WETextDataValueString ValueData { readonly get => valueData; set => valueData = value; }
-        public int LastLodValue { get; set; }
+        public int MinLod { get; set; }
+        public float3 LodReferenceScale { get; set; }
+        public int LastLod { get; set; }
         public float MaxWidthMeters { get; set; }
 
         public Bounds3 Bounds { get; private set; }
@@ -54,6 +56,7 @@ namespace BelzontWE
         public void ResetBri()
         {
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
+            MinLod = 0;
         }
         public static WETextDataMesh CreateDefault(Entity target, Entity? parent = null)
             => new()
@@ -80,6 +83,7 @@ namespace BelzontWE
                 LastErrorStr = text;
             }
             dirty = false;
+            MinLod = 0;
             return this;
         }
         public void Dispose()

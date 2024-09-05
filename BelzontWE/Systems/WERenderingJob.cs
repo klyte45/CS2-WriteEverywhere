@@ -44,7 +44,7 @@ namespace BelzontWE
             public ComponentLookup<WETextDataMesh> m_weMeshLookup;
             public ComponentLookup<WETextDataTransform> m_weTransformLookup;
 
-            private static readonly Bounds3 whiteTextureBounds = new(new(-.5f, -.5f, -math.sqrt(.5f)), new(.5f, .5f, math.sqrt(.5f)));
+            private static readonly Bounds3 whiteTextureBounds = new(new(-.5f, -.5f, 0), new(.5f, .5f, 0));
 
             public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -119,7 +119,7 @@ namespace BelzontWE
                                 return;
                             }
 
-                            int lod = CalculateLod(whiteTextureBounds, ref prevMatrix, out _, out _, out _, out int minLod);
+                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref prevMatrix, out _, out _, out _, out int minLod);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 var scale2 = transform.scale;
@@ -140,7 +140,7 @@ namespace BelzontWE
                     case WESimulationTextType.WhiteTexture:
                         {
                             var WTmatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, transform.scale);
-                            int lod = CalculateLod(whiteTextureBounds, ref WTmatrix, out _, out _, out _, out int minLod);
+                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref WTmatrix, out _, out _, out _, out int minLod);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 availToDraw.Enqueue(new WERenderData
@@ -182,7 +182,7 @@ namespace BelzontWE
                         {
                             if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
                             {
-                                int lod = CalculateLod(mesh.Bounds, ref matrix, out Bounds3 refBounds, out float minDist, out float3 boundsSize, out int minLod);
+                                int lod = CalculateLod(mesh.Bounds, ref mesh, ref transform, ref matrix, out Bounds3 refBounds, out float minDist, out float3 boundsSize, out int minLod);
                                 if (doLog) Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: minDist = {minDist} - refBounds = {refBounds.min} {refBounds.max} ({boundsSize}) - lod = {lod} - minLod = {minLod} - m_LodParameters = {m_LodParameters}");
                                 if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                 {
@@ -222,13 +222,21 @@ namespace BelzontWE
                 }
             }
 
-            private readonly int CalculateLod(Bounds3 meshBounds, ref Matrix4x4 matrix, out Bounds3 refBounds, out float minDist, out float3 boundsSize, out int minLod)
+            private readonly int CalculateLod(Bounds3 meshBounds, ref WETextDataMesh meshData, ref WETextDataTransform transformData, ref Matrix4x4 matrix, out Bounds3 refBounds, out float minDist, out float3 boundsSize, out int minLod)
             {
                 refBounds = new Bounds3(matrix.MultiplyPoint(meshBounds.min), matrix.MultiplyPoint(meshBounds.max));
                 minDist = RenderingUtils.CalculateMinDistance(refBounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
                 boundsSize = refBounds.max - refBounds.min;
-                minLod = RenderingUtils.CalculateLodLimit(RenderingUtils.GetRenderingSize((boundsSize.xy + boundsSize.zy) * .5f));
-                return RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
+                var isDirty = meshData.LodReferenceScale != transformData.scale;
+                if (isDirty.x || isDirty.y || isDirty.z || meshData.MinLod <= 0)
+                {
+                    var maxDim = meshBounds * transformData.scale;
+                    meshData.MinLod = RenderingUtils.CalculateLodLimit(math.csum(maxDim.max - maxDim.min) * 1f / 3f);
+                    meshData.LodReferenceScale = transformData.scale;
+                }
+                minLod = meshData.MinLod;
+                meshData.LastLod = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
+                return meshData.LastLod;
             }
 
             private void DestroyRecursive(Entity nextEntity, int unfilteredChunkIndex, Entity initialDelete = default)

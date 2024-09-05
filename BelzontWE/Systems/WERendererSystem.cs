@@ -229,7 +229,7 @@ namespace BelzontWE
                     m_transform = GetComponentLookup<Game.Objects.Transform>(true),
                     m_iTransform = GetComponentLookup<InterpolatedTransform>(true),
                     m_weMainLookup = GetComponentLookup<WETextDataMain>(true),
-                    m_weMeshLookup = GetComponentLookup<WETextDataMesh>(true),
+                    m_weMeshLookup = GetComponentLookup<WETextDataMesh>(false),
                     m_weMaterialLookup = GetComponentLookup<WETextDataMaterial>(true),
                     m_weTemplateUpdaterLookup = GetComponentLookup<WETemplateUpdater>(true),
                     m_weTemplateForPrefabLookup = GetComponentLookup<WETemplateForPrefab>(true),

@@ -78,6 +78,7 @@ namespace BelzontWE
                 }.Schedule(m_pendingQueueEntities, Dependency);
                 layoutsAvailable.Dispose(Dependency);
             }
+            Dependency.Complete();
         }
 
 
