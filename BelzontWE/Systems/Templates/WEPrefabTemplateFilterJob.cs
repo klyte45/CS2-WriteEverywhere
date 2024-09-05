@@ -33,7 +33,7 @@ namespace BelzontWE
             {
                 var entities = chunk.GetNativeArray(m_EntityType);
                 var prefabRefs = chunk.GetNativeArray(ref m_prefabRefHdl);
-                var checkCount = Math.Min(1000, entities.Length);
+                var checkCount = Math.Min(2, entities.Length);
                 for (int i = 0; i < checkCount; i++)
                 {
                     var entity = entities[i];

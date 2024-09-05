@@ -381,8 +381,22 @@ namespace BelzontWE.Font
 
             if (itemsQueue.Count != 0)
             {
-                NativeArray<StringRenderingQueueItem> itemsStarted = itemsQueue.ToArray(Allocator.TempJob);
+                NativeArray<StringRenderingQueueItem> queueItems = itemsQueue.ToArray(Allocator.Temp);
                 itemsQueue.Clear();
+                NativeArray<StringRenderingQueueItem> itemsStarted;
+                if (queueItems.Length > 5)
+                {
+                    itemsStarted = queueItems.GetSubArray(0, 5);
+                    var itemsOverflew = queueItems.GetSubArray(5, queueItems.Length - 5);
+                    for (int i = 0; i < itemsOverflew.Length; i++)
+                    {
+                        itemsQueue.Enqueue(itemsOverflew[i]);
+                    }
+                }
+                else
+                {
+                    itemsStarted = queueItems;
+                }
                 var glyphs = GetGlyphsCollection(FontHeight);
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Gliphs collection size = {glyphs.Count}");
                 var charsToRender = itemsStarted.ToArray().SelectMany(x => Enumerate(StringInfo.GetTextElementEnumerator(x.text.ToString())).Cast<string>()).GroupBy(x => x).Select(x => x.Key);
@@ -416,13 +430,14 @@ namespace BelzontWE.Font
                     scale = FontServer.Instance.ScaleEffective
                 };
                 dependency = job.Schedule(itemsStarted.Length, 32, dependency);
-                itemsStarted.Dispose(dependency);
+                dependency.Complete();
+                queueItems.Dispose();
             }
-            var addedItem = false;
+            var postJobCounter = 0;
             while (results.TryDequeue(out var result))
             {
                 PostJob(result);
-                addedItem = true;
+                if (++postJobCounter > 5) break;
             }
             return dependency;
         }
