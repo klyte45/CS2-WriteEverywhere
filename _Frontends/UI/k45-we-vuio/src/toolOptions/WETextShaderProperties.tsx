@@ -15,7 +15,7 @@ export const WETextShaderProperties = (props: { initialPosition?: { x: number, y
     const T_supportCreatureDecals = translate("shaderProperties.supportCreatureDecals"); //"Emission Color"
     const T_supportOtherDecals = translate("shaderProperties.supportOtherDecals"); //"Emission Color"
     const T_shaderType = translate("shaderProperties.shaderType"); //"Emission Color"
-    const wps = WorldPickerService.instance;
+    const material = WorldPickerService.instance.bindingList.material;
     const EditorItemRow = VanillaWidgets.instance.EditorItemRow;
     const DropdownField = VanillaWidgets.instance.DropdownField<number>();
 
@@ -29,18 +29,18 @@ export const WETextShaderProperties = (props: { initialPosition?: { x: number, y
         <Panel draggable header={T_appearenceTitle} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
             <EditorItemRow label={T_shaderType}>
                 <DropdownField
-                    value={wps.ShaderType.value}
+                    value={material.ShaderType.value}
                     items={[0, 1]?.map(x => { return { displayName: { __Type: LocElementType.String, value: translate("shaderProperties.shaderType." + x) }, value: x } })}
-                    onChange={(x) => wps.ShaderType.set(x)}
+                    onChange={(x) => material.ShaderType.set(x)}
                     style={{ flexGrow: 1, width: "inherit" }}
                 />
             </EditorItemRow>
-            <VanillaWidgets.instance.ToggleField value={(wps.DecalFlags.value & 8) != 0} onChange={(x) => { wps.DecalFlags.set(!x ? wps.DecalFlags.value & ~8 : wps.DecalFlags.value | 8) }} label={T_dynamicObjectsDecalFilter} />
-            <VanillaWidgets.instance.ToggleField value={(wps.DecalFlags.value & 4) != 0} onChange={(x) => { wps.DecalFlags.set(!x ? wps.DecalFlags.value & ~4 : wps.DecalFlags.value | 4) }} label={T_supportDecals} />
-            <VanillaWidgets.instance.ToggleField value={(wps.DecalFlags.value & 2) != 0} onChange={(x) => { wps.DecalFlags.set(!x ? wps.DecalFlags.value & ~2 : wps.DecalFlags.value | 2) }} label={T_supportRoadDecals} />
-            <VanillaWidgets.instance.ToggleField value={(wps.DecalFlags.value & 1) != 0} onChange={(x) => { wps.DecalFlags.set(!x ? wps.DecalFlags.value & ~1 : wps.DecalFlags.value | 1) }} label={T_supportTerrainDecals} />
-            <VanillaWidgets.instance.ToggleField value={(wps.DecalFlags.value & 16) != 0} onChange={(x) => { wps.DecalFlags.set(!x ? wps.DecalFlags.value & ~16 : wps.DecalFlags.value | 16) }} label={T_supportCreatureDecals} />
-            <VanillaWidgets.instance.ToggleField value={(wps.DecalFlags.value & 32) != 0} onChange={(x) => { wps.DecalFlags.set(!x ? wps.DecalFlags.value & ~32 : wps.DecalFlags.value | 32) }} label={T_supportOtherDecals} />
+            <VanillaWidgets.instance.ToggleField value={(material.DecalFlags.value & 8) != 0} onChange={(x) => { material.DecalFlags.set(!x ? material.DecalFlags.value & ~8 : material.DecalFlags.value | 8) }} label={T_dynamicObjectsDecalFilter} />
+            <VanillaWidgets.instance.ToggleField value={(material.DecalFlags.value & 4) != 0} onChange={(x) => { material.DecalFlags.set(!x ? material.DecalFlags.value & ~4 : material.DecalFlags.value | 4) }} label={T_supportDecals} />
+            <VanillaWidgets.instance.ToggleField value={(material.DecalFlags.value & 2) != 0} onChange={(x) => { material.DecalFlags.set(!x ? material.DecalFlags.value & ~2 : material.DecalFlags.value | 2) }} label={T_supportRoadDecals} />
+            <VanillaWidgets.instance.ToggleField value={(material.DecalFlags.value & 1) != 0} onChange={(x) => { material.DecalFlags.set(!x ? material.DecalFlags.value & ~1 : material.DecalFlags.value | 1) }} label={T_supportTerrainDecals} />
+            <VanillaWidgets.instance.ToggleField value={(material.DecalFlags.value & 16) != 0} onChange={(x) => { material.DecalFlags.set(!x ? material.DecalFlags.value & ~16 : material.DecalFlags.value | 16) }} label={T_supportCreatureDecals} />
+            <VanillaWidgets.instance.ToggleField value={(material.DecalFlags.value & 32) != 0} onChange={(x) => { material.DecalFlags.set(!x ? material.DecalFlags.value & ~32 : material.DecalFlags.value | 32) }} label={T_supportOtherDecals} />
         </Panel>
     </Portal>;
 } 

@@ -1,14 +1,17 @@
-import { VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { MultiUIValueBinding, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
 import { FormulaeService } from "services/FormulaeService";
 import { WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEMemberType, WEMethodSource, WEStaticMethodDesc, WETypeMemberDesc } from "services/WEFormulaeElement";
-import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
 import "../style/formulaeEditor.scss";
 import { WEAddFormulaeStageDialog } from "./WEAddFormulaeStageDialog";
 
-export const WEFormulaeEditor = () => {
+type Props = {
+    FormulaeStr: MultiUIValueBinding<string>
+}
+
+export const WEFormulaeEditor = ({ FormulaeStr }: Props) => {
     const T_title = translate("formulaeEditor.title"); //Formulae stages
     const T_implicitConversionWarning = translate("formulaeEditor.implicitConversionWarning"); //Implicit conversion to String
     const T_finalPipelineAlwaysStringInfo = translate("formulaeEditor.finalPipelineAlwaysStringInfo"); //The final text will always have type String
@@ -17,12 +20,11 @@ export const WEFormulaeEditor = () => {
     const T_editorFootnote = translate("formulaeEditor.editorFootnote"); //Get component
 
 
-    const wps = WorldPickerService.instance;
     const [formulaeSteps, setFormulaeSteps] = useState([] as WEFormulaeElement[])
 
     useEffect(() => {
-        FormulaeService.formulaeToPathObjects(wps.FormulaeStr.value).then(x => setFormulaeSteps(x))
-    }, [wps.FormulaeStr.value])
+        FormulaeService.formulaeToPathObjects(FormulaeStr.value).then(x => setFormulaeSteps(x))
+    }, [FormulaeStr.value])
 
     const pathObjectsToFormulae = (arr: WEFormulaeElement[]) => {
         let output = "";
@@ -61,14 +63,14 @@ export const WEFormulaeEditor = () => {
 
     const removeLastStage = () => {
         formulaeSteps.pop();
-        wps.FormulaeStr.set(pathObjectsToFormulae(formulaeSteps))
+        FormulaeStr.set(pathObjectsToFormulae(formulaeSteps))
     }
 
     const onAppend = (appendItem?: WEFormulaeElement) => {
         setAddingItem(false);
         if (appendItem) {
             formulaeSteps.push(appendItem);
-            wps.FormulaeStr.set(pathObjectsToFormulae(formulaeSteps))
+            FormulaeStr.set(pathObjectsToFormulae(formulaeSteps))
         }
     }
 
@@ -133,7 +135,7 @@ const WEComponentGetterBlock = (data: WEComponentTypeDesc & { i: number }) => {
 const WEComponentMemberBlock = (data: WETypeMemberDesc & { i: number }) => {
     let title: string;
     let className: string;
-    
+
     const T_descType_fieldGetter = translate("formulaeEditor.descType.fieldGetter"); //Load field
     const T_descType_propertyGetter = translate("formulaeEditor.descType.propertyGetter"); //Get property
     const T_descType_parameterlessInstanceMethodCall = translate("formulaeEditor.descType.parameterlessInstanceMethodCall"); //Call instance method

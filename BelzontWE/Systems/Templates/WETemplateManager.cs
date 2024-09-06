@@ -703,7 +703,7 @@ namespace BelzontWE
 
         private void CommonSaveAsTemplate(string name, WETextDataXmlTree templateEntity)
         {
-            if (RegisteredTemplates.TryGetValue(name, out var obsoleteTemplate))
+            if (RegisteredTemplates.ContainsKey(name))
             {
                 RegisteredTemplates.Remove(name);
             }

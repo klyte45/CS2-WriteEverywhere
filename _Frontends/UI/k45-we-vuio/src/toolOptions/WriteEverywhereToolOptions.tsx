@@ -80,7 +80,9 @@ const WEWorldPickerToolPanel = () => {
     const [displayShaderWindow, setDisplayShaderWindow] = useState(false);
 
 
-    const wps = WorldPickerService.instance;
+    const wps = WorldPickerService.instance.bindingList.picker;
+    const main = WorldPickerService.instance.bindingList.main;
+    const transform = WorldPickerService.instance.bindingList.transform;
     const Locale = VanillaFnResolver.instance.localization.useCachedLocalization();
     const decimalsFormat = (value: number) => VanillaFnResolver.instance.localizedNumber.formatFloat(Locale, value, false, 3, true, false, Infinity);
 
@@ -96,10 +98,10 @@ const WEWorldPickerToolPanel = () => {
             {currentItemIsValid &&
                 <>
                     <VectorSectionEditable title={L_itemName}
-                        valueGetter={() => [wps.CurrentItemName.value]}
-                        valueGetterFormatted={() => [wps.CurrentItemName.value]}
+                        valueGetter={() => [main.CurrentItemName.value]}
+                        valueGetterFormatted={() => [main.CurrentItemName.value]}
                         onValueChanged={(i, x) => {
-                            wps.CurrentItemName.set(x);
+                            main.CurrentItemName.set(x);
                         }} />
 
                     <AmountValueSection
@@ -126,22 +128,22 @@ const WEWorldPickerToolPanel = () => {
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
                     </VanillaComponentResolver.instance.Section>
                     <VectorSectionEditable title={L_position}
-                        valueGetter={() => wps.CurrentPosition.value?.map(x => x.toFixed(3))}
-                        valueGetterFormatted={() => wps.CurrentPosition.value?.map(x => decimalsFormat(x) + "m")}
+                        valueGetter={() => transform.CurrentPosition.value?.map(x => x.toFixed(3))}
+                        valueGetterFormatted={() => transform.CurrentPosition.value?.map(x => decimalsFormat(x) + "m")}
                         onValueChanged={(i, x) => {
-                            const newVal = wps.CurrentPosition.value;
+                            const newVal = transform.CurrentPosition.value;
                             newVal[i] = parseFloat(x);
                             if (isNaN(newVal[i])) return;
-                            wps.CurrentPosition.set(newVal);
+                            transform.CurrentPosition.set(newVal);
                         }} />
                     <VectorSectionEditable title={L_rotation}
-                        valueGetter={() => wps.CurrentRotation.value?.map(x => x.toFixed(3))}
-                        valueGetterFormatted={() => wps.CurrentRotation.value?.map(x => decimalsFormat(x) + "°")}
+                        valueGetter={() => transform.CurrentRotation.value?.map(x => x.toFixed(3))}
+                        valueGetterFormatted={() => transform.CurrentRotation.value?.map(x => decimalsFormat(x) + "°")}
                         onValueChanged={(i, x) => {
-                            const newVal = wps.CurrentRotation.value;
+                            const newVal = transform.CurrentRotation.value;
                             newVal[i] = parseFloat(x);
                             if (isNaN(newVal[i])) return;
-                            wps.CurrentRotation.set(newVal);
+                            transform.CurrentRotation.set(newVal);
                         }} />
                 </>}
 

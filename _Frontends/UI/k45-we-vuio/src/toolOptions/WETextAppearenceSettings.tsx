@@ -31,35 +31,36 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
         WorldPickerService.instance.registerBindings(() => setBuild(buildIdx + 1))
     }, [buildIdx])
 
-    const wps = WorldPickerService.instance;
+    const material = WorldPickerService.instance.bindingList.material;
+    const mesh = WorldPickerService.instance.bindingList.mesh;
 
     const defaultPosition = props.initialPosition ?? { x: 1 - 200 / window.innerWidth, y: 200 / window.innerHeight }
 
     return <Portal>
         <Panel draggable header={T_appearenceTitle} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
-            <VanillaWidgets.instance.ColorPicker showAlpha={true} value={wps.MainColor.value} onChange={(x) => { wps.MainColor.set(x) }} label={T_mainColor} />
-            {wps.ShaderType.value == 0 && <>
-                {wps.TextSourceType.value == WESimulationTextType.Image && <>
-                    <VanillaWidgets.instance.ColorPicker value={wps.ColorMask1.value} onChange={(x) => { x.a = 1, wps.ColorMask1.set(x) }} label={T_colorMask1} />
-                    <VanillaWidgets.instance.ColorPicker value={wps.ColorMask2.value} onChange={(x) => { x.a = 1, wps.ColorMask2.set(x) }} label={T_colorMask2} />
-                    <VanillaWidgets.instance.ColorPicker value={wps.ColorMask3.value} onChange={(x) => { x.a = 1, wps.ColorMask3.set(x) }} label={T_colorMask3} />
+            <VanillaWidgets.instance.ColorPicker showAlpha={true} value={material.MainColor.value} onChange={(x) => { material.MainColor.set(x) }} label={T_mainColor} />
+            {material.ShaderType.value == 0 && <>
+                {mesh.TextSourceType.value == WESimulationTextType.Image && <>
+                    <VanillaWidgets.instance.ColorPicker value={material.ColorMask1.value} onChange={(x) => { x.a = 1, material.ColorMask1.set(x) }} label={T_colorMask1} />
+                    <VanillaWidgets.instance.ColorPicker value={material.ColorMask2.value} onChange={(x) => { x.a = 1, material.ColorMask2.set(x) }} label={T_colorMask2} />
+                    <VanillaWidgets.instance.ColorPicker value={material.ColorMask3.value} onChange={(x) => { x.a = 1, material.ColorMask3.set(x) }} label={T_colorMask3} />
                 </>}
-                <VanillaWidgets.instance.ColorPicker value={wps.EmissiveColor.value} onChange={(x) => { wps.EmissiveColor.set(x) }} label={T_emissiveColor} />
-                <VanillaWidgets.instance.FloatSlider value={Math.log10(wps.EmissiveIntensity.value + 1)} onChange={(x) => { wps.EmissiveIntensity.set(Math.pow(10, x) - 1) }} label={T_EmissiveIntensity} max={3} min={0} />
-                <VanillaWidgets.instance.FloatSlider value={wps.EmissiveExposureWeight.value} onChange={(x) => { wps.EmissiveExposureWeight.set(x) }} label={T_EmissiveExposureWeight} max={1} min={0} />
-                <VanillaWidgets.instance.FloatSlider value={wps.Metallic.value} onChange={(x) => { wps.Metallic.set(x) }} label={T_Metallic} max={1} min={0} />
-                <VanillaWidgets.instance.FloatSlider value={wps.CoatStrength.value} onChange={(x) => { wps.CoatStrength.set(x) }} label={T_CoatStrength} max={1} min={0} />
-                <VanillaWidgets.instance.FloatSlider value={wps.Smoothness.value} onChange={(x) => { wps.Smoothness.set(x) }} label={T_Smoothness} max={1} min={0} />
+                <VanillaWidgets.instance.ColorPicker value={material.EmissiveColor.value} onChange={(x) => { material.EmissiveColor.set(x) }} label={T_emissiveColor} />
+                <VanillaWidgets.instance.FloatSlider value={Math.log10(material.EmissiveIntensity.value + 1)} onChange={(x) => { material.EmissiveIntensity.set(Math.pow(10, x) - 1) }} label={T_EmissiveIntensity} max={3} min={0} />
+                <VanillaWidgets.instance.FloatSlider value={material.EmissiveExposureWeight.value} onChange={(x) => { material.EmissiveExposureWeight.set(x) }} label={T_EmissiveExposureWeight} max={1} min={0} />
+                <VanillaWidgets.instance.FloatSlider value={material.Metallic.value} onChange={(x) => { material.Metallic.set(x) }} label={T_Metallic} max={1} min={0} />
+                <VanillaWidgets.instance.FloatSlider value={material.CoatStrength.value} onChange={(x) => { material.CoatStrength.set(x) }} label={T_CoatStrength} max={1} min={0} />
+                <VanillaWidgets.instance.FloatSlider value={material.Smoothness.value} onChange={(x) => { material.Smoothness.set(x) }} label={T_Smoothness} max={1} min={0} />
             </>}
-            {wps.ShaderType.value == 1 && <>
-                <VanillaWidgets.instance.ColorPicker value={wps.GlassColor.value} onChange={(x) => { x.a = 1, wps.GlassColor.set(x) }} label={T_glassColor} />
-                <VanillaWidgets.instance.FloatSlider value={(wps.GlassRefraction.value - 1) * 10} onChange={(x) => { wps.GlassRefraction.set(1 + x / 10) }} label={T_glassRefraction} max={100} min={0} />
-                {[WESimulationTextType.Image, WESimulationTextType.Text].includes(wps.TextSourceType.value) && <>
-                    <VanillaWidgets.instance.FloatSlider value={wps.NormalStrength.value * 10} onChange={(x) => { wps.NormalStrength.set(x / 10) }} label={T_normalStrength} max={100} min={0} />
+            {material.ShaderType.value == 1 && <>
+                <VanillaWidgets.instance.ColorPicker value={material.GlassColor.value} onChange={(x) => { x.a = 1, material.GlassColor.set(x) }} label={T_glassColor} />
+                <VanillaWidgets.instance.FloatSlider value={(material.GlassRefraction.value - 1) * 10} onChange={(x) => { material.GlassRefraction.set(1 + x / 10) }} label={T_glassRefraction} max={100} min={0} />
+                {[WESimulationTextType.Image, WESimulationTextType.Text].includes(mesh.TextSourceType.value) && <>
+                    <VanillaWidgets.instance.FloatSlider value={material.NormalStrength.value * 10} onChange={(x) => { material.NormalStrength.set(x / 10) }} label={T_normalStrength} max={100} min={0} />
                 </>}
-                <VanillaWidgets.instance.FloatSlider value={wps.Metallic.value} onChange={(x) => { wps.Metallic.set(x) }} label={T_glassTint} max={1} min={0} />
-                <VanillaWidgets.instance.FloatSlider value={wps.Smoothness.value} onChange={(x) => { wps.Smoothness.set(x) }} label={T_glassClearness} max={1} min={0} />
-                <VanillaWidgets.instance.FloatSlider value={wps.GlassThickness.value} onChange={(x) => { wps.GlassThickness.set(x) }} label={T_glassThickness} max={100} min={0} />
+                <VanillaWidgets.instance.FloatSlider value={material.Metallic.value} onChange={(x) => { material.Metallic.set(x) }} label={T_glassTint} max={1} min={0} />
+                <VanillaWidgets.instance.FloatSlider value={material.Smoothness.value} onChange={(x) => { material.Smoothness.set(x) }} label={T_glassClearness} max={1} min={0} />
+                <VanillaWidgets.instance.FloatSlider value={material.GlassThickness.value} onChange={(x) => { material.GlassThickness.set(x) }} label={T_glassThickness} max={100} min={0} />
             </>}
         </Panel>
     </Portal>;

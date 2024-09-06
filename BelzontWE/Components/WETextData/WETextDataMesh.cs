@@ -33,8 +33,8 @@ namespace BelzontWE
                 }
             }
         }
-        public FixedString32Bytes Atlas { readonly get => atlas; set => atlas = value; }
-        public FixedString32Bytes FontName { readonly get => fontName; set => fontName = value; }
+        public FixedString32Bytes Atlas { readonly get => atlas; set { atlas = value; templateDirty = dirty = true; } }
+        public FixedString32Bytes FontName { readonly get => fontName; set { fontName = value; templateDirty = dirty = true; } }
         public WETextDataValueString ValueData { readonly get => valueData; set => valueData = value; }
         public int MinLod { get; set; }
         public float3 LodReferenceScale { get; set; }

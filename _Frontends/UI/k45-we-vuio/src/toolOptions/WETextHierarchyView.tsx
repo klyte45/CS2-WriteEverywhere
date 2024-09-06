@@ -31,7 +31,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     /**/const i_typePlaceholder = "coui://uil/Standard/RotateAngleRelative.svg";
 
 
-    const wps = WorldPickerService.instance;
+    const wps = WorldPickerService.instance.bindingList.picker;
     const T_title = translate("textHierarchyWindow.title"); //"Appearance Settings"
     const T_cut = translate("textHierarchyWindow.cut"); //"Appearance Settings"
     const T_copy = translate("textHierarchyWindow.copy"); //"Appearance Settings"

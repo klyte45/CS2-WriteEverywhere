@@ -65,6 +65,7 @@ namespace BelzontWE
         private ProxyAction m_ToggleLockCameraRotation;
         private ToolOutputBarrier m_ToolOutputBarrier;
         private WEWorldPickerController m_Controller;
+        private WETextDataTransformController m_TransformController;
 
         private float2 m_mousePositionRef;
         private float3 m_originalPositionText;
@@ -108,6 +109,7 @@ namespace BelzontWE
             m_ToolOutputBarrier = World.GetOrCreateSystemManaged<ToolOutputBarrier>();
             m_Controller = World.GetOrCreateSystemManaged<WEWorldPickerController>();
             m_cameraSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
+            m_TransformController = World.GetOrCreateSystemManaged<WETextDataTransformController>();
 
 
 
@@ -337,7 +339,7 @@ namespace BelzontWE
 #pragma warning restore CS0252 // Possível comparação de referência inesperada; o lado esquerdo precisa de conversão
                         m_cameraDisabledHere = cameraDisabledThisFrame = true;
                         m_cameraDistance = math.clamp(m_cameraDistance + (m_CameraZoomActionMouse.ReadValue<float>() * 4f) + m_CameraZoomAction.ReadValue<float>(), 1f, 20f);
-                        var itemAngles = m_Controller.CurrentRotation.Value;
+                        var itemAngles = m_TransformController.CurrentRotation.Value;
                         var isRotationLocked = m_Controller.CameraRotationLocked.Value;
                         var targetMatrix = (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
                         {
@@ -404,10 +406,10 @@ namespace BelzontWE
             var offsetWithAdjust = offsetPosition * currentPrecision;
             if (!EntityManager.TryGetComponent<WETextDataTransform>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
 
-            var itemAngles = m_Controller.CurrentRotation.Value;
+            var itemAngles = m_TransformController.CurrentRotation.Value;
             var isRotationLocked = m_Controller.CameraRotationLocked.Value;
 
-            m_Controller.CurrentPosition.Value = currentItem.offsetPosition = originalPosition + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
+            m_TransformController.CurrentPosition.Value = currentItem.offsetPosition = originalPosition + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {
                 ToolEditMode.PlaneXY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 0, 0))).rotation, new float3(offsetWithAdjust, 0)),
                 ToolEditMode.PlaneXZ => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, isRotationLocked ? -itemAngles.y : 0, 0))).rotation, new float3(offsetWithAdjust.x, 0, -offsetWithAdjust.y)),
@@ -441,14 +443,14 @@ namespace BelzontWE
 
             if (!EntityManager.TryGetComponent<WETextDataTransform>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
 
-            m_Controller.CurrentRotation.Value = originalRotation + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
+            m_TransformController.CurrentRotation.Value = originalRotation + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {
                 ToolEditMode.PlaneXY => new float3(0, 0, offsetWithAdjust),
                 ToolEditMode.PlaneXZ => new float3(0, offsetWithAdjust, 0),
                 ToolEditMode.PlaneZY => new float3(offsetWithAdjust, 0, 0),
                 _ => default
             };
-            currentItem.offsetRotation = Quaternion.Euler(m_Controller.CurrentRotation.Value);
+            currentItem.offsetRotation = Quaternion.Euler(m_TransformController.CurrentRotation.Value);
             EntityManager.SetComponentData(m_Controller.CurrentSubEntity.Value, currentItem);
             cmdBuff.AddComponent<BatchesUpdated>(m_Controller.CurrentEntity.Value);
         }

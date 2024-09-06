@@ -51,6 +51,38 @@ namespace BelzontWE
         public Color ColorMask2 { readonly get => colorMask2.defaultValue; set { colorMask2.defaultValue = value; } }
         public Color ColorMask3 { readonly get => colorMask3.defaultValue; set { colorMask3.defaultValue = value; } }
 
+
+        public string ColorFormulae => color.formulaeStr.ToString();
+        public string EmissiveColorFormulae => emissiveColor.formulaeStr.ToString();
+        public string GlassColorFormulae => glassColor.formulaeStr.ToString();
+        public string NormalStrengthFormulae => normalStrength.formulaeStr.ToString();
+        public string GlassRefractionFormulae => glassRefraction.formulaeStr.ToString();
+        public string MetallicFormulae => metallic.formulaeStr.ToString();
+        public string SmoothnessFormulae => smoothness.formulaeStr.ToString();
+        public string EmissiveIntensityFormulae => emissiveIntensity.formulaeStr.ToString();
+        public string EmissiveExposureWeightFormulae => emissiveExposureWeight.formulaeStr.ToString();
+        public string CoatStrengthFormulae => coatStrength.formulaeStr.ToString();
+        public string GlassThicknessFormulae => glassThickness.formulaeStr.ToString();
+        public string ColorMask1Formulae => colorMask1.formulaeStr.ToString();
+        public string ColorMask2Formulae => colorMask2.formulaeStr.ToString();
+        public string ColorMask3Formulae => colorMask3.formulaeStr.ToString();
+
+
+        public int SetFormulaeColor(string value, out string[] cmpErr) => color.SetFormulae(value, out cmpErr);
+        public int SetFormulaeEmissiveColor(string value, out string[] cmpErr) => emissiveColor.SetFormulae(value, out cmpErr);
+        public int SetFormulaeGlassColor(string value, out string[] cmpErr) => glassColor.SetFormulae(value, out cmpErr);
+        public int SetFormulaeNormalStrength(string value, out string[] cmpErr) => normalStrength.SetFormulae(value, out cmpErr);
+        public int SetFormulaeGlassRefraction(string value, out string[] cmpErr) => glassRefraction.SetFormulae(value, out cmpErr);
+        public int SetFormulaeMetallic(string value, out string[] cmpErr) => metallic.SetFormulae(value, out cmpErr);
+        public int SetFormulaeSmoothness(string value, out string[] cmpErr) => smoothness.SetFormulae(value, out cmpErr);
+        public int SetFormulaeEmissiveIntensity(string value, out string[] cmpErr) => emissiveIntensity.SetFormulae(value, out cmpErr);
+        public int SetFormulaeEmissiveExposureWeight(string value, out string[] cmpErr) => emissiveExposureWeight.SetFormulae(value, out cmpErr);
+        public int SetFormulaeCoatStrength(string value, out string[] cmpErr) => coatStrength.SetFormulae(value, out cmpErr);
+        public int SetFormulaeGlassThickness(string value, out string[] cmpErr) => glassThickness.SetFormulae(value, out cmpErr);
+        public int SetFormulaeColorMask1(string value, out string[] cmpErr) => colorMask1.SetFormulae(value, out cmpErr);
+        public int SetFormulaeColorMask2(string value, out string[] cmpErr) => colorMask2.SetFormulae(value, out cmpErr);
+        public int SetFormulaeColorMask3(string value, out string[] cmpErr) => colorMask3.SetFormulae(value, out cmpErr);
+
         public bool UpdateFormulaes(EntityManager em, Entity geometryEntity)
         {
             return dirty |= color.UpdateEffectiveValue(em, geometryEntity)
