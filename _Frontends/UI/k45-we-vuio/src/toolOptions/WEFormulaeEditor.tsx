@@ -1,30 +1,75 @@
-import { MultiUIValueBinding, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { MultiUIValueBinding, UIColorRGBA, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { Portal } from "cs2/ui";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FormulaeService } from "services/FormulaeService";
 import { WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEMemberType, WEMethodSource, WEStaticMethodDesc, WETypeMemberDesc } from "services/WEFormulaeElement";
 import { translate } from "utils/translate";
 import "../style/formulaeEditor.scss";
 import { WEAddFormulaeStageDialog } from "./WEAddFormulaeStageDialog";
+import { WorldPickerService } from "services/WorldPickerService";
 
 type Props = {
-    FormulaeStr: MultiUIValueBinding<string>
+    formulaeStr: MultiUIValueBinding<string>,
+    formulaeType: 'string' | 'number' | 'color',
+    lastCompileStatus: MultiUIValueBinding<number>
 }
 
-export const WEFormulaeEditor = ({ FormulaeStr }: Props) => {
+export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus }: Props) => {
     const T_title = translate("formulaeEditor.title"); //Formulae stages
-    const T_implicitConversionWarning = translate("formulaeEditor.implicitConversionWarning"); //Implicit conversion to String
     const T_finalPipelineAlwaysStringInfo = translate("formulaeEditor.finalPipelineAlwaysStringInfo"); //The final text will always have type String
+    const T_finalPipelineAlwaysColorInfo = translate("formulaeEditor.finalPipelineAlwaysColorInfo"); //The final text will always have type String
+    const T_finalPipelineAlwaysFloatInfo = translate("formulaeEditor.finalPipelineAlwaysFloatInfo"); //The final text will always have type String
+    const T_implicitConversionWarningString = translate("formulaeEditor.implicitConversionWarningString"); //Implicit conversion to String
+    const T_implicitConversionWarningColor = translate("formulaeEditor.implicitConversionWarningColor"); //Implicit conversion to String
+    const T_implicitConversionWarningFloat = translate("formulaeEditor.implicitConversionWarningFloat"); //Implicit conversion to String
+    const T_implicitConversionWarningColorFail = translate("formulaeEditor.implicitConversionWarningColorFail"); //Implicit conversion to String
+    const T_implicitConversionWarningFloatFail = translate("formulaeEditor.implicitConversionWarningFloatFail"); //Implicit conversion to String
     const T_addStageEnd = translate("formulaeEditor.addStageEnd"); //Get component
     const T_removeLastStage = translate("formulaeEditor.removeLastStage"); //Get component
     const T_editorFootnote = translate("formulaeEditor.editorFootnote"); //Get component
 
+    const getImplicitConversionWarning = useCallback(() => {
+        switch (formulaeType) {
+            default:
+            case 'string':
+                return T_implicitConversionWarningString;
+            case 'color':
+                return lastCompileStatus.value == 0 ? T_implicitConversionWarningColor : T_implicitConversionWarningColorFail;
+            case 'number':
+                return lastCompileStatus.value == 0 ? T_implicitConversionWarningFloat : T_implicitConversionWarningFloatFail;
+        }
+    }, [formulaeType])
+    const getTargetClass = useCallback(
+        () => {
+            switch (formulaeType) {
+                default:
+                case 'string':
+                    return "System.String";
+                case 'color':
+                    return "UnityEngine.Color";
+                case 'number':
+                    return "System.Float"
+            }
+        }, [formulaeType, lastCompileStatus])
+    const getAlwaysConversionText = useCallback(
+        () => {
+            switch (formulaeType) {
+                default:
+                case 'string':
+                    return T_finalPipelineAlwaysStringInfo;
+                case 'color':
+                    return T_finalPipelineAlwaysColorInfo;
+                case 'number':
+                    return T_finalPipelineAlwaysFloatInfo
+            }
+        }, [formulaeType, lastCompileStatus])
 
     const [formulaeSteps, setFormulaeSteps] = useState([] as WEFormulaeElement[])
 
+
     useEffect(() => {
-        FormulaeService.formulaeToPathObjects(FormulaeStr.value).then(x => setFormulaeSteps(x))
-    }, [FormulaeStr.value])
+        FormulaeService.formulaeToPathObjects(formulaeStr.value).then(x => setFormulaeSteps(x))
+    }, [formulaeStr.value])
 
     const pathObjectsToFormulae = (arr: WEFormulaeElement[]) => {
         let output = "";
@@ -51,9 +96,9 @@ export const WEFormulaeEditor = ({ FormulaeStr }: Props) => {
             case WEDescType.COMPONENT:
                 return true
             case WEDescType.MEMBER:
-                return x.memberTypeClassName != "System.String"
+                return x.memberTypeClassName != getTargetClass()
             case WEDescType.STATIC_METHOD:
-                return x.returnType != "System.String"
+                return x.returnType != getTargetClass()
             default:
                 return true;
         }
@@ -63,41 +108,59 @@ export const WEFormulaeEditor = ({ FormulaeStr }: Props) => {
 
     const removeLastStage = () => {
         formulaeSteps.pop();
-        FormulaeStr.set(pathObjectsToFormulae(formulaeSteps))
+        formulaeStr.set(pathObjectsToFormulae(formulaeSteps))
     }
 
     const onAppend = (appendItem?: WEFormulaeElement) => {
         setAddingItem(false);
         if (appendItem) {
             formulaeSteps.push(appendItem);
-            FormulaeStr.set(pathObjectsToFormulae(formulaeSteps))
+            formulaeStr.set(pathObjectsToFormulae(formulaeSteps))
         }
     }
 
     const [addingItem, setAddingItem] = useState(false)
 
+    const valueToString = (x: number | string | UIColorRGBA | null | undefined) => {
+        if (!x) return "<EMPTY>";
+        switch (typeof x) {
+            case "number":
+                return x.toFixed(3);
+            case "string":
+                return x;
+            case "object":
+                return `#${x.r.toString(16).padStart(2, "0")}${x.g.toString(16).padStart(2, "0")}${x.b.toString(16).padStart(2, "0")}${x.a.toString(16).padStart(2, "0")}`
+            default:
+                return "???"
+        }
+    }
+
     return <Portal>
         <div className="k45_we_formulaeEditor">
-            <div className="k45_we_formulaeEditor_title">{T_title}</div>
+            <div className="k45_we_formulaeEditor_title">{T_title}{WorldPickerService.instance.getCurrentEditingFormulaeFieldTitle()}</div>
             <EditorScrollable className="k45_we_formulaeEditor_content">
-                <div className="k45_we_formulaeEditor_initial_dot" >Entity</div>
-                <div className="k45_we_formulaeEditor_downArrow" />
-                {formulaeSteps.map((x, i) => {
-                    switch (x.WEDescType) {
-                        case WEDescType.COMPONENT:
-                            return <WEComponentGetterBlock {...x} i={i} />
-                        case WEDescType.MEMBER:
-                            return <WEComponentMemberBlock {...x} i={i} />
-                        case WEDescType.STATIC_METHOD:
-                            return <WEMethodCallBlock {...x} i={i} />
-                    }
-                })}
-                {requiresConvert(formulaeSteps[formulaeSteps.length - 1]) && <>
-                    <div className="k45_we_formulaeEditor_implicitConversion" >{T_implicitConversionWarning}</div>
+                {!formulaeSteps.length ? <><div className="k45_we_formulaeEditor_initial_dot" >{valueToString(WorldPickerService.instance.getCurrentEditingFormulaeValueField()?.value)}</div></> : <>
+                    <div className="k45_we_formulaeEditor_initial_dot" >Entity</div>
                     <div className="k45_we_formulaeEditor_downArrow" />
-                </>}
-                <div className="k45_we_formulaeEditor_pipelineResult" >{T_finalPipelineAlwaysStringInfo}</div>
+                    {formulaeSteps.map((x, i) => {
+                        switch (x.WEDescType) {
+                            case WEDescType.COMPONENT:
+                                return <WEComponentGetterBlock {...x} i={i} />
+                            case WEDescType.MEMBER:
+                                return <WEComponentMemberBlock {...x} i={i} />
+                            case WEDescType.STATIC_METHOD:
+                                return <WEMethodCallBlock {...x} i={i} />
+                        }
+                    })}
+                    {requiresConvert(formulaeSteps[formulaeSteps.length - 1]) && <>
+                        <div className="k45_we_formulaeEditor_implicitConversion">{getImplicitConversionWarning()}</div>
+                        <div className="k45_we_formulaeEditor_downArrow" />
+                    </>}
+                    <div className="k45_we_formulaeEditor_pipelineResult" >{getAlwaysConversionText()}</div>
+                </>
+                }
             </EditorScrollable>
+            <div style={{ flexGrow: 1 }} />
             <div className="k45_we_formulaeEditor_actions">
                 <button className="positiveBtn" onClick={() => setAddingItem(true)}>{T_addStageEnd}</button>
                 <button className="negativeBtn" onClick={() => removeLastStage()} disabled={formulaeSteps.length <= 0}>{T_removeLastStage}</button>

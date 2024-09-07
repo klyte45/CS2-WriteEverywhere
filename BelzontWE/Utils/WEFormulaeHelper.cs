@@ -116,29 +116,37 @@ namespace BelzontWE
                     else
                     {
                         skipValueTypeVar = false;
-                        var result = ProcessEntityPath(ref currentComponentType, iLGenerator, codePart, i, ref localVarEntity, ref errorFmtArgs, ref skipValueTypeVar);
-                        if (result != 0) return result;
+                        var processResult = ProcessEntityPath(ref currentComponentType, iLGenerator, codePart, i, ref localVarEntity, ref errorFmtArgs, ref skipValueTypeVar);
+                        if (processResult != 0) return processResult;
                     }
                 }
-                if (currentComponentType.IsEnum)
+                byte result = 0;
+                if (currentComponentType != typeof(T))
                 {
-                    var toStringMethod = typeof(Enum).GetMethod("GetName", ReflectionUtils.allFlags & ~BindingFlags.DeclaredOnly);
-                    var local0 = iLGenerator.DeclareLocal(currentComponentType);
-                    iLGenerator.Emit(OpCodes.Stloc, local0);
-                    iLGenerator.Emit(OpCodes.Ldloc_S, local0);
-                    iLGenerator.Emit(OpCodes.Box, currentComponentType);
-                    iLGenerator.EmitCall(OpCodes.Call, typeof(object).GetMethod("GetType"), null);
-                    iLGenerator.Emit(OpCodes.Ldloc_S, local0);
-                    iLGenerator.Emit(OpCodes.Box, currentComponentType);
-                    iLGenerator.EmitCall(OpCodes.Call, toStringMethod, null);
-                }
-                else if (currentComponentType != typeof(T))
-                {
+                    if (CanCast(currentComponentType, typeof(T)))
+                    {
+                        iLGenerator.Emit(OpCodes.Ldtoken, typeof(T));
+                        iLGenerator.Emit(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle), RedirectorUtils.allFlags));
+                        iLGenerator.Emit(OpCodes.Call, typeof(Convert).GetMethod(nameof(Convert.ChangeType), RedirectorUtils.allFlags));
+                    }
                     if (typeof(T) != typeof(string))
                     {
                         iLGenerator.Emit(OpCodes.Pop);
                         if (typeof(T) == typeof(float)) iLGenerator.Emit(OpCodes.Ldc_R4, float.NaN);
                         if (typeof(T) == typeof(Color)) iLGenerator.Emit(OpCodes.Call, typeof(Color).GetProperty("magenta", RedirectorUtils.allFlags).GetMethod);
+                        result = 255;
+                    }
+                    else if (currentComponentType.IsEnum)
+                    {
+                        var toStringMethod = typeof(Enum).GetMethod("GetName", ReflectionUtils.allFlags & ~BindingFlags.DeclaredOnly);
+                        var local0 = iLGenerator.DeclareLocal(currentComponentType);
+                        iLGenerator.Emit(OpCodes.Stloc, local0);
+                        iLGenerator.Emit(OpCodes.Ldloc_S, local0);
+                        iLGenerator.Emit(OpCodes.Box, currentComponentType);
+                        iLGenerator.EmitCall(OpCodes.Call, typeof(object).GetMethod("GetType"), null);
+                        iLGenerator.Emit(OpCodes.Ldloc_S, local0);
+                        iLGenerator.Emit(OpCodes.Box, currentComponentType);
+                        iLGenerator.EmitCall(OpCodes.Call, toStringMethod, null);
                     }
                     else
                     {
@@ -163,11 +171,24 @@ namespace BelzontWE
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => (" + string.Join(", ", dynamicMethodDefinition.Definition.Parameters.Select(x => $"{(x.IsIn ? "in " : x.IsOut ? "out " : "")}{x.ParameterType} {x.Name}")) + ")");
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => \n" + string.Join("\n", dynamicMethodDefinition.Definition.Body.Instructions.Select(x => x.ToString())));
 
-                return 0;
+                return result;
             }
             finally
             {
                 dynamicMethodDefinition.Dispose();
+            }
+        }
+
+        private static bool CanCast(Type source, Type target)
+        {
+            try
+            {
+                Convert.ChangeType(source.IsValueType ? Activator.CreateInstance(source) : source.GetConstructor(new Type[0]).Invoke(new object[0]), target);
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 

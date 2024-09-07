@@ -1,20 +1,17 @@
-import { LocElementType, VanillaComponentResolver, VanillaFnResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { LocElementType, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { Panel, Portal } from "cs2/ui";
-import { Component, useEffect, useState } from "react";
-import { WorldPickerService } from "services/WorldPickerService";
-import "../style/floatingPanels.scss";
-import { translate } from "utils/translate";
-import { WEFormulaeEditor } from "./WEFormulaeEditor";
-import { WESimulationTextType } from "services/WEFormulaeElement";
-import { FontService } from "services/FontService";
+import { useCallback, useEffect, useState } from "react";
 import { TextureAtlasService } from "services/TextureAtlasService";
+import { WESimulationTextType } from "services/WEFormulaeElement";
+import { WorldPickerService } from "services/WorldPickerService";
+import { translate } from "utils/translate";
+import i_formulae from "../images/Function.svg";
+import "../style/floatingPanels.scss";
 
-
-const i_addFont = "coui://uil/Colored/Folder.svg";
+const i_focus = "coui://uil/Standard/Magnifier.svg";
 
 export const WETextValueSettings = (props: { initialPosition?: { x: number, y: number } }) => {
     const T_title = translate("textValueSettings.title"); //"Appearance Settings"
-    const T_uploadNewFont = translate("textValueSettings.importNewFont"); //
     const T_fontFieldTitle = translate("textValueSettings.fontFieldTitle"); //
     const T_useFormulae = translate("textValueSettings.useFormulae"); //
     const T_formulae = translate("textValueSettings.formulae"); //
@@ -27,6 +24,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const T_HeightCm = translate("textValueSettings.heightCm"); //
     const T_widthDistortion = translate("textValueSettings.widthDistortion"); //
     const T_maxWidth = translate("textValueSettings.maxWidth"); //    
+    const T_focusInFormulaePanel = translate("textValueSettings.focusInFormulaePanel"); //    
     const L_itemNamePlaceholder = translate("toolOption.itemNamePlaceholder"); //"Text #"
 
     const mesh = WorldPickerService.instance.bindingList.mesh;
@@ -42,38 +40,38 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const DropdownField = VanillaWidgets.instance.DropdownField<string>();
     const NumberDropdownField = VanillaWidgets.instance.DropdownField<number>();
     const StringInputField = VanillaWidgets.instance.StringInputField;
-    const CommonButton = VanillaComponentResolver.instance.CommonButton;
     const ToggleField = VanillaWidgets.instance.ToggleField;
     const FloatInputField = VanillaWidgets.instance.FloatInputField;
     const Float2InputField = VanillaWidgets.instance.Float2InputField;
     const editorTheme = VanillaWidgets.instance.editorItemModule;
     const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
+    const Button = VanillaComponentResolver.instance.ToolButton;
 
-    const [formulaeTyping, setFormulaeTyping] = useState(mesh.FormulaeStr.value);
-    const [fixedTextTyping, setFixedTextTyping] = useState(mesh.CurrentItemText.value);
-    const [usingFormulae, setUsingFormulae] = useState(!!mesh.FormulaeStr.value);
+
+    const [formulaeTyping, setFormulaeTyping] = useState(mesh.ValueTextFormulaeStr.value);
+    const [fixedTextTyping, setFixedTextTyping] = useState(mesh.ValueText.value);
+    const [usingFormulae, setUsingFormulae] = useState(!!mesh.ValueTextFormulaeStr.value);
 
     const [atlases, setAtlases] = useState([] as string[]);
     const [imgOptions, setImgOptions] = useState([] as string[]);
 
     const [height, setHeight] = useState(transform.CurrentScale.value[1]);
     const [widthDistortion, setWidthDistortion] = useState(transform.CurrentScale.value[0] / transform.CurrentScale.value[1]);
-    const [width, setWidth] = useState(transform.CurrentScale.value[0]);
     const [maxWidth, setMaxWidth] = useState(mesh.MaxWidth.value * 100);
 
 
     useEffect(() => {
         setHeight(transform.CurrentScale.value[1]);
         setWidthDistortion(transform.CurrentScale.value[0] / transform.CurrentScale.value[1]);
-        setWidth(transform.CurrentScale.value[0]);
     }, [transform.CurrentScale.value, picker.CurrentSubEntity.value])
 
 
     useEffect(() => { setMaxWidth(mesh.MaxWidth.value * 100) }, [mesh.MaxWidth.value])
-    useEffect(() => { setFormulaeTyping(mesh.FormulaeStr.value); }, [mesh.FormulaeStr.value, picker.CurrentSubEntity.value])
-    useEffect(() => { setUsingFormulae(!!mesh.FormulaeStr.value); }, [picker.CurrentSubEntity.value])
+    useEffect(() => { setFormulaeTyping(mesh.ValueTextFormulaeStr.value); }, [mesh.ValueTextFormulaeStr.value, picker.CurrentSubEntity.value])
+    useEffect(() => { setUsingFormulae(!!mesh.ValueTextFormulaeStr.value); }, [picker.CurrentSubEntity.value])
 
-    useEffect(() => { setFixedTextTyping(mesh.CurrentItemText.value); }, [mesh.CurrentItemText.value, picker.CurrentSubEntity.value])
+    useEffect(() => { setFixedTextTyping(mesh.ValueText.value); }, [mesh.ValueText.value, picker.CurrentSubEntity.value])
+    useEffect(() => { if (usingFormulae) WorldPickerService.instance.setCurrentEditingFormulaeParam("mesh", "") }, [usingFormulae])
 
     const saveHeight = (height: number) => {
         const scale = transform.CurrentScale.value;
@@ -89,11 +87,6 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
         scale[0] = scale[1] * proportion;
         transform.CurrentScale.set(scale);
     }
-    const saveWidth = (width: number) => {
-        const scale = transform.CurrentScale.value;
-        scale[0] = width;
-        transform.CurrentScale.set(scale);
-    }
 
     const saveMaxWidth = (value: number) => mesh.MaxWidth.set(value > 0 ? value * .01 : 0)
 
@@ -102,6 +95,18 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const alwaysBeAbsolute = [WESimulationTextType.Placeholder, WESimulationTextType.WhiteTexture].includes(mesh.TextSourceType.value);
     const alwaysBeRelative = mesh.TextSourceType.value == WESimulationTextType.Text;
     const mayBeAbsolute = mesh.TextSourceType.value == WESimulationTextType.Image;
+
+    const formulaeModule = "mesh";
+    const formulaeField = "ValueText";
+
+    const isCurrentlyFocused = useCallback(() =>
+        WorldPickerService.instance.currentFormulaeModule == formulaeModule &&
+        WorldPickerService.instance.currentFormulaeField == formulaeField
+        , [
+            WorldPickerService.instance.currentFormulaeField,
+            WorldPickerService.instance.currentFormulaeModule,
+        ])
+    const setFocusToField = () => { WorldPickerService.instance.setCurrentEditingFormulaeParam(formulaeModule, formulaeField); setBuild(buildIdx + 1) }
 
     return <>
         <Portal>
@@ -130,30 +135,29 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                             style={{ flexGrow: 1, width: "inherit" }}
                         />
                     </EditorItemRow>
-                    <ToggleField label={T_useFormulae} value={usingFormulae} onChange={(x) => setUsingFormulae(x)} />
                     {usingFormulae ?
-                        <EditorItemRow label={T_formulae} styleContent={{ paddingLeft: "34rem" }}>
+                        <EditorItemRow label={T_formulae} styleContent={{ paddingLeft: "56rem" }}>
                             <StringInputField
                                 value={formulaeTyping}
                                 onChange={(x) => { setFormulaeTyping(x.replaceAll(/\s/g, "")) }}
-                                onChangeEnd={() => mesh.FormulaeStr.set(formulaeTyping)}
+                                onChangeEnd={() => mesh.ValueTextFormulaeStr.set(formulaeTyping)}
                                 className="we_formulaeInput"
                                 maxLength={400}
                             />
-                            <CommonButton className={editorTheme.pickerToggle} style={{ width: "34rem" }} focusKey={noFocus}>
-                                {mesh.FormulaeCompileResult.value}
-                            </CommonButton>
+                            <Button src={i_focus} tooltip={T_focusInFormulaePanel} selected={isCurrentlyFocused()} onSelect={() => setFocusToField()} focusKey={noFocus} />
+                            <Button src={i_formulae} tooltip={T_useFormulae} selected={usingFormulae} onSelect={() => setUsingFormulae(!usingFormulae)} focusKey={noFocus} />
                         </EditorItemRow> :
-                        <EditorItemRow label={T_fixedText}>
+                        <EditorItemRow label={T_fixedText} styleContent={{ paddingLeft: "28rem" }}>
                             <StringInputField
                                 value={fixedTextTyping}
                                 onChange={(x) => { setFixedTextTyping(x) }}
                                 onChangeEnd={() => {
-                                    mesh.CurrentItemText.set(fixedTextTyping.trim());
-                                    mesh.FormulaeStr.set("");
+                                    mesh.ValueText.set(fixedTextTyping.trim());
+                                    mesh.ValueTextFormulaeStr.set("");
                                 }}
                                 maxLength={400}
                             />
+                            <Button src={i_formulae} tooltip={T_useFormulae} selected={usingFormulae} onSelect={() => setUsingFormulae(!usingFormulae)} focusKey={noFocus} />
                         </EditorItemRow>
                     }
                 </>}
@@ -166,37 +170,36 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                             style={{ flexGrow: 1, width: "inherit" }}
                         />
                     </EditorItemRow>
-                    <ToggleField label={T_useFormulae} value={usingFormulae} onChange={(x) => setUsingFormulae(x)} />
                     {usingFormulae ?
-                        <EditorItemRow label={T_formulae} styleContent={{ paddingLeft: "34rem" }}>
+                        <EditorItemRow label={T_formulae} styleContent={{ paddingLeft: "62rem" }}>
                             <StringInputField
                                 value={formulaeTyping}
                                 onChange={(x) => { setFormulaeTyping(x.replaceAll(/\s/g, "")) }}
-                                onChangeEnd={() => mesh.FormulaeStr.set(formulaeTyping)}
+                                onChangeEnd={() => mesh.ValueTextFormulaeStr.set(formulaeTyping)}
                                 className="we_formulaeInput"
                                 maxLength={400}
                             />
-                            <CommonButton className={editorTheme.pickerToggle} style={{ width: "34rem" }} focusKey={noFocus}>
-                                {mesh.FormulaeCompileResult.value}
-                            </CommonButton>
+                            <Button src={i_focus} tooltip={T_focusInFormulaePanel} selected={isCurrentlyFocused()} onSelect={() => setFocusToField()} focusKey={noFocus} />
+                            <Button src={i_formulae} tooltip={T_useFormulae} selected={usingFormulae} onSelect={() => setUsingFormulae(!usingFormulae)} focusKey={noFocus} />
                         </EditorItemRow> :
-                        <EditorItemRow label={T_image}>
+                        <EditorItemRow label={T_image} styleContent={{ paddingLeft: "28rem" }}>
                             <DropdownField
-                                value={mesh.CurrentItemText.value}
+                                value={mesh.ValueText.value}
                                 items={imgOptions?.map(x => { return { displayName: { __Type: LocElementType.String, value: x || "<DEFAULT>" }, value: x } })}
-                                onChange={(x) => mesh.CurrentItemText.set(x)}
+                                onChange={(x) => mesh.ValueText.set(x)}
                                 style={{ flexGrow: 1, width: "inherit" }}
                             />
+                            <Button src={i_formulae} tooltip={T_useFormulae} selected={usingFormulae} onSelect={() => setUsingFormulae(!usingFormulae)} focusKey={noFocus} />
                         </EditorItemRow>
                     }
-                </>} {mesh.TextSourceType.value == WESimulationTextType.Placeholder &&
+                </>}{mesh.TextSourceType.value == WESimulationTextType.Placeholder &&
                     <>
                         <EditorItemRow label={L_itemNamePlaceholder}>
                             <StringInputField
                                 value={fixedTextTyping}
                                 onChange={(x) => { setFixedTextTyping(x) }}
                                 onChangeEnd={() => {
-                                    mesh.CurrentItemText.set(fixedTextTyping.trim());
+                                    mesh.ValueText.set(fixedTextTyping.trim());
                                 }}
                                 maxLength={120}
                             />
@@ -204,6 +207,5 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                     </>}
             </Panel>
         </Portal>
-        {usingFormulae && <WEFormulaeEditor FormulaeStr={mesh.FormulaeStr} />}
     </>
 } 

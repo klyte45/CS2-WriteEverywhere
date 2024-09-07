@@ -59,7 +59,7 @@ namespace BelzontWE.Font
             Emissive.SetPixels(pixelsToSet);
             Control.SetPixels(pixelsToSet);
             Mask.SetPixels(pixelsToSet);
-            Normal.SetPixels(pixelsToSet);
+            Normal.SetPixels(pixelsToSet.Select(x=> new Color(.5f,.5f,1f)).ToArray());
             Method = method;
             rectsPack = new MaxRectsBinPack(width, height, false);
             WillSerialize = willSerialize;

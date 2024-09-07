@@ -1,14 +1,15 @@
 import { AmountValueSection, Entity, VanillaComponentResolver, VanillaFnResolver, VectorSectionEditable } from "@klyte45/vuio-commons";
 import { useValue } from "cs2/api";
 import { tool } from "cs2/bindings";
-import { getModule, ModuleRegistryExtend } from "cs2/modding";
-import { useEffect, useState } from "react";
+import { ModuleRegistryExtend } from "cs2/modding";
+import { useCallback, useEffect, useState } from "react";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "../utils/translate";
 import { WETextAppearenceSettings } from "./WETextAppearenceSettings";
 import { WETextValueSettings } from "./WETextValueSettings";
 import { WETextHierarchyView } from "./WETextHierarchyView";
 import { WETextShaderProperties } from "./WETextShaderProperties";
+import { WEFormulaeEditor } from "./WEFormulaeEditor";
 
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
@@ -68,8 +69,6 @@ const WEWorldPickerToolPanel = () => {
         `${translate("toolOption.moveMode.tooltip")} ${translate("toolOption.moveMode.descriptionVertical")}`,// "Toggle between modes to lock/unlock a axis in current plane. Currently: Move vertically only"
     ]
 
-
-
     const [buildIdx, setBuild] = useState(0);
     useEffect(() => {
         WorldPickerService.instance.registerBindings(() => setTimeout(() => setBuild(buildIdx + 1), 100))
@@ -89,6 +88,27 @@ const WEWorldPickerToolPanel = () => {
     const currentItemIsValid = wps.CurrentSubEntity.value?.Index != 0;
 
     const [clipboard, setClipboard] = useState(undefined as Entity | undefined | null)
+
+    const currentEditingFormulaeDefaultValue = useCallback(() => WorldPickerService.instance.getCurrentEditingFormulaeValueField(), [
+        WorldPickerService.instance.currentFormulaeField,
+        WorldPickerService.instance.currentFormulaeModule,
+    ])
+    const currentEditingFormulaeStr = useCallback(() => WorldPickerService.instance.getCurrentEditingFormulaeFn(), [
+        WorldPickerService.instance.currentFormulaeField,
+        WorldPickerService.instance.currentFormulaeModule,
+    ])
+    const currentEditingFormulaeResult = useCallback(() => WorldPickerService.instance.getCurrentEditingFormulaeFnResult(), [
+        WorldPickerService.instance.currentFormulaeField,
+        WorldPickerService.instance.currentFormulaeModule,
+    ])
+    const getCurrentEditingFormulaeType = useCallback(() => {
+        switch (typeof currentEditingFormulaeDefaultValue()?.value) {
+            case 'number': return "number";
+            case 'string': return "string";
+            case 'object': return "color";
+            default: return null;
+        }
+    }, [currentEditingFormulaeDefaultValue()])
 
 
     return !wps.CurrentEntity.value?.Index ?
@@ -163,6 +183,7 @@ const WEWorldPickerToolPanel = () => {
             {currentItemIsValid && displayShaderWindow && <WETextShaderProperties />}
             {currentItemIsValid && <WETextValueSettings />}
             {<WETextHierarchyView clipboard={clipboard} setClipboard={setClipboard} />}
+            {currentEditingFormulaeStr() && <WEFormulaeEditor formulaeStr={currentEditingFormulaeStr()!} formulaeType={getCurrentEditingFormulaeType()!} lastCompileStatus={currentEditingFormulaeResult()!} />}
         </>
 
 }

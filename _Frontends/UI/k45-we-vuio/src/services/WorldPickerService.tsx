@@ -1,6 +1,7 @@
 import { Entity, MultiUIValueBinding, UIColorRGBA } from "@klyte45/vuio-commons";
 import { WEComponentTypeDesc, WEStaticMethodDesc, WETextItemResume } from "./WEFormulaeElement";
 import { ObjectTyped } from "object-typed";
+import { translate } from "utils/translate";
 
 type number3 = [number, number, number]
 
@@ -49,7 +50,7 @@ const WEWorldPickerController = {
     CurrentMoveMode: MultiUIValueBinding<number>,
     CurrentItemIsValid: MultiUIValueBinding<boolean>,
     CameraLocked: MultiUIValueBinding<boolean>,
-    CameraRotationLocked: MultiUIValueBinding<boolean>, 
+    CameraRotationLocked: MultiUIValueBinding<boolean>,
     FontList: MultiUIValueBinding<string[]>,
 }
 const WETextDataMainController = {
@@ -58,22 +59,22 @@ const WETextDataMainController = {
 }
 const WETextDataTransformController = {
     _prefix: "k45::we.dataTransform",
-    CurrentScale: MultiUIValueBinding<number[]>,
-    CurrentRotation: MultiUIValueBinding<number[]>,
-    CurrentPosition: MultiUIValueBinding<number[]>,
+    CurrentScale: MultiUIValueBinding<number3>,
+    CurrentRotation: MultiUIValueBinding<number3>,
+    CurrentPosition: MultiUIValueBinding<number3>,
     UseAbsoluteSizeEditing: MultiUIValueBinding<boolean>,
 
 }
 const WETextDataMeshController = {
     _prefix: "k45::we.dataMesh",
-    CurrentItemText: MultiUIValueBinding<string>,
+    ValueText: MultiUIValueBinding<string>,
     MaxWidth: MultiUIValueBinding<number>,
     SelectedFont: MultiUIValueBinding<string>,
     TextSourceType: MultiUIValueBinding<number>,
     ImageAtlasName: MultiUIValueBinding<string>,
-    FormulaeStr: MultiUIValueBinding<string>,
-    FormulaeCompileResult: MultiUIValueBinding<number>,
-    FormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
+    ValueTextFormulaeStr: MultiUIValueBinding<string>,
+    ValueTextFormulaeCompileResult: MultiUIValueBinding<number>,
+    ValueTextFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
 }
 const WETextDataMaterialController = {
     _prefix: "k45::we.dataMaterial",
@@ -143,6 +144,30 @@ const WETextDataMaterialController = {
     GlassThicknessFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
 }
 
+type FormulableMaterialKeys =
+    'MainColor' |
+    'EmissiveColor' |
+    'ShaderType' |
+    'GlassColor' |
+    'ColorMask1' |
+    'ColorMask2' |
+    'ColorMask3' |
+    'Metallic' |
+    'Smoothness' |
+    'EmissiveIntensity' |
+    'CoatStrength' |
+    'EmissiveExposureWeight' |
+    'DecalFlags' |
+    'GlassRefraction' |
+    'NormalStrength' |
+    'GlassThickness';
+type FormulableMaterialValues<key extends string> = { str: `${key}FormulaeStr`, result: `${key}FormulaeCompileResult`, args: `${key}FormulaeCompileResultErrorArgs` };
+export type FormulableMaterialEntries = { [key in FormulableMaterialKeys]: FormulableMaterialValues<key> }
+export const FormulableMaterialEntries = ObjectTyped.fromEntries(([
+    'MainColor', 'EmissiveColor', 'ShaderType', 'GlassColor', 'ColorMask1', 'ColorMask2', 'ColorMask3', 'Metallic', 'Smoothness', 'EmissiveIntensity', 'CoatStrength', 'EmissiveExposureWeight', 'DecalFlags', 'GlassRefraction', 'NormalStrength', 'GlassThickness'
+] as FormulableMaterialKeys[]).map(x => [x, { str: `${x}FormulaeStr`, result: `${x}FormulaeCompileResult`, args: `${x}FormulaeCompileResultErrorArgs` }])) as FormulableMaterialEntries
+
+
 export class WorldPickerService {
     public static get instance(): WorldPickerService { return _instance ??= new WorldPickerService() }
 
@@ -154,6 +179,18 @@ export class WorldPickerService {
         transform: ConstructorObjectToInstancesObject<typeof WETextDataTransformController>,
     };
 
+    public readonly formulaeTitleNames: Partial<{
+        picker: Partial<{ [key in keyof typeof WEWorldPickerController]: () => string }>,
+        main: Partial<{ [key in keyof typeof WETextDataMainController]: () => string }>,
+        mesh: Partial<{ [key in keyof typeof WETextDataMeshController]: () => string }>,
+        material: Partial<{ [key in keyof typeof WETextDataMaterialController]: () => string }>,
+        transform: Partial<{ [key in keyof typeof WETextDataTransformController]: () => string }>,
+    }>;
+
+    public currentFormulaeModule?: keyof typeof WorldPickerService.instance.bindingList
+    public currentFormulaeField?: keyof typeof WorldPickerService.instance.bindingList[Exclude<typeof this.currentFormulaeModule, undefined>]
+    private refreshFnRegistered: (() => any)[] = []
+
     constructor() {
 
         this.bindingList = {
@@ -163,18 +200,71 @@ export class WorldPickerService {
             mesh: InitializeBindings(WETextDataMeshController),
             transform: InitializeBindings(WETextDataTransformController)
         }
+        this.formulaeTitleNames = {
+            mesh: {
+                ValueText: () => translate("formulaeTitleName.mesh." + this.bindingList.mesh.TextSourceType.value + ".ValueText")
+            },
+            material: {
+                MainColor: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".MainColor"),
+                EmissiveColor: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".EmissiveColor"),
+                GlassColor: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".GlassColor"),
+                ColorMask1: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".ColorMask1"),
+                ColorMask2: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".ColorMask2"),
+                ColorMask3: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".ColorMask3"),
+                Metallic: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".Metallic"),
+                Smoothness: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".Smoothness"),
+                EmissiveIntensity: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".EmissiveIntensity"),
+                CoatStrength: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".CoatStrength"),
+                EmissiveExposureWeight: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".EmissiveExposureWeight"),
+                GlassRefraction: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".GlassRefraction"),
+                NormalStrength: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".NormalStrength"),
+                GlassThickness: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".GlassThickness"),
+            }
+        }
+
+        this.bindingList.picker.CurrentSubEntity.subscribe(async () => { this.clearCurrentEditingFormulaeParam() })
     }
 
     registerBindings(refreshFn: () => any) {
         Object.values(this.bindingList).map(y => {
             Object.values(y).map(z => z.subscribe(async () => refreshFn()));
         })
+        this.refreshFnRegistered.push(refreshFn);
     }
 
     disposeBindings() {
         Object.values(this.bindingList).map(y => {
             Object.values(y).map(z => z.dispose())
         })
+        this.refreshFnRegistered = []
+    }
+
+
+
+    setCurrentEditingFormulaeParam(module: keyof typeof this.bindingList, field: string) {
+        if (this.bindingList[module][(field + "FormulaeStr" as never)]) {
+            this.currentFormulaeModule = module;
+            this.currentFormulaeField = field as any;
+            this.refreshFnRegistered.map(x => x())
+        }
+    }
+    clearCurrentEditingFormulaeParam() {
+        this.currentFormulaeModule = undefined;
+        this.currentFormulaeField = undefined;
+        this.refreshFnRegistered.map(x => x())
+    }
+
+    getCurrentEditingFormulaeValueField(): MultiUIValueBinding<number | UIColorRGBA | string> | null {
+        return this.currentFormulaeField && this.currentFormulaeModule ? this.bindingList[this.currentFormulaeModule][this.currentFormulaeField] : null
+    }
+    getCurrentEditingFormulaeFieldTitle(): string {
+        return this.currentFormulaeField && this.currentFormulaeModule ? (this.formulaeTitleNames[this.currentFormulaeModule]?.[this.currentFormulaeField] as any)?.() : null
+    }
+    getCurrentEditingFormulaeFn(): MultiUIValueBinding<string> | null {
+        return this.currentFormulaeField && this.currentFormulaeModule ? this.bindingList[this.currentFormulaeModule][this.currentFormulaeField + "FormulaeStr" as never] : null
+    }
+    getCurrentEditingFormulaeFnResult(): MultiUIValueBinding<number> | null {
+        return this.currentFormulaeField && this.currentFormulaeModule ? this.bindingList[this.currentFormulaeModule][this.currentFormulaeField + "FormulaeCompileResult" as never] as MultiUIValueBinding<number> : null
     }
 
     static async changeParent(target: Entity, newParent: Entity): Promise<boolean> {

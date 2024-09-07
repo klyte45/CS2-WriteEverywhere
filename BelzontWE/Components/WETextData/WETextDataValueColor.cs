@@ -9,13 +9,14 @@ namespace BelzontWE
     {
         public Color defaultValue;
         public FixedString512Bytes formulaeStr;
+        public byte formulaeCompilationStatus;
         public readonly Func<EntityManager, Entity, Color> FormulaeFn => WEFormulaeHelper.GetCachedColorFn(formulaeStr);
         public bool InitializedEffectiveText { get; private set; }
         public Color EffectiveValue { get; private set; }
         private bool loadingFnDone;
 
         public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
-            => WEFormulaeHelper.SetFormulae<Color>(newFormulae ?? "", out errorFmtArgs, out formulaeStr, out var resultFormulaeFn);
+            => formulaeCompilationStatus = WEFormulaeHelper.SetFormulae<Color>(newFormulae ?? "", out errorFmtArgs, out formulaeStr, out var resultFormulaeFn);
 
         public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity)
         {
@@ -25,7 +26,7 @@ namespace BelzontWE
             {
                 if (formulaeStr.Length > 0)
                 {
-                    SetFormulae(formulaeStr.ToString(), out _);
+                    formulaeCompilationStatus = SetFormulae(formulaeStr.ToString(), out _);
                 }
                 loadedFnNow = loadingFnDone = true;
             }

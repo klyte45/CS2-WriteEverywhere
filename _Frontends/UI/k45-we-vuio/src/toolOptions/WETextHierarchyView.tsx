@@ -11,12 +11,13 @@ import { LayoutsService } from "services/LayoutsService";
 import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeElement";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
+import i_cut from "../images/Scissors.svg"
 
 
 
 
 export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: Entity | undefined | null, setClipboard: (c: Entity | undefined | null) => any }) => {
-    /**/const i_cut = "coui://uil/Standard/DottedLinesMarkers.svg";
+
     const i_copy = "coui://uil/Standard/RectangleCopy.svg";
     const i_paste = "coui://uil/Standard/RectanglePaste.svg";
     const i_delete = "coui://uil/Standard/Trash.svg";
@@ -29,6 +30,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const i_typeText = "coui://uil/Standard/PencilPaper.svg";
     const i_typeImage = "coui://uil/Standard/Image.svg";
     /**/const i_typePlaceholder = "coui://uil/Standard/RotateAngleRelative.svg";
+    /**/const i_typeWhiteTexture = "coui://uil/Standard/SingleRhombus.svg";
 
 
     const wps = WorldPickerService.instance.bindingList.picker;
@@ -126,6 +128,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 return i_typeText;
             case WESimulationTextType.Placeholder:
                 return i_typePlaceholder;
+            case WESimulationTextType.WhiteTexture:
+                return i_typeWhiteTexture;
         }
     }
 

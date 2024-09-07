@@ -80,21 +80,20 @@
         border-bottom-style: solid;
         text-align: center;
         align-items: center;
+        margin-bottom: 10rem;
     }
 
     .k45_we_formulaeEditor_content {
-        position: absolute;
-        bottom: 140rem;
-        top: 30rem;
-        left: 0;
-        right: 0;
+        flex-shrink: 1;
 
         >div[class^=content] {
             justify-content: flex-start;
             display: flex;
-            padding: 5rem;
+            padding-left: 5rem;
+            padding-right: 5rem;
             align-items: center;
             flex-direction: column;
+            flex-grow: 1;
 
             @include formulae-element-type-styling;
 
@@ -236,11 +235,7 @@
     }
 
     .k45_we_formulaeEditor_actions {
-        position: absolute;
-        bottom: 5rem;
-        height: 130rem;
-        left: 0;
-        right: 0;
+        padding-top: 10rem;
 
         .k45_we_formulaeEditor_footnote {
             padding: 8rem;
