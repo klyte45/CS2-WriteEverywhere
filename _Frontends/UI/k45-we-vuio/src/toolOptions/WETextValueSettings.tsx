@@ -7,6 +7,7 @@ import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
 import i_formulae from "../images/Function.svg";
 import "../style/floatingPanels.scss";
+import { FormulaeEditRow } from "./FormulaeEditRow";
 
 const i_focus = "coui://uil/Standard/Magnifier.svg";
 
@@ -43,7 +44,6 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const ToggleField = VanillaWidgets.instance.ToggleField;
     const FloatInputField = VanillaWidgets.instance.FloatInputField;
     const Float2InputField = VanillaWidgets.instance.Float2InputField;
-    const editorTheme = VanillaWidgets.instance.editorItemModule;
     const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
     const Button = VanillaComponentResolver.instance.ToolButton;
 
@@ -135,31 +135,15 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                             style={{ flexGrow: 1, width: "inherit" }}
                         />
                     </EditorItemRow>
-                    {usingFormulae ?
-                        <EditorItemRow label={T_formulae} styleContent={{ paddingLeft: "56rem" }}>
-                            <StringInputField
-                                value={formulaeTyping}
-                                onChange={(x) => { setFormulaeTyping(x.replaceAll(/\s/g, "")) }}
-                                onChangeEnd={() => mesh.ValueTextFormulaeStr.set(formulaeTyping)}
-                                className="we_formulaeInput"
-                                maxLength={400}
-                            />
-                            <Button src={i_focus} tooltip={T_focusInFormulaePanel} selected={isCurrentlyFocused()} onSelect={() => setFocusToField()} focusKey={noFocus} />
-                            <Button src={i_formulae} tooltip={T_useFormulae} selected={usingFormulae} onSelect={() => setUsingFormulae(!usingFormulae)} focusKey={noFocus} />
-                        </EditorItemRow> :
-                        <EditorItemRow label={T_fixedText} styleContent={{ paddingLeft: "28rem" }}>
-                            <StringInputField
-                                value={fixedTextTyping}
-                                onChange={(x) => { setFixedTextTyping(x) }}
-                                onChangeEnd={() => {
-                                    mesh.ValueText.set(fixedTextTyping.trim());
-                                    mesh.ValueTextFormulaeStr.set("");
-                                }}
-                                maxLength={400}
-                            />
-                            <Button src={i_formulae} tooltip={T_useFormulae} selected={usingFormulae} onSelect={() => setUsingFormulae(!usingFormulae)} focusKey={noFocus} />
-                        </EditorItemRow>
-                    }
+                    <FormulaeEditRow formulaeField={formulaeField} formulaeModule={formulaeModule} label={T_fixedText} defaultInputField={<StringInputField
+                        value={fixedTextTyping}
+                        onChange={(x) => { setFixedTextTyping(x) }}
+                        onChangeEnd={() => {
+                            mesh.ValueText.set(fixedTextTyping.trim());
+                            mesh.ValueTextFormulaeStr.set("");
+                        }}
+                        maxLength={400}
+                    />} />
                 </>}
                 {mesh.TextSourceType.value == WESimulationTextType.Image && <>
                     <EditorItemRow label={T_atlas}>
@@ -170,28 +154,12 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                             style={{ flexGrow: 1, width: "inherit" }}
                         />
                     </EditorItemRow>
-                    {usingFormulae ?
-                        <EditorItemRow label={T_formulae} styleContent={{ paddingLeft: "62rem" }}>
-                            <StringInputField
-                                value={formulaeTyping}
-                                onChange={(x) => { setFormulaeTyping(x.replaceAll(/\s/g, "")) }}
-                                onChangeEnd={() => mesh.ValueTextFormulaeStr.set(formulaeTyping)}
-                                className="we_formulaeInput"
-                                maxLength={400}
-                            />
-                            <Button src={i_focus} tooltip={T_focusInFormulaePanel} selected={isCurrentlyFocused()} onSelect={() => setFocusToField()} focusKey={noFocus} />
-                            <Button src={i_formulae} tooltip={T_useFormulae} selected={usingFormulae} onSelect={() => setUsingFormulae(!usingFormulae)} focusKey={noFocus} />
-                        </EditorItemRow> :
-                        <EditorItemRow label={T_image} styleContent={{ paddingLeft: "28rem" }}>
-                            <DropdownField
-                                value={mesh.ValueText.value}
-                                items={imgOptions?.map(x => { return { displayName: { __Type: LocElementType.String, value: x || "<DEFAULT>" }, value: x } })}
-                                onChange={(x) => mesh.ValueText.set(x)}
-                                style={{ flexGrow: 1, width: "inherit" }}
-                            />
-                            <Button src={i_formulae} tooltip={T_useFormulae} selected={usingFormulae} onSelect={() => setUsingFormulae(!usingFormulae)} focusKey={noFocus} />
-                        </EditorItemRow>
-                    }
+                    <FormulaeEditRow formulaeField={formulaeField} formulaeModule={formulaeModule} label={T_image} defaultInputField={<DropdownField
+                        value={mesh.ValueText.value}
+                        items={imgOptions?.map(x => { return { displayName: { __Type: LocElementType.String, value: x || "<DEFAULT>" }, value: x } })}
+                        onChange={(x) => mesh.ValueText.set(x)}
+                        style={{ flexGrow: 1, width: "inherit" }}
+                    />} />
                 </>}{mesh.TextSourceType.value == WESimulationTextType.Placeholder &&
                     <>
                         <EditorItemRow label={L_itemNamePlaceholder}>
@@ -208,4 +176,4 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
             </Panel>
         </Portal>
     </>
-} 
+}

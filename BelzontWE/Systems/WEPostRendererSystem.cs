@@ -216,13 +216,6 @@ namespace BelzontWE
                 return true;
 
             }
-            private readonly bool UpdateWhiteMesh(ref WETextDataMesh weCustomData)
-            {
-                var bri = WEAtlasesLibrary.GetWhiteTextureBRI();
-                weCustomData.UpdateBRI(bri, bri.m_refText);
-                return true;
-
-            }
         }
     }
 }

@@ -1,10 +1,12 @@
-import { VanillaWidgets } from "@klyte45/vuio-commons";
+import { VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { Panel, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
 import "../style/floatingPanels.scss";
+import "../style/formulaeEditorField.scss";
 import { WESimulationTextType } from "services/WEFormulaeElement";
+import { FormulaeEditRow } from "./FormulaeEditRow";
 
 
 export const WETextAppearenceSettings = (props: { initialPosition?: { x: number, y: number } }) => {
@@ -36,10 +38,26 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
 
     const defaultPosition = props.initialPosition ?? { x: 1 - 200 / window.innerWidth, y: 200 / window.innerHeight }
 
+    const Slider = VanillaComponentResolver.instance.Slider;
+    const FloatInput = VanillaComponentResolver.instance.FloatInput;
+    const sliderTheme = VanillaComponentResolver.instance.sliderTheme;
+    const editorItemTheme = VanillaComponentResolver.instance.editorItemTheme;
+    const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
+
     return <Portal>
         <Panel draggable header={T_appearenceTitle} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
             <VanillaWidgets.instance.ColorPicker showAlpha={true} value={material.MainColor.value} onChange={(x) => { material.MainColor.set(x) }} label={T_mainColor} />
             {material.ShaderType.value == 0 && <>
+                <FormulaeEditRow formulaeField="Metallic" formulaeModule="material" label={T_Metallic} defaultInputField={<>
+                    <div className="k45_we_formulaeFloatFieldContainer">
+                        <Slider start={0} end={1}
+                            value={material.Metallic.value}
+                            onChange={(x) => material.Metallic.set(x)}
+                            theme={sliderTheme}
+                        />
+                        <FloatInput focusKey={noFocus} min={0} max={1} onChange={(x) => material.Metallic.set(x)} value={material.Metallic.value} className={editorItemTheme.sliderInput} />
+                    </div>
+                </>} />
                 {mesh.TextSourceType.value == WESimulationTextType.Image && <>
                     <VanillaWidgets.instance.ColorPicker value={material.ColorMask1.value} onChange={(x) => { x.a = 1, material.ColorMask1.set(x) }} label={T_colorMask1} />
                     <VanillaWidgets.instance.ColorPicker value={material.ColorMask2.value} onChange={(x) => { x.a = 1, material.ColorMask2.set(x) }} label={T_colorMask2} />

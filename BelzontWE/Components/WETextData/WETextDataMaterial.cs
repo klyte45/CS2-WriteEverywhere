@@ -68,7 +68,7 @@ namespace BelzontWE
         public string ColorMask3Formulae => colorMask3.formulaeStr.ToString();
 
 
-        public int SetFormulaeColor(string value, out string[] cmpErr) => color.SetFormulae(value, out cmpErr);
+        public int SetFormulaeMainColor(string value, out string[] cmpErr) => color.SetFormulae(value, out cmpErr);
         public int SetFormulaeEmissiveColor(string value, out string[] cmpErr) => emissiveColor.SetFormulae(value, out cmpErr);
         public int SetFormulaeGlassColor(string value, out string[] cmpErr) => glassColor.SetFormulae(value, out cmpErr);
         public int SetFormulaeNormalStrength(string value, out string[] cmpErr) => normalStrength.SetFormulae(value, out cmpErr);

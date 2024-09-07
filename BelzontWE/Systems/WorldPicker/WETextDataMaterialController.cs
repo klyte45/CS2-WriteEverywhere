@@ -163,26 +163,26 @@ namespace BelzontWE
             NormalStrength.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.NormalStrength = x; return currentItem; });
 
 
-            SetupOnFormulaeChangedAction(MainColorFormulaeStr, MainColorFormulaeCompileResult, MainColorFormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(EmissiveColorFormulaeStr, EmissiveColorFormulaeCompileResult, EmissiveColorFormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(MetallicFormulaeStr, MetallicFormulaeCompileResult, MetallicFormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(SmoothnessFormulaeStr, SmoothnessFormulaeCompileResult, SmoothnessFormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(EmissiveIntensityFormulaeStr, EmissiveIntensityFormulaeCompileResult, EmissiveIntensityFormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(CoatStrengthFormulaeStr, CoatStrengthFormulaeCompileResult, CoatStrengthFormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(EmissiveExposureWeightFormulaeStr, EmissiveExposureWeightFormulaeCompileResult, EmissiveExposureWeightFormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(GlassRefractionFormulaeStr, GlassRefractionFormulaeCompileResult, GlassRefractionFormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(GlassColorFormulaeStr, GlassColorFormulaeCompileResult, GlassColorFormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(GlassThicknessFormulaeStr, GlassThicknessFormulaeCompileResult, GlassThicknessFormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(ColorMask1FormulaeStr, ColorMask1FormulaeCompileResult, ColorMask1FormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(ColorMask2FormulaeStr, ColorMask2FormulaeCompileResult, ColorMask2FormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(ColorMask3FormulaeStr, ColorMask3FormulaeCompileResult, ColorMask3FormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(NormalStrengthFormulaeStr, NormalStrengthFormulaeCompileResult, NormalStrengthFormulaeCompileResultErrorArgs);
-            SetupOnFormulaeChangedAction(NormalStrengthFormulaeStr, NormalStrengthFormulaeCompileResult, NormalStrengthFormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeMainColor, MainColorFormulaeStr, MainColorFormulaeCompileResult, MainColorFormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeEmissiveColor, EmissiveColorFormulaeStr, EmissiveColorFormulaeCompileResult, EmissiveColorFormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeMetallic, MetallicFormulaeStr, MetallicFormulaeCompileResult, MetallicFormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeSmoothness, SmoothnessFormulaeStr, SmoothnessFormulaeCompileResult, SmoothnessFormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeEmissiveIntensity, EmissiveIntensityFormulaeStr, EmissiveIntensityFormulaeCompileResult, EmissiveIntensityFormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeCoatStrength, CoatStrengthFormulaeStr, CoatStrengthFormulaeCompileResult, CoatStrengthFormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeEmissiveExposureWeight, EmissiveExposureWeightFormulaeStr, EmissiveExposureWeightFormulaeCompileResult, EmissiveExposureWeightFormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeGlassRefraction, GlassRefractionFormulaeStr, GlassRefractionFormulaeCompileResult, GlassRefractionFormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeGlassColor, GlassColorFormulaeStr, GlassColorFormulaeCompileResult, GlassColorFormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeGlassThickness, GlassThicknessFormulaeStr, GlassThicknessFormulaeCompileResult, GlassThicknessFormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeColorMask1, ColorMask1FormulaeStr, ColorMask1FormulaeCompileResult, ColorMask1FormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeColorMask2, ColorMask2FormulaeStr, ColorMask2FormulaeCompileResult, ColorMask2FormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeColorMask3, ColorMask3FormulaeStr, ColorMask3FormulaeCompileResult, ColorMask3FormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeNormalStrength, NormalStrengthFormulaeStr, NormalStrengthFormulaeCompileResult, NormalStrengthFormulaeCompileResultErrorArgs);
+            SetupOnFormulaeChangedAction((data) => data.SetFormulaeNormalStrength, NormalStrengthFormulaeStr, NormalStrengthFormulaeCompileResult, NormalStrengthFormulaeCompileResultErrorArgs);
 
         }
-
-        private void SetupOnFormulaeChangedAction(MultiUIValueBinding<string> formulaeStr, MultiUIValueBinding<int> formulaeCompileResult, MultiUIValueBinding<string[]> formulaeCompileResultErrorArgs)
-            => formulaeStr.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMaterial>(x, (x, currentItem) => { formulaeCompileResult.Value = currentItem.SetFormulaeColor(x, out string[] errorArgs); formulaeCompileResultErrorArgs.Value = errorArgs; return currentItem; });
+        private delegate int SetFormulaeCaller(string newFormulae, out string[] errorArgs);
+        private void SetupOnFormulaeChangedAction(Func<WETextDataMaterial, SetFormulaeCaller> formulaeSetter, MultiUIValueBinding<string> formulaeStr, MultiUIValueBinding<int> formulaeCompileResult, MultiUIValueBinding<string[]> formulaeCompileResultErrorArgs)
+            => formulaeStr.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMaterial>(x, (x, currentItem) => { formulaeCompileResult.Value = formulaeSetter(currentItem)(x, out string[] errorArgs); formulaeCompileResultErrorArgs.Value = errorArgs; return currentItem; });
 
         public override void OnCurrentItemChanged(Entity entity)
         {

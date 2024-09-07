@@ -1,0 +1,12 @@
+.k45_we_formulaeFloatFieldContainer {
+    flex-grow: 1;
+    flex-direction: row;
+    display: flex;
+    align-items: center;
+    padding-right: 5rem;
+
+    >[class^=slider_] {
+        flex-grow: 1;
+        flex-shrink: 1;
+    }
+}
