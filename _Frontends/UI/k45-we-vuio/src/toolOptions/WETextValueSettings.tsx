@@ -7,7 +7,7 @@ import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
 import i_formulae from "../images/Function.svg";
 import "../style/floatingPanels.scss";
-import { FormulaeEditRow } from "./FormulaeEditRow";
+import { FormulaeEditRow } from "../common/FormulaeEditRow";
 
 const i_focus = "coui://uil/Standard/Magnifier.svg";
 

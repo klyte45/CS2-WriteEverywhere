@@ -41,6 +41,14 @@ export const FormulaeEditRow = ({ defaultInputField, label, formulaeModule, form
             WorldPickerService.instance.currentFormulaeModule,
         ])
     useEffect(() => { setUsingFormulae(!!formulaeStrField.value); }, [WorldPickerService.instance.bindingList.picker.CurrentSubEntity.value])
+    useEffect(() => {
+        if (!usingFormulae
+            && WorldPickerService.instance.currentFormulaeField == formulaeField
+            && WorldPickerService.instance.currentFormulaeModule == formulaeModule) {
+            WorldPickerService.instance.clearCurrentEditingFormulaeParam();
+        }
+
+    }, [usingFormulae])
     const EditorItemRow = VanillaWidgets.instance.EditorItemRow;
     const StringInputField = VanillaWidgets.instance.StringInputField;
     const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
@@ -65,4 +73,59 @@ export const FormulaeEditRow = ({ defaultInputField, label, formulaeModule, form
             </EditorItemRow>
         }
     </>
+}
+
+type FloatFormulaeProps = {
+    min: number,
+    max: number,
+    label: string
+    formulaeField: string
+    formulaeModule: keyof typeof WorldPickerService.instance.bindingList,
+}
+
+export const FormulaeEditorRowFloat = ({ min, max, label, formulaeField, formulaeModule }: FloatFormulaeProps) => {
+    const Slider = VanillaComponentResolver.instance.Slider;
+    const FloatInput = VanillaComponentResolver.instance.FloatInput;
+    const sliderTheme = VanillaComponentResolver.instance.sliderTheme;
+    const editorItemTheme = VanillaComponentResolver.instance.editorItemTheme;
+    const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
+    const valueBinding: MultiUIValueBinding<number> = WorldPickerService.instance.bindingList[formulaeModule][formulaeField as never]
+    return <FormulaeEditRow formulaeField={formulaeField} formulaeModule={formulaeModule} label={label} defaultInputField={<>
+        <div className="k45_we_formulaeFloatFieldContainer">
+            <Slider start={min} end={max}
+                value={valueBinding.value}
+                onChange={(x) => valueBinding.set(x)}
+                theme={sliderTheme}
+            />
+            <FloatInput focusKey={noFocus} min={min} max={max} onChange={(x) => valueBinding.set(x)} value={valueBinding.value} className={editorItemTheme.sliderInput} />
+        </div>
+    </>} />
+}
+
+
+export const FormulaeEditorRowFloatLog10 = ({ min, max, label, formulaeField, formulaeModule }: FloatFormulaeProps) => {
+    const Slider = VanillaComponentResolver.instance.Slider;
+    const FloatInput = VanillaComponentResolver.instance.FloatInput;
+    const sliderTheme = VanillaComponentResolver.instance.sliderTheme;
+    const editorItemTheme = VanillaComponentResolver.instance.editorItemTheme;
+    const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
+    const valueBinding: MultiUIValueBinding<number> = WorldPickerService.instance.bindingList[formulaeModule][formulaeField as never]
+    return <FormulaeEditRow formulaeField={formulaeField} formulaeModule={formulaeModule} label={label} defaultInputField={<>
+        <div className="k45_we_formulaeFloatFieldContainer">
+            <Slider start={min} end={max}
+                value={Math.log10(valueBinding.value + 1)}
+                onChange={(x) => valueBinding.set(Math.pow(10, x) - 1)}
+                theme={sliderTheme}
+            /><div style={{
+                fontSize: "75%",
+                alignSelf: "flex-end",
+                paddingLeft: "5rem",
+                marginRight: "-5rem"
+            }}>10^</div>
+            <FloatInput focusKey={noFocus} min={min} max={max}
+                onChange={(x) => valueBinding.set(Math.pow(10, x) - 1)}
+                value={Math.log10(valueBinding.value + 1)}
+                className={editorItemTheme.sliderInput} />
+        </div>
+    </>} />
 }

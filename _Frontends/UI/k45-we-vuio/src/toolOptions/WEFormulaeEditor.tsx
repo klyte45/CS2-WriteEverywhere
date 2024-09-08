@@ -122,7 +122,7 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
     const [addingItem, setAddingItem] = useState(false)
 
     const valueToString = (x: number | string | UIColorRGBA | null | undefined) => {
-        if (!x) return "<EMPTY>";
+        if (!x && x !== 0) return "<EMPTY>";
         switch (typeof x) {
             case "number":
                 return x.toFixed(3);

@@ -222,7 +222,6 @@ export class WorldPickerService {
             }
         }
 
-        this.bindingList.picker.CurrentSubEntity.subscribe(async () => { this.clearCurrentEditingFormulaeParam() })
     }
 
     registerBindings(refreshFn: () => any) {
@@ -230,6 +229,13 @@ export class WorldPickerService {
             Object.values(y).map(z => z.subscribe(async () => refreshFn()));
         })
         this.refreshFnRegistered.push(refreshFn);
+        
+        this.bindingList.picker.CurrentSubEntity.subscribe(async () => {
+            this.clearCurrentEditingFormulaeParam();
+        })
+        this.bindingList.picker.CurrentEntity.subscribe(async () => {
+            this.clearCurrentEditingFormulaeParam()
+        });
     }
 
     disposeBindings() {
