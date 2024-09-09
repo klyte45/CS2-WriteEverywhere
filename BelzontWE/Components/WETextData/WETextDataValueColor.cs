@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Belzont.Utils;
+using System;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
@@ -36,8 +37,9 @@ namespace BelzontWE
                 EffectiveValue = FormulaeFn is Func<EntityManager, Entity, Color> fn
                     ? fn(em, geometryEntity) : formulaeStr.Length > 0 ? UnityEngine.Color.cyan : defaultValue;
             }
-            catch
+            catch (Exception e)
             {
+                LogUtils.DoLog($"Error running formulae @{geometryEntity}: {e}");
                 EffectiveValue = Color.magenta;
             }
             return loadedFnNow || EffectiveValue != oldVal;

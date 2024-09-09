@@ -114,7 +114,7 @@ namespace BelzontWE
                     else
                     {
                         skipValueTypeVar = false;
-                        var processResult = ProcessEntityPath(ref currentComponentType, iLGenerator, codePart, i, ref localVarEntity, ref errorFmtArgs, ref skipValueTypeVar);
+                        var processResult = ProcessEntityPath<T>(ref currentComponentType, iLGenerator, codePart, i, ref localVarEntity, ref errorFmtArgs, ref skipValueTypeVar);
                         if (processResult != 0) return result = processResult;
                     }
                 }
@@ -225,7 +225,7 @@ namespace BelzontWE
                                                   );
         }
 
-        private static byte ProcessEntityPath(ref Type currentComponentType, ILGenerator iLGenerator, string path, int blockId, ref LocalBuilder localVarEntity, ref string[] errorFmtArgs, ref bool skipValueTypeVar)
+        private static byte ProcessEntityPath<T>(ref Type currentComponentType, ILGenerator iLGenerator, string path, int blockId, ref LocalBuilder localVarEntity, ref string[] errorFmtArgs, ref bool skipValueTypeVar)
         {
             var parseResult = ParseComponentEntryType(ref currentComponentType, path, out errorFmtArgs, out string[] fieldPath);
             if (parseResult != 0) return parseResult;
@@ -249,7 +249,30 @@ namespace BelzontWE
             iLGenerator.EmitCall(OpCodes.Call, r_HasComponent.MakeGenericMethod(currentComponentType), null);
             var lbl_ok = iLGenerator.DefineLabel();
             iLGenerator.Emit(OpCodes.Brtrue_S, lbl_ok);
-            iLGenerator.Emit(OpCodes.Ldstr, $"<NO COMPONENT: {currentComponentType} @ Block #{blockId}>");
+            if (typeof(T) == typeof(string))
+            {
+                iLGenerator.Emit(OpCodes.Ldstr, $"<NO COMPONENT: {currentComponentType} @ Block #{blockId}>");
+            }
+            else
+            {
+                //var local0 = iLGenerator.DeclareLocal(currentComponentType);
+                //iLGenerator.Emit(OpCodes.Stloc, local0);
+                //var lbl_ret = iLGenerator.DefineLabel();
+                //iLGenerator.Emit(OpCodes.Call, typeof(BasicIMod).GetProperty(nameof(BasicIMod.VerboseMode)).GetMethod);
+                //iLGenerator.Emit(OpCodes.Brfalse_S, lbl_ret);
+                //iLGenerator.Emit(OpCodes.Ldloc_S, local0);
+                //iLGenerator.Emit(OpCodes.Call, typeof(Array).GetMethod(nameof(Array.Empty)).MakeGenericMethod(typeof(object)));
+                //iLGenerator.Emit(OpCodes.Call, typeof(LogUtils).GetMethod(nameof(LogUtils.DoVerboseLog)));
+                //iLGenerator.MarkLabel(lbl_ret);
+                if (typeof(T) == typeof(float))
+                {
+                    iLGenerator.Emit(OpCodes.Ldc_R4, float.NaN);
+                }
+                else if (typeof(T) == typeof(Color))
+                {
+                    iLGenerator.Emit(OpCodes.Call, typeof(Color).GetProperty("magenta", RedirectorUtils.allFlags).GetMethod);
+                }
+            }
             iLGenerator.Emit(OpCodes.Ret);
             iLGenerator.MarkLabel(lbl_ok);
             loadParameters(ref localVarEntity, false);

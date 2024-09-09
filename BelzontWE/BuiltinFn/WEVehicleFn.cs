@@ -1,20 +1,16 @@
-﻿
-
-using Belzont.Utils;
-using Colossal.Entities;
+﻿using Colossal.Entities;
 using Game.Common;
 using Game.Objects;
 using Game.Routes;
 using Game.Simulation;
-using Game.UI;
 using Game.Vehicles;
 using System;
 using Unity.Entities;
 using Target = Game.Common.Target;
 
-namespace BelzontWE
+namespace BelzontWE.Builtin
 {
-    public class WEBuiltinFn
+    public class WEVehicleFn
     {
         public const string LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         public const string NUMBERS = "0123456789";
@@ -27,13 +23,12 @@ namespace BelzontWE
             return !em.TryGetComponent<Target>(entity, out var target) ? "<?NO TARGET?>"
                 : target.m_Target == Entity.Null ? "Cities Skylines II"
                 : !em.TryGetComponent<Connected>(target.m_Target, out var connected)
-                    ? !em.TryGetComponent<Owner>(entity, out var owner) ? GetEntityName(owner.m_Owner)
-                    : GetEntityName(target.m_Target)
-                : GetEntityName(connected.m_Connected);
+                    ? !em.TryGetComponent<Owner>(entity, out var owner) ? WEUtitlitiesFn.GetEntityName(owner.m_Owner)
+                    : WEUtitlitiesFn.GetEntityName(target.m_Target)
+                : WEUtitlitiesFn.GetEntityName(connected.m_Connected);
         };
 
         private static CitySystem citySys;
-        private static NameSystem nameSys;
 
         public static Func<Entity, string> GetTargetDestinationDynamic_binding = GetTargetDestinationStatic_binding;
         public static Func<Entity, string> GetVehiclePlate_binding = (Entity refNum) =>
@@ -64,10 +59,12 @@ namespace BelzontWE
 
         public static string GetTargetDestinationStatic(Entity reference) => GetTargetDestinationStatic_binding?.Invoke(reference) ?? "<???>";
         public static string GetTargetDestinationDynamic(Entity reference) => GetTargetDestinationDynamic_binding?.Invoke(reference) ?? "<???>";
-        public static string GetEntityName(Entity reference) => (nameSys ?? World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<NameSystem>()).GetName(reference).Translate();
         public static string GetVehiclePlate(Entity vehicleRef) => GetVehiclePlate_binding?.Invoke(vehicleRef) ?? "<???>";
         public static string GetTransportLineNumber(Entity reference) => GetTargetTransportLineNumber_binding?.Invoke(reference) ?? "<!>";
         public static string GetSerialNumber(Entity reference) => GetSerialNumber_binding?.Invoke(reference) ?? "<???>";
     }
-
 }
+//&BelzontWE.Builtin.WEBuildingFn;GetBuildingMainRenter/Game.Companies.CompanyData;m_Brand/Game.Prefabs.BrandData;m_ColorSet.m_Channel0
+//&Color32;get_cyan
+
+//&WEBuildingFn;GetBuildingMainRenter/Game.Companies.CompanyData;m_Brand/Game.Prefabs.BrandData;m_ColorSet.m_Channel0
