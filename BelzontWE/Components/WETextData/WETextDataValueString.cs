@@ -32,9 +32,16 @@ namespace BelzontWE
                 }
                 loadedFnNow = loadingFnDone = true;
             }
-            EffectiveValue = FormulaeFn is Func<EntityManager, Entity, string> fn
-                ? fn(em, geometryEntity)?.ToString().Trim().Truncate(500) ?? "<InvlidFn>"
-                : formulaeStr.Length > 0 ? "<InvalidFn>" : defaultValue;
+            try
+            {
+                EffectiveValue = FormulaeFn is Func<EntityManager, Entity, string> fn
+                    ? fn(em, geometryEntity)?.ToString().Trim().Truncate(500) ?? "<InvlidFn>"
+                    : formulaeStr.Length > 0 ? "<InvalidFn>" : defaultValue;
+            }
+            catch
+            {
+                EffectiveValue = "<ERROR>";
+            }
             return loadedFnNow || EffectiveValue.ToString() != oldEffText;
         }
     }

@@ -31,8 +31,15 @@ namespace BelzontWE
                 loadedFnNow = loadingFnDone = true;
             }
             var oldVal = EffectiveValue;
-            EffectiveValue = FormulaeFn is Func<EntityManager, Entity, Color> fn
-                ? fn(em, geometryEntity) : formulaeStr.Length > 0 ? UnityEngine.Color.cyan : defaultValue;
+            try
+            {
+                EffectiveValue = FormulaeFn is Func<EntityManager, Entity, Color> fn
+                    ? fn(em, geometryEntity) : formulaeStr.Length > 0 ? UnityEngine.Color.cyan : defaultValue;
+            }
+            catch
+            {
+                EffectiveValue = Color.magenta;
+            }
             return loadedFnNow || EffectiveValue != oldVal;
         }
     }

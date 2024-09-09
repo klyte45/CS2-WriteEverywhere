@@ -29,8 +29,15 @@ namespace BelzontWE
                 loadedFnNow = loadingFnDone = true;
             }
             var oldValue = EffectiveValue;
-            EffectiveValue = FormulaeFn is Func<EntityManager, Entity, float> fn
-                ? fn(em, geometryEntity) : formulaeStr.Length > 0 ? float.NaN : defaultValue;
+            try
+            {
+                EffectiveValue = FormulaeFn is Func<EntityManager, Entity, float> fn
+                    ? fn(em, geometryEntity) : formulaeStr.Length > 0 ? float.NaN : defaultValue;
+            }
+            catch
+            {
+                EffectiveValue = float.NaN;
+            }
             return loadedFnNow || EffectiveValue != oldValue;
         }
     }

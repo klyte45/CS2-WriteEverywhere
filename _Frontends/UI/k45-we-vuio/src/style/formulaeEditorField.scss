@@ -1,4 +1,4 @@
-.k45_we_formulaeFloatFieldContainer {
+.k45_we_formulaeEditorFieldContainer {
     flex-grow: 1;
     flex-direction: row;
     display: flex;
@@ -8,5 +8,36 @@
     >[class^=slider_] {
         flex-grow: 1;
         flex-shrink: 1;
+    }
+
+    .we_colorpicker_btn {
+        div {
+            flex-grow: 1;
+            flex-shrink: 1;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+
+            div {
+                background-color: rgba(0, 0, 0, 0.75);
+                color: rgba(255, 255, 255, 1);
+                flex-grow: 0;
+                padding-left: 5rem;
+                padding-right: 5rem;
+            }
+        }
+    }
+}
+
+.k45_we_colorPickerOverlay {
+    width: 300rem;
+    padding-top: 10rem;
+    padding-left: 10rem;
+    padding-right: 10rem;
+    padding-bottom: 10rem;
+
+    .k45_we_colorPickerTitle {
+        display: flex;
+        justify-content: center;
     }
 }

@@ -25,13 +25,13 @@ namespace BelzontWE
         private static MethodInfo r_HasComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
             .First(x => x.Name == "HasComponent" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 1 && pi[0].ParameterType == typeof(Entity));
 
-        private static readonly Dictionary<FixedString512Bytes, Func<EntityManager, Entity, string>> cachedFnsString = new();
-        private static readonly Dictionary<FixedString512Bytes, Func<EntityManager, Entity, float>> cachedFnsFloat = new();
-        private static readonly Dictionary<FixedString512Bytes, Func<EntityManager, Entity, Color>> cachedFnsColor = new();
+        private static readonly Dictionary<FixedString512Bytes, (byte, Func<EntityManager, Entity, string>)> cachedFnsString = new();
+        private static readonly Dictionary<FixedString512Bytes, (byte, Func<EntityManager, Entity, float>)> cachedFnsFloat = new();
+        private static readonly Dictionary<FixedString512Bytes, (byte, Func<EntityManager, Entity, Color>)> cachedFnsColor = new();
 
-        public static Func<EntityManager, Entity, string> GetCachedStringFn(FixedString512Bytes formulae) => cachedFnsString.TryGetValue(formulae, out var cached) ? cached : null;
-        public static Func<EntityManager, Entity, float> GetCachedFloatFn(FixedString512Bytes formulae) => cachedFnsFloat.TryGetValue(formulae, out var cached) ? cached : null;
-        public static Func<EntityManager, Entity, Color> GetCachedColorFn(FixedString512Bytes formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached : null;
+        public static Func<EntityManager, Entity, string> GetCachedStringFn(FixedString512Bytes formulae) => cachedFnsString.TryGetValue(formulae, out var cached) ? cached.Item2 : null;
+        public static Func<EntityManager, Entity, float> GetCachedFloatFn(FixedString512Bytes formulae) => cachedFnsFloat.TryGetValue(formulae, out var cached) ? cached.Item2 : null;
+        public static Func<EntityManager, Entity, Color> GetCachedColorFn(FixedString512Bytes formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached.Item2 : null;
 
         public static byte SetFormulae<T>(FixedString512Bytes newFormulae512, out string[] errorFmtArgs, out FixedString512Bytes resultFormulaeStr, out Func<EntityManager, Entity, T> resultFormulaeFn)
         {
@@ -48,16 +48,15 @@ namespace BelzontWE
             }
             if (refDic.Contains(newFormulae512))
             {
-                var handle = refDic[newFormulae512];
-                if (handle != null)
+                var handle = ((byte, Func<EntityManager, Entity, T>))refDic[newFormulae512];
+                if (handle.Item2 != null || handle.Item1 != 0)
                 {
                     resultFormulaeStr = newFormulae512;
-                    resultFormulaeFn = handle as Func<EntityManager, Entity, T>;
+                    resultFormulaeFn = handle.Item2;
                     errorFmtArgs = null;
-                    return 0;
+                    return handle.Item1;
                 }
             }
-            refDic[newFormulae512] = null;
             var newFormulae = newFormulae512.ToString();
             var path = GetPathParts(newFormulae);
             DynamicMethodDefinition dynamicMethodDefinition = new(
@@ -66,6 +65,7 @@ namespace BelzontWE
                 new Type[] { typeof(EntityManager), typeof(Entity) }
                 );
             ILGenerator iLGenerator = dynamicMethodDefinition.GetILGenerator();
+            byte result = 0;
             try
             {
                 errorFmtArgs = null;
@@ -88,11 +88,11 @@ namespace BelzontWE
                         var resultQuery = candidateMethods.ToList();
                         if (resultQuery.Count == 0)
                         {
-                            return 8; // Class or method not found.
+                            return result = 8; // Class or method not found.
                         }
                         if (resultQuery.Count() > 1)
                         {
-                            return 9; // Class or method matches more than one result. Please be more specific.
+                            return result = 9; // Class or method matches more than one result. Please be more specific.
                         }
                         var methodInfo = resultQuery[0];
                         if (i == 0)
@@ -109,25 +109,29 @@ namespace BelzontWE
                         currentComponentType = methodInfo.ReturnType;
                         skipValueTypeVar = false;
                         var navPathRes = NavigateThroughPath(ref currentComponentType, iLGenerator, ref errorFmtArgs, navFields, ref skipValueTypeVar);
-                        if (navPathRes != 0) return navPathRes;
+                        if (navPathRes != 0) return result = navPathRes;
                     }
                     else
                     {
                         skipValueTypeVar = false;
                         var processResult = ProcessEntityPath(ref currentComponentType, iLGenerator, codePart, i, ref localVarEntity, ref errorFmtArgs, ref skipValueTypeVar);
-                        if (processResult != 0) return processResult;
+                        if (processResult != 0) return result = processResult;
                     }
                 }
-                byte result = 0;
                 if (currentComponentType != typeof(T))
                 {
                     if (CanCast(currentComponentType, typeof(T)))
                     {
+                        var local0 = iLGenerator.DeclareLocal(currentComponentType);
+                        iLGenerator.Emit(OpCodes.Stloc, local0);
+                        iLGenerator.Emit(OpCodes.Ldloc_S, local0);
+                        if (currentComponentType.IsValueType) iLGenerator.Emit(OpCodes.Box, currentComponentType);
                         iLGenerator.Emit(OpCodes.Ldtoken, typeof(T));
                         iLGenerator.Emit(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle), RedirectorUtils.allFlags));
                         iLGenerator.Emit(OpCodes.Call, typeof(Convert).GetMethod(nameof(Convert.ChangeType), RedirectorUtils.allFlags, null, new[] { typeof(object), typeof(Type) }, null));
+                        iLGenerator.Emit(OpCodes.Unbox_Any, typeof(T));
                     }
-                    if (typeof(T) != typeof(string))
+                    else if (typeof(T) != typeof(string))
                     {
                         iLGenerator.Emit(OpCodes.Pop);
                         if (typeof(T) == typeof(float))
@@ -173,13 +177,17 @@ namespace BelzontWE
                 var generatedMethod = dynamicMethodDefinition.Generate();
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => (" + string.Join(", ", dynamicMethodDefinition.Definition.Parameters.Select(x => $"{(x.IsIn ? "in " : x.IsOut ? "out " : "")}{x.ParameterType} {x.Name}")) + ")");
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => \n" + string.Join("\n", dynamicMethodDefinition.Definition.Body.Instructions.Select(x => x.ToString())));
-                refDic[newFormulae512] = resultFormulaeFn = (x, e) => (T)generatedMethod.Invoke(null, new object[] { x, e });
+                refDic[resultFormulaeStr] = (result, resultFormulaeFn = (x, e) => (T)generatedMethod.Invoke(null, new object[] { x, e }));
 
                 return result;
             }
             finally
             {
                 dynamicMethodDefinition.Dispose();
+                if (result != 0 && result != 255)
+                {
+                    refDic[newFormulae512] = (result, default(Func<EntityManager, Entity, T>));
+                }
             }
         }
 

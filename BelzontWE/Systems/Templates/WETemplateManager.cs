@@ -278,7 +278,6 @@ namespace BelzontWE
         private void UpdatePrefabArchetypes(NativeArray<ArchetypeChunk> chunks)
         {
             var m_TextDataLkp = GetComponentLookup<WETextDataMain>();
-            var m_MeshDataLkp = GetComponentLookup<WETextDataMesh>();
             var m_prefabDataLkp = GetComponentLookup<PrefabData>();
             var m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>();
             var m_subRefLkp = GetBufferLookup<WESubTextRef>();

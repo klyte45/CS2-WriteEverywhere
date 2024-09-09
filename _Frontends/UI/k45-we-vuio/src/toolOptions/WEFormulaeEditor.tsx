@@ -1,4 +1,4 @@
-import { MultiUIValueBinding, UIColorRGBA, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { ColorUtils, MultiUIValueBinding, UIColorRGBA, VanillaComponentResolver, VanillaFnResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { Portal } from "cs2/ui";
 import { useCallback, useEffect, useState } from "react";
 import { FormulaeService } from "services/FormulaeService";
@@ -27,6 +27,7 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
     const T_addStageEnd = translate("formulaeEditor.addStageEnd"); //Get component
     const T_removeLastStage = translate("formulaeEditor.removeLastStage"); //Get component
     const T_editorFootnote = translate("formulaeEditor.editorFootnote"); //Get component
+    const VanillaColorUtils = VanillaFnResolver.instance.color;
 
     const getImplicitConversionWarning = useCallback(() => {
         switch (formulaeType) {
@@ -129,11 +130,12 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
             case "string":
                 return x;
             case "object":
-                return `#${x.r.toString(16).padStart(2, "0")}${x.g.toString(16).padStart(2, "0")}${x.b.toString(16).padStart(2, "0")}${x.a.toString(16).padStart(2, "0")}`
+                return "#" + VanillaColorUtils.formatHexColor(x) + Math.floor(x.a * 255).toString(16).padStart(2, '0').toUpperCase()
             default:
                 return "???"
         }
     }
+
 
     return <Portal>
         <div className="k45_we_formulaeEditor">
