@@ -89,15 +89,19 @@ namespace BelzontWE
                 reader.ReadNullCheck(out WETextDataXmlTree dataTree);
                 try
                 {
-                    //NEEDS REVIEW! Assertation failed XXXXX === (XXXXX - 1)
-                    //if (dataTree?.children?.Length > 0)
-                    //{
-                    //    var children = dataTree.children;
-                    //    foreach (var item in children)
-                    //    {
-                    //        WELayoutUtility.DoCreateLayoutItem(item, key, key, EntityManager);
-                    //    }
-                    //}
+                    if (dataTree?.children?.Length > 0)
+                    {
+                        var children = dataTree.children;
+                        foreach (var item in children)
+                        {
+                            m_executionQueue.Enqueue((cmd) =>
+                            {
+                                ComponentLookup<WETextDataMain> tdLookup = GetComponentLookup<WETextDataMain>();
+                                BufferLookup<WESubTextRef> subTextLookup = GetBufferLookup<WESubTextRef>();
+                                WELayoutUtility.DoCreateLayoutItem(item, key, key, ref tdLookup, ref subTextLookup, cmd);
+                            });
+                        }
+                    }
                 }
                 catch (Exception e)
                 {
