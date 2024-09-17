@@ -5,7 +5,7 @@ using Unity.Entities;
 
 namespace BelzontWE.Builtin
 {
-    public class WEBuildingFn
+    public static class WEBuildingFn
     {
         public static Func<Entity, Entity> GetBuildingRoad_binding = (entity)
             => BuildingUtils.GetAddress(World.DefaultGameObjectInjectionWorld.EntityManager, entity, out var road, out _)
@@ -26,7 +26,3 @@ namespace BelzontWE.Builtin
         public static Entity GetBuildingMainRenter(Entity reference) => GetBuildingMainRenter_binding?.Invoke(reference) ?? Entity.Null;
     }
 }
-//&BelzontWE.Builtin.WEBuildingFn;GetBuildingMainRenter/Game.Companies.CompanyData;m_Brand/Game.Prefabs.BrandData;m_ColorSet.m_Channel0
-//&Color32;get_cyan
-
-//&WEBuildingFn;GetBuildingMainRenter/Game.Companies.CompanyData;m_Brand/Game.Prefabs.BrandData;m_ColorSet.m_Channel0
