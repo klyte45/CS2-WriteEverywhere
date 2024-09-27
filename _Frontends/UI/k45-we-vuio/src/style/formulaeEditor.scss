@@ -258,6 +258,7 @@
 
     .k45_we_formulaeDialog_tabRow {
         display: flex;
+        flex-wrap: wrap;
         width: 100%;
 
         button {
@@ -277,6 +278,24 @@
     ---selfColor: white;
     width: 100%;
 
+
+    &.anySelected {
+
+        button,
+        div[class^=k45_we_formulaeDialog_btn] {
+            filter: brightness(40%);
+
+            &:hover {
+                filter: brightness(140%);
+            }
+
+            &.selected {
+                filter: brightness(100%);
+                background-color: var(---selfColor);
+            }
+        }
+    }
+
     >div {
         width: 100%;
         display: flex;
@@ -287,17 +306,21 @@
 
         @include formulae-element-type-styling;
 
-        button {
+        button,
+        div[class^=k45_we_formulaeDialog_btn] {
             min-width: 160rem;
-            min-height: 40rem;
+            min-height: 43rem;
             margin-left: 3rem;
             margin-right: 3rem;
             justify-content: center;
             text-transform: none;
             background-position-y: 50%;
             background-repeat: no-repeat no-repeat;
-            background-size: contain;
+            background-size: 40rem auto;
             padding-left: 41rem;
+            padding-right: 3rem;
+            padding-top: 3rem;
+            padding-bottom: 3rem;
             color: rgba(255, 255, 255, 1);
             margin-top: 4rem;
             margin-bottom: 4rem;
@@ -305,24 +328,14 @@
             border-left-color: var(---selfColor);
             border-bottom-color: var(---selfColor);
             border-right-color: var(---selfColor);
-            border-top-color: var(---selfColor);
+            border-top-color: var(---selfColor);    
+            display: flex;
+            align-items: center;
+            flex-direction: column;
             filter: brightness(70%);
 
             &:hover {
                 filter: brightness(140%);
-            }
-
-            &.selected {
-                filter: brightness(100%);
-                background-color: var(---selfColor);
-            }
-
-            &.selected~div {
-                filter: brightness(40%);
-
-                &:hover {
-                    filter: brightness(140%);
-                }
             }
         }
 
@@ -399,7 +412,8 @@
     width: 100%;
     ---selfColor: black;
 
-    button {
+    button,
+    div[class^=k45_we_formulaeDialog_btn]  {
         height: 40rem;
         margin-left: 3rem;
         margin-right: 3rem;

@@ -1,6 +1,5 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
-using Game;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +12,8 @@ namespace BelzontWE
     public partial class WEFormulaeController : SystemBase, IBelzontBindable
     {
         private const string PREFIX = "formulae.";
+        private WEWorldPickerController m_weToolController;
+        private Dictionary<int, Dictionary<string, Dictionary<string, WEComponentTypeDesc[]>>> m_cachedComponentsList;
 
         public void SetupCallBinder(Action<string, Delegate> callBinder)
         {
@@ -20,13 +21,17 @@ namespace BelzontWE
             callBinder($"{PREFIX}formulaeToPathObjects", FormulaeToPathObjects);
             callBinder($"{PREFIX}listAvailableMembersForType", ListAvailableMembersForType);
             callBinder($"{PREFIX}listAvailableComponents", ListAvailableComponents);
+            callBinder($"{PREFIX}listComponentsOnCurrentEntity", ListComponentsOnCurrentEntity);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
 
         public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
 
-
+        protected override void OnCreate()
+        {
+            m_weToolController = World.GetExistingSystemManaged<WEWorldPickerController>();
+        }
 
         private Dictionary<int, Dictionary<string, Dictionary<string, WEStaticMethodDesc[]>>> ListAvailableMethodsForType(string assemblyName, string typeFullName)
         {
@@ -52,13 +57,13 @@ namespace BelzontWE
         private WETypeMemberDesc[] ListAvailableMembersForType(string assemblyName, string typeFullName)
         {
             var type = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.GetName().Name == assemblyName).SelectMany(assembly => assembly.GetTypes()).Where(t => t.FullName == typeFullName).FirstOrDefault();
-            return type == null ? null : type.GetMembers(WEFormulaeHelper.MEMBER_FLAGS).Where(x =>
+            return type?.GetMembers(WEFormulaeHelper.MEMBER_FLAGS).Where(x =>
             (x is PropertyInfo pi && pi.GetMethod != null) || x is FieldInfo || (x is MethodInfo mi && mi.GetParameters().Length == 0 && mi.ReturnType != typeof(void) && !mi.Name.StartsWith("get_"))
             ).Select(x => WETypeMemberDesc.FromMemberInfo(x)).ToArray();
         }
 
         private Dictionary<int, Dictionary<string, Dictionary<string, WEComponentTypeDesc[]>>> ListAvailableComponents() =>
-            TypeManager.AllTypes.Where(x => x.Type != null)
+         m_cachedComponentsList ??= TypeManager.AllTypes.Where(x => x.Type != null && typeof(IComponentData).IsAssignableFrom(x.Type))
                 .Select(x => WEComponentTypeDesc.From(x.Type))
                 .OrderBy(x => x.source)
                 .GroupBy(x => x.source)
@@ -73,6 +78,25 @@ namespace BelzontWE
                         .ToDictionary(classGrouping => classGrouping.Key, classGrouping => classGrouping.OrderBy(x => x.className).ToArray())
                     )
                 );
+        private WEComponentTypeDesc[] ListComponentsOnCurrentEntity(string formulaeStr)
+        {
+            var currentEntity = m_weToolController.CurrentEntity.Value;
+            if (currentEntity == Entity.Null) return null;
+            Entity targetEntity;
+            if (formulaeStr.TrimToNull() is null)
+            {
+                targetEntity = currentEntity;
+            }
+            else
+            {
+                if (WEFormulaeHelper.SetFormulae(formulaeStr, out _, out _, out Func<EntityManager, Entity, Entity> resultFormulaeFn) != 0 || resultFormulaeFn is null) return null;
+                targetEntity = resultFormulaeFn(EntityManager, m_weToolController.CurrentEntity.Value);
+            }
+            return TypeManager.AllTypes
+                .Where(x => x.Type != null && typeof(IComponentData).IsAssignableFrom(x.Type) && EntityManager.HasComponent(targetEntity, x.Type))
+                   .Select(x => WEComponentTypeDesc.From(x.Type))
+                   .ToArray();
+        }
 
         private List<object> FormulaeToPathObjects(string formulae)
         {

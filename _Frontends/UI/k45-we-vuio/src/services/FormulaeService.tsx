@@ -1,4 +1,4 @@
-import { WETypeMemberDesc, WEFormulaeElement } from "./WEFormulaeElement";
+import { WETypeMemberDesc, WEFormulaeElement, WEComponentTypeDesc } from "./WEFormulaeElement";
 import { IndexedStaticMethodsListing, IndexedComponentListing } from "./WorldPickerService";
 
 export class FormulaeService {
@@ -10,6 +10,9 @@ export class FormulaeService {
     }
     static async listAvailableComponents(): Promise<IndexedComponentListing> {
         return await engine.call("k45::we.formulae.listAvailableComponents");
+    }
+    static async listComponentsOnCurrentEntity(formulae: string): Promise<WEComponentTypeDesc[]> {
+        return await engine.call("k45::we.formulae.listComponentsOnCurrentEntity", formulae);
     }
     static async formulaeToPathObjects(formulae: string): Promise<WEFormulaeElement[]> {
         return engine.call("k45::we.formulae.formulaeToPathObjects", formulae);

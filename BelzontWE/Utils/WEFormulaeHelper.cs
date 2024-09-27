@@ -38,6 +38,7 @@ namespace BelzontWE
             IDictionary refDic = typeof(T) == typeof(string) ? cachedFnsString
                 : typeof(T) == typeof(float) ? cachedFnsFloat
                 : typeof(T) == typeof(Color) ? (IDictionary)cachedFnsColor
+                : typeof(T) == typeof(Entity) ? null
                 : throw new InvalidCastException("Formulae only support types float, string or UnityEngine.Color");
             resultFormulaeStr = default;
             resultFormulaeFn = default;
@@ -46,7 +47,7 @@ namespace BelzontWE
                 errorFmtArgs = null;
                 return 0;
             }
-            if (refDic.Contains(newFormulae512))
+            if (refDic != null && refDic.Contains(newFormulae512))
             {
                 var handle = ((byte, Func<EntityManager, Entity, T>))refDic[newFormulae512];
                 if (handle.Item2 != null || handle.Item1 != 0)
@@ -120,6 +121,7 @@ namespace BelzontWE
                 }
                 if (currentComponentType != typeof(T))
                 {
+                    if (typeof(T) == typeof(Entity)) return 252;
                     if (CanCast(currentComponentType, typeof(T)))
                     {
                         var local0 = iLGenerator.DeclareLocal(currentComponentType);
@@ -177,14 +179,15 @@ namespace BelzontWE
                 var generatedMethod = dynamicMethodDefinition.Generate();
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => (" + string.Join(", ", dynamicMethodDefinition.Definition.Parameters.Select(x => $"{(x.IsIn ? "in " : x.IsOut ? "out " : "")}{x.ParameterType} {x.Name}")) + ")");
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => \n" + string.Join("\n", dynamicMethodDefinition.Definition.Body.Instructions.Select(x => x.ToString())));
-                refDic[resultFormulaeStr] = (result, resultFormulaeFn = (x, e) => (T)generatedMethod.Invoke(null, new object[] { x, e }));
+                resultFormulaeFn = (x, e) => (T)generatedMethod.Invoke(null, new object[] { x, e });
+                if (refDic != null) refDic[resultFormulaeStr] = (result, resultFormulaeFn);
 
                 return result;
             }
             finally
             {
                 dynamicMethodDefinition.Dispose();
-                if (result != 0 && result != 255)
+                if (refDic != null && result != 0 && result != 255)
                 {
                     refDic[newFormulae512] = (result, default(Func<EntityManager, Entity, T>));
                 }
@@ -271,6 +274,10 @@ namespace BelzontWE
                 else if (typeof(T) == typeof(Color))
                 {
                     iLGenerator.Emit(OpCodes.Call, typeof(Color).GetProperty("magenta", RedirectorUtils.allFlags).GetMethod);
+                }
+                else if (typeof(T) == typeof(Entity))
+                {
+                    iLGenerator.Emit(OpCodes.Call, typeof(Entity).GetProperty(nameof(Entity.Null), RedirectorUtils.allFlags).GetMethod);
                 }
             }
             iLGenerator.Emit(OpCodes.Ret);

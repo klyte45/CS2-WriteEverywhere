@@ -169,7 +169,7 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
                 <div className="k45_we_formulaeEditor_footnote">{T_editorFootnote}</div>
             </div>
         </div>
-        {addingItem && <WEAddFormulaeStageDialog callback={onAppend} referenceElement={formulaeSteps[formulaeSteps.length - 1]} />}
+        {addingItem && <WEAddFormulaeStageDialog formulaeStr={formulaeStr.value} callback={onAppend} referenceElement={formulaeSteps[formulaeSteps.length - 1]} />}
     </Portal>;
 };
 
