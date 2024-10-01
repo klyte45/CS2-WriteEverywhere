@@ -1,0 +1,79 @@
+.k45_hierarchyTree {
+    display: flex;
+    flex-direction: column;
+    color: var(--textColorDim);
+    font-size: var(--fontSizeS);
+
+    .k45_hierarchy_item {
+        display: flex;
+        flex-direction: row;
+        padding: 4rem;
+
+        &.selected {
+            background-color: var(--accentColorDark);
+            color: var(--textColor);
+        }
+
+        .k45_hierarchy_connector {
+            margin-right: -1rem;
+            border-left-color: rgba(255, 255, 255, 1);
+            border-left-style: solid;
+            border-left-width: 2px;
+            border-bottom-color: rgba(255, 255, 255, 1);
+            border-bottom-style: solid;
+            border-bottom-width: 2px;
+            height: 30rem;
+            margin-top: -21rem;
+            width: 20rem;
+            display: flex;
+
+            &.root {
+                margin-right: 2rem;
+                margin-top: 5rem;
+                border-top-left-radius: 9999rem 9999rem;
+                border-top-right-radius: 9999rem 9999rem;
+                border-bottom-left-radius: 9999rem 9999rem;
+                border-bottom-right-radius: 9999rem 9999rem;
+                border-top-width: 3rem;
+                border-left-width: 3rem;
+                border-right-width: 3rem;
+                border-bottom-width: 3rem;
+                margin-left: 6rem;
+                height: 10px;
+                width: 10px;
+                border-top-color: rgba(255, 255, 255, 1);
+                border-left-color: rgba(255, 255, 255, 1);
+                border-right-color: rgba(255, 255, 255, 1);
+                border-bottom-color: rgba(255, 255, 255, 1);
+                border-top-style: solid;
+                border-left-style: solid;
+                border-right-style: solid;
+                border-bottom-style: solid;
+                background-color: rgba(0, 0, 0, 1);
+                z-index: 3;
+            }
+        }
+
+        .k45_hierarchy_icon {
+            width: 20rem;
+            height: 20rem;
+            background-size: contain;
+        }
+
+        .k45_hierarchy_title {
+            flex-grow: 1;
+            padding-left: 5rem;
+        }
+
+        .k45_hierarchy_expandIcon {
+            width: 20rem;
+            height: 20rem;
+            background-size: contain;
+            background-image: url(coui://uil/Standard/ArrowRightThickStroke.svg);
+
+            &.expanded {
+                background-image: url(coui://uil/Standard/ArrowDownThickStroke.svg);
+            }
+        }
+    }
+}

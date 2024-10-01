@@ -12,6 +12,7 @@ import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeEleme
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
 import i_cut from "../images/Scissors.svg"
+import { K45HierarchyMenu, K45HierarchyViewport } from "./K45HierarchyMenu";
 
 
 
@@ -29,8 +30,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
 
     const i_typeText = "coui://uil/Standard/PencilPaper.svg";
     const i_typeImage = "coui://uil/Standard/Image.svg";
-    /**/const i_typePlaceholder = "coui://uil/Standard/RotateAngleRelative.svg";
-    /**/const i_typeWhiteTexture = "coui://uil/Standard/SingleRhombus.svg";
+    const i_typePlaceholder = "coui://uil/Standard/RotateAngleRelative.svg";
+    const i_typeWhiteTexture = "coui://uil/Standard/SingleRhombus.svg";
 
 
     const wps = WorldPickerService.instance.bindingList.picker;
@@ -81,11 +82,12 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
 
     const defaultPosition = { x: 20 / window.innerWidth, y: 100 / window.innerHeight }
 
-    const HierarchyMenu = VanillaWidgets.instance.HierarchyMenu;
+    const HierarchyMenu = K45HierarchyMenu;
     const EditorItemRow = VanillaWidgets.instance.EditorItemRow;
     const Button = VanillaComponentResolver.instance.ToolButton;
     const FocusDisabled = VanillaComponentResolver.instance.FOCUS_DISABLED;
     const buttonClass = VanillaComponentResolver.instance.toolButtonTheme.button;
+    const ScrollView = VanillaWidgets.instance.EditorScrollable;
 
 
     const [layoutFolder, setLayoutFolder] = useState("")
@@ -115,7 +117,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
 
 
 
-    const [viewport, setViewport] = useState([] as (HierarchyViewport & WETextItemResume)[])
+    const [viewport, setViewport] = useState([] as (K45HierarchyViewport & WETextItemResume)[])
     const [expandedViewports, setExpandedViewports] = useState([] as Entity[])
 
     const getDisplayName = (x: WETextItemResume) => x.id.Index == clipboard?.Index ? `${x.name} <${clipboardIsCut ? T_cuttedInfo : T_copiedInfo}>` : x.name
@@ -133,18 +135,18 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         }
     }
 
-    function ResumeToViewPort(x: WETextItemResume, level: number = 0): (HierarchyViewport & WETextItemResume)[] {
+    function ResumeToViewPort(x: WETextItemResume, level: number = 0): (K45HierarchyViewport & WETextItemResume)[] {
         const isExpanded = expandedViewports?.some(y => y.Index == x.id.Index);
         return [{
             ...x,
-            displayName: { value: getDisplayName(x), __Type: LocElementType.String },
+            displayName: getDisplayName(x),
             icon: getIconForTextType(x.type),
             level,
             expandable: x.children?.length > 0,
             expanded: isExpanded,
             selectable: true,
             selected: x.id.Index == wps.CurrentSubEntity.value?.Index
-        } as HierarchyViewport & WETextItemResume].concat(isExpanded ? x.children.flatMap(x => ResumeToViewPort(x, level + 1)) : []);
+        } as K45HierarchyViewport & WETextItemResume].concat(isExpanded ? x.children.flatMap(x => ResumeToViewPort(x, level + 1)) : []);
     }
 
     useEffect(() => {
@@ -280,13 +282,13 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
 
     return <Portal>
         <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
-            <HierarchyMenu
-                viewport={viewport}
-                visibleCount={12}
-                flex={{ basis: 0, grow: 1, shrink: 1 }}
-                onSelect={(i) => wps.CurrentSubEntity.set(viewport[i].id)}
-                onSetExpanded={(x, b) => !b ? setExpandedViewports(expandedViewports.filter(y => y.Index != viewport[x].id.Index)) : setExpandedViewports(expandedViewports.concat([viewport[x].id]))}
-            />
+            <ScrollView style={{ height: "400rem" }}>
+                <HierarchyMenu
+                    viewport={viewport}
+                    onSelect={(i) => wps.CurrentSubEntity.set(viewport[i].id)}
+                    onSetExpanded={(x, b) => !b ? setExpandedViewports(expandedViewports.filter(y => y.Index != viewport[x].id.Index)) : setExpandedViewports(expandedViewports.concat([viewport[x].id]))}
+                />
+            </ScrollView>
             <EditorItemRow>
                 <ContextMenuButton src={i_addItem} tooltip={T_addItem} focusKey={FocusDisabled} className={buttonClass} menuItems={addNodeMenu} menuTitle={T_addItem} />
                 <div style={{ flexGrow: 1 }}></div>
@@ -317,3 +319,4 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         <DropdownDialog isActive={loadingFromCity} setIsActive={setLoadingFromCity} callback={onLoadFromCity} items={cityLayoutsAvailable.map(x => { return { displayName: { __Type: LocElementType.String, value: x }, value: x } })} title={T_loadingFromXmlDialogTitle} promptText={T_loadingFromXmlDialogPromptText} />
     </Portal>;
 };
+
