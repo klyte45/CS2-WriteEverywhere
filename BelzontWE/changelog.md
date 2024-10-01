@@ -1,7 +1,5 @@
-# Alpha 3 (0.0.0r3)
-- Added support to formulae in any Appearance window field (float and color fields)
-- Added new functions and reorganized existing from WEBuiltinFn class. Some examples are related to get the current renter of a building or what they are selling.
-- Fixed lod from placeholders - now it will only be computed if the size set for them has the lod currently active
-- Fixed issues related to atlases stored in savegame
-- Fixed static layouts attached to objects not being serialized along savegame - but due an issue when loading WE layouts after loading a game, it was deactivated in this build. 
-- Fixed issue with fonts after loading a savegame from another game session
+# Beta 1 (0.0.1r0)
+- Added support to road name get with functions
+- New hierarchy window
+- Fixing incorrect position of white texture planes (should be 1mm back to the next plane level to avoid overrides)
+- Fixing cleaning mesh when changing layout type to white texture

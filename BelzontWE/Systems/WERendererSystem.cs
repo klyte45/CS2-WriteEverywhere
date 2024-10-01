@@ -142,7 +142,7 @@ namespace BelzontWE
                         m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
                     }
 
-                    bool briWasNull = false;
+                    bool ìsPlaceholder = false;
                     bool doRender = true;
                     if (!mesh.ValueData.InitializedEffectiveText || ((FrameCounter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
                     {
@@ -191,7 +191,7 @@ namespace BelzontWE
                                     goto case WESimulationTextType.Placeholder;
                                 case WESimulationTextType.Placeholder:
                                     doRender = m_pickerTool.IsSelected;
-                                    briWasNull = true;
+                                    ìsPlaceholder = true;
                                     goto case WESimulationTextType.WhiteTexture;
                                 case WESimulationTextType.WhiteTexture:
                                     bri = WEAtlasesLibrary.GetWhiteTextureBRI();
@@ -201,7 +201,7 @@ namespace BelzontWE
                         if (doRender && bri.m_refText != "")
                         {
                             Material ownMaterial;
-                            if (briWasNull) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
+                            if (ìsPlaceholder) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
                             else material.GetOwnMaterial(ref mesh, out ownMaterial);
                             Graphics.DrawMesh(bri.Mesh, item.transformMatrix, ownMaterial, 0, null, 0);
                             if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {mesh.RenderInformation?.m_refText} | {mesh.RenderInformation?.Mesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");

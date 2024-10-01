@@ -27,7 +27,7 @@ namespace BelzontWE
                 textType = value;
                 dirty = true;
                 templateDirty = true;
-                if (value == WESimulationTextType.Placeholder)
+                if (value == WESimulationTextType.Placeholder || value == WESimulationTextType.WhiteTexture)
                 {
                     ResetBri();
                 }
@@ -51,6 +51,7 @@ namespace BelzontWE
         public void ResetBri()
         {
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
+            basicRenderInformation = default;
             MinLod = 0;
         }
         public static WETextDataMesh CreateDefault(Entity target, Entity? parent = null)

@@ -150,7 +150,7 @@ namespace BelzontWE
                                     main = m_weMainLookup[nextEntity],
                                     material = m_weMaterialLookup[nextEntity],
                                     mesh = m_weMeshLookup[nextEntity],
-                                    transformMatrix = WTmatrix
+                                    transformMatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, -.001f)), transform.offsetRotation, transform.scale)
                                 });
                             }
 
