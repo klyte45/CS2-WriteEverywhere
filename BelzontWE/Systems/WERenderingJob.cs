@@ -150,13 +150,13 @@ namespace BelzontWE
                                     main = m_weMainLookup[nextEntity],
                                     material = m_weMaterialLookup[nextEntity],
                                     mesh = m_weMeshLookup[nextEntity],
-                                    transformMatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, -.001f)), transform.offsetRotation, transform.scale)
+                                    transformMatrix = WTmatrix
                                 });
                             }
 
                             if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayoutWt))
                             {
-                                var itemMatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one);
+                                var itemMatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, .001f)), transform.offsetRotation, Vector3.one);
                                 for (int j = 0; j < subLayoutWt.Length; j++)
                                 {
                                     DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, unfilteredChunkIndex);

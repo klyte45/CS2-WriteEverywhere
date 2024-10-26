@@ -5,7 +5,8 @@
     align-items: center;
     padding-right: 5rem;
 
-    >[class^=slider_] {
+    >[class^=slider_] ,
+    >[class^=wrapper_] {
         flex-grow: 1;
         flex-shrink: 1;
     }

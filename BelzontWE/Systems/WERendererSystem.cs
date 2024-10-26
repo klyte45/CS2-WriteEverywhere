@@ -144,11 +144,9 @@ namespace BelzontWE
 
                     bool ìsPlaceholder = false;
                     bool doRender = true;
-                    if (!mesh.ValueData.InitializedEffectiveText || ((FrameCounter + item.textDataEntity.Index) & WEModData.InstanceWE.FramesCheckUpdateVal) == WEModData.InstanceWE.FramesCheckUpdateVal)
-                    {
-                        mesh.UpdateFormulaes(EntityManager, item.geometryEntity);
-                        material.UpdateFormulaes(EntityManager, item.geometryEntity);
-                    }
+                    mesh.UpdateFormulaes(EntityManager, item.geometryEntity);
+                    material.UpdateFormulaes(EntityManager, item.geometryEntity);
+
 
                     switch (mesh.TextType)
                     {

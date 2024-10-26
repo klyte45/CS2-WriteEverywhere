@@ -1,11 +1,13 @@
 ﻿using BelzontWE.Font.Utility;
 using Colossal.Entities;
 using Colossal.Mathematics;
+using Game.SceneFlow;
 using System;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEngine;
 
 namespace BelzontWE
 {
@@ -19,6 +21,7 @@ namespace BelzontWE
         private WETextDataValueString valueData;
         private bool dirty;
         private bool templateDirty;
+        private int nextUpdateFrame;
 
         public WESimulationTextType TextType
         {
@@ -78,6 +81,10 @@ namespace BelzontWE
             {
                 LastErrorStr = text;
             }
+            else
+            {
+                LastErrorStr = default;
+            }
             dirty = false;
             MinLod = 0;
             return this;
@@ -91,26 +98,33 @@ namespace BelzontWE
         public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity)
         {
             FontServer.Instance.EnsureFont(fontName);
-            UpdateFormulaes(em, targetEntity);
+            UpdateFormulaes(em, targetEntity, true);
             return this;
         }
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, bool force = false)
         {
+            if (!force && nextUpdateFrame > Time.frameCount)
+            {
+                return false;
+            }
+            nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
             bool result;
             switch (textType)
             {
                 case WESimulationTextType.Text:
+                    result = valueData.UpdateEffectiveValue(em, geometryEntity);
+                    break;
                 case WESimulationTextType.Image:
-                    result = valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : RenderInformation?.m_refText);
+                    result = valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString());
                     break;
                 case WESimulationTextType.Placeholder:
                     result = valueData.UpdateEffectiveValue(em, geometryEntity);
                     break;
                 case WESimulationTextType.WhiteTexture:
                     templateDirty = dirty = false;
-                    return false;
+                    return true;
                 default:
-                    return false;
+                    return true;
             }
             if (result) templateDirty = dirty = true;
             return result;

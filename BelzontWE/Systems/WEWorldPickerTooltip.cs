@@ -48,7 +48,7 @@ namespace BelzontWE
                 path = "main_name",
                 value = m_nameSystem.GetName(hoveredEntity).Translate()
             });
-            float2 position = WorldToTooltipPos(m_WETestTool.LastPos);
+            float2 position = WorldToTooltipPos(m_WETestTool.LastPos,out _);
             m_tooltipGroup.position = new float2(position.x + 5f, position.y + 20f);
             if (EntityManager.HasComponent<Owner>(hoveredEntity))
             {

@@ -26,12 +26,12 @@
   <!--Mod data-->
   <PropertyGroup>
     <ModId></ModId>
-    <Version>0.0.1.0</Version>
+    <Version>0.1.0.0</Version>
     <GameVersion>1.1.*</GameVersion>
     <ThumbnailPath>Properties/Thumbnail.png</ThumbnailPath>
     <DisplayName>Write Everywhere</DisplayName>
     <ShortDescription>Write texts in the CS2 world!</ShortDescription>
-    <ForumLink></ForumLink>
+    <ForumLink>https://forum.paradoxplaza.com/forum/threads/write-everywhere-cities-skylines-2-version.1711901/</ForumLink>
     <GitHubLink>https://github.com/klyte45/CS2-WriteEverywhere</GitHubLink>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -190,6 +190,9 @@
   <ItemGroup>
     <None Include="$(ModPropsFile)" Link="Properties\Mod.props" />
     <None Include="$(ModTargetsFile)" Link="Properties\Mod.targets" />
+    <None Include="Properties\PublishProfiles\PublishNewMod.pubxml.user" />
+    <None Include="Properties\PublishProfiles\PublishNewVersion.pubxml.user" />
+    <None Include="Properties\PublishProfiles\UpdateCurrentVersion.pubxml.user" />
   </ItemGroup>
 
   <ItemGroup>
@@ -241,6 +244,9 @@
     <EmbeddedResource Include="UI\Images\FrameParamsInvalidImage.png" />
     <EmbeddedResource Include="UI\Images\FrameParamsInvalidImageAsset.png" />
     <EmbeddedResource Include="UI\Images\FrameParamsNotSet.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Screenshots\" />
   </ItemGroup>
 
 </Project>

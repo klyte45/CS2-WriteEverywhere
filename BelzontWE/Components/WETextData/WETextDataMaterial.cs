@@ -35,6 +35,7 @@ namespace BelzontWE
         private bool dirty;
         private GCHandle ownMaterial;
         private Colossal.Hash128 ownMaterialGuid;
+        private int nextUpdateFrame;
 
         public Color Color { readonly get => color.defaultValue; set { color.defaultValue = value; } }
         public Color EmissiveColor { readonly get => emissiveColor.defaultValue; set { emissiveColor.defaultValue = value; } }
@@ -85,6 +86,11 @@ namespace BelzontWE
 
         public bool UpdateFormulaes(EntityManager em, Entity geometryEntity)
         {
+            if (nextUpdateFrame > Time.frameCount)
+            {
+                return false;
+            }
+            nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
             return dirty |= color.UpdateEffectiveValue(em, geometryEntity)
               | emissiveColor.UpdateEffectiveValue(em, geometryEntity)
               | glassColor.UpdateEffectiveValue(em, geometryEntity)
