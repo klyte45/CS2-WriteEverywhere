@@ -513,7 +513,7 @@ namespace BelzontWE
             if (!isPrefabListDirty) return;
             if (LoadingPrefabLayoutsCoroutine != null) GameManager.instance.StopCoroutine(LoadingPrefabLayoutsCoroutine);
             if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"UpdatePrefabIndexDictionary!!!");
-
+            
             LoadingPrefabLayoutsCoroutine = GameManager.instance.StartCoroutine(UpdatePrefabIndexDictionary_Coroutine());
         }
         private IEnumerator UpdatePrefabIndexDictionary_Coroutine()
@@ -539,6 +539,7 @@ namespace BelzontWE
 
         private IEnumerator LoadTemplatesFromFolder(int offsetPercentage, float totalStep)
         {
+            KFileUtils.EnsureFolderCreation(SAVED_PREFABS_FOLDER);
             var currentValues = PrefabTemplates.Keys.ToArray();
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.01f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.erasingCachedLayouts");
             yield return 0;

@@ -1,4 +1,4 @@
-# IT'S BETA AND IT'S MAY BREAK YOUR GAME. USE AT YOUR OWN RISK!
+# IT'S BETA AND IT MAY BREAK YOUR GAME. USE AT YOUR OWN RISK!
 
 This is the Cities Skylines 2 version of Write Everywhere ([CS1 mod version here](https://steamcommunity.com/sharedfiles/filedetails/?id=2887458944)). 
 It keep some of the features from the CS1 version plus some new features that are only possible in CS2.

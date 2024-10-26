@@ -1,2 +1,2 @@
-# Beta Release version (v0.1.0r0)
-- Initial implementation of the features
+#  v0.1.0r1
+- Fixing error popup alerting about layouts folder not being found

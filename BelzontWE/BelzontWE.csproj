@@ -26,7 +26,7 @@
   <!--Mod data-->
   <PropertyGroup>
     <ModId>92908</ModId>
-    <Version>0.1.0.0</Version>
+    <Version>0.1.0.1</Version>
     <GameVersion>1.1.*</GameVersion>
     <ThumbnailPath>Properties/Thumbnail.png</ThumbnailPath>
     <DisplayName>Write Everywhere</DisplayName>

@@ -1,8 +1,8 @@
 <Publish>
-  <ModId Value="" />
+  <ModId Value="92908" />
   <DisplayName Value="Write Everywhere" />
   <ShortDescription Value="Write texts in the CS2 world!" />
-  <LongDescription># IT'S BETA AND IT'S MAY BREAK YOUR GAME. USE AT YOUR OWN RISK!
+  <LongDescription># IT'S BETA AND IT MAY BREAK YOUR GAME. USE AT YOUR OWN RISK!
 
 This is the Cities Skylines 2 version of Write Everywhere ([CS1 mod version here](https://steamcommunity.com/sharedfiles/filedetails/?id=2887458944)). 
 It keep some of the features from the CS1 version plus some new features that are only possible in CS2.
@@ -42,10 +42,13 @@ First of all, read the [files repository](https://github.com/klyte45/CS2-WriteEv
 I want to thank the people that helped me with CS2 modding since first days, specially mentioning **yenyang** and **krzychu**. Also thanks **Chameleon**, **Mimonsi** and **Nullpinter** for testing the mod during the development process.</LongDescription>
   <Thumbnail Value="Properties/Thumbnail.png" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/write-everywhere-cities-skylines-2-version.1711901/" />
-  <ModVersion Value="0.1.0.0" />
+  <ModVersion Value="0.1.0.1" />
   <GameVersion Value="1.1.*" />
-  <ChangeLog># Beta Release version (v0.1.0r0)
-- Initial implementation of the features</ChangeLog>
+  <ChangeLog>#  v0.1.0r1
+- Fixing error popup alerting about layouts folder not being found</ChangeLog>
+  <ExternalLink Type="github" Url="https://github.com/klyte45/CS2-WriteEverywhere" />
+  <ExternalLink Type="youtube" Url="https://www.youtube.com/Klyte45" />
+  <ExternalLink Type="kofi" Url="https://ko-fi.com/klyte45" />
   <Tag Value="Code Mod" />
   <Screenshot Value="Screenshots\0_main.jpg" />
   <Screenshot Value="Screenshots\1_a.jpg" />
