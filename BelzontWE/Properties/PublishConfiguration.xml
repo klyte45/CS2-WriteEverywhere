@@ -16,6 +16,8 @@ For detailed reference and samples, [look this repository](https://github.com/kl
 - Make color-animated planes with images (requires some coding)
 - Add plates to the vehicles of the game with the style you wish.
 
+This list isn't exhaustive and many more uses are already possible. Use your imagination!
+
 ## Requirements
 
 This mod is simpler to understand when compared with its CS1 version, but it still being a mod with a lot of stuff that must be discovered by the users - specially at this moment.
@@ -42,10 +44,11 @@ First of all, read the [files repository](https://github.com/klyte45/CS2-WriteEv
 I want to thank the people that helped me with CS2 modding since first days, specially mentioning **yenyang** and **krzychu**. Also thanks **Chameleon**, **Mimonsi** and **Nullpinter** for testing the mod during the development process.</LongDescription>
   <Thumbnail Value="Properties/Thumbnail.png" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/write-everywhere-cities-skylines-2-version.1711901/" />
-  <ModVersion Value="0.1.0.1" />
+  <ModVersion Value="0.1.0.2" />
   <GameVersion Value="1.1.*" />
-  <ChangeLog>#  v0.1.0r1
-- Fixing error popup alerting about layouts folder not being found</ChangeLog>
+  <ChangeLog>#  v0.1.0r2
+- Added vehicle plate line 1 &amp; 2 builtin functions
+- Fixing misplacement in Z axis for prefab default layouts generation</ChangeLog>
   <ExternalLink Type="github" Url="https://github.com/klyte45/CS2-WriteEverywhere" />
   <ExternalLink Type="youtube" Url="https://www.youtube.com/Klyte45" />
   <ExternalLink Type="kofi" Url="https://ko-fi.com/klyte45" />

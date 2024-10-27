@@ -12,6 +12,8 @@ For detailed reference and samples, [look this repository](https://github.com/kl
 - Make color-animated planes with images (requires some coding)
 - Add plates to the vehicles of the game with the style you wish.
 
+This list isn't exhaustive and many more uses are already possible. Use your imagination!
+
 ## Requirements
 
 This mod is simpler to understand when compared with its CS1 version, but it still being a mod with a lot of stuff that must be discovered by the users - specially at this moment.

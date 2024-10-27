@@ -105,6 +105,7 @@ namespace BelzontWE
                     case WESimulationTextType.Archetype:
                         if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout2))
                         {
+                            prevMatrix *= Matrix4x4.TRS(new Vector3(0, 0, .0008f), default, Vector3.one);
                             for (int j = 0; j < subLayout2.Length; j++)
                             {
                                 DrawTree(geometryEntity, subLayout2[j].m_weTextData, prevMatrix, unfilteredChunkIndex);

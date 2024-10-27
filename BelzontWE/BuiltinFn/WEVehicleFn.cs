@@ -56,10 +56,14 @@ namespace BelzontWE.Builtin
                 : number.m_Number.ToString();
         };
         public static Func<Entity, string> GetSerialNumber_binding = (entity) => (entity.Index % 100000).ToString().PadLeft(5, '0');
+        public static Func<Entity, string> GetVehiclePlateLine1_binding = (entity) => { var plate = GetVehiclePlate(entity); return plate[..(plate.Length / 2)]; };
+        public static Func<Entity, string> GetVehiclePlateLine2_binding = (entity) => { var plate = GetVehiclePlate(entity); return plate[(plate.Length / 2)..]; };
 
         public static string GetTargetDestinationStatic(Entity reference) => GetTargetDestinationStatic_binding?.Invoke(reference) ?? "<???>";
         public static string GetTargetDestinationDynamic(Entity reference) => GetTargetDestinationDynamic_binding?.Invoke(reference) ?? "<???>";
         public static string GetVehiclePlate(Entity vehicleRef) => GetVehiclePlate_binding?.Invoke(vehicleRef) ?? "<???>";
+        public static string GetVehiclePlateLine1(Entity vehicleRef) => GetVehiclePlateLine1_binding?.Invoke(vehicleRef) ?? "<???>";
+        public static string GetVehiclePlateLine2(Entity vehicleRef) => GetVehiclePlateLine2_binding?.Invoke(vehicleRef) ?? "<???>";
         public static string GetTransportLineNumber(Entity reference) => GetTargetTransportLineNumber_binding?.Invoke(reference) ?? "<!>";
         public static string GetSerialNumber(Entity reference) => GetSerialNumber_binding?.Invoke(reference) ?? "<???>";
     }
