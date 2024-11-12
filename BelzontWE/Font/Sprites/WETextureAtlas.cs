@@ -16,7 +16,7 @@ namespace BelzontWE.Font
 {
     public class WETextureAtlas : IDisposable, ISerializable
     {
-        public const uint CURRENT_VERSION = 0;
+        public const uint CURRENT_VERSION = 1;
         public int Width => width;
         public int Height => height;
         public Dictionary<FixedString32Bytes, WESpriteInfo> Sprites { get; } = new();
@@ -25,7 +25,7 @@ namespace BelzontWE.Font
         public Texture2D Control { get; set; }
         public Texture2D Mask { get; set; }
         public Texture2D Normal { get; set; }
-        public uint Version { get; private set; }
+        public uint Version { get; set; }
         public bool IsApplied { get; private set; }
         public HeuristicMethod Method { get; private set; }
         public float Occupancy => rectsPack.Occupancy();
@@ -59,7 +59,7 @@ namespace BelzontWE.Font
             Emissive.SetPixels(pixelsToSet);
             Control.SetPixels(pixelsToSet);
             Mask.SetPixels(pixelsToSet);
-            Normal.SetPixels(pixelsToSet.Select(x=> new Color(.5f,.5f,1f)).ToArray());
+            Normal.SetPixels(pixelsToSet.Select(x => new Color(.5f, .5f, 1f)).ToArray());
             Method = method;
             rectsPack = new MaxRectsBinPack(width, height, false);
             WillSerialize = willSerialize;
@@ -67,10 +67,15 @@ namespace BelzontWE.Font
 
         #region Write
 
-        internal int Insert(WEImageInfo entry)
+        internal int Insert(WEImageInfo entry) => Insert(entry.Name, entry.Main, entry.Emissive, entry.ControlMask, entry.MaskMap, entry.Normal);
+
+        public int InsertAndApply(string spriteName, Texture2D main, Texture2D emissive = null, Texture2D control = null, Texture2D mask = null, Texture2D normal = null)
         {
-            return Insert(entry.Name, entry.Main, entry.Emissive, entry.ControlMask, entry.MaskMap, entry.Normal);
+            var result = Insert(spriteName, main, emissive, control, mask, normal);
+            if (result == 0) Apply();
+            return result;
         }
+
         public int Insert(string spriteName, Texture2D main, Texture2D emissive = null, Texture2D control = null, Texture2D mask = null, Texture2D normal = null)
         {
             if (spriteName == null || Sprites.ContainsKey(spriteName)) return 1;
@@ -235,6 +240,7 @@ namespace BelzontWE.Font
             {
                 writer.Write(spriteInfo.Value);
             }
+            writer.Write(Version);
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -293,6 +299,11 @@ namespace BelzontWE.Font
                 }
                 Apply();
             };
+            if (version >= 1)
+            {
+                reader.Read(out uint versionAtlas);
+                Version = versionAtlas;
+            }
             return true;
         }
 

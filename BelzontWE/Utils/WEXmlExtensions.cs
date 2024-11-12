@@ -99,14 +99,16 @@ namespace BelzontWE.Utils
             {
                 offsetPosition = (Vector3Xml)value.offsetPosition,
                 offsetRotation = (Vector3Xml)((Quaternion)value.offsetRotation).eulerAngles,
-                scale = (Vector3Xml)value.scale
+                scale = (Vector3Xml)value.scale,
+                isAbsoluteScale = value.useAbsoluteSizeEditing
             };
         public static WETextDataTransform ToComponent(this WETextDataXml.TransformXml value)
             => value is null ? default : new()
             {
                 offsetPosition = value.offsetPosition ?? default,
                 offsetRotation = Quaternion.Euler(value.offsetRotation ?? default),
-                scale = value.scale ?? Vector3.one
+                scale = value.scale ?? Vector3.one,
+                useAbsoluteSizeEditing = value.isAbsoluteScale
             };
 
 
@@ -129,7 +131,7 @@ namespace BelzontWE.Utils
             => new()
             {
                 atlas = value.Atlas.ToString(),
-                image = value.ValueData.ToXml()
+                image = value.ValueData.ToXml(),                
             };
         public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataImageXml value)
             => value is null ? default : new()

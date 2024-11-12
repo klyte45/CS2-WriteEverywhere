@@ -172,9 +172,16 @@ namespace BelzontWE
                             return;
                         }
                         var scale = transform.scale;
-                        if (mesh.HasBRI && mesh.TextType == WESimulationTextType.Text && mesh.MaxWidthMeters > 0 && mesh.BriWidthMetersUnscaled * scale.x > mesh.MaxWidthMeters)
+                        if (mesh.HasBRI)
                         {
-                            scale.x = mesh.MaxWidthMeters / mesh.BriWidthMetersUnscaled;
+                            if (mesh.TextType == WESimulationTextType.Image && transform.useAbsoluteSizeEditing)
+                            {
+                                scale.x /= mesh.BriWidthMetersUnscaled;
+                            }
+                            if (mesh.TextType == WESimulationTextType.Text && mesh.MaxWidthMeters > 0 && mesh.BriWidthMetersUnscaled * scale.x > mesh.MaxWidthMeters)
+                            {
+                                scale.x = mesh.MaxWidthMeters / mesh.BriWidthMetersUnscaled;
+                            }
                         }
                         var refPos = parentIsPlaceholder ? default : transform.offsetPosition;
                         var refRot = parentIsPlaceholder ? default : transform.offsetRotation;

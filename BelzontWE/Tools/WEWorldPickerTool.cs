@@ -46,7 +46,6 @@ namespace BelzontWE
         private ProxyAction m_MoveAction;
         private ProxyAction m_RotateAction;
         private ProxyAction m_CameraZoomAction;
-        private ProxyAction m_CameraZoomActionMouse;
         private ProxyAction m_increasePrecisionValue;
         private ProxyAction m_reducePrecisionValue;
         //private ProxyAction m_nextText;
@@ -105,7 +104,6 @@ namespace BelzontWE
             m_ToggleLockCameraRotation = WEModData.Instance.GetAction(WEModData.kActionToggleLockCameraRotation);
 
             m_CameraZoomAction = InputManager.instance.FindAction("Camera", "Zoom");
-            m_CameraZoomActionMouse = InputManager.instance.FindAction("Camera", "Zoom Mouse");
             m_ToolOutputBarrier = World.GetOrCreateSystemManaged<ToolOutputBarrier>();
             m_Controller = World.GetOrCreateSystemManaged<WEWorldPickerController>();
             m_cameraSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
@@ -338,7 +336,7 @@ namespace BelzontWE
                         }
 #pragma warning restore CS0252 // Possível comparação de referência inesperada; o lado esquerdo precisa de conversão
                         m_cameraDisabledHere = cameraDisabledThisFrame = true;
-                        m_cameraDistance = math.clamp(m_cameraDistance + (m_CameraZoomActionMouse.ReadValue<float>() * 4f) + m_CameraZoomAction.ReadValue<float>(), 1f, 20f);
+                        m_cameraDistance = math.clamp(m_cameraDistance + m_CameraZoomAction.ReadValue<float>(), 1f, 20f);
                         var itemAngles = m_TransformController.CurrentRotation.Value;
                         var isRotationLocked = m_Controller.CameraRotationLocked.Value;
                         var targetMatrix = (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch

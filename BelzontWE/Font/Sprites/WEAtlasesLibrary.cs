@@ -212,6 +212,9 @@ namespace BelzontWE.Sprites
         #endregion
 
         #region City management
+        public WETextureAtlas GetOrCreateAtCity(FixedString32Bytes atlasName)
+            => CityAtlases.TryGetValue(atlasName, out var atlas) ? atlas : (CityAtlases[atlasName] = new WETextureAtlas());
+
         public bool CopyToCity(FixedString32Bytes atlasName, FixedString32Bytes newName)
         {
             if (!LocalAtlases.TryGetValue(atlasName, out var atlas) || CityAtlases.ContainsKey(newName))
