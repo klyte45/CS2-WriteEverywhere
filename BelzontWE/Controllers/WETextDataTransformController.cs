@@ -1,5 +1,6 @@
 ﻿using Belzont.Utils;
 using Colossal.Entities;
+using System;
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -13,7 +14,8 @@ namespace BelzontWE
         public MultiUIValueBinding<float3, float[]> CurrentRotation { get; private set; }
         public MultiUIValueBinding<float3, float[]> CurrentPosition { get; private set; }
         public MultiUIValueBinding<bool> UseAbsoluteSizeEditing { get; private set; }
-        protected override void DoInitValueBindings()
+
+        protected override void DoInitValueBindings(Action<string, object[]> EventCaller, Action<string, Delegate> CallBinder)
         {
 
             CurrentScale = new(default, $"{PREFIX}{nameof(CurrentScale)}", EventCaller, CallBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new float3(x[0], x[1], x[2]));

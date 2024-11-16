@@ -1,5 +1,6 @@
 ﻿using Belzont.Utils;
 using Colossal.Entities;
+using System;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -17,7 +18,7 @@ namespace BelzontWE
         public MultiUIValueBinding<int> ValueTextFormulaeCompileResult { get; private set; }
         public MultiUIValueBinding<string[]> ValueTextFormulaeCompileResultErrorArgs { get; private set; }
 
-        protected override void DoInitValueBindings()
+        protected override void DoInitValueBindings(Action<string, object[]> EventCaller, Action<string, Delegate> CallBinder)
         {
             MaxWidth = new(default, $"{PREFIX}{nameof(MaxWidth)}", EventCaller, CallBinder);
             ValueText = new(default, $"{PREFIX}{nameof(ValueText)}", EventCaller, CallBinder);

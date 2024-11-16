@@ -1,5 +1,6 @@
 ﻿using Belzont.Utils;
 using Colossal.Entities;
+using System;
 using Unity.Entities;
 using UnityEngine;
 
@@ -75,7 +76,7 @@ namespace BelzontWE
         public MultiUIValueBinding<string[]> GlassThicknessFormulaeCompileResultErrorArgs { get; private set; }
 
 
-        protected override void DoInitValueBindings()
+        protected override void DoInitValueBindings(Action<string, object[]> EventCaller, Action<string, Delegate> CallBinder)
         {
             MainColor = new(default, $"{PREFIX}{nameof(MainColor)}", EventCaller, CallBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
             EmissiveColor = new(default, $"{PREFIX}{nameof(EmissiveColor)}", EventCaller, CallBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
