@@ -336,7 +336,7 @@ namespace BelzontWE
                         }
 #pragma warning restore CS0252 // Possível comparação de referência inesperada; o lado esquerdo precisa de conversão
                         m_cameraDisabledHere = cameraDisabledThisFrame = true;
-                        m_cameraDistance = math.clamp(m_cameraDistance + m_CameraZoomAction.ReadValue<float>(), 1f, 20f);
+                        m_cameraDistance = math.clamp(m_cameraDistance + (m_CameraZoomAction.ReadValue<float>() * 4f), 1f, 30f);
                         var itemAngles = m_TransformController.CurrentRotation.Value;
                         var isRotationLocked = m_Controller.CameraRotationLocked.Value;
                         var targetMatrix = (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch

@@ -575,7 +575,7 @@ namespace BelzontWE
                 var prefabName = Path.GetFileName(fileItem)[..^(PREFAB_LAYOUT_EXTENSION.Length + 1)];
                 if (!PrefabNameToIndex.TryGetValue(prefabName, out var idx))
                 {
-                    LogUtils.DoInfoLog($"No prefab loaded with name: {prefabName}. It's harmless. Skipping...");
+                    LogUtils.DoLog($"No prefab loaded with name: {prefabName}. This is harmless. Skipping...");
                     errorsList.Add(relativePath, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidPrefabName]", null, new Dictionary<string, ILocElement>()
                     {
                         ["fileName"] = LocalizedString.Value(relativePath),

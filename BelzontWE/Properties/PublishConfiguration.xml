@@ -46,9 +46,11 @@ I want to thank the people that helped me with CS2 modding since first days, spe
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/write-everywhere-cities-skylines-2-version.1711901/" />
   <ModVersion Value="0.1.0.3" />
   <GameVersion Value="1.1.*" />
-  <ChangeLog>#  v0.1.0r2
-- Added vehicle plate line 1 &amp; 2 builtin functions
-- Fixing misplacement in Z axis for prefab default layouts generation</ChangeLog>
+  <ChangeLog>#  v0.1.0r3 (26-NOV-24)
+- Fixes for 1.1.12
+- Fixing absolute size mode not considering image proportion - now it will respect the absolute size despite the proportion
+- Adding new functions for Color handling
+- Adjusting level of log when asset isn't found for asset default layout</ChangeLog>
   <ExternalLink Type="github" Url="https://github.com/klyte45/CS2-WriteEverywhere" />
   <ExternalLink Type="youtube" Url="https://www.youtube.com/Klyte45" />
   <ExternalLink Type="kofi" Url="https://ko-fi.com/klyte45" />
