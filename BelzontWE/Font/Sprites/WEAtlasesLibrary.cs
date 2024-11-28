@@ -35,6 +35,8 @@ namespace BelzontWE.Sprites
         private readonly Queue<Action> actionQueue = new();
         private EntityQuery m_atlasUsageQuery;
 
+        internal event Action OnLocalCacheAtlasReset;
+
         protected override void OnCreate()
         {
             Instance = this;
@@ -139,32 +141,7 @@ namespace BelzontWE.Sprites
                 yield return 0;
                 var spritesToAdd = new List<WEImageInfo>();
                 WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, ref errors);
-                if (spritesToAdd.Count > 0)
-                {
-                    var atlasName = Path.GetFileNameWithoutExtension(dir);
-                    LocalAtlases[atlasName] = new(512);
-                    for (int j = 0; j < spritesToAdd.Count; j++)
-                    {
-                        WEImageInfo entry = spritesToAdd[j];
-                        while (LocalAtlases[atlasName].Insert(entry) == 2)
-                        {
-                            var currentSize = LocalAtlases[atlasName].Width;
-                            if (currentSize > 8196) break;
-                            var newAtlas = new WETextureAtlas(currentSize * 2);
-                            newAtlas.InsertAll(LocalAtlases[atlasName]);
-                            LocalAtlases[atlasName].Dispose();
-                            LocalAtlases[atlasName] = newAtlas;
-                        }
-                        entry.Dispose();
-
-                        if (j % 3 == 2)
-                        {
-                            NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * (i + ((j + 1f) / spritesToAdd.Count)) / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
-                        }
-                    }
-                    LocalAtlases[atlasName].Apply();
-                    if (BasicIMod.DebugMode) LocalAtlases[atlasName]._SaveDebug(atlasName);
-                }
+                RegisterAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25);
             }
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
             yield return 0;
@@ -195,6 +172,44 @@ namespace BelzontWE.Sprites
 
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 100, textI18n: "generatingAtlasesCache.complete");
             currentJobRunning = null;
+            OnLocalCacheAtlasReset?.Invoke();
+        }
+        internal void UnregisterLocalAtlas(string atlasName)
+        {
+            if (LocalAtlases.ContainsKey(atlasName))
+            {
+                var item = LocalAtlases[atlasName];
+                actionQueue.Enqueue(() => item?.Dispose());
+            }
+            LocalAtlases.Remove(atlasName);
+        }
+        internal void RegisterAtlas(string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
+        {
+            if (spritesToAdd.Count > 0)
+            {
+                LocalAtlases[atlasName] = new(512);
+                for (int j = 0; j < spritesToAdd.Count; j++)
+                {
+                    WEImageInfo entry = spritesToAdd[j];
+                    while (LocalAtlases[atlasName].Insert(entry) == 2)
+                    {
+                        var currentSize = LocalAtlases[atlasName].Width;
+                        if (currentSize > 8196) break;
+                        var newAtlas = new WETextureAtlas(currentSize * 2);
+                        newAtlas.InsertAll(LocalAtlases[atlasName]);
+                        LocalAtlases[atlasName].Dispose();
+                        LocalAtlases[atlasName] = newAtlas;
+                    }
+                    entry.Dispose();
+
+                    if (j % 3 == 2)
+                    {
+                        NotificationHelper.NotifyProgress(notificationGroupId, Mathf.RoundToInt(progressOffset + (loopCompleteSizeProgress * ((j + 1f) / spritesToAdd.Count))), argsTitle: argsTitle, textI18n: notificationI18n, argsText: argsNotif, titleI18n: notificationTitlei18n);
+                    }
+                }
+                LocalAtlases[atlasName].Apply();
+                if (BasicIMod.DebugMode) LocalAtlases[atlasName]._SaveDebug(atlasName);
+            }
         }
 
         private void ClearAtlasDict(Dictionary<FixedString32Bytes, WETextureAtlas> atlasDict)

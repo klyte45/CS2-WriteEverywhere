@@ -7,7 +7,7 @@ namespace BelzontWE.Sprites
 {
     public static class WEAtlasLoadingUtils
     {
-        public static void LoadAllImagesFromFolderRef(string folder, List<WEImageInfo> spritesToAdd, ref List<string> errors)
+        internal static void LoadAllImagesFromFolderRef(string folder, List<WEImageInfo> spritesToAdd, ref List<string> errors)
         {
             foreach (var imgFile in Directory.GetFiles(folder, "*.png"))
             {
@@ -16,7 +16,16 @@ namespace BelzontWE.Sprites
             }
         }
 
-        public static Texture2D TryLoadTexture(string file, int width, int height)
+        internal static void LoadAllImagesFromList(string[] files, List<WEImageInfo> spritesToAdd, ref List<string> errors)
+        {
+            foreach (var imgFile in files)
+            {
+                var info = WEImageInfo.CreateFromBaseImageFile(errors, imgFile);
+                if (info != null) spritesToAdd.Add(info);
+            }
+        }
+
+        internal static Texture2D TryLoadTexture(string file, int width, int height)
         {
             if (!File.Exists(file)) return null;
             var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);

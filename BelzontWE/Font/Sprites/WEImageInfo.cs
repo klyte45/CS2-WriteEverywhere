@@ -1,10 +1,10 @@
 ﻿using Belzont.Utils;
+using BelzontWE.Sprites;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
-using BelzontWE.Sprites;
 
 namespace BelzontWE.Layout
 {
@@ -42,6 +42,7 @@ namespace BelzontWE.Layout
 
         public static WEImageInfo CreateFromBaseImageFile(List<string> errors, string imgFile)
         {
+            if (!imgFile.EndsWith(".png")) return null;
             if (excludeFileSuffixes.Any(x => imgFile.EndsWith(x))) return null;
             var fileData = File.ReadAllBytes(imgFile);
             var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
@@ -53,7 +54,7 @@ namespace BelzontWE.Layout
             }
             if (tex.LoadImage(fileData))
             {
-                if (tex.width <= MAX_SIZE_IMAGE_IMPORT && tex.width <= MAX_SIZE_IMAGE_IMPORT)
+                if (tex.height <= MAX_SIZE_IMAGE_IMPORT && tex.width <= MAX_SIZE_IMAGE_IMPORT)
                 {
                     var imgName = Path.GetFileNameWithoutExtension(imgFile);
                     return new WEImageInfo()
@@ -68,7 +69,7 @@ namespace BelzontWE.Layout
                 }
                 else
                 {
-                    errors.Add($"{Path.GetFileName(imgFile)}: IMAGE TOO LARGE (max: {MAX_SIZE_IMAGE_IMPORT}x{MAX_SIZE_IMAGE_IMPORT})");
+                    errors.Add($"{Path.GetFileName(imgFile)}: IMAGE TOO LARGE (max: {MAX_SIZE_IMAGE_IMPORT}x{MAX_SIZE_IMAGE_IMPORT}, have: {tex.width}x{tex.height})");
                     GameObject.Destroy(tex);
                 }
             }
