@@ -1,4 +1,5 @@
-﻿using Belzont.Utils;
+﻿using Belzont.Interfaces;
+using Belzont.Utils;
 using BelzontWE.Sprites;
 using Colossal.OdinSerializer.Utilities;
 using Colossal.PSI.Common;
@@ -8,6 +9,7 @@ using Game.UI.Localization;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace BelzontWE.Bridge
@@ -16,41 +18,50 @@ namespace BelzontWE.Bridge
     public static class ImageManagementBridge
     {
         private const string LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX = "generatingAtlasesCacheMod";
-        private static string GetModAtlasName(string modIdentifier, string atlasName) => $"≤{modIdentifier}-{atlasName}≥";
+        private static string GetModAtlasName(Assembly mainAssembly, string atlasName)
+        {
+            var modIdentifier = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset.identifier;
+            return $"≤{(int.TryParse(modIdentifier, out int val) ? val.ToString() : modIdentifier[..Math.Min(11, modIdentifier.Length)])}-{atlasName}≥";
+        }
 
-        public static void RegisterImageAtlas(string modIdentifier, string atlasName, string[] imagePaths, Action<string> onCompleteLoading, string modExhibitionName = null)
-            => new CoroutineWithData<string>(GameManager.instance, RegisterImageAtlas_Internal(modIdentifier, atlasName, imagePaths, modExhibitionName), onCompleteLoading);
+        public static string GetImageAtlasVersion() => BasicIMod.FullVersion;
+
+        public static void RegisterImageAtlas(Assembly mainAssembly, string atlasName, string[] imagePaths, Action<string> onCompleteLoading)
+        {
+            new CoroutineWithData<string>(GameManager.instance, RegisterImageAtlas_Internal(mainAssembly, atlasName, imagePaths), onCompleteLoading);
+        }
 
         public static void RegisterForAtlasCacheResetNotification(Action onLocalCacheAtlasReset) => WEAtlasesLibrary.Instance.OnLocalCacheAtlasReset += onLocalCacheAtlasReset;
         public static void UnregisterForAtlasCacheResetNotification(Action onLocalCacheAtlasReset) => WEAtlasesLibrary.Instance.OnLocalCacheAtlasReset -= onLocalCacheAtlasReset;
 
-
-        private static IEnumerator<string> RegisterImageAtlas_Internal(string modIdentifier, string atlasName, string[] imagePaths, string modExhibitionName = null)
+        private static IEnumerator<string> RegisterImageAtlas_Internal(Assembly mainAssembly,  string atlasName, string[] imagePaths)
         {
             yield return null;
-            var targetAtlasName = GetModAtlasName(modIdentifier, atlasName);
+            var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly);
+            var modIdentifier = modData.asset.identifier;
+            var displayName = modData.asset.name;
+
+            var targetAtlasName = GetModAtlasName(mainAssembly, atlasName);
             var notifGroup = $"{LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX}:{targetAtlasName}";
             Dictionary<string, ILocElement> args = new()
             {
                 ["atlasName"] = LocalizedString.Value(atlasName),
-                ["mod"] = LocalizedString.Value(modExhibitionName ?? modIdentifier),
+                ["mod"] = LocalizedString.Value(displayName),
             };
             try
             {
-                if (modIdentifier.IsNullOrWhitespace()) throw new ArgumentNullException("modName");
                 if (atlasName.IsNullOrWhitespace()) throw new ArgumentNullException("atlasName");
                 if (imagePaths is null) throw new ArgumentNullException("imagePaths");
                 if (imagePaths.Length == 0) throw new ArgumentOutOfRangeException("imagePaths", "Should not be empty.");
-                if (!Regex.IsMatch(modIdentifier, "[a-z_A-Z0-9]{3,6}")) throw new ArgumentException("Should have 3 to 6 characters, alphanumeric or underscore only.", "modName");
-                if (!Regex.IsMatch(atlasName, "[a-z_A-Z0-9]{3,20}")) throw new ArgumentException("Should have 3 to 20 characters, alphanumeric or underscore only.", "atlasName");
-                if (CheckImageAtlasExists(modIdentifier, atlasName)) throw new DuplicateNameException("Atlas already exists!");
+                if (!Regex.IsMatch(atlasName, "[a-z_A-Z0-9]{3,15}")) throw new ArgumentException("Should have 3 to 15 characters, alphanumeric or underscore only.", "atlasName");
+                if (CheckImageAtlasExists(mainAssembly, atlasName)) throw new DuplicateNameException("Atlas already exists!");
 
                 var spritesToAdd = new List<Layout.WEImageInfo>();
                 var errors = new List<string>();
                 WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, ref errors);
                 if (errors.Count > 0)
                 {
-                    throw new Exception($"Some error were found when trying to create atlas '{atlasName}' for mod identified by '{modIdentifier}', aborting:\n- {string.Join("\n- ", errors)}");
+                    throw new Exception($"Some error were found when trying to create atlas '{atlasName}' for mod identified by '{modIdentifier}' ({displayName}), aborting:\n- {string.Join("\n- ", errors)}");
                 }
                 if (spritesToAdd.Count == 0)
                 {
@@ -64,27 +75,26 @@ namespace BelzontWE.Bridge
             {
                 void onNotifClick()
                 {
-                    var details = LocalizedString.Value($"Exception generated by the mod {modExhibitionName ?? modIdentifier} ({modIdentifier}), affecting Write Everywhere.\n\n{e}");
+                    var details = LocalizedString.Value($"Exception generated by the mod {displayName ?? modIdentifier} ({modIdentifier}), affecting Write Everywhere.\n\n{e}");
                     LocalizedString title = new("K45::WE.vuio[generatingAtlasesCacheMod.errorDialog.title]", null, args);
                     LocalizedString message = new("K45::WE.vuio[generatingAtlasesCacheMod.errorDialog.header]", null, args);
                     LocalizedString confirmAction = LocalizedString.Id("Common.OK");
                     var dialog = new MessageDialogWithDetails(title, message, details, true, confirmAction);
-                    GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, (x) => { });
+                    GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, (x) => NotificationHelper.RemoveNotification(notifGroup));
                 }
-
                 NotificationHelper.NotifyWithCallback(notifGroup, ProgressState.Failed, onNotifClick, titleI18n: LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, argsText: args, argsTitle: args, textI18n: "generatingAtlasesCacheMod.error");
-                throw e;
+                LogUtils.DoWarnLog("Error with WE integrable mod:", e);
             }
             yield return targetAtlasName;
         }
 
-        public static bool CheckImageAtlasExists(string modIdentifier, string atlasName) => WEAtlasesLibrary.Instance.AtlasExists(GetModAtlasName(modIdentifier, atlasName));
+        public static bool CheckImageAtlasExists(Assembly mainAssembly, string atlasName) => WEAtlasesLibrary.Instance.AtlasExists(GetModAtlasName(mainAssembly, atlasName));
 
-        public static void EnsureAtlasDeleted(string modIdentifier, string atlasName)
+        public static void EnsureAtlasDeleted(Assembly mainAssembly, string atlasName)
         {
-            if (CheckImageAtlasExists(modIdentifier, atlasName))
+            if (CheckImageAtlasExists(mainAssembly, atlasName))
             {
-                WEAtlasesLibrary.Instance.UnregisterLocalAtlas(GetModAtlasName(modIdentifier, atlasName));
+                WEAtlasesLibrary.Instance.UnregisterLocalAtlas(GetModAtlasName(mainAssembly, atlasName));
             }
         }
     }

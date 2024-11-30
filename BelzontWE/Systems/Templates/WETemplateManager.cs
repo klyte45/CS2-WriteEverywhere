@@ -35,6 +35,7 @@ namespace BelzontWE
         public const string SIMPLE_LAYOUT_EXTENSION = "welayout.xml";
         public const string PREFAB_LAYOUT_EXTENSION = "wedefault.xml";
         public static readonly string SAVED_PREFABS_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "layouts");
+        private const string MODSOURCE_IDENTIFIER = "MOD:";
         public static WETemplateManager Instance { get; private set; }
 
         public const int CURRENT_VERSION = 0;
@@ -52,6 +53,14 @@ namespace BelzontWE
         private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
         private bool m_templatesDirty;
+        private Dictionary<string, (string name, string rootFolder)> m_modsTempaltes = new();
+
+        public void RegisterModTemplatesForLoading(string modId, string modName, string folderTemplatesSource)
+        {
+            if (m_modsTempaltes.TryGetValue(modId, out var folder) && folder.rootFolder == folderTemplatesSource) return;
+            m_modsTempaltes[modId] = (modName, folderTemplatesSource);
+            GameManager.instance.StartCoroutine(LoadTemplatesFromFolder(0, 100, modId));
+        }
 
         public FixedString128Bytes[] GetTemplateAvailableKeys() => RegisteredTemplates.Keys.ToArray();
 
@@ -513,7 +522,7 @@ namespace BelzontWE
             if (!isPrefabListDirty) return;
             if (LoadingPrefabLayoutsCoroutine != null) GameManager.instance.StopCoroutine(LoadingPrefabLayoutsCoroutine);
             if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"UpdatePrefabIndexDictionary!!!");
-            
+
             LoadingPrefabLayoutsCoroutine = GameManager.instance.StartCoroutine(UpdatePrefabIndexDictionary_Coroutine());
         }
         private IEnumerator UpdatePrefabIndexDictionary_Coroutine()
@@ -534,10 +543,9 @@ namespace BelzontWE
             }
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 20, textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.prefabIndexesLoaded");
             yield return LoadTemplatesFromFolder(20, 80f);
-            EntityManager.AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty);
         }
 
-        private IEnumerator LoadTemplatesFromFolder(int offsetPercentage, float totalStep)
+        private IEnumerator LoadTemplatesFromFolder(int offsetPercentage, float totalStep, string modName = null)
         {
             KFileUtils.EnsureFolderCreation(SAVED_PREFABS_FOLDER);
             var currentValues = PrefabTemplates.Keys.ToArray();
@@ -559,11 +567,16 @@ namespace BelzontWE
             PrefabTemplates.Clear();
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.11f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.searchingForFiles");
             yield return 0;
-            var files = Directory.GetFiles(SAVED_PREFABS_FOLDER, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories);
+            var files = modName != null
+                ? Directory.GetFiles(m_modsTempaltes[modName].rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(x => $"{MODSOURCE_IDENTIFIER}{x}").ToArray()
+                : Directory.GetFiles(SAVED_PREFABS_FOLDER, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories)
+                    .Union(m_modsTempaltes.Values.SelectMany(x => Directory.GetFiles(x.rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories)).Select(x => $"{MODSOURCE_IDENTIFIER}{x}"))
+                    .ToArray();
             var errorsList = new Dictionary<string, LocalizedString>();
             for (int i = 0; i < files.Length; i++)
             {
-                string fileItem = files[i];
+                string fileItemFull = files[i];
+                string fileItem = fileItemFull.StartsWith(MODSOURCE_IDENTIFIER) ? fileItemFull[(MODSOURCE_IDENTIFIER.Length)..] : fileItemFull;
                 string relativePath = fileItem[SAVED_PREFABS_FOLDER.Length..];
                 NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + ((.11f + (.89f * ((i + 1f) / files.Length))) * totalStep)),
                         textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingPrefabLayoutFile", argsText: new()
@@ -575,12 +588,20 @@ namespace BelzontWE
                 var prefabName = Path.GetFileName(fileItem)[..^(PREFAB_LAYOUT_EXTENSION.Length + 1)];
                 if (!PrefabNameToIndex.TryGetValue(prefabName, out var idx))
                 {
-                    LogUtils.DoLog($"No prefab loaded with name: {prefabName}. This is harmless. Skipping...");
-                    errorsList.Add(relativePath, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidPrefabName]", null, new Dictionary<string, ILocElement>()
+                    if (fileItem.StartsWith(SAVED_PREFABS_FOLDER))
                     {
-                        ["fileName"] = LocalizedString.Value(relativePath),
-                        ["prefabName"] = LocalizedString.Value(prefabName)
-                    }));
+                        LogUtils.DoInfoLog($"No prefab loaded with name: {prefabName}, from custom folder: {fileItem.Replace(SAVED_PREFABS_FOLDER, "")}. This is harmless. Skipping...");
+                        errorsList.Add(relativePath, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidPrefabName]", null, new Dictionary<string, ILocElement>()
+                        {
+                            ["fileName"] = LocalizedString.Value(relativePath.Replace("\\","\\\\")),
+                            ["prefabName"] = LocalizedString.Value(prefabName)
+                        }));
+                    }
+                    else
+                    {
+
+                        LogUtils.DoLog($"No prefab loaded with name: {prefabName}, but it's from a mod. This is harmless. Skipping...");
+                    }
                     continue;
                 }
                 var tree = WETextDataXmlTree.FromXML(File.ReadAllText(fileItem));
@@ -600,14 +621,25 @@ namespace BelzontWE
                     }
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {tree} from {fileItem[SAVED_PREFABS_FOLDER.Length..]}");
                 }
+                else if (fileItemFull.StartsWith(MODSOURCE_IDENTIFIER))
+                {
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"An integration mod have a broken template for prefab '{prefabName}' (File at: '{fileItem}'). Contact the developer of the corrupted file to get assistance ({validationResults})");
+                }
                 else
                 {
-                    errorsList.Add(relativePath, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidFileContent]", null, new Dictionary<string, ILocElement>()
+                    if (fileItem.StartsWith(SAVED_PREFABS_FOLDER))
                     {
-                        ["fileName"] = LocalizedString.Value(relativePath),
-                        ["prefabName"] = LocalizedString.Value(prefabName)
-                    }));
-                    LogUtils.DoWarnLog($"Failed loding default template for prefab '{prefabName}'. Check previous lines at mod log to more information ({validationResults})");
+                        errorsList.Add(relativePath, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidFileContent]", null, new Dictionary<string, ILocElement>()
+                        {
+                            ["fileName"] = LocalizedString.Value(relativePath),
+                            ["prefabName"] = LocalizedString.Value(prefabName)
+                        }));
+                        LogUtils.DoWarnLog($"Failed loding default template for prefab '{prefabName}', from custom folder: {fileItem.Replace(SAVED_PREFABS_FOLDER, "")}. Check previous lines at mod log to more information ({validationResults})");
+                    }
+                    else
+                    {
+                        LogUtils.DoWarnLog($"Failed loding default template for prefab '{prefabName}', from a mod located at: {fileItem}. Check previous lines at mod log to more information and contact author from that mod for support ({validationResults})");
+                    }
                 }
             }
             if (errorsList.Count > 0)
@@ -616,7 +648,7 @@ namespace BelzontWE
                 {
                     var dialog2 = new MessageDialogWithDetails(
                         LocalizedString.Id(NotificationHelper.GetModDefaultNotificationTitle(ERRORS_LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID)),
-                        LocalizedString.Id("K45::WE.TEMPLATE_MANAGER[errorDIalogHeader]"),
+                        LocalizedString.Id("K45::WE.TEMPLATE_MANAGER[errorDialogHeader]"),
                         LocalizedString.Value(string.Join("\n", errorsList.Select(x => $"{x.Key}: {x.Value.Translate()}"))),
                         true,
                         LocalizedString.Id("Common.OK"),
@@ -635,6 +667,7 @@ namespace BelzontWE
                 });
             }
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + totalStep), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingComplete");
+            EntityManager.AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty);
         }
         #endregion
         #region City Templates
