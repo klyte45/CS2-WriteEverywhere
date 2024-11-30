@@ -1,3 +1,4 @@
+import { ModFolder } from "utils/ModFolder";
 
 export class FontService {
     static async requireFontInstallation(fontName: string): Promise<string> { return await engine.call("k45::we.fonts.requireFontInstallation", fontName); }
@@ -7,6 +8,7 @@ export class FontService {
     static async renameCityFont(oldName: string, newName: string): Promise<void> { return await engine.call("k45::we.fonts.renameCityFont", oldName, newName); }
     static async deleteCityFont(fontName: string): Promise<void> { return await engine.call("k45::we.fonts.deleteCityFont", fontName); }
     static async duplicateCityFont(srcName: string, newName: string): Promise<void> { return await engine.call("k45::we.fonts.duplicateCityFont", srcName, newName); }
+    static async listModsFonts(): Promise<ModFolder[]> { return await engine.call("k45::we.fonts.listModsFonts"); }
 }
 export type FontDetailResponse = {
     name: string;

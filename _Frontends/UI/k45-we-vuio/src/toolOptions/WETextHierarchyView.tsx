@@ -13,6 +13,7 @@ import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
 import i_cut from "../images/Scissors.svg"
 import { K45HierarchyMenu, K45HierarchyViewport } from "./K45HierarchyMenu";
+import { ModFolder } from "utils/ModFolder";
 
 
 
@@ -32,6 +33,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const i_typeImage = "coui://uil/Standard/Image.svg";
     const i_typePlaceholder = "coui://uil/Standard/RotateAngleRelative.svg";
     const i_typeWhiteTexture = "coui://uil/Standard/SingleRhombus.svg";
+    const i_bookmarkMods = "coui://uil/Standard/Puzzle.svg";
 
 
     const wps = WorldPickerService.instance.bindingList.picker;
@@ -80,6 +82,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const T_goToFileFolder = translate("cityLayoutsTab.exportXml.goToFileFolder")
     const T_back = translate("cityLayoutsTab.exportXml.back")
 
+    const T_templateFromMods = translate("cityLayoutsTab.addTemplateXmlDialog.templateFromMods")
+
     const defaultPosition = { x: 20 / window.innerWidth, y: 100 / window.innerHeight }
 
     const HierarchyMenu = K45HierarchyMenu;
@@ -92,6 +96,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
 
     const [layoutFolder, setLayoutFolder] = useState("")
     const [extensionsImport, setExtensionsImport] = useState("")
+    const [modsLayoutsFolder, setModsLayoutsFolder] = useState([] as ModFolder[])
     useEffect(() => {
         FileService.getLayoutFolder().then(setLayoutFolder);
         (async () => {
@@ -99,6 +104,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             const storedLayoutExt = await FileService.getStoredLayoutExtension()
             return [prefabLayoutExt, storedLayoutExt].map(x => "*." + x).join("|")
         })().then(setExtensionsImport)
+
+        LayoutsService.listModsLoadableTemplates().then(setModsLayoutsFolder)
     }, [])
 
     const [clipboardIsCut, setClipboardIsCut] = useState(false)
@@ -310,7 +317,14 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}
             actionOnSuccess={onSaveTemplate}
         />
-        <FilePickerDialog dialogTitle={T_loadingFromXmlDialogTitle} dialogPromptText={T_loadingFromXmlDialogPromptText} isActive={loadingFromXml} setIsActive={setLoadingFromXml} actionOnSuccess={onLoadFromXml} allowedExtensions={extensionsImport} initialFolder={layoutFolder} />
+        <FilePickerDialog dialogTitle={T_loadingFromXmlDialogTitle} dialogPromptText={T_loadingFromXmlDialogPromptText} isActive={loadingFromXml} setIsActive={setLoadingFromXml} actionOnSuccess={onLoadFromXml} allowedExtensions={extensionsImport} initialFolder={layoutFolder}
+            bookmarksTitle={T_templateFromMods} bookmarksIcon={i_bookmarkMods}
+            bookmarks={modsLayoutsFolder.map(x => {
+                return {
+                    name: x.ModName,
+                    targetPath: x.Location
+                }
+            })} />
 
         <StringInputDialog dialogTitle={T_exportXmlDialogTitle} dialogPromptText={T_exportXmlDialogText} isActive={exportingAsXml} setIsActive={setExportingAsXml} actionOnSuccess={onExportAsXml} />
         {nameExportedAsXml &&

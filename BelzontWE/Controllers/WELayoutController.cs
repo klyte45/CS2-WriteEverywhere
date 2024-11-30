@@ -34,6 +34,7 @@ namespace BelzontWE
             callBinder($"{PREFIX}openExportedFilesFolder", OpenExportedFilesFolder);
             callBinder($"{PREFIX}loadAsChildFromCityTemplate", LoadAsChildFromCityTemplate);
             callBinder($"{PREFIX}importAsCityTemplateFromXml", ImportAsCityTemplateFromXml);
+            callBinder($"{PREFIX}listModsLoadableTemplates", ListModsLoadableTemplates);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
@@ -196,6 +197,7 @@ namespace BelzontWE
 
         private void OpenExportedFilesFolder() => RemoteProcess.OpenFolder(WETemplateManager.SAVED_PREFABS_FOLDER);
 
+        private List<ModFolder> ListModsLoadableTemplates() => m_templateManager.ListModsExtraFolders();
         private class CityDetailResponse
         {
             public string name;

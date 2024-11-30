@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
@@ -21,12 +22,7 @@ namespace BelzontWE
     public partial class FontServer : GameSystemBase, IBelzontSerializableSingleton<FontServer>
     {
 
-        internal struct ModFont
-        {
-            public string Name;
-            public string Location;
-            public string ModName;
-        }
+
 
         public const int CURRENT_VERSION = 0;
         #region Fonts
@@ -37,17 +33,10 @@ namespace BelzontWE
         public event Action OnFontsLoadedChanged;
         private readonly Queue<Action> OnUpdateActionQueue = new();
 
-        private readonly Dictionary<string, ModFont[]> integrationFontsAvailable;
+        private readonly Dictionary<Assembly, ModFolder> integrationFontsAvailable = new();
 
-        internal void RegisterModFonts(string modId, ModFont[] fonts) => integrationFontsAvailable[modId] = fonts;
-        internal List<(string, string)> ListModsWithFontsRegistered() => integrationFontsAvailable.Select(x => (x.Key, x.Value[0].ModName)).ToList();
-        internal List<string> ListFontsAvailableFromMod(string modId) => integrationFontsAvailable[modId].Select(x => x.Name).ToList();
-        internal bool LoadFontFromMod(string modId, string fontName)
-            => integrationFontsAvailable.TryGetValue(modId, out var fontList)
-                && fontList.FirstOrDefault(x => x.Name == fontName) is ModFont fg
-                && fg.Name == fontName
-                && File.Exists(fg.Location)
-                && RegisterFont(fontName, File.ReadAllBytes(fg.Location), false);
+        internal void RegisterModFonts(Assembly mainAssembly, ModFolder fontFolder) { integrationFontsAvailable[mainAssembly] = fontFolder; }
+        internal List<ModFolder> ListModsExtraFolders() => integrationFontsAvailable.Values.ToList();
 
         public static int QualitySize
         {

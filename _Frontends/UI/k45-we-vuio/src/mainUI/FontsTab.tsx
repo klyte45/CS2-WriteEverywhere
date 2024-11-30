@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { FileService } from "services/FileService";
 import { FontDetailResponse, FontService } from "services/FontService";
 import "style/mainUi/fontsTab.scss";
+import { ModFolder } from "utils/ModFolder";
 import { translate } from "utils/translate";
 
 type Props = {}
@@ -34,6 +35,7 @@ function removeCssElement(cssEl: Element) {
 
 export const FontsTab = (props: Props) => {
     const i_addItem = "coui://uil/Standard/Plus.svg";
+    const i_bookmarkMods = "coui://uil/Standard/Puzzle.svg";
 
     const T_addItem = translate("cityFontsTab.addFont")
     const T_rename = translate("cityFontsTab.rename")
@@ -49,6 +51,7 @@ export const FontsTab = (props: Props) => {
     const T_addDialogTitle = translate("cityFontsTab.addFontDialog.title")
     const T_addDialogText = translate("cityFontsTab.addFontDialog.text")
     const T_addDialogErrorGeneric = translate("cityFontsTab.addFontDialog.errorLoadingFontMsg")
+    const T_fontsFromMods = translate("cityFontsTab.addFontDialog.fontsFromMods")
 
 
     const [selectedFont, setSelectedFont] = useState(null as null | string);
@@ -58,8 +61,11 @@ export const FontsTab = (props: Props) => {
     const [stylesheetToRemove, setStylesheetToRemove] = useState(-1);
 
     const [fontsFolder, setFontsFolder] = useState("")
+    const [modsFontsFolder, setModsFontsFolder] = useState([] as ModFolder[])
+
     useEffect(() => {
         FileService.getFontDefaultLocation().then(setFontsFolder);
+        FontService.listModsFonts().then(setModsFontsFolder);
     }, [])
 
     async function loadFontFace() {
@@ -174,7 +180,12 @@ export const FontsTab = (props: Props) => {
         />
 
         <FilePickerDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText} isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd}
-            actionOnSuccess={onAskPathAdd} allowedExtensions={"*.ttf"} initialFolder={fontsFolder} />
+            actionOnSuccess={onAskPathAdd} allowedExtensions={"*.ttf"} initialFolder={fontsFolder} bookmarks={modsFontsFolder.map(x => {
+                return {
+                    name: x.ModName,
+                    targetPath: x.Location
+                }
+            })} bookmarksTitle={T_fontsFromMods} bookmarksIcon={i_bookmarkMods} />
         <Portal>
             {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissable={false} message={alertToDisplay} confirm={"OK"} />}
             {displayingModal()}

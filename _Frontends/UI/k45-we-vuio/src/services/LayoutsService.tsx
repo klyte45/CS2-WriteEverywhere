@@ -1,4 +1,5 @@
 import { Entity } from "@klyte45/vuio-commons";
+import { ModFolder } from "utils/ModFolder";
 
 export class LayoutsService {
     static async exportComponentAsXml(entity: Entity, name: string): Promise<string> {
@@ -43,6 +44,7 @@ export class LayoutsService {
     static async importAsCityTemplateFromXml(saveName: string): Promise<string> {
         return engine.call("k45::we.layouts.importAsCityTemplateFromXml", saveName);
     }
+    static async listModsLoadableTemplates(): Promise<ModFolder[]> { return await engine.call("k45::we.layouts.listModsLoadableTemplates"); }
 }
 
 export type CityDetailResponse = {

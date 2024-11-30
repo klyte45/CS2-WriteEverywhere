@@ -17,6 +17,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
@@ -551,20 +552,23 @@ namespace BelzontWE
             var currentValues = PrefabTemplates.Keys.ToArray();
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.01f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.erasingCachedLayouts");
             yield return 0;
-            for (int i = 0; i < currentValues.Length; i++)
+            if (modName is null)
             {
-                PrefabTemplates.Remove(currentValues[i]);
-                if (i % 3 == 0)
+                for (int i = 0; i < currentValues.Length; i++)
                 {
-                    NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + ((.01f + (.09f * ((i + 1f) / currentValues.Length))) * totalStep)),
-                        textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.disposedOldLayout", argsText: new()
-                        {
-                            ["progress"] = LocalizedString.Value($"{i}/{currentValues.Length}")
-                        });
-                    yield return 0;
+                    PrefabTemplates.Remove(currentValues[i]);
+                    if (i % 3 == 0)
+                    {
+                        NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + ((.01f + (.09f * ((i + 1f) / currentValues.Length))) * totalStep)),
+                            textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.disposedOldLayout", argsText: new()
+                            {
+                                ["progress"] = LocalizedString.Value($"{i}/{currentValues.Length}")
+                            });
+                        yield return 0;
+                    }
                 }
+                PrefabTemplates.Clear();
             }
-            PrefabTemplates.Clear();
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.11f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.searchingForFiles");
             yield return 0;
             var files = modName != null
@@ -593,7 +597,7 @@ namespace BelzontWE
                         LogUtils.DoInfoLog($"No prefab loaded with name: {prefabName}, from custom folder: {fileItem.Replace(SAVED_PREFABS_FOLDER, "")}. This is harmless. Skipping...");
                         errorsList.Add(relativePath, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidPrefabName]", null, new Dictionary<string, ILocElement>()
                         {
-                            ["fileName"] = LocalizedString.Value(relativePath.Replace("\\","\\\\")),
+                            ["fileName"] = LocalizedString.Value(relativePath.Replace("\\", "\\\\")),
                             ["prefabName"] = LocalizedString.Value(prefabName)
                         }));
                     }
@@ -795,6 +799,11 @@ namespace BelzontWE
             RegisteredTemplates[newName] = RegisteredTemplates[srcName].Clone();
             m_templatesDirty = true;
         }
+
+        private readonly Dictionary<Assembly, ModFolder> integrationLoadableTemplatesFromMod = new();
+
+        internal void RegisterLoadableTemplatesFolder(Assembly mainAssembly, ModFolder fontFolder) { integrationLoadableTemplatesFromMod[mainAssembly] = fontFolder; }
+        internal List<ModFolder> ListModsExtraFolders() => integrationLoadableTemplatesFromMod.Values.ToList();
         #endregion
 
         [BurstCompile]

@@ -23,16 +23,33 @@
         display: flex;
         justify-content: center;
 
+        >b.bookmark {
+            color: var(--warningColor);
+            margin-left: 5rem;
+            margin-right: 5rem;
+        }
+
         &:hover {
             background-color: var(--panelColorNormal);
             backdrop-filter: var(--panelBlur);
         }
     }
 
-    button {
+    button.above {
         width: 32rem;
         height: 32rem;
         margin-left: 8rem;
+    }
+
+    button.bookmarks{
+        width: 32rem;
+        height: 32rem;
+        margin-right: 8rem;
+    }
+    button.home {
+        width: 32rem;
+        height: 32rem;
+        margin-right: 2rem;
     }
 
     input {
@@ -54,6 +71,7 @@
         padding-right: 10rem;
         padding-top: 10rem;
         padding-bottom: 10rem;
+        min-width: 100%;
 
         .k45_we_fileItemsListing_item {
             display: flex;
@@ -61,6 +79,8 @@
             align-items: center;
             font-size: var(--fontSizeS);
             padding: 5rem;
+            overflow-x: hidden;
+            overflow-y: hidden;
 
             img {
                 height: 20rem;

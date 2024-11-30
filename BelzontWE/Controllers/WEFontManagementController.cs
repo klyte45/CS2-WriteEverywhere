@@ -23,6 +23,7 @@ namespace BelzontWE
             callBinder($"{PREFIX}renameCityFont", RenameCityFont);
             callBinder($"{PREFIX}deleteCityFont", DeleteCityFont);
             callBinder($"{PREFIX}duplicateCityFont", DuplicateCityFont);
+            callBinder($"{PREFIX}listModsFonts", ListModsFonts);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
@@ -43,12 +44,16 @@ namespace BelzontWE
         {
             if (!File.Exists(path)) return "";
             var name = Regex.Replace(Path.GetFileNameWithoutExtension(path), "[^A-Za-z0-9_]", "_").Truncate(30);
-            if (FontServer.Instance.FontExists(name))
+            if (FontServer.Instance.TryGetFont(name, out var font))
             {
                 var i = 1;
                 var baseName = name;
                 do
                 {
+                    if (font.IsWeak)
+                    {
+                        break;
+                    }
                     baseName = baseName.Truncate(29 - i.ToString().Length);
                     name = $"{baseName}_{i}";
                 } while (FontServer.Instance.FontExists(name));
@@ -70,6 +75,7 @@ namespace BelzontWE
         private void RenameCityFont(string oldName, string newName) => m_fontServer.RenameFont(oldName, newName);
         private void DeleteCityFont(string name) => m_fontServer.DestroyFont(name);
         private void DuplicateCityFont(string srcName, string newName) => m_fontServer.DuplicateFont(srcName, newName);
+        private List<ModFolder> ListModsFonts() => m_fontServer.ListModsExtraFolders();
 
         private class FontDetailResponse
         {

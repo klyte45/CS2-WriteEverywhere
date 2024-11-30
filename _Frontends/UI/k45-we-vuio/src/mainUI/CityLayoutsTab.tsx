@@ -10,6 +10,7 @@ import "style/mainUi/tabStructure.scss";
 import { translate } from "utils/translate";
 import { FilePickerDialog } from "common/FilePickerDialog";
 import { FileService } from "services/FileService";
+import { ModFolder } from "utils/ModFolder";
 
 type Props = {}
 
@@ -22,6 +23,7 @@ enum Modals {
 
 export const CityLayoutsTab = (props: Props) => {
     const i_addItem = "coui://uil/Standard/Plus.svg";
+    const i_bookmarkMods = "coui://uil/Standard/Puzzle.svg";
 
     const T_addItem = translate("cityLayoutsTab.addTemplateFromXml")
     const T_usages = translate("cityLayoutsTab.usages")
@@ -45,6 +47,7 @@ export const CityLayoutsTab = (props: Props) => {
     const T_addDialogTitle = translate("cityLayoutsTab.addTemplateXmlDialog.title")
     const T_addDialogText = translate("cityLayoutsTab.addTemplateXmlDialog.text")
     const T_addDialogErrorGeneric = translate("cityLayoutsTab.addTemplateXmlDialog.errorLoadingFontMsg")
+    const T_templateFromMods = translate("cityLayoutsTab.addTemplateXmlDialog.templateFromMods")
 
     const units = VanillaFnResolver.instance.unit.Unit;
     const formatInteger = VanillaFnResolver.instance.localizedNumber.useNumberFormat(units.Integer, false);
@@ -61,12 +64,17 @@ export const CityLayoutsTab = (props: Props) => {
 
     const [layoutFolder, setLayoutFolder] = useState("")
     const [extensionsImport, setExtensionsImport] = useState("")
+
+
+    const [modsLayoutsFolder, setModsLayoutsFolder] = useState([] as ModFolder[])
+
     useEffect(() => {
         FileService.getLayoutFolder().then(setLayoutFolder);
         (async () => {
             const storedLayoutExt = await FileService.getStoredLayoutExtension()
             return "*." + storedLayoutExt
         })().then(setExtensionsImport)
+        LayoutsService.listModsLoadableTemplates().then(setModsLayoutsFolder)
     }, [])
 
     useEffect(() => { LayoutsService.listCityTemplates().then(setLayoutList) }, [selectedTemplate])
@@ -157,7 +165,12 @@ export const CityLayoutsTab = (props: Props) => {
             actionOnSuccess={onDuplicateLayout}
         />
         <FilePickerDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText} isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd}
-            actionOnSuccess={onAskPathAdd} allowedExtensions={extensionsImport} initialFolder={layoutFolder} />
+            actionOnSuccess={onAskPathAdd} allowedExtensions={extensionsImport} initialFolder={layoutFolder} bookmarks={modsLayoutsFolder.map(x => {
+                return {
+                    name: x.ModName,
+                    targetPath: x.Location
+                }
+            })} bookmarksTitle={T_templateFromMods} bookmarksIcon={i_bookmarkMods} />
 
         <Portal>
             {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissable={false} message={alertToDisplay} confirm={"OK"} />}
