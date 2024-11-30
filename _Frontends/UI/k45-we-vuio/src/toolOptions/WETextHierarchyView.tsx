@@ -319,7 +319,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         />
         <FilePickerDialog dialogTitle={T_loadingFromXmlDialogTitle} dialogPromptText={T_loadingFromXmlDialogPromptText} isActive={loadingFromXml} setIsActive={setLoadingFromXml} actionOnSuccess={onLoadFromXml} allowedExtensions={extensionsImport} initialFolder={layoutFolder}
             bookmarksTitle={T_templateFromMods} bookmarksIcon={i_bookmarkMods}
-            bookmarks={modsLayoutsFolder.map(x => {
+            bookmarks={modsLayoutsFolder.sort((a,b)=>a.ModName.localeCompare(b.ModName)).map(x => {
                 return {
                     name: x.ModName,
                     targetPath: x.Location

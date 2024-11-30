@@ -36,7 +36,6 @@ namespace BelzontWE.Sprites
         private readonly Queue<Action> actionQueue = new();
         private EntityQuery m_atlasUsageQuery;
 
-        internal event Action OnLocalCacheAtlasReset;
 
         protected override void OnCreate()
         {
@@ -180,7 +179,6 @@ namespace BelzontWE.Sprites
 
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 100, textI18n: "generatingAtlasesCache.complete");
             currentJobRunning = null;
-            OnLocalCacheAtlasReset?.Invoke();
         }
         internal void UnregisterModAtlas(Assembly modId, string atlasName)
         {

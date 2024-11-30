@@ -180,7 +180,7 @@ export const FontsTab = (props: Props) => {
         />
 
         <FilePickerDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText} isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd}
-            actionOnSuccess={onAskPathAdd} allowedExtensions={"*.ttf"} initialFolder={fontsFolder} bookmarks={modsFontsFolder.map(x => {
+            actionOnSuccess={onAskPathAdd} allowedExtensions={"*.ttf"} initialFolder={fontsFolder} bookmarks={modsFontsFolder.sort((a, b) => a.ModName.localeCompare(b.ModName)).map(x => {
                 return {
                     name: x.ModName,
                     targetPath: x.Location

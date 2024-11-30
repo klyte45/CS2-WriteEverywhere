@@ -165,7 +165,7 @@ export const CityLayoutsTab = (props: Props) => {
             actionOnSuccess={onDuplicateLayout}
         />
         <FilePickerDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText} isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd}
-            actionOnSuccess={onAskPathAdd} allowedExtensions={extensionsImport} initialFolder={layoutFolder} bookmarks={modsLayoutsFolder.map(x => {
+            actionOnSuccess={onAskPathAdd} allowedExtensions={extensionsImport} initialFolder={layoutFolder} bookmarks={modsLayoutsFolder.sort((a,b)=>a.ModName.localeCompare(b.ModName)).map(x => {
                 return {
                     name: x.ModName,
                     targetPath: x.Location

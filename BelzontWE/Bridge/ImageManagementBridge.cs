@@ -26,9 +26,6 @@ namespace BelzontWE.Bridge
             new CoroutineWithData<string>(GameManager.instance, RegisterImageAtlas_Internal(mainAssembly, atlasName, imagePaths), onCompleteLoading);
         }
 
-        public static void RegisterForAtlasCacheResetNotification(Action onLocalCacheAtlasReset) => WEAtlasesLibrary.Instance.OnLocalCacheAtlasReset += onLocalCacheAtlasReset;
-        public static void UnregisterForAtlasCacheResetNotification(Action onLocalCacheAtlasReset) => WEAtlasesLibrary.Instance.OnLocalCacheAtlasReset -= onLocalCacheAtlasReset;
-
         private static IEnumerator<string> RegisterImageAtlas_Internal(Assembly mainAssembly, string atlasName, string[] imagePaths)
         {
             yield return null;
