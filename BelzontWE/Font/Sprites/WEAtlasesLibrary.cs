@@ -16,6 +16,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
@@ -83,6 +84,7 @@ namespace BelzontWE.Sprites
 
         private Dictionary<FixedString32Bytes, WETextureAtlas> LocalAtlases { get; } = new();
         private Dictionary<FixedString32Bytes, WETextureAtlas> CityAtlases { get; } = new();
+        private Dictionary<string, WETextureAtlas> ModAtlases { get; } = new();
 
         #region Getters
 
@@ -94,20 +96,26 @@ namespace BelzontWE.Sprites
 
         public bool TryGetAtlas(string atlasName, out WETextureAtlas atlas) => CityAtlases.TryGetValue(atlasName, out atlas) || LocalAtlases.TryGetValue(atlasName, out atlas);
 
-        public BasicRenderInformation GetFromAvailableAtlases(FixedString32Bytes atlasName, FixedString32Bytes spriteName, bool fallbackOnInvalid = false)
-            => spriteName.Trim().Length == 0
-                ? fallbackOnInvalid
-                    ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage)
+        public BasicRenderInformation GetFromAvailableAtlases(string atlasName, FixedString32Bytes spriteName, bool fallbackOnInvalid = false)
+            => spriteName.Trim().Length == 0 || atlasName.IsNullOrWhitespace()
+                ? fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage)
                     : null
-                : CityAtlases.TryGetValue(atlasName, out var resultDicCache) && resultDicCache.TryGetValue(spriteName, out var cachedInfo) && (cachedInfo == null || cachedInfo.Main)
-                    ? cachedInfo
-                    : LocalAtlases.TryGetValue(atlasName, out resultDicCache) && resultDicCache.TryGetValue(spriteName, out cachedInfo) && (cachedInfo == null || cachedInfo.Main)
-                        ? cachedInfo
-                        : fallbackOnInvalid
-                            ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage)
-                            : null;
+                : atlasName.Contains(":")
+                    ? ContainsSprite(ModAtlases, atlasName, spriteName, out var cachedInfo) ? cachedInfo
+                        : fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage)
+                        : null
+                : ContainsSprite(CityAtlases, atlasName, spriteName, out cachedInfo) ? cachedInfo
+                : ContainsSprite(LocalAtlases, atlasName, spriteName, out cachedInfo) ? cachedInfo
+                : fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage)
+                : null;
 
-        public BasicRenderInformation GetSlideFromAvailable(FixedString32Bytes atlasName, Func<int, int> idxFunc, bool fallbackOnInvalid = false)
+        private bool ContainsSprite<T>(Dictionary<T, WETextureAtlas> dictionary, T atlasName, FixedString32Bytes spriteName, out BasicRenderInformation cachedInfo)
+        {
+            cachedInfo = null;
+            return dictionary.TryGetValue(atlasName, out var resultDicCache) && resultDicCache.TryGetValue(spriteName, out cachedInfo) && (cachedInfo == null || cachedInfo.Main);
+        }
+
+        public BasicRenderInformation GetSlideFromAvailable(string atlasName, Func<int, int> idxFunc, bool fallbackOnInvalid = false)
             => !CityAtlases.TryGetValue(atlasName, out var atlas) && !LocalAtlases.TryGetValue(atlasName, out atlas)
                 ? fallbackOnInvalid
                     ? GetFromLocalAtlases(WEImages.FrameParamsInvalidFolder)
@@ -141,7 +149,7 @@ namespace BelzontWE.Sprites
                 yield return 0;
                 var spritesToAdd = new List<WEImageInfo>();
                 WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, ref errors);
-                RegisterAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25);
+                RegisterLocalAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25);
             }
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
             yield return 0;
@@ -174,31 +182,45 @@ namespace BelzontWE.Sprites
             currentJobRunning = null;
             OnLocalCacheAtlasReset?.Invoke();
         }
-        internal void UnregisterLocalAtlas(string atlasName)
+        internal void UnregisterModAtlas(Assembly modId, string atlasName)
         {
-            if (LocalAtlases.ContainsKey(atlasName))
+            var key = GetModAtlasName(modId, atlasName);
+            if (ModAtlases.ContainsKey(key))
             {
-                var item = LocalAtlases[atlasName];
+                var item = ModAtlases[key];
                 actionQueue.Enqueue(() => item?.Dispose());
             }
-            LocalAtlases.Remove(atlasName);
+            ModAtlases.Remove(key);
         }
-        internal void RegisterAtlas(string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
+
+        internal void RegisterModAtlas(Assembly modId, string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
+        {
+            RegisterAtlas(ModAtlases, GetModAtlasName(modId, atlasName), spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset);
+        }
+
+        public static string GetModAtlasName(Assembly modId, string atlasName) => $"{modId.GetName().Name}:{atlasName}";
+
+        private void RegisterLocalAtlas(string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
+        {
+            RegisterAtlas(LocalAtlases, atlasName, spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset);
+        }
+
+        private void RegisterAtlas<T>(Dictionary<T, WETextureAtlas> targetDict, T atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
         {
             if (spritesToAdd.Count > 0)
             {
-                LocalAtlases[atlasName] = new(512);
+                targetDict[atlasName] = new(512);
                 for (int j = 0; j < spritesToAdd.Count; j++)
                 {
                     WEImageInfo entry = spritesToAdd[j];
-                    while (LocalAtlases[atlasName].Insert(entry) == 2)
+                    while (targetDict[atlasName].Insert(entry) == 2)
                     {
-                        var currentSize = LocalAtlases[atlasName].Width;
+                        var currentSize = targetDict[atlasName].Width;
                         if (currentSize > 8196) break;
                         var newAtlas = new WETextureAtlas(currentSize * 2);
-                        newAtlas.InsertAll(LocalAtlases[atlasName]);
-                        LocalAtlases[atlasName].Dispose();
-                        LocalAtlases[atlasName] = newAtlas;
+                        newAtlas.InsertAll(targetDict[atlasName]);
+                        targetDict[atlasName].Dispose();
+                        targetDict[atlasName] = newAtlas;
                     }
                     entry.Dispose();
 
@@ -207,8 +229,8 @@ namespace BelzontWE.Sprites
                         NotificationHelper.NotifyProgress(notificationGroupId, Mathf.RoundToInt(progressOffset + (loopCompleteSizeProgress * ((j + 1f) / spritesToAdd.Count))), argsTitle: argsTitle, textI18n: notificationI18n, argsText: argsNotif, titleI18n: notificationTitlei18n);
                     }
                 }
-                LocalAtlases[atlasName].Apply();
-                if (BasicIMod.DebugMode) LocalAtlases[atlasName]._SaveDebug(atlasName);
+                targetDict[atlasName].Apply();
+                if (BasicIMod.DebugMode && atlasName is string s) targetDict[atlasName]._SaveDebug(s);
             }
         }
 
@@ -351,7 +373,7 @@ namespace BelzontWE.Sprites
         #endregion
 
         #region UI extra
-        public bool AtlasExists(string name) => name != null && (CityAtlases.ContainsKey(name) || LocalAtlases.ContainsKey(name));
+        public bool AtlasExists(string name) => name != null && (CityAtlases.ContainsKey(name) || LocalAtlases.ContainsKey(name) || ModAtlases.ContainsKey(name));
 
         public unsafe int GetAtlasUsageCount(string name)
         {
@@ -374,7 +396,7 @@ namespace BelzontWE.Sprites
         [BurstCompile]
         private unsafe struct WEPlaceholcerAtlasesUsageCount : IJobChunk
         {
-            public FixedString32Bytes atlasToCheck;
+            public FixedString512Bytes atlasToCheck;
             public ComponentTypeHandle<WETextDataMesh> m_textDataMeshHdl;
             public int* m_counter;
 
@@ -389,5 +411,7 @@ namespace BelzontWE.Sprites
 
         }
         #endregion
+
     }
+
 }

@@ -16,7 +16,7 @@ namespace BelzontWE
         private WESimulationTextType textType;
 
         private GCHandle basicRenderInformation;
-        private FixedString32Bytes atlas;
+        private FixedString64Bytes atlas;
         private FixedString32Bytes fontName;
         private WETextDataValueString valueData;
         private bool dirty;
@@ -36,7 +36,7 @@ namespace BelzontWE
                 }
             }
         }
-        public FixedString32Bytes Atlas { readonly get => atlas; set { atlas = value; templateDirty = dirty = true; } }
+        public FixedString64Bytes Atlas { readonly get => atlas; set { atlas = value; templateDirty = dirty = true; } }
         public FixedString32Bytes FontName { readonly get => fontName; set { fontName = value; templateDirty = dirty = true; } }
         public WETextDataValueString ValueData { readonly get => valueData; set => valueData = value; }
         public int MinLod { get; set; }

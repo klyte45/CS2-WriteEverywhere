@@ -18,11 +18,6 @@ namespace BelzontWE.Bridge
     public static class ImageManagementBridge
     {
         private const string LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX = "generatingAtlasesCacheMod";
-        private static string GetModAtlasName(Assembly mainAssembly, string atlasName)
-        {
-            var modIdentifier = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset.identifier;
-            return $"≤{(int.TryParse(modIdentifier, out int val) ? val.ToString() : modIdentifier[..Math.Min(11, modIdentifier.Length)])}-{atlasName}≥";
-        }
 
         public static string GetImageAtlasVersion() => BasicIMod.FullVersion;
 
@@ -34,14 +29,13 @@ namespace BelzontWE.Bridge
         public static void RegisterForAtlasCacheResetNotification(Action onLocalCacheAtlasReset) => WEAtlasesLibrary.Instance.OnLocalCacheAtlasReset += onLocalCacheAtlasReset;
         public static void UnregisterForAtlasCacheResetNotification(Action onLocalCacheAtlasReset) => WEAtlasesLibrary.Instance.OnLocalCacheAtlasReset -= onLocalCacheAtlasReset;
 
-        private static IEnumerator<string> RegisterImageAtlas_Internal(Assembly mainAssembly,  string atlasName, string[] imagePaths)
+        private static IEnumerator<string> RegisterImageAtlas_Internal(Assembly mainAssembly, string atlasName, string[] imagePaths)
         {
             yield return null;
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly);
             var modIdentifier = modData.asset.identifier;
             var displayName = modData.asset.name;
-
-            var targetAtlasName = GetModAtlasName(mainAssembly, atlasName);
+            var targetAtlasName = WEAtlasesLibrary.GetModAtlasName(mainAssembly, atlasName);
             var notifGroup = $"{LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX}:{targetAtlasName}";
             Dictionary<string, ILocElement> args = new()
             {
@@ -53,7 +47,8 @@ namespace BelzontWE.Bridge
                 if (atlasName.IsNullOrWhitespace()) throw new ArgumentNullException("atlasName");
                 if (imagePaths is null) throw new ArgumentNullException("imagePaths");
                 if (imagePaths.Length == 0) throw new ArgumentOutOfRangeException("imagePaths", "Should not be empty.");
-                if (!Regex.IsMatch(atlasName, "[a-z_A-Z0-9]{3,15}")) throw new ArgumentException("Should have 3 to 15 characters, alphanumeric or underscore only.", "atlasName");
+                if (!Regex.IsMatch(atlasName, "[a-z_A-Z0-9]{3,}")) throw new ArgumentException("Should have at least 3 characters, alphanumeric or underscore only.", "atlasName");
+                if (targetAtlasName.Length > 60) throw new ArgumentException($"Should have at most {60 + targetAtlasName.Length - atlasName.Length} characters, alphanumeric or underscore only.", "atlasName");
                 if (CheckImageAtlasExists(mainAssembly, atlasName)) throw new DuplicateNameException("Atlas already exists!");
 
                 var spritesToAdd = new List<Layout.WEImageInfo>();
@@ -67,7 +62,7 @@ namespace BelzontWE.Bridge
                 {
                     throw new Exception($"There are no images to load. Check with the developer from the ");
                 }
-                WEAtlasesLibrary.Instance.RegisterAtlas(targetAtlasName, spritesToAdd, notifGroup, "generatingAtlasesCacheMod.loading", args, args, LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX);
+                WEAtlasesLibrary.Instance.RegisterModAtlas(mainAssembly, atlasName, spritesToAdd, notifGroup, "generatingAtlasesCacheMod.loading", args, args, LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX);
 
                 NotificationHelper.NotifyProgress(notifGroup, 100, textI18n: "generatingAtlasesCacheMod.complete", titleI18n: LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, argsText: args, argsTitle: args);
             }
@@ -88,13 +83,13 @@ namespace BelzontWE.Bridge
             yield return targetAtlasName;
         }
 
-        public static bool CheckImageAtlasExists(Assembly mainAssembly, string atlasName) => WEAtlasesLibrary.Instance.AtlasExists(GetModAtlasName(mainAssembly, atlasName));
+        public static bool CheckImageAtlasExists(Assembly mainAssembly, string atlasName) => WEAtlasesLibrary.Instance.AtlasExists(WEAtlasesLibrary.GetModAtlasName(mainAssembly, atlasName));
 
         public static void EnsureAtlasDeleted(Assembly mainAssembly, string atlasName)
         {
             if (CheckImageAtlasExists(mainAssembly, atlasName))
             {
-                WEAtlasesLibrary.Instance.UnregisterLocalAtlas(GetModAtlasName(mainAssembly, atlasName));
+                WEAtlasesLibrary.Instance.UnregisterModAtlas(mainAssembly, atlasName);
             }
         }
     }
