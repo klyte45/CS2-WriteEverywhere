@@ -20,6 +20,21 @@ This mod is simpler to understand when compared with its CS1 version, but it sti
 
 More documentation will be added in the future.
 
+## Write Everywhere modules
+
+Very soon the Paradox Mods will start receiving mods that are WE modules. They are designed to add automatically new content into the Write Everywhere, like:
+
+- Image atlases
+- Default layouts to assets
+- Importable layouts (into City Layouts tab)
+- Fonts to be imported
+
+Notice that fonts will always require manual install in the city (by adding them in the City Fonts tab). To make things easier, was added a button to list all mods that registered fonts/layouts in Write Everywhere at file picker dialog.
+
+If you are interested to create your own modules, take a look at [this template repository](https://github.com/klyte45/CS2-WEModuleTemplate).
+
+This feature was heavily inspired by the [Station Entrance Visuals](https://mods.paradoxplaza.com/mods/94028/Windows) by rodrigmatrix. That mod will be set up to follow the new integration method soon.
+
 ## FAQ
 
 First of all, read the [files repository](https://github.com/klyte45/CS2-WriteEverywhereFiles) to get the basic information.

@@ -2,7 +2,6 @@
 using System;
 using System.IO;
 using System.Reflection;
-using static Game.Rendering.Debug.RenderPrefabRenderer;
 
 namespace BelzontWE.Bridge
 {
@@ -21,6 +20,7 @@ namespace BelzontWE.Bridge
 
         public static void RegisterLoadableTemplatesFolder(Assembly mainAssembly, string rootFolder)
         {
+            if (!Directory.Exists(rootFolder)) return;
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
             WETemplateManager.Instance.RegisterLoadableTemplatesFolder(mainAssembly, new() { ModName = modData.GetMeta().displayName, Location = rootFolder });
         }

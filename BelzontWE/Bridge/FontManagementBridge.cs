@@ -1,5 +1,6 @@
 ﻿using Belzont.Utils;
 using System;
+using System.IO;
 using System.Reflection;
 using static BelzontWE.FontServer;
 
@@ -10,6 +11,7 @@ namespace BelzontWE.Bridge
     {
         public static void RegisterModFonts(Assembly mainAssembly, string rootFolder)
         {
+            if (!Directory.Exists(rootFolder)) return;
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
             Instance.RegisterModFonts(mainAssembly, new() { ModName = modData.GetMeta().displayName, Location = rootFolder });
         }

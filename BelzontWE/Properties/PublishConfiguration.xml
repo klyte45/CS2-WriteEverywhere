@@ -24,6 +24,21 @@ This mod is simpler to understand when compared with its CS1 version, but it sti
 
 More documentation will be added in the future.
 
+## Write Everywhere modules
+
+Very soon the Paradox Mods will start receiving mods that are WE modules. They are designed to add automatically new content into the Write Everywhere, like:
+
+- Image atlases
+- Default layouts to assets
+- Importable layouts (into City Layouts tab)
+- Fonts to be imported
+
+Notice that fonts will always require manual install in the city (by adding them in the City Fonts tab). To make things easier, was added a button to list all mods that registered fonts/layouts in Write Everywhere at file picker dialog.
+
+If you are interested to create your own modules, take a look at [this template repository](https://github.com/klyte45/CS2-WEModuleTemplate)
+
+This feature was heavily inspired by the [Station Entrance Visuals](https://mods.paradoxplaza.com/mods/94028/Windows) by rodrigmatrix. That mod will be set up to follow the new integration method soon.
+
 ## FAQ
 
 First of all, read the [files repository](https://github.com/klyte45/CS2-WriteEverywhereFiles) to get the basic information.
@@ -44,16 +59,12 @@ First of all, read the [files repository](https://github.com/klyte45/CS2-WriteEv
 I want to thank the people that helped me with CS2 modding since first days, specially mentioning **yenyang** and **krzychu**. Also thanks **Chameleon**, **Mimonsi** and **Nullpinter** for testing the mod during the development process.</LongDescription>
   <Thumbnail Value="Properties/Thumbnail.png" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/write-everywhere-cities-skylines-2-version.1711901/" />
-  <ModVersion Value="0.1.0.9999" />
+  <ModVersion Value="0.1.1.0" />
   <GameVersion Value="1.1.*" />
-  <ChangeLog>#  v0.1.0r3 (26-NOV-24)
-- Fixes for 1.1.12
-- Fixing absolute size mode not considering image proportion - now it will respect the absolute size despite the proportion
-- Adding new functions for Color handling
-- Adjusting level of log when asset isn't found for asset default layout</ChangeLog>
-  <ExternalLink Type="github" Url="https://github.com/klyte45/CS2-WriteEverywhere" />
-  <ExternalLink Type="youtube" Url="https://www.youtube.com/Klyte45" />
-  <ExternalLink Type="kofi" Url="https://ko-fi.com/klyte45" />
+  <ChangeLog>#  v0.1.1r0 (01-DEC-24)
+- Created code integration support for WE Modules. [Template project available at GitHub.](https://github.com/klyte45/CS2-WEModuleTemplate)
+- Atlases registered from mods will appear categorized at bottom of the City Atlases tab list.
+- Navigation improvements at file select popup</ChangeLog>
   <Tag Value="Code Mod" />
   <Screenshot Value="Screenshots\0_main.jpg" />
   <Screenshot Value="Screenshots\1_a.jpg" />
@@ -61,4 +72,7 @@ I want to thank the people that helped me with CS2 modding since first days, spe
   <Screenshot Value="Screenshots\3_c.jpg" />
   <Screenshot Value="Screenshots\4_d.jpg" />
   <Dependency Id="74417" ModVersion="" DisplayName="Unified Icon Library" />
+  <ExternalLink Type="github" Url="https://github.com/klyte45/CS2-WriteEverywhere" />
+  <ExternalLink Type="youtube" Url="https://www.youtube.com/Klyte45" />
+  <ExternalLink Type="kofi" Url="https://ko-fi.com/klyte45" />
 </Publish>

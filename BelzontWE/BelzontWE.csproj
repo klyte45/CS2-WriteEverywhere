@@ -26,7 +26,7 @@
   <!--Mod data-->
   <PropertyGroup>
     <ModId>92908</ModId>
-    <Version>0.1.0.9999</Version>
+    <Version>0.1.1.0</Version>
     <GameVersion>1.1.*</GameVersion>
     <ThumbnailPath>Properties/Thumbnail.png</ThumbnailPath>
     <DisplayName>Write Everywhere</DisplayName>
@@ -233,7 +233,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="changelog.md" />
-    <Resource Remove="longDescription.md" />
+    <Resource Remove="README.md" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\SourceSansPro-Regular.ttf" />

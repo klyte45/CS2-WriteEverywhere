@@ -1,5 +1,4 @@
-#  v0.1.0r3 (26-NOV-24)
-- Fixes for 1.1.12
-- Fixing absolute size mode not considering image proportion - now it will respect the absolute size despite the proportion
-- Adding new functions for Color handling
-- Adjusting level of log when asset isn't found for asset default layout
+#  v0.1.1r0 (01-DEC-24)
+- Created code integration support for WE Modules. [Template project available at GitHub.](https://github.com/klyte45/CS2-WEModuleTemplate)
+- Atlases registered from mods will appear categorized at bottom of the City Atlases tab list.
+- Navigation improvements at file select popup

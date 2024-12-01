@@ -8,6 +8,7 @@ import { translate } from "utils/translate";
 import i_formulae from "../images/Function.svg";
 import "../style/floatingPanels.scss";
 import { FormulaeEditRow } from "../common/FormulaeEditRow";
+import { ObjectTyped } from "object-typed";
 
 const i_focus = "coui://uil/Standard/Magnifier.svg";
 
@@ -35,7 +36,14 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     useEffect(() => { WorldPickerService.instance.registerBindings(() => setBuild(buildIdx + 1)) }, [buildIdx])
     useEffect(() => { TextureAtlasService.listAtlasImages(mesh.ImageAtlasName.value).then(x => setImgOptions(x ?? [])); }, [mesh.ImageAtlasName.value, picker.CurrentSubEntity.value])
-    useEffect(() => { TextureAtlasService.listAvailableLibraries().then(x => setAtlases(Object.keys(x ?? {}))); }, [picker.CurrentSubEntity.value])
+    useEffect(() => {
+        Promise.all([
+            TextureAtlasService.listAvailableLibraries(),
+            TextureAtlasService.listModAtlases()
+        ]).then(([libs, mods]) => {
+            setAtlases([...Object.keys(libs ?? {}), ...mods.flatMap(x => x.Atlases).sort((a, b) => a.localeCompare(b))])
+        })
+    }, [picker.CurrentSubEntity.value])
 
     const EditorItemRow = VanillaWidgets.instance.EditorItemRow;
     const DropdownField = VanillaWidgets.instance.DropdownField<string>();
