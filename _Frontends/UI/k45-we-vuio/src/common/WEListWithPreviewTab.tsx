@@ -7,7 +7,7 @@ import { ContextMenuButton, ContextMenuButtonProps } from "./ContextMenuButton";
 export type ListActionTypeArray = (({ isContext: false } & PropsToolButton) | ({ isContext: true } & ContextMenuButtonProps) | null)[];
 
 type Props = {
-    listItems: (string | { section?: string, emptyPlaceholder?: string })[],
+    listItems: (string | { section?: string, emptyPlaceholder?: string, displayName?: undefined } | { displayName: string, value: string })[],
     detailsFields?: {
         key: ReactNode,
         value: ReactNode
@@ -42,6 +42,8 @@ export const WEListWithPreviewTab = ({ listItems, detailsFields, listActions, it
                 {listItems.map(x => {
                     if (typeof x == "string") {
                         return <button onClick={() => onChangeSelection(x)} className={classNames(x == selectedKey ? "selected" : "")}>{x}</button>
+                    } else if (typeof x.displayName == "string") {
+                        return <button onClick={() => onChangeSelection(x.value)} className={classNames(x.value == selectedKey ? "selected" : "")}>{x.displayName}</button>
                     } else {
                         if (x.section) {
                             return <div className="k45_listSection">{x.section}</div>

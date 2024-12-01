@@ -11,7 +11,7 @@ namespace BelzontWE.Bridge
         public static void RegisterModFonts(Assembly mainAssembly, string rootFolder)
         {
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
-            Instance.RegisterModFonts(mainAssembly, new() { ModName = modData.name, Location = rootFolder });
+            Instance.RegisterModFonts(mainAssembly, new() { ModName = modData.GetMeta().displayName, Location = rootFolder });
         }
     }
 }

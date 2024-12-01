@@ -1,10 +1,11 @@
 ﻿using Belzont.Interfaces;
+using BelzontWE.Sprites;
 using Colossal;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using Unity.Entities;
-using BelzontWE.Sprites;
+using static BelzontWE.Sprites.WEAtlasesLibrary;
 
 namespace BelzontWE
 {
@@ -21,6 +22,7 @@ namespace BelzontWE
         public void SetupCallBinder(Action<string, Delegate> callBinder)
         {
             callBinder($"{PREFIX}listAvailableLibraries", ListAvailableLibraries);
+            callBinder($"{PREFIX}listModAtlases", ListModAtlases);
             callBinder($"{PREFIX}listAtlasImages", ListAtlasImages);
             callBinder($"{PREFIX}exportCityAtlas", ExportCityAtlas);
             callBinder($"{PREFIX}copyToCity", CopyToCity);
@@ -34,6 +36,7 @@ namespace BelzontWE
         public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
 
         private Dictionary<string, bool> ListAvailableLibraries() => m_AtlasLibrary.ListAvailableAtlases();
+        private ModAtlasRegistry[] ListModAtlases() => m_AtlasLibrary.ListModAtlases();
         private string[] ListAtlasImages(string atlas) => m_AtlasLibrary.ListAvailableAtlasImages(atlas);
         private string ExportCityAtlas(string atlas, string folder) => m_AtlasLibrary.ExportCityAtlas(atlas ?? "", folder);
         private bool CopyToCity(string atlas, string newName) => m_AtlasLibrary.CopyToCity(atlas ?? "", newName);
@@ -67,4 +70,5 @@ namespace BelzontWE
         {
         }
     }
+
 }

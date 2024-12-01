@@ -54,12 +54,12 @@ namespace BelzontWE
         private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
         private bool m_templatesDirty;
-        private Dictionary<string, (string name, string rootFolder)> m_modsTempaltes = new();
+        private Dictionary<string, (string name, string rootFolder)> m_modsTemplates = new();
 
         public void RegisterModTemplatesForLoading(string modId, string modName, string folderTemplatesSource)
         {
-            if (m_modsTempaltes.TryGetValue(modId, out var folder) && folder.rootFolder == folderTemplatesSource) return;
-            m_modsTempaltes[modId] = (modName, folderTemplatesSource);
+            if (m_modsTemplates.TryGetValue(modId, out var folder) && folder.rootFolder == folderTemplatesSource) return;
+            m_modsTemplates[modId] = (modName, folderTemplatesSource);
             GameManager.instance.StartCoroutine(LoadTemplatesFromFolder(0, 100, modId));
         }
 
@@ -572,9 +572,9 @@ namespace BelzontWE
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.11f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.searchingForFiles");
             yield return 0;
             var files = modName != null
-                ? Directory.GetFiles(m_modsTempaltes[modName].rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => ($"{MODSOURCE_IDENTIFIER}{y}", $"{m_modsTempaltes[modName].name}: {y[m_modsTempaltes[modName].rootFolder.Length..]}")).ToArray()
+                ? Directory.GetFiles(m_modsTemplates[modName].rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => ($"{MODSOURCE_IDENTIFIER}{y}", $"{m_modsTemplates[modName].name}: {y[m_modsTemplates[modName].rootFolder.Length..]}")).ToArray()
                 : Directory.GetFiles(SAVED_PREFABS_FOLDER, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(x => (x, x[SAVED_PREFABS_FOLDER.Length..]))
-                    .Union(m_modsTempaltes.Values.SelectMany(x => Directory.GetFiles(x.rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => ($"{MODSOURCE_IDENTIFIER}{y}", $"{x.name}: {y[x.rootFolder.Length..]}"))))
+                    .Union(m_modsTemplates.Values.SelectMany(x => Directory.GetFiles(x.rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => ($"{MODSOURCE_IDENTIFIER}{y}", $"{x.name}: {y[x.rootFolder.Length..]}"))))
                     .ToArray();
             var errorsList = new Dictionary<string, LocalizedString>();
             for (int i = 0; i < files.Length; i++)

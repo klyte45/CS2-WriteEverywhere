@@ -23,6 +23,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
+using static Game.Modding.ModManager;
 
 namespace BelzontWE.Sprites
 {
@@ -85,15 +86,17 @@ namespace BelzontWE.Sprites
         private Dictionary<FixedString32Bytes, WETextureAtlas> CityAtlases { get; } = new();
         private Dictionary<string, WETextureAtlas> ModAtlases { get; } = new();
 
+        private Dictionary<string, ModInfo> RegisteredMods { get; } = new();
+
         #region Getters
 
         public Dictionary<string, bool> ListAvailableAtlases() => LocalAtlases.Where(x => x.Key != INTERNAL_ATLAS_NAME && !CityAtlases.ContainsKey(x.Key) && x.Value.Count > 0).Select(x => (x.Key.ToString(), false)).Concat(CityAtlases.Select(x => (x.Key.ToString(), true))).ToDictionary(x => x.Item1, x => x.Item2);
 
-        public string[] ListAvailableAtlasImages(string atlasName) => !atlasName.IsNullOrWhitespace() && (CityAtlases.TryGetValue(atlasName, out var arr) || LocalAtlases.TryGetValue(atlasName, out arr)) ? arr.Keys.Select(x => x.ToString()).ToArray() : new string[0];
+        public string[] ListAvailableAtlasImages(string atlasName) => !atlasName.IsNullOrWhitespace() && (CityAtlases.TryGetValue(atlasName, out var arr) || LocalAtlases.TryGetValue(atlasName, out arr) || ModAtlases.TryGetValue(atlasName, out arr)) ? arr.Keys.Select(x => x.ToString()).ToArray() : new string[0];
 
         internal BasicRenderInformation GetFromLocalAtlases(WEImages image) => GetFromAvailableAtlases(INTERNAL_ATLAS_NAME, image.ToString());
 
-        public bool TryGetAtlas(string atlasName, out WETextureAtlas atlas) => CityAtlases.TryGetValue(atlasName, out atlas) || LocalAtlases.TryGetValue(atlasName, out atlas);
+        public bool TryGetAtlas(string atlasName, out WETextureAtlas atlas) => CityAtlases.TryGetValue(atlasName, out atlas) || LocalAtlases.TryGetValue(atlasName, out atlas) || ModAtlases.TryGetValue(atlasName, out atlas);
 
         public BasicRenderInformation GetFromAvailableAtlases(string atlasName, FixedString32Bytes spriteName, bool fallbackOnInvalid = false)
             => spriteName.Trim().Length == 0 || atlasName.IsNullOrWhitespace()
@@ -193,10 +196,13 @@ namespace BelzontWE.Sprites
 
         internal void RegisterModAtlas(Assembly modId, string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
         {
+            RegisteredMods[GetModIdentifier(modId)] = ModManagementUtils.GetModDataFromMainAssembly(modId);
             RegisterAtlas(ModAtlases, GetModAtlasName(modId, atlasName), spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset);
         }
 
-        public static string GetModAtlasName(Assembly modId, string atlasName) => $"{modId.GetName().Name}:{atlasName}";
+        public static string GetModAtlasName(Assembly modId, string atlasName) => $"{GetModIdentifier(modId)}:{atlasName}";
+
+        private static string GetModIdentifier(Assembly modId) => modId.GetName().Name;
 
         private void RegisterLocalAtlas(string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
         {
@@ -390,6 +396,10 @@ namespace BelzontWE.Sprites
         public bool AtlasExistsInSavegame(string name) => name != null && CityAtlases.ContainsKey(name);
 
         public int GetAtlasImageSize(string name) => TryGetAtlas(name, out var atlas) ? atlas.Main.width : -1;
+
+        internal record struct ModAtlasRegistry(string ModId, string ModName, string[] Atlases) { }
+        internal ModAtlasRegistry[] ListModAtlases() => RegisteredMods
+            .Select(x => new ModAtlasRegistry(GetModIdentifier(x.Value.asset.assembly), x.Value.asset.GetMeta().displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
 
         [BurstCompile]
         private unsafe struct WEPlaceholcerAtlasesUsageCount : IJobChunk

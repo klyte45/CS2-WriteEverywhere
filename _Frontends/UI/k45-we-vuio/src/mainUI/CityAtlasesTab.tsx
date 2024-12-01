@@ -3,11 +3,12 @@ import { BaseStringInputDialog } from "common/BaseStringInputDialog";
 import { ListActionTypeArray, WEListWithPreviewTab } from "common/WEListWithPreviewTab";
 import { ConfirmationDialog, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
-import { AtlasCityDetailResponse, TextureAtlasService } from "services/TextureAtlasService";
+import { AtlasCityDetailResponse, ModAtlasRegistry, TextureAtlasService } from "services/TextureAtlasService";
 import "style/mainUi/tabStructure.scss";
 import { translate } from "utils/translate";
 import "../style/cityAtlasesTab.scss";
 import { StringInputDialog } from "common/StringInputDialog";
+import { ObjectTyped } from "object-typed";
 
 type Props = {}
 
@@ -40,6 +41,7 @@ export const CityAtlasesTab = (props: Props) => {
     const T_localAtlasesSection = translate("cityAtlasesTab.localAtlasesSection")
     const T_noCityAtlases = translate("cityAtlasesTab.noCityAtlases")
     const T_noLocalAtlases = translate("cityAtlasesTab.noLocalAtlases")
+    const T_modTitlePattern = translate("cityAtlasesTab.modTitlePattern")
 
 
     const units = VanillaFnResolver.instance.unit.Unit;
@@ -48,13 +50,21 @@ export const CityAtlasesTab = (props: Props) => {
     const buttonClass = VanillaComponentResolver.instance.toolButtonTheme.button;
 
     const [selectedAtlas, setSelectedAtlas] = useState(null as null | string);
-    const [atlasList, setAtlasList] = useState({} as Record<string, boolean>);
+    const [atlasList, setAtlasList] = useState({} as Record<string, boolean | ModAtlasRegistry>);
     const [selectedTemplateDetails, setSelectedTemplateDetails] = useState(null as null | AtlasCityDetailResponse);
     const [currentModal, setCurrentModal] = useState(Modals.NONE);
     const [lastExportedAtlasFolder, setLastExportedAtlasFolder] = useState("");
     const [buildIdx, setBuildIdx] = useState(0);
 
-    useEffect(() => { TextureAtlasService.listAvailableLibraries().then(setAtlasList) }, [selectedAtlas])
+    useEffect(() => {
+        Promise.all([
+            TextureAtlasService.listAvailableLibraries(),
+            TextureAtlasService.listModAtlases()
+        ]).then(([libs, mods]) => {
+            setAtlasList({ ...libs, ...ObjectTyped.fromEntries(mods.map(x => [`${x.ModId}:${x.ModName}`, x])) })
+        })
+
+    }, [selectedAtlas])
     useEffect(() => {
         TextureAtlasService.getCityAtlasDetail(selectedAtlas!).then((x) => {
             setSelectedTemplateDetails(x)
@@ -63,13 +73,12 @@ export const CityAtlasesTab = (props: Props) => {
     }, [selectedAtlas, buildIdx])
 
 
-
-    const actions = atlasList[selectedAtlas!] ? [
-        { className: "negativeBtn", action() { setCurrentModal(Modals.CONFIRMING_DELETE) }, text: T_delete },
-        null,
-        { className: "neutralBtn", action() { setCurrentModal(Modals.EXPORTING_ATLAS) }, text: T_export },
-
-    ] : [{ className: "positiveBtn", action() { setIsCopyingToCity(true) }, text: T_addToSaveGame }]
+    const actions = typeof atlasList[selectedAtlas!] === 'undefined' ? []
+        : atlasList[selectedAtlas!] ? [
+            { className: "negativeBtn", action() { setCurrentModal(Modals.CONFIRMING_DELETE) }, text: T_delete },
+            null,
+            { className: "neutralBtn", action() { setCurrentModal(Modals.EXPORTING_ATLAS) }, text: T_export },
+        ] : [{ className: "positiveBtn", action() { setIsCopyingToCity(true) }, text: T_addToSaveGame }]
 
     const detailsFields = selectedTemplateDetails ? [
         { key: T_usages, value: formatInteger(selectedTemplateDetails.usages) },
@@ -105,14 +114,25 @@ export const CityAtlasesTab = (props: Props) => {
     const [alertToDisplay, setAlertToDisplay] = useState(undefined as string | undefined)
     const listActions: ListActionTypeArray = []
 
-    function getItems(atlasList: Record<string, boolean>): Parameters<typeof WEListWithPreviewTab>[0]['listItems'] {
-        const cityAtlases = Object.entries(atlasList ?? {}).filter(x => x[1]).map(x => x[0]).sort((a, b) => a.toLowerCase().normalize("NFKD").localeCompare(b.toLowerCase().normalize("NFKD")))
-        const localAtlases = Object.entries(atlasList ?? {}).filter(x => !x[1]).map(x => x[0]).sort((a, b) => a.toLowerCase().normalize("NFKD").localeCompare(b.toLowerCase().normalize("NFKD")))
+    function getItems(atlasList: Record<string, boolean | ModAtlasRegistry>): Parameters<typeof WEListWithPreviewTab>[0]['listItems'] {
+        const normalizedComparer = (a: string, b: string): number => a.toLowerCase().normalize("NFKD").localeCompare(b.toLowerCase().normalize("NFKD"));
+
+        const cityAtlases = Object.entries(atlasList ?? {}).filter(x => x[1] === true).map(x => x[0]).sort(normalizedComparer)
+        const localAtlases = Object.entries(atlasList ?? {}).filter(x => !x[1]).map(x => x[0]).sort(normalizedComparer)
+        const modAtlases = (ObjectTyped.entries(atlasList ?? {}).filter(x => typeof x[1] == "object") as [string, ModAtlasRegistry][])
+            .sort(([, av], [, bv]) => normalizedComparer(av.ModName, bv.ModName))
+            .flatMap(([key, modRegistry]) => {
+                return [
+                    { section: replaceArgs(T_modTitlePattern, modRegistry) },
+                    ...modRegistry.Atlases.sort(normalizedComparer).map(x => { return { displayName: x.split(":")[1], value: x } })
+                ]
+            })
         return [
             { section: T_cityAtlasesSection },
             ...(cityAtlases.length ? cityAtlases : [{ emptyPlaceholder: T_noCityAtlases }]),
             { section: T_localAtlasesSection },
             ...(localAtlases.length ? localAtlases : [{ emptyPlaceholder: T_noLocalAtlases }]),
+            ...modAtlases
         ]
     }
 

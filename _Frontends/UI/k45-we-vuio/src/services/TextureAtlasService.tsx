@@ -1,6 +1,7 @@
 
 export class TextureAtlasService {
     static async listAvailableLibraries(): Promise<Record<string, boolean>> { return await engine.call("k45::we.textureAtlas.listAvailableLibraries"); }
+    static async listModAtlases(): Promise<ModAtlasRegistry[]> { return await engine.call("k45::we.textureAtlas.listModAtlases"); }
     static async listAtlasImages(atlas: string): Promise<string[]> { return await engine.call("k45::we.textureAtlas.listAtlasImages", atlas); }
     static async exportCityAtlas(atlas: string, folder: string): Promise<string> { return await engine.call("k45::we.textureAtlas.exportCityAtlas", atlas, folder); }
     static async copyToCity(atlas: string, newName: string): Promise<boolean> { return await engine.call("k45::we.textureAtlas.copyToCity", atlas, newName); }
@@ -16,4 +17,10 @@ export type AtlasCityDetailResponse = {
     usages: number;
     imageCount: number
     textureSize: number
+}
+
+export type ModAtlasRegistry = {
+    ModId: string,
+    ModName: string,
+    Atlases: string[]
 }

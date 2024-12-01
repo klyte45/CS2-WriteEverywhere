@@ -14,7 +14,7 @@ namespace BelzontWE.Bridge
             if (!Directory.Exists(rootFolderLayouts)) return false;
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
             var modId = modData.identifier;
-            var modName = modData.name;
+            var modName = modData.GetMeta().displayName;
             WETemplateManager.Instance.RegisterModTemplatesForLoading(modId, modName, rootFolderLayouts);
             return true;
         }
@@ -22,7 +22,7 @@ namespace BelzontWE.Bridge
         public static void RegisterLoadableTemplatesFolder(Assembly mainAssembly, string rootFolder)
         {
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
-            WETemplateManager.Instance.RegisterLoadableTemplatesFolder(mainAssembly, new() { ModName = modData.name, Location = rootFolder });
+            WETemplateManager.Instance.RegisterLoadableTemplatesFolder(mainAssembly, new() { ModName = modData.GetMeta().displayName, Location = rootFolder });
         }
     }
 }

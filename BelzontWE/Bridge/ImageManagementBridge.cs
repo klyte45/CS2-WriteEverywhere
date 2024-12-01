@@ -21,7 +21,7 @@ namespace BelzontWE.Bridge
 
         public static string GetImageAtlasVersion() => BasicIMod.FullVersion;
 
-        public static void RegisterImageAtlas(Assembly mainAssembly, string atlasName, string[] imagePaths, Action<string> onCompleteLoading)
+        public static void RegisterImageAtlas(Assembly mainAssembly, string atlasName, string[] imagePaths, Action<string> onCompleteLoading = null)
         {
             new CoroutineWithData<string>(GameManager.instance, RegisterImageAtlas_Internal(mainAssembly, atlasName, imagePaths), onCompleteLoading);
         }
@@ -31,7 +31,7 @@ namespace BelzontWE.Bridge
             yield return null;
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly);
             var modIdentifier = modData.asset.identifier;
-            var displayName = modData.asset.name;
+            var displayName = modData.asset.GetMeta().displayName;
             var targetAtlasName = WEAtlasesLibrary.GetModAtlasName(mainAssembly, atlasName);
             var notifGroup = $"{LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX}:{targetAtlasName}";
             Dictionary<string, ILocElement> args = new()
