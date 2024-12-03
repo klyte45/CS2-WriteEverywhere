@@ -399,7 +399,7 @@ namespace BelzontWE.Sprites
 
         internal record struct ModAtlasRegistry(string ModId, string ModName, string[] Atlases) { }
         internal ModAtlasRegistry[] ListModAtlases() => RegisteredMods
-            .Select(x => new ModAtlasRegistry(GetModIdentifier(x.Value.asset.assembly), x.Value.asset.GetMeta().displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
+            .Select(x => new ModAtlasRegistry(GetModIdentifier(x.Value.asset.assembly), x.Value.asset.mod.displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
 
         [BurstCompile]
         private unsafe struct WEPlaceholcerAtlasesUsageCount : IJobChunk

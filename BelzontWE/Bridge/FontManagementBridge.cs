@@ -13,7 +13,7 @@ namespace BelzontWE.Bridge
         {
             if (!Directory.Exists(rootFolder)) return;
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
-            Instance.RegisterModFonts(mainAssembly, new() { ModName = modData.GetMeta().displayName, Location = rootFolder });
+            Instance.RegisterModFonts(mainAssembly, new() { ModName = modData.mod.displayName, Location = rootFolder });
         }
     }
 }

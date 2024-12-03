@@ -35,7 +35,7 @@ Very soon the Paradox Mods will start receiving mods that are WE modules. They a
 
 Notice that fonts will always require manual install in the city (by adding them in the City Fonts tab). To make things easier, was added a button to list all mods that registered fonts/layouts in Write Everywhere at file picker dialog.
 
-If you are interested to create your own modules, take a look at [this template repository](https://github.com/klyte45/CS2-WEModuleTemplate)
+If you are interested to create your own modules, take a look at [this template repository](https://github.com/klyte45/CS2-WEModuleTemplate).
 
 This feature was heavily inspired by the [Station Entrance Visuals](https://mods.paradoxplaza.com/mods/94028/Windows) by rodrigmatrix. That mod will be set up to follow the new integration method soon.
 
@@ -59,12 +59,15 @@ First of all, read the [files repository](https://github.com/klyte45/CS2-WriteEv
 I want to thank the people that helped me with CS2 modding since first days, specially mentioning **yenyang** and **krzychu**. Also thanks **Chameleon**, **Mimonsi** and **Nullpinter** for testing the mod during the development process.</LongDescription>
   <Thumbnail Value="Properties/Thumbnail.png" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/write-everywhere-cities-skylines-2-version.1711901/" />
-  <ModVersion Value="0.1.1.0" />
+  <ModVersion Value="0.1.1.1" />
   <GameVersion Value="1.1.*" />
   <ChangeLog>#  v0.1.1r0 (01-DEC-24)
 - Created code integration support for WE Modules. [Template project available at GitHub.](https://github.com/klyte45/CS2-WEModuleTemplate)
 - Atlases registered from mods will appear categorized at bottom of the City Atlases tab list.
-- Navigation improvements at file select popup</ChangeLog>
+- Navigation improvements at file select popup
+
+## r1 (02-DEC-24)
+- Fixed modules names shown in atlases list</ChangeLog>
   <Tag Value="Code Mod" />
   <Screenshot Value="Screenshots\0_main.jpg" />
   <Screenshot Value="Screenshots\1_a.jpg" />

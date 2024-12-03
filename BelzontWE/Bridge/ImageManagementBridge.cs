@@ -31,7 +31,7 @@ namespace BelzontWE.Bridge
             yield return null;
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly);
             var modIdentifier = modData.asset.identifier;
-            var displayName = modData.asset.GetMeta().displayName;
+            var displayName = modData.asset.mod.displayName;
             var targetAtlasName = WEAtlasesLibrary.GetModAtlasName(mainAssembly, atlasName);
             var notifGroup = $"{LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX}:{targetAtlasName}";
             Dictionary<string, ILocElement> args = new()

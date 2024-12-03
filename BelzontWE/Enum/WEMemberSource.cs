@@ -47,7 +47,7 @@ namespace BelzontWE
                 }
                 else
                 {
-                    modName = modInfo.GetMeta().displayName;
+                    modName = modInfo.mod.displayName;
                     modUrl = modInfo.GetMeta().remoteStorageSourceName;
                 }
             }

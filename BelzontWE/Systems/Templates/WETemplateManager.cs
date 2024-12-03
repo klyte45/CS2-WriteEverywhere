@@ -56,8 +56,12 @@ namespace BelzontWE
         private bool m_templatesDirty;
         private Dictionary<string, (string name, string rootFolder)> m_modsTemplates = new();
 
-        public void RegisterModTemplatesForLoading(string modId, string modName, string folderTemplatesSource)
+        public void RegisterModTemplatesForLoading(Assembly mainAssembly, string folderTemplatesSource)
         {
+            var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
+            var modId = mainAssembly.GetName().Name;
+            var modName = modData.mod.displayName;
+
             if (m_modsTemplates.TryGetValue(modId, out var folder) && folder.rootFolder == folderTemplatesSource) return;
             m_modsTemplates[modId] = (modName, folderTemplatesSource);
             GameManager.instance.StartCoroutine(LoadTemplatesFromFolder(0, 100, modId));
