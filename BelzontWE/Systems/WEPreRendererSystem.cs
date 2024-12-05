@@ -1,4 +1,5 @@
-﻿using Game.Common;
+﻿using Belzont.Utils;
+using Game.Common;
 using Game.Tools;
 using Unity.Collections;
 using Unity.Entities;
@@ -37,11 +38,12 @@ namespace BelzontWE
             var entities = m_pendingPostInstantiate.ToEntityArray(Allocator.Temp);
             var meshData = m_pendingPostInstantiate.ToComponentDataArray<WETextDataMesh>(Allocator.Temp);
             var mainData = m_pendingPostInstantiate.ToComponentDataArray<WETextDataMain>(Allocator.Temp);
+            var sourceData = m_pendingPostInstantiate.ToComponentDataArray<WETextDataSourceMod>(Allocator.Temp);
             try
             {
                 for (int i = 0; i < entities.Length; i++)
                 {
-                    meshData[i].OnPostInstantiate(EntityManager, mainData[i].TargetEntity);
+                    meshData[i].OnPostInstantiate(EntityManager, mainData[i].TargetEntity, sourceData[i].ToString());
                     EntityManager.SetComponentData(entities[i], meshData[i]);
                     EntityManager.RemoveComponent<WEWaitingPostInstantiation>(entities[i]);
                 }

@@ -2,6 +2,7 @@
 using Belzont.Utils;
 using Colossal.OdinSerializer.Utilities;
 using Colossal.Serialization.Entities;
+using System.Collections.Generic;
 using System.ComponentModel;
 
 
@@ -67,6 +68,20 @@ namespace BelzontWE
             reader.ReadNullCheck(out whiteMesh);
             reader.ReadNullCheck(out defaultStyle);
             reader.ReadNullCheck(out glassStyle);
+
+        }
+
+        internal void MapFontAndAtlases(Dictionary<string, string> dictAtlases, Dictionary<string, string> dictFonts)
+        {
+            if (imageMesh != null && imageMesh.atlas.TrimToNull() != null && !dictAtlases.ContainsKey(imageMesh.atlas))
+            {
+                dictAtlases[imageMesh.atlas] = imageMesh.atlas;
+
+            }
+            if (textMesh != null && textMesh.fontName.TrimToNull() != null && !dictFonts.ContainsKey(textMesh.fontName))
+            {
+                dictFonts[textMesh.fontName] = textMesh.fontName;
+            }
 
         }
 

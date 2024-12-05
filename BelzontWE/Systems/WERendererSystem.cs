@@ -144,7 +144,7 @@ namespace BelzontWE
 
                     bool ìsPlaceholder = false;
                     bool doRender = true;
-                    mesh.UpdateFormulaes(EntityManager, item.geometryEntity);
+                    mesh.UpdateFormulaes(EntityManager, item.geometryEntity, item.modSource.ToString());
                     material.UpdateFormulaes(EntityManager, item.geometryEntity);
 
 
@@ -242,6 +242,7 @@ namespace BelzontWE
                     m_weSubRefLookup = GetBufferLookup<WESubTextRef>(true),
                     doLog = dumpNextFrame,
                     m_weTransformLookup = GetComponentLookup<WETextDataTransform>(true),
+                    m_weSourceModLookup = GetComponentLookup<WETextDataSourceMod>(true),
                 };
                 job2.ScheduleParallel(m_renderQueueEntities, Dependency).Complete();
             }
@@ -254,6 +255,7 @@ namespace BelzontWE
             public Entity geometryEntity;
             public WETextDataMain main;
             public WETextDataMesh mesh;
+            public FixedString32Bytes modSource;
             public WETextDataMaterial material;
             public Matrix4x4 transformMatrix;
         }

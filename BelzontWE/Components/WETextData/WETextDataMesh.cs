@@ -1,7 +1,6 @@
 ﻿using BelzontWE.Font.Utility;
 using Colossal.Entities;
 using Colossal.Mathematics;
-using Game.SceneFlow;
 using System;
 using System.Runtime.InteropServices;
 using Unity.Collections;
@@ -17,7 +16,9 @@ namespace BelzontWE
 
         private GCHandle basicRenderInformation;
         private FixedString64Bytes atlas;
+        private FixedString32Bytes originalName;
         private FixedString32Bytes fontName;
+        internal ushort lastUpdateModReplacements;
         private WETextDataValueString valueData;
         private bool dirty;
         private bool templateDirty;
@@ -95,27 +96,39 @@ namespace BelzontWE
             basicRenderInformation = default;
         }
 
-        public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity)
+        public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity, string templateModName)
         {
             FontServer.Instance.EnsureFont(fontName);
-            UpdateFormulaes(em, targetEntity, true);
+            UpdateFormulaes(em, targetEntity, templateModName, true);
             return this;
         }
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, bool force = false)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string templateModName, bool force = false)
         {
             if (!force && nextUpdateFrame > Time.frameCount)
             {
                 return false;
             }
             nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
-            bool result;
+            bool result = false;
             switch (textType)
             {
                 case WESimulationTextType.Text:
-                    result = valueData.UpdateEffectiveValue(em, geometryEntity);
+                    if (templateModName?.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
+                    {
+                        lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
+                        fontName = WETemplateManager.Instance.GetFontFor(templateModName, originalName);
+                        result = true;
+                    }
+                    result |= valueData.UpdateEffectiveValue(em, geometryEntity);
                     break;
                 case WESimulationTextType.Image:
-                    result = valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString());
+                    if (templateModName?.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
+                    {
+                        lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
+                        atlas = WETemplateManager.Instance.GetAtlasFor(templateModName, originalName);
+                        result = true;
+                    }
+                    result |= valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString());
                     break;
                 case WESimulationTextType.Placeholder:
                     result = valueData.UpdateEffectiveValue(em, geometryEntity);

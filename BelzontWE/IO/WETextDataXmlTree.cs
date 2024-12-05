@@ -23,7 +23,7 @@ namespace BelzontWE
 
         public bool ShouldSerializechildren() => self.layoutMesh is null;
 
-
+        internal string ModSource { get; set; }
         public static WETextDataXmlTree FromEntity(Entity e, EntityManager em)
         {
             var result = new WETextDataXmlTree
@@ -99,5 +99,16 @@ namespace BelzontWE
             }
         }
 
+        internal void MapFontAndAtlases(Dictionary<string, string> dictAtlases, Dictionary<string, string> dictFonts)
+        {
+            self.MapFontAndAtlases(dictAtlases, dictFonts);
+            if (children?.Length > 0)
+            {
+                foreach (var child in children)
+                {
+                    child.MapFontAndAtlases(dictAtlases, dictFonts);
+                }
+            }
+        }
     }
 }
