@@ -45,9 +45,19 @@ export class LayoutsService {
         return engine.call("k45::we.layouts.importAsCityTemplateFromXml", saveName);
     }
     static async listModsLoadableTemplates(): Promise<ModFolder[]> { return await engine.call("k45::we.layouts.listModsLoadableTemplates"); }
+    static async listModsReplacementData(): Promise<ModReplacementData[]> { return await engine.call("k45::we.layouts.listModsReplacementData"); }
+    static async setModFontReplacement(modId: string, original: string, target: string): Promise<string> { return await engine.call("k45::we.layouts.setModFontReplacement", modId, original, target); }
+    static async setModAtlasReplacement(modId: string, original: string, target: string): Promise<string> { return await engine.call("k45::we.layouts.setModAtlasReplacement", modId, original, target); }
 }
 
 export type CityDetailResponse = {
     name: string
     usages: number;
+}
+
+export type ModReplacementData = {
+    modId: string
+    displayName: string
+    atlases: Record<string, string>
+    fonts: Record<string, string>
 }

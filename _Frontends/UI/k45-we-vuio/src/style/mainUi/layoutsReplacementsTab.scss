@@ -1,0 +1,47 @@
+.k45_we_tabWithContent_body.layoutReplacementTab {
+    display: flex;
+    flex-direction: row;
+
+    >div {
+        display: flex;
+        width: 50%;
+        padding: 5rem;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .sectionTitle {
+        font-size: 200%;
+        color: var(--accentColorNormal);
+        display: flex;
+        align-content: center;
+        justify-content: center;
+        padding-bottom: 15rem;
+        padding-top: 5rem;
+    }
+
+    .emptyDataContainer {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    div[class^=row_] {
+        >div[class^=label_] {
+            padding-right: 5rem;
+            max-width: 66%;
+        }
+
+        >div[class^=control_] {
+            flex-shrink: 9e+09;
+            flex-grow: 1;
+            min-width: 50rem;
+
+            [class^=dropdown-toggle_] {
+                color: white;
+            }
+        }
+    }
+}

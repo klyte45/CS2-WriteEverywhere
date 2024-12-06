@@ -54,24 +54,6 @@ namespace BelzontWE
         private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
         private bool m_templatesDirty;
-        private Dictionary<string, (string name, string id, string rootFolder)> m_modsTemplates = new();
-        private Dictionary<string, Dictionary<string, string>> m_atlasesReplacements = new();
-        private Dictionary<string, Dictionary<string, string>> m_fontsReplacements = new();
-        public ushort ModReplacementDataVersion { get; private set; } = 0;
-
-
-        public void RegisterModTemplatesForLoading(Assembly mainAssembly, string folderTemplatesSource)
-        {
-            var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
-            var modId = mainAssembly.GetName().Name;
-            var modName = modData.mod.displayName;
-
-            if (m_modsTemplates.TryGetValue(modId, out var folder) && folder.rootFolder == folderTemplatesSource) return;
-            m_modsTemplates[modId] = (modName, modId, folderTemplatesSource);
-            GameManager.instance.StartCoroutine(LoadTemplatesFromFolder(0, 100, modId));
-        }
-
-        public FixedString128Bytes[] GetTemplateAvailableKeys() => RegisteredTemplates.Keys.ToArray();
 
         public WETextDataXmlTree this[FixedString128Bytes idx]
         {
@@ -116,7 +98,7 @@ namespace BelzontWE
                             {
                                 ComponentLookup<WETextDataMain> tdLookup = GetComponentLookup<WETextDataMain>();
                                 BufferLookup<WESubTextRef> subTextLookup = GetBufferLookup<WESubTextRef>();
-                                WELayoutUtility.DoCreateLayoutItem(null, item, key, key, ref tdLookup, ref subTextLookup, cmd);
+                                WELayoutUtility.DoCreateLayoutItem(false, null, item, key, key, ref tdLookup, ref subTextLookup, cmd);
                             });
                         }
                     }
@@ -371,7 +353,7 @@ namespace BelzontWE
                     {
                         if (PrefabTemplates.TryGetValue(prefabData.m_Index, out var newTemplate))
                         {
-                            var childEntity = WELayoutUtility.DoCreateLayoutItem(newTemplate.ModSource, newTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_FOR_PARENT);
+                            var childEntity = WELayoutUtility.DoCreateLayoutItem(true, newTemplate.ModSource, newTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_FOR_PARENT);
                             if (m_prefabEmptyLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateForPrefabEmpty>(e);
                             cmd.AddComponent<WETemplateForPrefab>(entities[i], new()
                             {
@@ -416,7 +398,7 @@ namespace BelzontWE
                     var newData = RegisteredTemplates.TryGetValue(dataToBeProcessed.layoutName, out var targetTemplate) ? new WETemplateUpdater()
                     {
                         templateEntity = targetTemplate.Guid,
-                        childEntity = WELayoutUtility.DoCreateLayoutItem(targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
+                        childEntity = WELayoutUtility.DoCreateLayoutItem(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
                     } : default;
                     if (m_templateUpdaterLkp.TryGetComponent(e, out var oldCmp))
                     {
@@ -519,6 +501,9 @@ namespace BelzontWE
         public JobHandle SetDefaults(Context context)
         {
             RegisteredTemplates.Clear();
+            m_atlasesReplacements.Clear();
+            m_fontsReplacements.Clear();
+            ModReplacementDataVersion = 2;
             return Dependency;
         }
 
@@ -624,9 +609,9 @@ namespace BelzontWE
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.11f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.searchingForFiles");
             yield return 0;
             var files = modName != null
-                ? Directory.GetFiles(m_modsTemplates[modName].rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => (y, m_modsTemplates[modName].id, $"{m_modsTemplates[modName].name}: {y[m_modsTemplates[modName].rootFolder.Length..]}")).ToArray()
+                ? Directory.GetFiles(m_modsTemplatesFolder[modName].rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => (y, m_modsTemplatesFolder[modName].id, $"{m_modsTemplatesFolder[modName].name}: {y[m_modsTemplatesFolder[modName].rootFolder.Length..]}")).ToArray()
                 : Directory.GetFiles(SAVED_PREFABS_FOLDER, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(x => (x, (string)null, x[SAVED_PREFABS_FOLDER.Length..]))
-                    .Union(m_modsTemplates.Values.SelectMany(x => Directory.GetFiles(x.rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => (y, x.id, $"{x.name}: {y[x.rootFolder.Length..]}"))))
+                    .Union(m_modsTemplatesFolder.Values.SelectMany(x => Directory.GetFiles(x.rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => (y, x.id, $"{x.name}: {y[x.rootFolder.Length..]}"))))
                     .ToArray();
             var errorsList = new Dictionary<string, LocalizedString>();
             for (int i = 0; i < files.Length; i++)
@@ -668,19 +653,18 @@ namespace BelzontWE
                 var validationResults = CanBePrefabLayout(tree);
                 if (validationResults == 0)
                 {
-                    if (modId != null)
+                    var effectiveModId = modId ?? "";
+                    if (!m_atlasesMapped.TryGetValue(effectiveModId, out var dictAtlases))
                     {
-                        if (!m_atlasesReplacements.TryGetValue(modId, out var dictAtlases))
-                        {
-                            dictAtlases = m_atlasesReplacements[modId] = new();
-                        }
-                        if (!m_fontsReplacements.TryGetValue(modId, out var dictFonts))
-                        {
-                            dictFonts = m_fontsReplacements[modId] = new();
-                        }
-                        tree.MapFontAndAtlases(dictAtlases, dictFonts);
-                        tree.ModSource = modId;
+                        dictAtlases = m_atlasesMapped[effectiveModId] = new();
                     }
+                    if (!m_fontsMapped.TryGetValue(effectiveModId, out var dictFonts))
+                    {
+                        dictFonts = m_fontsMapped[effectiveModId] = new();
+                    }
+                    tree.MapFontAndAtlases(dictAtlases, dictFonts);
+                    tree.ModSource = effectiveModId.TrimToNull();
+
 
                     if (PrefabTemplates.ContainsKey(idx))
                     {
@@ -866,35 +850,120 @@ namespace BelzontWE
             RegisteredTemplates[newName] = RegisteredTemplates[srcName].Clone();
             m_templatesDirty = true;
         }
+        #endregion
+
+        #region Modules integration
 
         private readonly Dictionary<Assembly, ModFolder> integrationLoadableTemplatesFromMod = new();
+        private readonly Dictionary<string, HashSet<string>> m_atlasesMapped = new();
+        private readonly Dictionary<string, HashSet<string>> m_fontsMapped = new();
+        private readonly Dictionary<string, Dictionary<string, string>> m_atlasesReplacements = new();
+        private readonly Dictionary<string, Dictionary<string, string>> m_fontsReplacements = new();
+        public ushort ModReplacementDataVersion { get; private set; } = 0;
+
+        private Dictionary<string, (string name, string id, string rootFolder)> m_modsTemplatesFolder = new();
+
+        public void RegisterModTemplatesForLoading(Assembly mainAssembly, string folderTemplatesSource)
+        {
+            var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
+            var modId = mainAssembly.GetName().Name;
+            var modName = modData.mod.displayName;
+
+            if (m_modsTemplatesFolder.TryGetValue(modId, out var folder) && folder.rootFolder == folderTemplatesSource) return;
+            m_modsTemplatesFolder[modId] = (modName, modId, folderTemplatesSource);
+            GameManager.instance.StartCoroutine(LoadTemplatesFromFolder(0, 100, modId));
+        }
+
+        public FixedString128Bytes[] GetTemplateAvailableKeys() => RegisteredTemplates.Keys.ToArray();
 
         internal void RegisterLoadableTemplatesFolder(Assembly mainAssembly, ModFolder fontFolder) { integrationLoadableTemplatesFromMod[mainAssembly] = fontFolder; }
         internal List<ModFolder> ListModsExtraFolders() => integrationLoadableTemplatesFromMod.Values.ToList();
 
         internal FixedString32Bytes GetFontFor(string templateModName, FixedString32Bytes originalFontName)
         {
-            try
-            {
-                return m_fontsReplacements[templateModName][originalFontName.ToString()];
-            }
-            catch
-            {
-                return originalFontName;
-            }
+            return m_fontsReplacements.TryGetValue(templateModName, out var fontList) && fontList.TryGetValue(originalFontName.ToString(), out var fontName)
+                ? (FixedString32Bytes)fontName
+                : default;
         }
 
         internal FixedString32Bytes GetAtlasFor(string templateModName, FixedString32Bytes originalAtlasName)
         {
-            try
-            {
-                return m_atlasesReplacements[templateModName][originalAtlasName.ToString()];
-            }
-            catch
-            {
-                return originalAtlasName;
-            }
+            return m_atlasesReplacements.TryGetValue(templateModName, out var atlasList) && atlasList.TryGetValue(originalAtlasName.ToString(), out var atlasName)
+                ? (FixedString32Bytes)atlasName
+                : originalAtlasName;
         }
+
+        internal class ModReplacementData
+        {
+            public string modId;
+            public string displayName;
+            public Dictionary<string, string> atlases;
+            public Dictionary<string, string> fonts;
+        }
+
+        internal ModReplacementData[] GetModsReplacementData()
+        {
+            return m_modsTemplatesFolder.Select(x => new ModReplacementData
+            {
+                modId = x.Key,
+                displayName = x.Value.name,
+                atlases = (m_atlasesReplacements.TryGetValue(x.Key, out var atlases) ? atlases : new()).Union((m_atlasesMapped.TryGetValue(x.Key, out var mappedAtlases) ? mappedAtlases : new()).ToDictionary(y => y, y => (string)null)).GroupBy(y => y.Key).ToDictionary(y => y.Key, y => y.First().Value),
+                fonts = (m_fontsReplacements.TryGetValue(x.Key, out var fonts) ? fonts : new()).Union((m_fontsMapped.TryGetValue(x.Key, out var mappedFonts) ? mappedFonts : new()).ToDictionary(y => y, y => (string)null)).GroupBy(y => y.Key).ToDictionary(y => y.Key, y => y.First().Value),
+            }).ToArray();
+        }
+
+        internal string SetModAtlasReplacement(string modId, string original, string target)
+        {
+            if (m_atlasesMapped.ContainsKey(modId))
+            {
+                if (!m_atlasesReplacements.TryGetValue(modId, out var atlases))
+                {
+                    atlases = m_atlasesReplacements[modId] = new();
+                }
+                if (m_atlasesMapped[modId].Contains(original))
+                {
+                    unchecked
+                    {
+                        ModReplacementDataVersion++;
+                    }
+                    if (target.TrimToNull() is null)
+                    {
+                        atlases.Remove(original);
+                        return null;
+                    }
+                    return atlases[original] = target.TrimToNull() ?? original;
+                }
+            }
+            return null;
+
+        }
+
+        internal string SetModFontReplacement(string modId, string original, string target)
+        {
+            if (m_fontsMapped.ContainsKey(modId))
+            {
+                if (!m_fontsReplacements.TryGetValue(modId, out var fonts))
+                {
+                    fonts = m_fontsReplacements[modId] = new();
+                }
+                if (m_fontsMapped[modId].Contains(original))
+                {
+                    unchecked
+                    {
+                        ModReplacementDataVersion++;
+                    }
+                    if (target.TrimToNull() is null)
+                    {
+                        fonts.Remove(original);
+                        return null;
+                    }
+                    return fonts[original] = target.TrimToNull() ?? original;
+                }
+            }
+            return null;
+        }
+
+
         #endregion
 
         [BurstCompile]

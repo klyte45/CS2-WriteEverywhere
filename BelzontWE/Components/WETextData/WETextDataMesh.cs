@@ -16,7 +16,7 @@ namespace BelzontWE
 
         private GCHandle basicRenderInformation;
         private FixedString64Bytes atlas;
-        private FixedString32Bytes originalName;
+        public FixedString32Bytes originalName;
         private FixedString32Bytes fontName;
         internal ushort lastUpdateModReplacements;
         private WETextDataValueString valueData;
@@ -98,8 +98,8 @@ namespace BelzontWE
 
         public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity, string templateModName)
         {
-            FontServer.Instance.EnsureFont(fontName);
             UpdateFormulaes(em, targetEntity, templateModName, true);
+            FontServer.Instance.EnsureFont(fontName);
             return this;
         }
         public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string templateModName, bool force = false)

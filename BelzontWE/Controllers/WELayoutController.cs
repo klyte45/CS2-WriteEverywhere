@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using Unity.Entities;
+using static BelzontWE.WETemplateManager;
 
 namespace BelzontWE
 {
@@ -35,6 +36,9 @@ namespace BelzontWE
             callBinder($"{PREFIX}loadAsChildFromCityTemplate", LoadAsChildFromCityTemplate);
             callBinder($"{PREFIX}importAsCityTemplateFromXml", ImportAsCityTemplateFromXml);
             callBinder($"{PREFIX}listModsLoadableTemplates", ListModsLoadableTemplates);
+            callBinder($"{PREFIX}listModsReplacementData", ListModsReplacementData);
+            callBinder($"{PREFIX}setModFontReplacement", SetModFontReplacement);
+            callBinder($"{PREFIX}setModAtlasReplacement", SetModAtlasReplacement);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
@@ -203,5 +207,12 @@ namespace BelzontWE
             public string name;
             public int usages;
         }
+
+        private ModReplacementData[] ListModsReplacementData() => m_templateManager.GetModsReplacementData();
+        private string SetModFontReplacement(string modId, string original, string target) => m_templateManager.SetModFontReplacement(modId, original, target);
+        private string SetModAtlasReplacement(string modId, string original, string target) => m_templateManager.SetModAtlasReplacement(modId, original, target);
+
+
+
     }
 }

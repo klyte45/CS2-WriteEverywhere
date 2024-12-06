@@ -99,7 +99,7 @@ namespace BelzontWE
             }
         }
 
-        internal void MapFontAndAtlases(Dictionary<string, string> dictAtlases, Dictionary<string, string> dictFonts)
+        internal void MapFontAndAtlases(HashSet< string> dictAtlases, HashSet<string> dictFonts)
         {
             self.MapFontAndAtlases(dictAtlases, dictFonts);
             if (children?.Length > 0)

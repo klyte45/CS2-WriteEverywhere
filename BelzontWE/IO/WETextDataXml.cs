@@ -71,16 +71,15 @@ namespace BelzontWE
 
         }
 
-        internal void MapFontAndAtlases(Dictionary<string, string> dictAtlases, Dictionary<string, string> dictFonts)
+        internal void MapFontAndAtlases(HashSet<string> dictAtlases, HashSet<string> dictFonts)
         {
-            if (imageMesh != null && imageMesh.atlas.TrimToNull() != null && !dictAtlases.ContainsKey(imageMesh.atlas))
+            if (imageMesh != null && imageMesh.atlas.TrimToNull() != null)
             {
-                dictAtlases[imageMesh.atlas] = imageMesh.atlas;
-
+                dictAtlases.Add(imageMesh.atlas);
             }
-            if (textMesh != null && textMesh.fontName.TrimToNull() != null && !dictFonts.ContainsKey(textMesh.fontName))
+            if (textMesh != null && textMesh.fontName.TrimToNull() != null)
             {
-                dictFonts[textMesh.fontName] = textMesh.fontName;
+                dictFonts.Add(textMesh.fontName);
             }
 
         }

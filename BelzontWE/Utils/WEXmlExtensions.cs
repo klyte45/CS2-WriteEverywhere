@@ -123,6 +123,7 @@ namespace BelzontWE.Utils
             => value is null ? default : new()
             {
                 FontName = value.fontName ?? "",
+                originalName = value.fontName ?? "",
                 MaxWidthMeters = value.maxWidthMeters,
                 ValueData = value.text?.ToComponent() ?? default,
                 TextType = value.textType
@@ -131,12 +132,13 @@ namespace BelzontWE.Utils
             => new()
             {
                 atlas = value.Atlas.ToString(),
-                image = value.ValueData.ToXml(),                
+                image = value.ValueData.ToXml(),
             };
         public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataImageXml value)
             => value is null ? default : new()
             {
                 Atlas = value.atlas ?? "",
+                originalName = value.atlas ?? "",
                 ValueData = value.image?.ToComponent() ?? default,
                 TextType = value.textType
             };

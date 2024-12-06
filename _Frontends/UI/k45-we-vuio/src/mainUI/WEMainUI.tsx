@@ -8,6 +8,7 @@ import { translate } from "utils/translate";
 import { CityLayoutsTab } from "./CityLayoutsTab";
 import { FontsTab } from "./FontsTab";
 import { CityAtlasesTab } from "./CityAtlasesTab";
+import { PrefabTemplatesReplacementsTab } from "./PrefabTemplatesReplacementsTab";
 
 export const WeMainPanelId = "BelzontWE.UI.WEMainPanel";
 
@@ -28,7 +29,7 @@ enum Tabs {
     CityLayouts = "CityLayouts",
     CityFonts = "CityFonts",
     CityAtlases = "CityAtlases",
-    // PrefabTemplates = "PrefabTemplates"
+    PrefabTemplatesReplacements = "PrefabTemplatesReplacements"
 }
 export const WEMainPanel = (props: MainPanelProps) => {
     const PanelTitleBar = VanillaComponentResolver.instance.PanelTitleBar;
@@ -53,6 +54,7 @@ export const WEMainPanel = (props: MainPanelProps) => {
                 {selectedTab == Tabs.CityLayouts && <CityLayoutsTab />}
                 {selectedTab == Tabs.CityFonts && <FontsTab />}
                 {selectedTab == Tabs.CityAtlases && <CityAtlasesTab />}
+                {selectedTab == Tabs.PrefabTemplatesReplacements && <PrefabTemplatesReplacementsTab />}
             </TabNav>
         </Panel>
     </div >;
