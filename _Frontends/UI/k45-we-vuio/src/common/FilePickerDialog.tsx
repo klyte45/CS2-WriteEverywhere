@@ -70,16 +70,16 @@ const BaseFilePickerDialog = ({ onConfirm: callback, dialogTitle: title, dialogP
 
     useEffect(() => {
         FileService.generateDataProvider(currentFolder, allowedExtensions).then(setCurrentData);
-        setCurrentFolderTyping(currentFolder);
         setIsEditingPath(false);
     }, [allowedExtensions, currentFolder])
 
     useEffect(() => {
         if (isEditingPath && refInput.current) {
-            var input = (refInput.current?.firstChild as HTMLInputElement);
+            var input = [...(refInput.current?.children ?? [])].find(x => x.tagName == "INPUT") as HTMLInputElement;
             if (input) {
+                setCurrentFolderTyping(currentFolder)
                 input.focus()
-                input.setSelectionRange(input.value.length, input.value.length)
+                input.setSelectionRange(currentFolder.length, currentFolder.length)
             }
         }
     }, [isEditingPath])
@@ -120,11 +120,9 @@ const BaseFilePickerDialog = ({ onConfirm: callback, dialogTitle: title, dialogP
             <p>{promptText}</p>
             <div ref={refInput} className="k45_we_currentFolder">
                 <VanillaComponentResolver.instance.ToolButton onSelect={() => setCurrentFolder(initialFolder)} src={i_homeIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={classNames(toolButtonTheme.button, "home")} tooltip={T_initialFolder} />
-                {menuItems && <Tooltip tooltip={bookmarksTitle}><ContextMenuButton menuTitle={bookmarksTitle} className="bookmarks" menuItems={menuItems} src={bookmarksIcon ?? i_bookmarks} /></Tooltip>}
-                {isEditingPath
-                    ? <StringInputField value={currentFolderTyping} onChange={setCurrentFolderTyping} onChangeEnd={() => { setIsEditingPath(false); setCurrentFolder(currentFolderTyping + (currentFolderTyping.endsWith("/") ? "" : "/")) }} />
-                    : <div className="k45_we_currentPath" onClick={() => setIsEditingPath(true)}>{getCurrentFolderTitle()}</div>
-                }
+                {menuItems ? <Tooltip tooltip={bookmarksTitle}><ContextMenuButton menuTitle={bookmarksTitle} className="bookmarks" menuItems={menuItems} src={bookmarksIcon ?? i_bookmarks} /></Tooltip> : <div style={{ marginLeft: "5rem" }} />}
+                <StringInputField className={isEditingPath ? "" : "hidden"} value={currentFolderTyping} onChange={setCurrentFolderTyping} onChangeEnd={() => { setIsEditingPath(false); setCurrentFolder(currentFolderTyping + (currentFolderTyping.endsWith("/") ? "" : "/")); }} />
+                <div className={classNames("k45_we_currentPath", isEditingPath ? "hidden" : "")} onClick={() => setIsEditingPath(true)}>{getCurrentFolderTitle()}</div>
                 <VanillaComponentResolver.instance.ToolButton onSelect={navigateFolderUp} src={i_parentDirIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={classNames(toolButtonTheme.button, "above")} tooltip={T_parentFolder} />
             </div>
             <Scrollable className="k45_we_fileItemsListing">

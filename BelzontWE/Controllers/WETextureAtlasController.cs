@@ -29,6 +29,7 @@ namespace BelzontWE
             callBinder($"{PREFIX}removeFromCity", RemoveFromCity);
             callBinder($"{PREFIX}getCityAtlasDetail", GetCityAtlasDetail);
             callBinder($"{PREFIX}openExportFolder", OpenExportFolder);
+            callBinder($"{PREFIX}exportModAtlas", ExportModAtlas);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
@@ -39,6 +40,7 @@ namespace BelzontWE
         private ModAtlasRegistry[] ListModAtlases() => m_AtlasLibrary.ListModAtlases();
         private string[] ListAtlasImages(string atlas) => m_AtlasLibrary.ListAvailableAtlasImages(atlas);
         private string ExportCityAtlas(string atlas, string folder) => m_AtlasLibrary.ExportCityAtlas(atlas ?? "", folder);
+        private string ExportModAtlas(string atlasFullName, string folder) => m_AtlasLibrary.ExportModAtlas(atlasFullName, folder);
         private bool CopyToCity(string atlas, string newName) => m_AtlasLibrary.CopyToCity(atlas ?? "", newName);
         private bool RemoveFromCity(string atlas) => m_AtlasLibrary.RemoveFromCity(atlas ?? "");
         private void OpenExportFolder(string exportFolder)

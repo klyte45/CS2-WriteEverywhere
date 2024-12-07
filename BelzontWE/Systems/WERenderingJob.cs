@@ -7,6 +7,7 @@ using Unity.Burst.Intrinsics;
 using Colossal.Mathematics;
 
 
+
 #if BURST
 using Unity.Burst;
 #else
@@ -39,7 +40,6 @@ namespace BelzontWE
             public Entity m_selectedSubEntity;
             public Entity m_selectedEntity;
             public bool isAtWeEditor;
-            public bool doLog;
             public ComponentLookup<WETextDataMaterial> m_weMaterialLookup;
             public ComponentLookup<WETextDataMesh> m_weMeshLookup;
             public ComponentLookup<WETextDataTransform> m_weTransformLookup;
@@ -96,7 +96,7 @@ namespace BelzontWE
             {
                 if (!m_weMeshLookup.TryGetComponent(nextEntity, out var mesh))
                 {
-                    DestroyRecursive(nextEntity, unfilteredChunkIndex);
+                    DestroyRecursive(ref this, nextEntity, unfilteredChunkIndex);
                     return;
                 }
                 var transform = m_weTransformLookup[nextEntity];
@@ -122,7 +122,7 @@ namespace BelzontWE
                                 return;
                             }
 
-                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref prevMatrix, out _, out _, out _, out int minLod);
+                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref prevMatrix, out _, out _, out _, out int minLod, ref this);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 var scale2 = transform.scale;
@@ -144,7 +144,7 @@ namespace BelzontWE
                     case WESimulationTextType.WhiteTexture:
                         {
                             var WTmatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, transform.scale);
-                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref WTmatrix, out _, out _, out _, out int minLod);
+                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref WTmatrix, out _, out _, out _, out int minLod, ref this);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 availToDraw.Enqueue(new WERenderData
@@ -194,8 +194,8 @@ namespace BelzontWE
                         {
                             if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
                             {
-                                int lod = CalculateLod(mesh.Bounds, ref mesh, ref transform, ref matrix, out Bounds3 refBounds, out float minDist, out float3 boundsSize, out int minLod);
-                                if (doLog) Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: minDist = {minDist} - refBounds = {refBounds.min} {refBounds.max} ({boundsSize}) - lod = {lod} - minLod = {minLod} - m_LodParameters = {m_LodParameters}");
+                                int lod = CalculateLod(mesh.Bounds, ref mesh, ref transform, ref matrix, out Bounds3 refBounds, out float minDist, out float3 boundsSize, out int minLod, ref this);
+                                //        if (doLog) Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: minDist = {minDist} - refBounds = {refBounds.min} {refBounds.max} ({boundsSize}) - lod = {lod} - minLod = {minLod} - m_LodParameters = {m_LodParameters}");
                                 if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                 {
                                     availToDraw.Enqueue(new WERenderData
@@ -236,10 +236,11 @@ namespace BelzontWE
                 }
             }
 
-            private readonly int CalculateLod(Bounds3 meshBounds, ref WETextDataMesh meshData, ref WETextDataTransform transformData, ref Matrix4x4 matrix, out Bounds3 refBounds, out float minDist, out float3 boundsSize, out int minLod)
+            private static int CalculateLod(Bounds3 meshBounds, ref WETextDataMesh meshData, ref WETextDataTransform transformData, ref Matrix4x4 matrix, out Bounds3 refBounds,
+                out float minDist, out float3 boundsSize, out int minLod, ref WERenderingJob job)
             {
                 refBounds = new Bounds3(matrix.MultiplyPoint(meshBounds.min), matrix.MultiplyPoint(meshBounds.max));
-                minDist = RenderingUtils.CalculateMinDistance(refBounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
+                minDist = RenderingUtils.CalculateMinDistance(refBounds, job.m_CameraPosition, job.m_CameraDirection, job.m_LodParameters);
                 boundsSize = refBounds.max - refBounds.min;
                 var isDirty = meshData.LodReferenceScale != transformData.scale;
                 if (isDirty.x || isDirty.y || isDirty.z || meshData.MinLod <= 0)
@@ -249,32 +250,32 @@ namespace BelzontWE
                     meshData.LodReferenceScale = transformData.scale;
                 }
                 minLod = meshData.MinLod;
-                meshData.LastLod = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
+                meshData.LastLod = RenderingUtils.CalculateLod(minDist * minDist, job.m_LodParameters);
                 return meshData.LastLod;
             }
 
-            private void DestroyRecursive(Entity nextEntity, int unfilteredChunkIndex, Entity initialDelete = default)
+            private static void DestroyRecursive(ref WERenderingJob job, Entity nextEntity, int unfilteredChunkIndex, Entity initialDelete = default)
             {
                 if (nextEntity != initialDelete)
                 {
                     if (initialDelete == default) initialDelete = nextEntity;
-                    if (m_weTemplateForPrefabLookup.TryGetComponent(nextEntity, out var data))
+                    if (job.m_weTemplateForPrefabLookup.TryGetComponent(nextEntity, out var data))
                     {
-                        DestroyRecursive(data.childEntity, unfilteredChunkIndex, initialDelete);
+                        DestroyRecursive(ref job, data.childEntity, unfilteredChunkIndex, initialDelete);
                     }
-                    if (m_weTemplateUpdaterLookup.TryGetComponent(nextEntity, out var updater))
+                    if (job.m_weTemplateUpdaterLookup.TryGetComponent(nextEntity, out var updater))
                     {
-                        DestroyRecursive(updater.childEntity, unfilteredChunkIndex, initialDelete);
+                        DestroyRecursive(ref job, updater.childEntity, unfilteredChunkIndex, initialDelete);
                     }
-                    if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout))
+                    if (job.m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout))
                     {
                         for (int j = 0; j < subLayout.Length; j++)
                         {
-                            DestroyRecursive(subLayout[j].m_weTextData, unfilteredChunkIndex, initialDelete);
+                            DestroyRecursive(ref job, subLayout[j].m_weTextData, unfilteredChunkIndex, initialDelete);
                         }
                     }
                 }
-                m_CommandBuffer.AddComponent<Game.Common.Deleted>(unfilteredChunkIndex, nextEntity);
+                job.m_CommandBuffer.AddComponent<Game.Common.Deleted>(unfilteredChunkIndex, nextEntity);
             }
         }
     }

@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Xml.Serialization;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
@@ -37,6 +38,8 @@ namespace BelzontWE
         public const string SIMPLE_LAYOUT_EXTENSION = "welayout.xml";
         public const string PREFAB_LAYOUT_EXTENSION = "wedefault.xml";
         public static readonly string SAVED_PREFABS_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "layouts");
+        public static readonly string SAVED_MODREPLACEMENTS_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "modReplacementProfiles");
+        public const string LAYOUT_REPLACEMENTS_EXTENSION = "weprefabreplace.xml";
         public static WETemplateManager Instance { get; private set; }
 
         public const int CURRENT_VERSION = 1;
@@ -182,6 +185,7 @@ namespace BelzontWE
         protected override void OnCreate()
         {
             Instance = this;
+            KFileUtils.EnsureFolderCreation(SAVED_MODREPLACEMENTS_FOLDER);
             RegisteredTemplates = new();
             PrefabTemplates = new();
             m_prefabSystem = World.GetExistingSystemManaged<PrefabSystem>();
@@ -880,37 +884,46 @@ namespace BelzontWE
         internal List<ModFolder> ListModsExtraFolders() => integrationLoadableTemplatesFromMod.Values.ToList();
 
         internal FixedString32Bytes GetFontFor(string templateModName, FixedString32Bytes originalFontName)
-        {
-            return m_fontsReplacements.TryGetValue(templateModName, out var fontList) && fontList.TryGetValue(originalFontName.ToString(), out var fontName)
+            => m_fontsReplacements.TryGetValue(templateModName, out var fontList) && fontList.TryGetValue(originalFontName.ToString(), out var fontName)
                 ? (FixedString32Bytes)fontName
                 : default;
-        }
 
         internal FixedString32Bytes GetAtlasFor(string templateModName, FixedString32Bytes originalAtlasName)
-        {
-            return m_atlasesReplacements.TryGetValue(templateModName, out var atlasList) && atlasList.TryGetValue(originalAtlasName.ToString(), out var atlasName)
+            => m_atlasesReplacements.TryGetValue(templateModName, out var atlasList) && atlasList.TryGetValue(originalAtlasName.ToString(), out var atlasName)
                 ? (FixedString32Bytes)atlasName
                 : originalAtlasName;
+
+        [XmlRoot("WEModReplacementData")]
+        public class ModReplacementDataXml
+        {
+            [XmlElement("Mod")]
+            public ModReplacementData[] Mods;
         }
 
-        internal class ModReplacementData
+        public class ModReplacementData
         {
-            public string modId;
-            public string displayName;
-            public Dictionary<string, string> atlases;
-            public Dictionary<string, string> fonts;
+            [XmlAttribute] public string modId;
+            [XmlIgnore] public string displayName;
+            public StringableXmlDictionary atlases;
+            public StringableXmlDictionary fonts;
+
+            public ModReplacementData() { }
+            internal ModReplacementData(string modId, string displayName, Dictionary<string, string> atlases, Dictionary<string, string> fonts)
+            {
+                this.modId = modId;
+                this.displayName = displayName;
+                this.atlases = new(); this.atlases.AddRange(atlases);
+                this.fonts = new(); this.fonts.AddRange(fonts);
+            }
         }
 
         internal ModReplacementData[] GetModsReplacementData()
-        {
-            return m_modsTemplatesFolder.Select(x => new ModReplacementData
-            {
-                modId = x.Key,
-                displayName = x.Value.name,
-                atlases = (m_atlasesReplacements.TryGetValue(x.Key, out var atlases) ? atlases : new()).Union((m_atlasesMapped.TryGetValue(x.Key, out var mappedAtlases) ? mappedAtlases : new()).ToDictionary(y => y, y => (string)null)).GroupBy(y => y.Key).ToDictionary(y => y.Key, y => y.First().Value),
-                fonts = (m_fontsReplacements.TryGetValue(x.Key, out var fonts) ? fonts : new()).Union((m_fontsMapped.TryGetValue(x.Key, out var mappedFonts) ? mappedFonts : new()).ToDictionary(y => y, y => (string)null)).GroupBy(y => y.Key).ToDictionary(y => y.Key, y => y.First().Value),
-            }).ToArray();
-        }
+            => m_modsTemplatesFolder.Select(x => new ModReplacementData(
+                    x.Key,
+                    x.Value.name,
+                    (m_atlasesReplacements.TryGetValue(x.Key, out var atlases) ? atlases : new()).Union((m_atlasesMapped.TryGetValue(x.Key, out var mappedAtlases) ? mappedAtlases : new()).ToDictionary(y => y, y => (string)null)).GroupBy(y => y.Key).ToDictionary(y => y.Key, y => y.First().Value),
+                    (m_fontsReplacements.TryGetValue(x.Key, out var fonts) ? fonts : new()).Union((m_fontsMapped.TryGetValue(x.Key, out var mappedFonts) ? mappedFonts : new()).ToDictionary(y => y, y => (string)null)).GroupBy(y => y.Key).ToDictionary(y => y.Key, y => y.First().Value)
+                )).ToArray();
 
         internal string SetModAtlasReplacement(string modId, string original, string target)
         {
@@ -963,6 +976,42 @@ namespace BelzontWE
             return null;
         }
 
+        internal string SaveReplacementSettings(string fileName)
+        {
+            KFileUtils.EnsureFolderCreation(SAVED_MODREPLACEMENTS_FOLDER);
+            var targetFileName = Path.Combine(SAVED_MODREPLACEMENTS_FOLDER, $"{KFileUtils.RemoveInvalidFilenameChars(fileName)}.{LAYOUT_REPLACEMENTS_EXTENSION}");
+            var content = new ModReplacementDataXml
+            {
+                Mods = GetModsReplacementData()
+            };
+            File.WriteAllText(targetFileName, XmlUtils.DefaultXmlSerialize(content));
+            return targetFileName;
+        }
+
+        internal bool CheckReplacementSettingFileExists(string fileName) => File.Exists(Path.Combine(SAVED_MODREPLACEMENTS_FOLDER, $"{KFileUtils.RemoveInvalidFilenameChars(fileName)}.{LAYOUT_REPLACEMENTS_EXTENSION}"));
+
+        internal bool LoadReplacementSettings(string fullPath)
+        {
+            if (!File.Exists(fullPath)) return false;
+            try
+            {
+                var content = XmlUtils.DefaultXmlDeserialize<ModReplacementDataXml>(File.ReadAllText(fullPath));
+                m_atlasesReplacements.Clear();
+                m_fontsReplacements.Clear();
+                m_atlasesReplacements.AddRange(m_atlasesMapped.Keys.Select(x => (content.Mods.Where(y => y.modId == x).FirstOrDefault()) ?? new() { modId = x }).ToDictionary(x => x.modId, x => x.atlases ?? new()));
+                m_fontsReplacements.AddRange(m_fontsMapped.Keys.Select(x => (content.Mods.Where(y => y.modId == x).FirstOrDefault()) ?? new() { modId = x }).ToDictionary(x => x.modId, x => x.fonts ?? new())); ;
+                unchecked
+                {
+                    ModReplacementDataVersion++;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
+        }
 
         #endregion
 

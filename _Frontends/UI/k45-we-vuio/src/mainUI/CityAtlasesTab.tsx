@@ -73,12 +73,16 @@ export const CityAtlasesTab = (props: Props) => {
     }, [selectedAtlas, buildIdx])
 
 
-    const actions = typeof atlasList[selectedAtlas!] === 'undefined' ? []
-        : atlasList[selectedAtlas!] ? [
-            { className: "negativeBtn", action() { setCurrentModal(Modals.CONFIRMING_DELETE) }, text: T_delete },
-            null,
-            { className: "neutralBtn", action() { setCurrentModal(Modals.EXPORTING_ATLAS) }, text: T_export },
-        ] : [{ className: "positiveBtn", action() { setIsCopyingToCity(true) }, text: T_addToSaveGame }]
+    const actions = selectedAtlas?.includes(":") ? [
+        { className: "neutralBtn", action() { setCurrentModal(Modals.EXPORTING_ATLAS) }, text: T_export }
+    ]
+        : typeof atlasList[selectedAtlas!] === 'undefined' ? []
+            : atlasList[selectedAtlas!] ? [
+                { className: "negativeBtn", action() { setCurrentModal(Modals.CONFIRMING_DELETE) }, text: T_delete },
+                null,
+                { className: "neutralBtn", action() { setCurrentModal(Modals.EXPORTING_ATLAS) }, text: T_export },
+            ]
+                : [{ className: "positiveBtn", action() { setIsCopyingToCity(true) }, text: T_addToSaveGame }]
 
     const detailsFields = selectedTemplateDetails ? [
         { key: T_usages, value: formatInteger(selectedTemplateDetails.usages) },
@@ -89,7 +93,7 @@ export const CityAtlasesTab = (props: Props) => {
 
     const exportTemplateCallback = async (fileName?: string) => {
         if (!fileName || !selectedAtlas) return;
-        var filepath = await TextureAtlasService.exportCityAtlas(selectedAtlas, fileName);
+        var filepath = selectedAtlas.includes(":") ? await TextureAtlasService.exportModAtlas(selectedAtlas, fileName) : await TextureAtlasService.exportCityAtlas(selectedAtlas, fileName);
         setLastExportedAtlasFolder(filepath)
         setCurrentModal(Modals.SUCCESS_EXPORTING_TEMPLATE);
     }
@@ -97,7 +101,7 @@ export const CityAtlasesTab = (props: Props) => {
     const displayingModal = () => {
         switch (currentModal) {
             case Modals.CONFIRMING_DELETE: return <ConfirmationDialog onConfirm={() => { setCurrentModal(0); TextureAtlasService.removeFromCity(selectedAtlas!); setSelectedAtlas(null) }} onCancel={() => setCurrentModal(0)} message={replaceArgs(T_confirmDeleteText, { "name": selectedAtlas ?? "?????" })} />
-            case Modals.EXPORTING_ATLAS: return <BaseStringInputDialog onConfirm={exportTemplateCallback} dialogTitle={T_exportDialogTitle} dialogPromptText={T_exportDialogText} initialValue={selectedAtlas!} />
+            case Modals.EXPORTING_ATLAS: return <BaseStringInputDialog onConfirm={exportTemplateCallback} dialogTitle={T_exportDialogTitle} dialogPromptText={T_exportDialogText} initialValue={selectedAtlas!.replace(":", "_")} />
             case Modals.SUCCESS_EXPORTING_TEMPLATE: return <ConfirmationDialog onConfirm={() => { TextureAtlasService.openExportFolder(lastExportedAtlasFolder); setCurrentModal(0) }} onCancel={() => setCurrentModal(0)} confirm={T_goToFileFolder} cancel={T_back} message={replaceArgs(T_successMessage, { "name": lastExportedAtlasFolder ?? "?????" })} />
         }
     }

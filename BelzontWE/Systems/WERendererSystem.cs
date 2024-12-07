@@ -39,9 +39,11 @@ namespace BelzontWE
 #if BURST
         [Preserve]
 #endif
-        protected override void OnCreate()
+        protected unsafe override void OnCreate()
         {
             base.OnCreate();
+
+            LogUtils.DoInfoLog($"WERenderingJob size: {sizeof(WERenderingJob)}");
 
             m_CameraUpdateSystem = World.GetExistingSystemManaged<CameraUpdateSystem>();
             m_RenderingSystem = World.GetExistingSystemManaged<RenderingSystem>();
@@ -240,7 +242,7 @@ namespace BelzontWE
                     m_selectedSubEntity = m_pickerController.CurrentSubEntity.Value,
                     m_selectedEntity = m_pickerController.CurrentEntity.Value,
                     m_weSubRefLookup = GetBufferLookup<WESubTextRef>(true),
-                    doLog = dumpNextFrame,
+                    //doLog = dumpNextFrame,
                     m_weTransformLookup = GetComponentLookup<WETextDataTransform>(true),
                     m_weSourceModLookup = GetComponentLookup<WETextDataSourceMod>(true),
                 };

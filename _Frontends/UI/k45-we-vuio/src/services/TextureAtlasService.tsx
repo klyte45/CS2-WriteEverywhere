@@ -8,6 +8,7 @@ export class TextureAtlasService {
     static async removeFromCity(atlas: string): Promise<boolean> { return await engine.call("k45::we.textureAtlas.removeFromCity", atlas); }
     static async getCityAtlasDetail(atlas: string): Promise<AtlasCityDetailResponse> { return await engine.call("k45::we.textureAtlas.getCityAtlasDetail", atlas); }
     static async openExportFolder(exportName: string): Promise<void> { return await engine.call("k45::we.textureAtlas.openExportFolder", exportName); }
+    static async exportModAtlas(atlas: string, exportName: string): Promise<string> { return await engine.call("k45::we.textureAtlas.exportModAtlas", atlas, exportName); }
 }
 
 

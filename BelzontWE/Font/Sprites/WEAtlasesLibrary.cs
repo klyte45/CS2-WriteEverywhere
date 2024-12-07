@@ -4,6 +4,8 @@ using Belzont.Utils;
 using BelzontWE.Font;
 using BelzontWE.Font.Utility;
 using BelzontWE.Layout;
+using Colossal.IO.AssetDatabase;
+using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Colossal.OdinSerializer.Utilities;
 using Colossal.Serialization.Entities;
 using Game;
@@ -275,9 +277,11 @@ namespace BelzontWE.Sprites
             return true;
         }
 
-        public string ExportCityAtlas(FixedString32Bytes atlasName, string folderName)
+        public string ExportCityAtlas(FixedString32Bytes atlasName, string folderName) 
+            => CityAtlases.TryGetValue(atlasName, out var atlas) ? ExportAtlas(folderName, atlas) : null;
+
+        private static string ExportAtlas(string folderName, WETextureAtlas atlas)
         {
-            if (!CityAtlases.TryGetValue(atlasName, out var atlas)) return null;
             KFileUtils.EnsureFolderCreation(ATLAS_EXPORT_FOLDER);
             var targetDir = Path.Combine(ATLAS_EXPORT_FOLDER, folderName);
             var targetFolderName = folderName;
@@ -323,6 +327,10 @@ namespace BelzontWE.Sprites
         }
         #endregion
 
+
+
+        internal string ExportModAtlas(string atlasFullName, string folder) 
+            => ModAtlases.TryGetValue(atlasFullName, out var atlas) ? ExportAtlas(folder, atlas) : null;
 
 
         protected override void OnUpdate()
@@ -401,6 +409,7 @@ namespace BelzontWE.Sprites
         internal ModAtlasRegistry[] ListModAtlases() => RegisteredMods
             .Select(x => new ModAtlasRegistry(GetModIdentifier(x.Value.asset.assembly), x.Value.asset.mod.displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
 
+    
         [BurstCompile]
         private unsafe struct WEPlaceholcerAtlasesUsageCount : IJobChunk
         {

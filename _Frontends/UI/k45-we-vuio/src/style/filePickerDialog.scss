@@ -4,6 +4,10 @@
     width: 100%;
     align-items: stretch;
 
+    .hidden {
+        display: none !important;
+    }
+
     div.k45_we_currentPath {
         flex-grow: 1;
         border-left-color: var(--accentColorLight);
@@ -41,11 +45,12 @@
         margin-left: 8rem;
     }
 
-    button.bookmarks{
+    button.bookmarks {
         width: 32rem;
         height: 32rem;
         margin-right: 8rem;
     }
+
     button.home {
         width: 32rem;
         height: 32rem;

@@ -39,6 +39,12 @@ namespace BelzontWE
             callBinder($"{PREFIX}listModsReplacementData", ListModsReplacementData);
             callBinder($"{PREFIX}setModFontReplacement", SetModFontReplacement);
             callBinder($"{PREFIX}setModAtlasReplacement", SetModAtlasReplacement);
+            callBinder($"{PREFIX}saveReplacementSettings", SaveReplacementSettings);
+            callBinder($"{PREFIX}loadReplacementSettings", LoadReplacementSettings);
+            callBinder($"{PREFIX}checkReplacementSettingFileExists", CheckReplacementSettingFileExists);
+            callBinder($"{PREFIX}getLocationSavedReplacements", GetLocationSavedReplacements);
+            callBinder($"{PREFIX}getExtensionSavedReplacements", GetExtensionSavedReplacements);
+            callBinder($"{PREFIX}openExportedReplacementSettingsFolder", OpenExportedReplacementSettingsFolder);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
@@ -211,8 +217,12 @@ namespace BelzontWE
         private ModReplacementData[] ListModsReplacementData() => m_templateManager.GetModsReplacementData();
         private string SetModFontReplacement(string modId, string original, string target) => m_templateManager.SetModFontReplacement(modId, original, target);
         private string SetModAtlasReplacement(string modId, string original, string target) => m_templateManager.SetModAtlasReplacement(modId, original, target);
-
-
+        private string SaveReplacementSettings(string fileName) => m_templateManager.SaveReplacementSettings(fileName);
+        private bool LoadReplacementSettings(string filePath) => m_templateManager.LoadReplacementSettings(filePath);
+        private bool CheckReplacementSettingFileExists(string fileName) => m_templateManager.CheckReplacementSettingFileExists(fileName);
+        private string GetLocationSavedReplacements() => SAVED_MODREPLACEMENTS_FOLDER;
+        private string GetExtensionSavedReplacements() => LAYOUT_REPLACEMENTS_EXTENSION;
+        private void OpenExportedReplacementSettingsFolder() => RemoteProcess.OpenFolder(SAVED_MODREPLACEMENTS_FOLDER);
 
     }
 }
