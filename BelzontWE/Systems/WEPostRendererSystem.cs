@@ -152,7 +152,7 @@ namespace BelzontWE
                       || (weCustomData.TargetEntity == Entity.Null))
                 {
 #if !BURST
-                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {entity} - Target doesntExists");
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Destroy Entity! {e} - Target doesntExists");
 #endif
                     m_CommandBuffer.AddComponent<Game.Common.Deleted>(unfilteredChunkIndex, e);
                 }

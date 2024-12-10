@@ -137,11 +137,13 @@ namespace BelzontWE
         private Dictionary<string, Dictionary<string, string>> DeserializeReplacementData(string data)
         {
             return data.Split(L1_ITEM_SEPARATOR)
+                .Where(x=>x.Contains(L1_KV_SEPARATOR))
                 .Select(x => x.Split(L1_KV_SEPARATOR))
                 .ToDictionary(
                     x => x[0],
                     x => x[1]
                         .Split(L2_ITEM_SEPARATOR)
+                        .Where(y => y.Contains(L2_KV_SEPARATOR))
                         .Select(y => y.Split(L2_KV_SEPARATOR))
                         .ToDictionary(y => y[0], y => y[1])
                 );
@@ -705,7 +707,7 @@ namespace BelzontWE
             {
                 NotificationHelper.NotifyWithCallback(ERRORS_LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Colossal.PSI.Common.ProgressState.Warning, () =>
                 {
-                    var dialog2 = new MessageDialogWithDetails(
+                    var dialog2 = new MessageDialog(
                         LocalizedString.Id(NotificationHelper.GetModDefaultNotificationTitle(ERRORS_LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID)),
                         LocalizedString.Id("K45::WE.TEMPLATE_MANAGER[errorDialogHeader]"),
                         LocalizedString.Value(string.Join("\n", errorsList.Select(x => $"{x.Key}: {x.Value.Translate()}"))),

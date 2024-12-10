@@ -71,7 +71,7 @@ namespace BelzontWE.Bridge
                     LocalizedString title = new("K45::WE.vuio[generatingAtlasesCacheMod.errorDialog.title]", null, args);
                     LocalizedString message = new("K45::WE.vuio[generatingAtlasesCacheMod.errorDialog.header]", null, args);
                     LocalizedString confirmAction = LocalizedString.Id("Common.OK");
-                    var dialog = new MessageDialogWithDetails(title, message, details, true, confirmAction);
+                    var dialog = new MessageDialog(title, message, details, true, confirmAction);
                     GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, (x) => NotificationHelper.RemoveNotification(notifGroup));
                 }
                 NotificationHelper.NotifyWithCallback(notifGroup, ProgressState.Failed, onNotifClick, titleI18n: LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, argsText: args, argsTitle: args, textI18n: "generatingAtlasesCacheMod.error");

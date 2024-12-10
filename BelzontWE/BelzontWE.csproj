@@ -5,31 +5,26 @@
     <TargetFramework>net472</TargetFramework>
     <Configurations>Debug;Release</Configurations>
     <LangVersion>10.0</LangVersion>
-    <DebugType Condition="'$(Configuration)'=='Release'">None</DebugType>
-    <DebugSymbols Condition="'$(Configuration)'=='Release'">False</DebugSymbols>
-    <DebugSymbols Condition="'$(Configuration)'=='Debug'">True</DebugSymbols>
-    <DebugType Condition="'$(Configuration)'=='Debug'">embedded</DebugType>
+    <RootNamespace>BelzontWE</RootNamespace> 
     <Bursted Condition="'$(Configuration)'=='Release'">true</Bursted>
     <Bursted Condition="'$(Configuration)'=='Debug'">true</Bursted>
-    <DebuggerMode Condition="'$(Configuration)'=='Debug'">true</DebuggerMode>
-    <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
-    <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
-    <RootNamespace>BelzontWE</RootNamespace>
     <DefineConstants Condition="'$(Configuration)'=='Debug'">ENABLE_EUIS;$(DefineConstants)</DefineConstants>
+    <!--The file where mod information which is required for publishing mod on PDX mods are stored--> 
+    <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
   </PropertyGroup>
 
   <!--Imports must be after PropertyGroup block-->
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
-  <Import Project="$(SolutionDir)\_Build\belzont_public.targets" /> 
+  <Import Project="$(SolutionDir)\_Build\belzont_public.targets" />
 
   <!--Mod data-->
   <PropertyGroup>
     <ModId>92908</ModId>
-    <Version>0.1.1.2</Version>
-    <GameVersion>1.1.*</GameVersion>
+    <Version>0.1.1.3</Version>
+    <GameVersion>1.2.*</GameVersion>
     <ThumbnailPath>Properties/Thumbnail.png</ThumbnailPath>
-    <DisplayName>Write Everywhere</DisplayName>
+    <DisplayName>Write Everywhere</DisplayName> 
     <ShortDescription>Write texts in the CS2 world!</ShortDescription>
     <ForumLink>https://forum.paradoxplaza.com/forum/threads/write-everywhere-cities-skylines-2-version.1711901/</ForumLink>
     <GitHubLink>https://github.com/klyte45/CS2-WriteEverywhere</GitHubLink>
@@ -61,109 +56,84 @@
   </Target>
 
 
+
   <ItemGroup>
     <Reference Include="Game">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Game.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Colossal.Core">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.Core.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Colossal.Logging">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.Logging.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Colossal.UI">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.UI.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Colossal.UI.Binding">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.UI.Binding.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Colossal.Localization">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.Localization.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Colossal.IO.AssetDatabase">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.IO.AssetDatabase.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.Burst">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Unity.Burst.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.Collections">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Unity.Collections.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.Entities">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Unity.Entities.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.Mathematics">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Unity.Mathematics.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="cohtml.Net">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\cohtml.Net.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Cohtml.Runtime">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Cohtml.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.OdinSerializer">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.OdinSerializer.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.AssetPipeline">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.AssetPipeline.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.PSI.Common">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.PSI.Common.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.Mono.Cecil">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.Mono.Cecil.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.Mathematics">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.Mathematics.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.ScreenCaptureModule">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.ScreenCaptureModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.Collections">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Colossal.Collections.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.ImageConversionModule">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.ImageConversionModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestModule">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\UnityEngine.UnityWebRequestModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.RenderPipelines.HighDefinition.Runtime">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Unity.RenderPipelines.HighDefinition.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.InputSystem.dll">
-      <HintPath>$(K45_CS2_ALLROOT)\_Managed DLLs\Unity.InputSystem.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
