@@ -43,10 +43,10 @@ namespace BelzontWE
         public override void OnCurrentItemChanged(Entity entity)
         {
             EntityManager.TryGetComponent<WETextDataMesh>(entity, out var mesh);
-            ValueText.Value = mesh.ValueData.defaultValue.ToString();
+            ValueText.Value = mesh.ValueData.DefaultValue;
             MaxWidth.Value = mesh.MaxWidthMeters;
             SelectedFont.Value = FontServer.Instance.TryGetFont(mesh.FontName, out var fsd) ? fsd.Name : "";
-            ValueTextFormulaeStr.Value = mesh.ValueData.formulaeStr.ToString();
+            ValueTextFormulaeStr.Value = mesh.ValueData.Formulae;
             TextSourceType.Value = (int)mesh.TextType;
             ImageAtlasName.Value = mesh.Atlas.ToString();
         }

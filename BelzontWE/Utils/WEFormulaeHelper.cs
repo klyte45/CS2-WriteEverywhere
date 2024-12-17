@@ -10,7 +10,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
-using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 
@@ -25,15 +24,15 @@ namespace BelzontWE
         private static MethodInfo r_HasComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
             .First(x => x.Name == "HasComponent" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 1 && pi[0].ParameterType == typeof(Entity));
 
-        private static readonly Dictionary<FixedString512Bytes, (byte, Func<EntityManager, Entity, string>)> cachedFnsString = new();
-        private static readonly Dictionary<FixedString512Bytes, (byte, Func<EntityManager, Entity, float>)> cachedFnsFloat = new();
-        private static readonly Dictionary<FixedString512Bytes, (byte, Func<EntityManager, Entity, Color>)> cachedFnsColor = new();
+        private static readonly Dictionary<string, (byte, Func<EntityManager, Entity, string>)> cachedFnsString = new();
+        private static readonly Dictionary<string, (byte, Func<EntityManager, Entity, float>)> cachedFnsFloat = new();
+        private static readonly Dictionary<string, (byte, Func<EntityManager, Entity, Color>)> cachedFnsColor = new();
 
-        public static Func<EntityManager, Entity, string> GetCachedStringFn(FixedString512Bytes formulae) => cachedFnsString.TryGetValue(formulae, out var cached) ? cached.Item2 : null;
-        public static Func<EntityManager, Entity, float> GetCachedFloatFn(FixedString512Bytes formulae) => cachedFnsFloat.TryGetValue(formulae, out var cached) ? cached.Item2 : null;
-        public static Func<EntityManager, Entity, Color> GetCachedColorFn(FixedString512Bytes formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached.Item2 : null;
+        public static Func<EntityManager, Entity, string> GetCachedStringFn(string formulae) => cachedFnsString.TryGetValue(formulae, out var cached) ? cached.Item2 : null;
+        public static Func<EntityManager, Entity, float> GetCachedFloatFn(string formulae) => cachedFnsFloat.TryGetValue(formulae, out var cached) ? cached.Item2 : null;
+        public static Func<EntityManager, Entity, Color> GetCachedColorFn(string formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached.Item2 : null;
 
-        public static byte SetFormulae<T>(FixedString512Bytes newFormulae512, out string[] errorFmtArgs, out FixedString512Bytes resultFormulaeStr, out Func<EntityManager, Entity, T> resultFormulaeFn)
+        public static byte SetFormulae<T>(string newFormulae512, out string[] errorFmtArgs, out string resultFormulaeStr, out Func<EntityManager, Entity, T> resultFormulaeFn)
         {
             IDictionary refDic = typeof(T) == typeof(string) ? cachedFnsString
                 : typeof(T) == typeof(float) ? cachedFnsFloat
@@ -58,7 +57,7 @@ namespace BelzontWE
                     return handle.Item1;
                 }
             }
-            var newFormulae = newFormulae512.ToString();
+            var newFormulae = newFormulae512;
             var path = GetPathParts(newFormulae);
             DynamicMethodDefinition dynamicMethodDefinition = new(
                 $"__WE_CS2_{typeof(T).Name}_formulae_{new Regex("[^A-Za-z0-9_]").Replace(newFormulae, "_")}",
@@ -180,7 +179,10 @@ namespace BelzontWE
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => (" + string.Join(", ", dynamicMethodDefinition.Definition.Parameters.Select(x => $"{(x.IsIn ? "in " : x.IsOut ? "out " : "")}{x.ParameterType} {x.Name}")) + ")");
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => \n" + string.Join("\n", dynamicMethodDefinition.Definition.Body.Instructions.Select(x => x.ToString())));
                 resultFormulaeFn = (x, e) => (T)generatedMethod.Invoke(null, new object[] { x, e });
-                if (refDic != null) refDic[resultFormulaeStr] = (result, resultFormulaeFn);
+                if (refDic != null)
+                {
+                    refDic[newFormulae512] = refDic[resultFormulaeStr] = (result, resultFormulaeFn);
+                }
 
                 return result;
             }

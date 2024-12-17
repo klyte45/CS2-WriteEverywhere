@@ -63,7 +63,7 @@ namespace BelzontWE
             {
                 ValueData = new()
                 {
-                    defaultValue = "NEW TEXT"
+                    DefaultValue = "NEW TEXT"
                 },
             };
 
@@ -94,6 +94,7 @@ namespace BelzontWE
         {
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             basicRenderInformation = default;
+            valueData.Dispose();
         }
 
         public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity, string templateModName)
@@ -169,6 +170,6 @@ namespace BelzontWE
             }
         }
 
-        public string Text { readonly get => valueData.defaultValue.ToString(); set { valueData.defaultValue = value; dirty = true; } }
+        public string Text { readonly get => valueData.DefaultValue.ToString(); set { valueData.DefaultValue = value; dirty = true; } }
     }
 }

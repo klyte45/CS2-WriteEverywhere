@@ -59,10 +59,10 @@ First of all, read the [files repository](https://github.com/klyte45/CS2-WriteEv
 I want to thank the people that helped me with CS2 modding since first days, specially mentioning **yenyang** and **krzychu**. Also thanks **Chameleon**, **Mimonsi** and **Nullpinter** for testing the mod during the development process.</LongDescription>
   <Thumbnail Value="Properties/Thumbnail.png" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/write-everywhere-cities-skylines-2-version.1711901/" />
-  <ModVersion Value="0.1.1.3" />
+  <ModVersion Value="0.1.1.4" />
   <GameVersion Value="1.2.*" />
-  <ChangeLog>#  v0.1.1r3 (11-DEC-24)
-- Recompiled for 1.2.0</ChangeLog>
+  <ChangeLog>#  v0.1.1r4 (16-DEC-24)
+- Fixing issues related to data limits for bursted jobs (may have other side effects... I'm monitoring the reports)</ChangeLog>
   <Tag Value="Code Mod" />
   <Screenshot Value="Screenshots\0_main.jpg" />
   <Screenshot Value="Screenshots\0__new_0.jpg" />

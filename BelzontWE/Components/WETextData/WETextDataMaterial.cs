@@ -53,20 +53,20 @@ namespace BelzontWE
         public Color ColorMask3 { readonly get => colorMask3.defaultValue; set { colorMask3.defaultValue = value; } }
 
 
-        public string ColorFormulae => color.formulaeStr.ToString();
-        public string EmissiveColorFormulae => emissiveColor.formulaeStr.ToString();
-        public string GlassColorFormulae => glassColor.formulaeStr.ToString();
-        public string NormalStrengthFormulae => normalStrength.formulaeStr.ToString();
-        public string GlassRefractionFormulae => glassRefraction.formulaeStr.ToString();
-        public string MetallicFormulae => metallic.formulaeStr.ToString();
-        public string SmoothnessFormulae => smoothness.formulaeStr.ToString();
-        public string EmissiveIntensityFormulae => emissiveIntensity.formulaeStr.ToString();
-        public string EmissiveExposureWeightFormulae => emissiveExposureWeight.formulaeStr.ToString();
-        public string CoatStrengthFormulae => coatStrength.formulaeStr.ToString();
-        public string GlassThicknessFormulae => glassThickness.formulaeStr.ToString();
-        public string ColorMask1Formulae => colorMask1.formulaeStr.ToString();
-        public string ColorMask2Formulae => colorMask2.formulaeStr.ToString();
-        public string ColorMask3Formulae => colorMask3.formulaeStr.ToString();
+        public string ColorFormulae => color.Formulae;
+        public string EmissiveColorFormulae => emissiveColor.Formulae;
+        public string GlassColorFormulae => glassColor.Formulae;
+        public string NormalStrengthFormulae => normalStrength.Formulae;
+        public string GlassRefractionFormulae => glassRefraction.Formulae;
+        public string MetallicFormulae => metallic.Formulae;
+        public string SmoothnessFormulae => smoothness.Formulae;
+        public string EmissiveIntensityFormulae => emissiveIntensity.Formulae;
+        public string EmissiveExposureWeightFormulae => emissiveExposureWeight.Formulae;
+        public string CoatStrengthFormulae => coatStrength.Formulae;
+        public string GlassThicknessFormulae => glassThickness.Formulae;
+        public string ColorMask1Formulae => colorMask1.Formulae;
+        public string ColorMask2Formulae => colorMask2.Formulae;
+        public string ColorMask3Formulae => colorMask3.Formulae;
 
 
         public int SetFormulaeMainColor(string value, out string[] cmpErr) => color.SetFormulae(value, out cmpErr);
@@ -176,6 +176,21 @@ namespace BelzontWE
                 ownMaterial.Free();
             }
             ownMaterial = default;
+            color.Dispose();
+            emissiveColor.Dispose();
+            glassColor.Dispose();
+            normalStrength.Dispose();
+            glassRefraction.Dispose();
+            metallic.Dispose();
+            smoothness.Dispose();
+            emissiveIntensity.Dispose();
+            emissiveExposureWeight.Dispose();
+            coatStrength.Dispose();
+            glassThickness.Dispose();
+            colorMask1.Dispose();
+            colorMask2.Dispose();
+            colorMask3.Dispose();
+
         }
 
         public bool GetOwnMaterial(ref WETextDataMesh mesh, out Material result)

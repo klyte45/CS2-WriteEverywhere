@@ -1,2 +1,2 @@
-#  v0.1.1r3 (11-DEC-24)
-- Recompiled for 1.2.0
+#  v0.1.1r4 (16-DEC-24)
+- Fixing issues related to data limits for bursted jobs (may have other side effects... I'm monitoring the reports)

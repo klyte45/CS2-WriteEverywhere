@@ -1,5 +1,7 @@
 ﻿using Belzont.Utils;
 using Colossal.Entities;
+using Colossal.OdinSerializer.Utilities;
+using System.Runtime.InteropServices;
 using Unity.Entities;
 using UnityEngine;
 
@@ -167,44 +169,44 @@ namespace BelzontWE.Utils
 
         public static WETextDataXml.FormulaeStringXml ToXml(this WETextDataValueString value) => new()
         {
-            defaultValue = value.defaultValue.ToString(),
-            formulae = value.formulaeStr.ToString()
+            defaultValue = value.DefaultValue.ToString(),
+            formulae = value.Formulae.ToString()
         };
         public static WETextDataXml.FormulaeFloatXml ToXml(this WETextDataValueFloat value) => new()
         {
             defaultValue = value.defaultValue,
-            formulae = value.formulaeStr.ToString()
+            formulae = value.Formulae.ToString()
         };
         public static WETextDataXml.FormulaeColorRgbaXml ToRgbaXml(this WETextDataValueColor value) => new()
         {
             defaultValue = value.defaultValue,
-            formulae = value.formulaeStr.ToString()
+            formulae = value.Formulae.ToString()
         };
         public static WETextDataXml.FormulaeColorRgbXml ToRgbXml(this WETextDataValueColor value) => new()
         {
             defaultValue = value.defaultValue,
-            formulae = value.formulaeStr.ToString()
+            formulae = value.Formulae.ToString()
         };
 
         public static WETextDataValueString ToComponent(this WETextDataXml.FormulaeStringXml value) => value is null ? default : new()
         {
-            defaultValue = value.defaultValue ?? "",
-            formulaeStr = value.formulae ?? ""
+            DefaultValue = value.defaultValue ?? "",
+            Formulae = value.formulae
         };
         public static WETextDataValueFloat ToComponent(this WETextDataXml.FormulaeFloatXml value) => value is null ? default : new()
         {
             defaultValue = value.defaultValue,
-            formulaeStr = value.formulae ?? ""
+            Formulae = value.formulae
         };
         public static WETextDataValueColor ToComponent(this WETextDataXml.FormulaeColorRgbaXml value) => value is null ? default : new()
         {
             defaultValue = value.defaultValue,
-            formulaeStr = value.formulae ?? ""
+            Formulae = value.formulae
         };
         public static WETextDataValueColor ToComponent(this WETextDataXml.FormulaeColorRgbXml value) => value is null ? default : new()
         {
             defaultValue = value.defaultValue,
-            formulaeStr = value.formulae ?? ""
+            Formulae = value.formulae
         };
     }
 }

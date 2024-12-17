@@ -1,12 +1,12 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
+using BelzontWE.Sprites;
 using BelzontWE.UI;
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
 using Game.UI.InGame;
 using Unity.Entities;
-using BelzontWE.Sprites;
 
 namespace BelzontWE
 {
@@ -28,18 +28,20 @@ namespace BelzontWE
             updateSystem.UpdateAt<WELayoutController>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<WEAtlasesLibrary>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateManager>(SystemUpdatePhase.Rendering);
-//#if !ENABLE_EUIS
+            //#if !ENABLE_EUIS
             SelfRegiterUIEvents("we");
             GameManager.instance.userInterface.view.uiSystem.defaultUIView.Listener.ReadyForBindings += () => SelfRegiterUIEvents("we");
-//#endif
+
+            //#endif
         }
 
         public override void OnDispose()
         {
         }
 
-        public override void DoOnLoad()
+        public unsafe override void DoOnLoad()
         {
+            LogUtils.DoInfoLog("WETextDataMaterial = " + sizeof(WETextDataMaterial));
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<GamePanelUISystem>().SetDefaultArgs(new WEMainPanel());
             LogUtils.DoInfoLog($"Registered panel: {typeof(WEMainPanel).FullName}");
         }
