@@ -1,4 +1,5 @@
-﻿using Belzont.Utils;
+﻿using Belzont.Interfaces;
+using Belzont.Utils;
 using Colossal.OdinSerializer.Utilities;
 using System;
 using System.Runtime.InteropServices;
@@ -84,8 +85,12 @@ namespace BelzontWE
                         : "<InvalidFn2>"
                     : DefaultValue;
             }
-            catch
+            catch (Exception e)
             {
+                if (BasicIMod.VerboseMode)
+                {
+                    LogUtils.DoWarnLog($"ERROR LOADING VALUE AT ENTITY! {geometryEntity} old = {oldEffText}\n{e}");
+                }
                 EffectiveValue = "<ERROR>";
             }
             return loadedFnNow || EffectiveValue.ToString() != oldEffText;
