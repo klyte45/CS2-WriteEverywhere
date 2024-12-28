@@ -20,11 +20,14 @@ namespace BelzontWE.Builtin
         public static Func<Entity, string> GetTargetDestinationStatic_binding = (entity) =>
         {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-            return !em.TryGetComponent<Target>(entity, out var target) ? "<?NO TARGET?>"
+            return !em.TryGetComponent<Target>(entity, out var target) ?
+                        !em.TryGetComponent<Owner>(entity, out var owner) ? "<?NO TARGET?>"
+                        : WEUtitlitiesFn.GetEntityName(owner.m_Owner)
                 : target.m_Target == Entity.Null ? "Cities Skylines II"
                 : !em.TryGetComponent<Connected>(target.m_Target, out var connected)
-                    ? !em.TryGetComponent<Owner>(entity, out var owner) ? WEUtitlitiesFn.GetEntityName(owner.m_Owner)
-                    : WEUtitlitiesFn.GetEntityName(target.m_Target)
+                    ? !em.TryGetComponent(entity, out owner) 
+                        ? WEUtitlitiesFn.GetEntityName(target.m_Target)
+                        : WEUtitlitiesFn.GetEntityName(owner.m_Owner)
                 : WEUtitlitiesFn.GetEntityName(connected.m_Connected);
         };
 

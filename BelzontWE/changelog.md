@@ -1,2 +1,3 @@
-#  v0.1.1r4 (16-DEC-24)
-- Fixing issues related to data limits for bursted jobs (may have other side effects... I'm monitoring the reports)
+#  v0.1.1r5 (27-DEC-24)
+- Fixing misbehavior of destination blinds function in some circumstances
+- Added utility functions to cast between Color32 and Color variable types on formulaes. Some game functions require one type and others another...
