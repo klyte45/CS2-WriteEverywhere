@@ -23,6 +23,7 @@ using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 using static Game.Modding.ModManager;
 
@@ -328,6 +329,25 @@ namespace BelzontWE.Sprites
                 m_whiteBriMaterial.mainTexture = Texture2D.whiteTexture;
             }
             return m_whiteBriMaterial;
+        }
+
+        private static Material m_semiWhiteBriMaterial;
+        public static Material DefaultMaterialSemiTransparent()
+        {
+            if (!m_semiWhiteBriMaterial)
+            {
+                m_semiWhiteBriMaterial = WERenderingHelper.GenerateMaterial(m_bgTexture, WEShader.Glass);
+                m_semiWhiteBriMaterial.SetTexture(FontAtlas._BaseColorMap, Texture2D.whiteTexture);
+                m_semiWhiteBriMaterial.SetColor("_BaseColor", new Color(1, 1, 1, .15f));
+                m_semiWhiteBriMaterial.SetFloat("_Metallic", 0);
+                m_semiWhiteBriMaterial.SetFloat("_Smoothness", 1);
+                m_semiWhiteBriMaterial.SetFloat(WERenderingHelper.IOR, 1);
+                m_semiWhiteBriMaterial.SetColor(WERenderingHelper.Transmittance, Color.clear);
+                m_semiWhiteBriMaterial.SetFloat("_NormalStrength", 0);
+                m_semiWhiteBriMaterial.SetFloat("_Thickness", 0);
+                m_semiWhiteBriMaterial.SetVector("colossal_TextureArea", new float4(Vector2.zero, Vector2.one));                
+            }
+            return m_semiWhiteBriMaterial;
         }
         #endregion
 

@@ -205,6 +205,12 @@ namespace BelzontWE
                             else material.GetOwnMaterial(ref mesh, bri.BoundsUV, out ownMaterial);
                             var geomMesh = bri.GetMesh(item.material.Shader);
                             Graphics.DrawMesh(geomMesh, item.transformMatrix, ownMaterial, 0, null, 0);
+                            if (m_pickerController.IsValidEditingItem() && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)
+                            {
+                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! DRAWING Extra mesh");
+                                Graphics.DrawMesh(geomMesh, item.transformMatrix, WEAtlasesLibrary.DefaultMaterialSemiTransparent(), 0, null, 0, null, false, false);
+                            }
+
                             if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {mesh.RenderInformation?.m_refText} | {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
                         }
                     }
