@@ -65,6 +65,7 @@ namespace BelzontWE
         private ToolOutputBarrier m_ToolOutputBarrier;
         private WEWorldPickerController m_Controller;
         private WETextDataTransformController m_TransformController;
+        private WETextDataMaterialController m_MaterialController;
 
         private float2 m_mousePositionRef;
         private float3 m_originalPositionText;
@@ -108,6 +109,7 @@ namespace BelzontWE
             m_Controller = World.GetOrCreateSystemManaged<WEWorldPickerController>();
             m_cameraSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
             m_TransformController = World.GetOrCreateSystemManaged<WETextDataTransformController>();
+            m_MaterialController = World.GetOrCreateSystemManaged<WETextDataMaterialController>();
 
 
 
@@ -337,13 +339,14 @@ namespace BelzontWE
 #pragma warning restore CS0252 // Possível comparação de referência inesperada; o lado esquerdo precisa de conversão
                         m_cameraDisabledHere = cameraDisabledThisFrame = true;
                         m_cameraDistance = math.clamp(m_cameraDistance + (m_CameraZoomAction.ReadValue<float>() * 4f), 1f, 30f);
+                        var isDecal = m_MaterialController.ShaderType.Value == WEShader.Decal;
                         var itemAngles = m_TransformController.CurrentRotation.Value;
                         var isRotationLocked = m_Controller.CameraRotationLocked.Value;
                         var targetMatrix = (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
                         {
-                            ToolEditMode.PlaneZY => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 255, 0)),
-                            ToolEditMode.PlaneXZ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(75, (isRotationLocked ? -itemAngles.y : 0) + 180, 0)),
-                            _ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(Quaternion.Euler(0, 180, isRotationLocked ? -itemAngles.z : 0)),
+                            ToolEditMode.PlaneZY => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(isDecal ? Quaternion.Euler(-90, 180, 0) * Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 225, 0) : Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 255, 0)),
+                            ToolEditMode.PlaneXZ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(isDecal ? Quaternion.Euler(-90, 180, 0) * Quaternion.Euler(75, (isRotationLocked ? -itemAngles.y : 0) + 180, 0) : Quaternion.Euler(75, (isRotationLocked ? -itemAngles.y : 0) + 180, 0)),
+                            _ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(isDecal ? Quaternion.Euler(-90, 180, 0) * Quaternion.Euler(0, 180, isRotationLocked ? -itemAngles.z : 0) : Quaternion.Euler(0, 180, isRotationLocked ? -itemAngles.z : 0)),
                         };
 
                         m_cameraSystem.cinematicCameraController.pivot = m_Controller.CurrentItemMatrix.GetPosition() + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));

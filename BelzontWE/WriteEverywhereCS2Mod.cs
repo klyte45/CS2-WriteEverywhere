@@ -28,11 +28,6 @@ namespace BelzontWE
             updateSystem.UpdateAt<WELayoutController>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<WEAtlasesLibrary>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateManager>(SystemUpdatePhase.Rendering);
-            //#if !ENABLE_EUIS
-            SelfRegiterUIEvents("we");
-            GameManager.instance.userInterface.view.uiSystem.defaultUIView.Listener.ReadyForBindings += () => SelfRegiterUIEvents("we");
-
-            //#endif
         }
 
         public override void OnDispose()

@@ -1,3 +1,4 @@
+import engine from "cohtml/cohtml";
 
 export class TextureAtlasService {
     static async listAvailableLibraries(): Promise<Record<string, boolean>> { return await engine.call("k45::we.textureAtlas.listAvailableLibraries"); }

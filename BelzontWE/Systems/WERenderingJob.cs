@@ -102,6 +102,7 @@ namespace BelzontWE
                 var transform = m_weTransformLookup[nextEntity];
                 var sourceMod = m_weSourceModLookup.TryGetComponent(nextEntity, out var src) ? src.modName : default;
 
+
                 switch (mesh.TextType)
                 {
                     case WESimulationTextType.Archetype:
@@ -143,7 +144,10 @@ namespace BelzontWE
                         break;
                     case WESimulationTextType.WhiteTexture:
                         {
-                            var WTmatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, transform.scale);
+                            var material = m_weMaterialLookup[nextEntity];
+                            var isDecal = material.CheckIsDecal(mesh);
+                            var effRot = isDecal ? ((Quaternion)transform.offsetRotation) * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)transform.offsetRotation;
+                            var WTmatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? transform.scale.xzy : new float3(transform.scale.xy, 1));
                             int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref WTmatrix, out _, out _, out _, out int minLod, ref this);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
@@ -152,7 +156,7 @@ namespace BelzontWE
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
                                     main = m_weMainLookup[nextEntity],
-                                    material = m_weMaterialLookup[nextEntity],
+                                    material = material,
                                     mesh = m_weMeshLookup[nextEntity],
                                     modSource = sourceMod,
                                     transformMatrix = WTmatrix
@@ -170,66 +174,71 @@ namespace BelzontWE
                         }
                         return;
                     default:
-                        if (m_weTemplateUpdaterLookup.HasComponent(nextEntity))
                         {
-                            m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
-                            return;
-                        }
-                        var scale = transform.scale;
-                        if (mesh.HasBRI)
-                        {
-                            if (mesh.TextType == WESimulationTextType.Image && transform.useAbsoluteSizeEditing)
+                            if (m_weTemplateUpdaterLookup.HasComponent(nextEntity))
                             {
-                                scale.x /= mesh.BriWidthMetersUnscaled;
+                                m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
+                                return;
                             }
-                            if (mesh.TextType == WESimulationTextType.Text && mesh.MaxWidthMeters > 0 && mesh.BriWidthMetersUnscaled * scale.x > mesh.MaxWidthMeters)
+                            var scale = transform.scale;
+                            if (mesh.HasBRI)
                             {
-                                scale.x = mesh.MaxWidthMeters / mesh.BriWidthMetersUnscaled;
-                            }
-                        }
-                        var refPos = parentIsPlaceholder ? default : transform.offsetPosition;
-                        var refRot = parentIsPlaceholder ? default : transform.offsetRotation;
-                        var matrix = prevMatrix * Matrix4x4.TRS(refPos, refRot, scale);
-                        if (mesh.HasBRI)
-                        {
-                            if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
-                            {
-                                int lod = CalculateLod(mesh.Bounds, ref mesh, ref transform, ref matrix, out Bounds3 refBounds, out float minDist, out float3 boundsSize, out int minLod, ref this);
-                                //        if (doLog) Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: minDist = {minDist} - refBounds = {refBounds.min} {refBounds.max} ({boundsSize}) - lod = {lod} - minLod = {minLod} - m_LodParameters = {m_LodParameters}");
-                                if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
+                                if (mesh.TextType == WESimulationTextType.Image && transform.useAbsoluteSizeEditing)
                                 {
-                                    availToDraw.Enqueue(new WERenderData
-                                    {
-                                        textDataEntity = nextEntity,
-                                        geometryEntity = geometryEntity,
-                                        main = m_weMainLookup[nextEntity],
-                                        material = m_weMaterialLookup[nextEntity],
-                                        modSource = sourceMod,
-                                        mesh = mesh,
-                                        transformMatrix = matrix
-                                    });
+                                    scale.x /= mesh.BriWidthMetersUnscaled;
+                                }
+                                if (mesh.TextType == WESimulationTextType.Text && mesh.MaxWidthMeters > 0 && mesh.BriWidthMetersUnscaled * scale.x > mesh.MaxWidthMeters)
+                                {
+                                    scale.x = mesh.MaxWidthMeters / mesh.BriWidthMetersUnscaled;
                                 }
                             }
-                        }
-                        else
-                        {
-                            availToDraw.Enqueue(new WERenderData
+                            var refPos = parentIsPlaceholder ? default : transform.offsetPosition;
+                            var refRot = parentIsPlaceholder ? default : transform.offsetRotation;
+                            var material = m_weMaterialLookup[nextEntity];
+                            var isDecal = material.CheckIsDecal(mesh);
+                            var effRot = parentIsPlaceholder ? default : isDecal ? ((Quaternion)transform.offsetRotation) * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)refRot;
+                            var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? scale.xzy : new float3(scale.xy, 1));
+                            if (mesh.HasBRI)
                             {
-                                textDataEntity = nextEntity,
-                                geometryEntity = geometryEntity,
-                                main = m_weMainLookup[nextEntity],
-                                material = m_weMaterialLookup[nextEntity],
-                                modSource = sourceMod,
-                                mesh = mesh,
-                                transformMatrix = matrix
-                            });
-                        }
-                        if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout))
-                        {
-                            var itemMatrix = prevMatrix * Matrix4x4.TRS(refPos + (float3)Matrix4x4.Rotate(refRot).MultiplyPoint(new float3(0, 0, .00075f)), refRot, Vector3.one);
-                            for (int j = 0; j < subLayout.Length; j++)
+                                if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
+                                {
+                                    int lod = CalculateLod(mesh.Bounds, ref mesh, ref transform, ref matrix, out Bounds3 refBounds, out float minDist, out float3 boundsSize, out int minLod, ref this);
+                                    //        if (doLog) Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: minDist = {minDist} - refBounds = {refBounds.min} {refBounds.max} ({boundsSize}) - lod = {lod} - minLod = {minLod} - m_LodParameters = {m_LodParameters}");
+                                    if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
+                                    {
+                                        availToDraw.Enqueue(new WERenderData
+                                        {
+                                            textDataEntity = nextEntity,
+                                            geometryEntity = geometryEntity,
+                                            main = m_weMainLookup[nextEntity],
+                                            material = m_weMaterialLookup[nextEntity],
+                                            modSource = sourceMod,
+                                            mesh = mesh,
+                                            transformMatrix = matrix
+                                        });
+                                    }
+                                }
+                            }
+                            else
                             {
-                                DrawTree(geometryEntity, subLayout[j].m_weTextData, itemMatrix, unfilteredChunkIndex);
+                                availToDraw.Enqueue(new WERenderData
+                                {
+                                    textDataEntity = nextEntity,
+                                    geometryEntity = geometryEntity,
+                                    main = m_weMainLookup[nextEntity],
+                                    material = m_weMaterialLookup[nextEntity],
+                                    modSource = sourceMod,
+                                    mesh = mesh,
+                                    transformMatrix = matrix
+                                });
+                            }
+                            if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout))
+                            {
+                                var itemMatrix = prevMatrix * Matrix4x4.TRS(refPos + (float3)Matrix4x4.Rotate(refRot).MultiplyPoint(new float3(0, 0, .00075f)), refRot, Vector3.one);
+                                for (int j = 0; j < subLayout.Length; j++)
+                                {
+                                    DrawTree(geometryEntity, subLayout[j].m_weTextData, itemMatrix, unfilteredChunkIndex);
+                                }
                             }
                         }
                         break;

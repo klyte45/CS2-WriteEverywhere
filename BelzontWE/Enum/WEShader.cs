@@ -4,7 +4,8 @@
     public enum WEShader : byte
     {
         Default,
-        Glass
+        Glass,
+        Decal
     }
 
 }

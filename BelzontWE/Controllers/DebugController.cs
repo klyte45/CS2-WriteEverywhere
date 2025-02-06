@@ -1,66 +1,35 @@
-﻿//#define BURST
-//#define VERBOSE 
+﻿#if DEBUG
 using Belzont.Interfaces;
 using Belzont.Utils;
 using Colossal.Entities;
-using Game.Common;
-using Game.Creatures;
-using Game.Tools;
+using Colossal.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
-
-namespace BelzontWE
+namespace BelzontWE.Controllers
 {
-
-    public class WETestController : ComponentSystemBase, IBelzontBindable
+    public partial class DebugController : SystemBase, IBelzontBindable
     {
+        private const string PREFIX = "debug.";
         private Action<string, object[]> eventCaller;
-        private WEWorldPickerTool m_WETestTool;
-        private FontServer m_FontServer;
 
-        internal Entity targetEntity;
 
         public static uint Overlay { get; private set; }
 
         public void SetupCallBinder(Action<string, Delegate> eventCaller)
         {
-            eventCaller("test.enableTestTool", EnableTestTool);
-            eventCaller("test.listShaderDatails", ListShadersDetails);
-            eventCaller("test.listShader", ListShaders);
-            eventCaller("test.setShader", SetShader);
-            eventCaller("test.getShader", GetShader);
-            eventCaller("test.listCurrentMaterialSettings", ListCurrentMaterialSettings);
-            eventCaller("test.setCurrentMaterialSettings", SetCurrentMaterialSettings);
-            eventCaller("test.setOverlay", SetOverlay);
-            eventCaller("test.getOverlay", GetOverlay);
-            eventCaller("test.getEntity", GetEntity);
-            eventCaller("test.setEntity", SetEntity);
+            eventCaller($"{PREFIX}listShaderDatails", ListShadersDetails);
+            eventCaller($"{PREFIX}listShader", ListShaders);
+            eventCaller($"{PREFIX}setShader", SetShader);
+            eventCaller($"{PREFIX}getShader", GetShader);
+            eventCaller($"{PREFIX}listCurrentMaterialSettings", ListCurrentMaterialSettings);
+            eventCaller($"{PREFIX}setCurrentMaterialSettings", SetCurrentMaterialSettings);
         }
-
-        public uint SetOverlay(int newVal)
-        {
-            Overlay = (uint)newVal;
-            try
-            {
-                //if (EntityManager.TryGetBuffer<WETextData>(targetEntity, false, out var buff))
-                //{
-                //    var x = buff[0];
-                //    x.MarkDirty();
-                //    buff[0] = x;
-                //}
-            }
-            catch { }
-            return Overlay;
-        }
-
-        public uint GetOverlay() => Overlay;
-        public Entity GetEntity() => targetEntity;
-        public void SetEntity(int index, int version) => targetEntity = new Entity { Index = index, Version = version };
 
         public class PropertyDescriptor
         {
@@ -72,14 +41,14 @@ namespace BelzontWE
             public string Value { get; set; }
         }
 
-        private List<PropertyDescriptor> ListCurrentMaterialSettings()
+        private List<PropertyDescriptor> ListCurrentMaterialSettings(Entity targetEntity)
         {
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
             if (EntityManager.TryGetComponent<WETextDataMaterial>(targetEntity, out var materialData)
                 && EntityManager.TryGetComponent<WETextDataMesh>(targetEntity, out var meshData)
                 && EntityManager.TryGetComponent<WETextDataMain>(targetEntity, out var mainData))
             {
-                if (materialData.GetOwnMaterial(ref meshData, out var mat))
+                if (materialData.GetOwnMaterial(ref meshData, new Bounds2(Vector2.zero, Vector2.one), out var mat))
                 {
                     EntityManager.SetComponentData(targetEntity, materialData);
                     EntityManager.SetComponentData(targetEntity, meshData);
@@ -159,7 +128,7 @@ namespace BelzontWE
             }
             else
             {
-                return mat.GetFloat(name).ToHexString();
+                return "0x" + math.asint(mat.GetFloat(name)).ToString("X8");
             }
         }
 
@@ -175,14 +144,14 @@ namespace BelzontWE
             }
         }
 
-        private string SetCurrentMaterialSettings(string propertyIdxStr, string value)
+        private string SetCurrentMaterialSettings(Entity targetEntity, string propertyIdxStr, string value)
         {
 
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
             if (EntityManager.TryGetComponent<WETextDataMaterial>(targetEntity, out var materialData)
                 && EntityManager.TryGetComponent<WETextDataMesh>(targetEntity, out var meshData))
             {
-                if (materialData.GetOwnMaterial(ref meshData,  out var mat))
+                if (materialData.GetOwnMaterial(ref meshData, new Bounds2(Vector2.zero, Vector2.one), out var mat))
                 {
                     EntityManager.SetComponentData(targetEntity, materialData);
                     EntityManager.SetComponentData(targetEntity, meshData);
@@ -248,7 +217,7 @@ namespace BelzontWE
                         case ShaderPropertyType.Float:
                             if (value.StartsWith("0x"))
                             {
-                                mat.SetFloat(nameID, NumberExtensions.FromHexString(value));
+                                mat.SetFloat(nameID, math.asfloat(Convert.ToInt32(value[2..])));
                             }
                             else if (float.TryParse(value, out var valFloat))
                             {
@@ -323,13 +292,13 @@ namespace BelzontWE
             }).ToList();
         }
 
-        private void SetShader(string shaderName)
+        private void SetShader(Entity targetEntity, string shaderName)
         {
             if (Shader.Find(shaderName) is Shader sh
                 && EntityManager.TryGetComponent<WETextDataMaterial>(targetEntity, out var materialData)
               && EntityManager.TryGetComponent<WETextDataMesh>(targetEntity, out var meshData))
             {
-                if (materialData.GetOwnMaterial(ref meshData, out var mat))
+                if (materialData.GetOwnMaterial(ref meshData, new Bounds2(Vector2.zero, Vector2.one), out var mat))
                 {
                     EntityManager.SetComponentData(targetEntity, materialData);
                     EntityManager.SetComponentData(targetEntity, meshData);
@@ -337,12 +306,12 @@ namespace BelzontWE
                 mat.shader = sh;
             }
         }
-        private string GetShader()
+        private string GetShader(Entity targetEntity)
         {
             if (EntityManager.TryGetComponent<WETextDataMaterial>(targetEntity, out var materialData)
              && EntityManager.TryGetComponent<WETextDataMesh>(targetEntity, out var meshData))
             {
-                if (materialData.GetOwnMaterial(ref meshData,  out var mat))
+                if (materialData.GetOwnMaterial(ref meshData, new Bounds2(Vector2.zero, Vector2.one), out var mat))
                 {
                     EntityManager.SetComponentData(targetEntity, materialData);
                     EntityManager.SetComponentData(targetEntity, meshData);
@@ -362,35 +331,14 @@ namespace BelzontWE
         }
         protected override void OnCreate()
         {
-            m_WETestTool = World.GetExistingSystemManaged<WEWorldPickerTool>();
-            m_FontServer = World.GetOrCreateSystemManaged<FontServer>();
             base.OnCreate();
         }
-        public override void Update()
+        protected override void OnUpdate()
         {
-
-
         }
 
-        private void SendToFrontend(string eventName, params object[] args) => eventCaller?.Invoke(eventName, args);
 
-        private void EnableTestTool()
-        {
-            EntityManager.AddComponent<Deleted>(GetEntityQuery(new EntityQueryDesc[]
-           {
-                new() {
-                    All = new ComponentType[]
-                    {
-                        ComponentType.ReadWrite<Pet>()
-                    },
-                    None = new ComponentType[]
-                    {
-                        ComponentType.ReadOnly<Temp>(),
-                        ComponentType.ReadOnly<Deleted>(),
-                    }
-                }
-           }));
-        }
+
     }
-
 }
+#endif

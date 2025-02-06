@@ -1,3 +1,4 @@
+import engine from "cohtml/cohtml";
 import { ModFolder } from "utils/ModFolder";
 
 export class FontService {

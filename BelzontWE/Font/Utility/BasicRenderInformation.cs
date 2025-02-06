@@ -2,12 +2,10 @@
 using Belzont.Utils;
 using Colossal.Mathematics;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Serialization;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 using UnityEngine;
 
 namespace BelzontWE.Font.Utility
@@ -15,8 +13,11 @@ namespace BelzontWE.Font.Utility
     public class BasicRenderInformation : IDisposable
     {
         public const string PLACEHOLDER_REFTEXT = "\0Placeholder\0";
-        public static readonly BasicRenderInformation LOADING_PLACEHOLDER = new(PLACEHOLDER_REFTEXT, null, null, null, Texture2D.whiteTexture);
-        public BasicRenderInformation(string refText, Vector3[] vertices, int[] triangles, Vector2[] uv, Texture main, Texture normal = null, Texture control = null, Texture emissive = null, Texture mask = null)
+        public static readonly BasicRenderInformation LOADING_PLACEHOLDER = new(PLACEHOLDER_REFTEXT, null, null, null, null, null, null, Texture2D.whiteTexture);
+        public BasicRenderInformation(string refText,
+            Vector3[] vertices, int[] triangles, Vector2[] uv,
+            Vector3[] verticesCube, int[] trianglesCube, Vector2[] uvCube,
+            Texture main, Texture normal = null, Texture control = null, Texture emissive = null, Texture mask = null)
         {
             m_refText = refText ?? throw new ArgumentNullException("refText");
             if (vertices != null && (triangles?.All(x => x < vertices.Length) ?? false))
@@ -24,11 +25,30 @@ namespace BelzontWE.Font.Utility
                 m_vertices = vertices;
                 m_triangles = triangles;
                 m_uv = uv;
+                var minUv = new Vector2(float.MaxValue, float.MaxValue);
+                var maxUv = new Vector2(float.MinValue, float.MinValue);
+                foreach (var uvI in uv)
+                {
+                    minUv = Vector2.Min(minUv, uvI);
+                    maxUv = Vector2.Max(maxUv, uvI);
+                }
+                BoundsUV = new Bounds2(minUv, maxUv);
                 m_bounds = vertices.Length == 0 ? default : new Bounds3(vertices.Aggregate((x, y) => Vector3.Min(x, y)), vertices.Aggregate((x, y) => Vector3.Max(x, y)));
             }
             else if (triangles != null && vertices != null)
             {
                 LogUtils.DoWarnLog($"m_vertices.Length = {m_vertices?.Length} | m_triangles: [{string.Join(",", m_triangles ?? new int[0])}]");
+            }
+            if (verticesCube != null && (trianglesCube?.All(x => x < verticesCube.Length) ?? false))
+            {
+                m_verticesCube = verticesCube;
+                m_trianglesCube = trianglesCube;
+                m_uvCube = uvCube;
+                m_boundsCube = vertices.Length == 0 ? default : new Bounds3(vertices.Aggregate((x, y) => Vector3.Min(x, y)), vertices.Aggregate((x, y) => Vector3.Max(x, y)));
+            }
+            else if (triangles != null && vertices != null)
+            {
+                LogUtils.DoWarnLog($"m_verticesCube.Length = {m_verticesCube?.Length} | m_trianglesCube: [{string.Join(",", m_trianglesCube ?? new int[0])}]");
             }
             Main = main;
             Normal = normal;
@@ -39,10 +59,12 @@ namespace BelzontWE.Font.Utility
         }
         public static BasicRenderInformation Fill(BasicRenderInformationJob brij, Texture main)
         {
-            var bri = new BasicRenderInformation(brij.originalText.ToString(), AlignVertices(brij.vertices.ToList()), brij.triangles.ToArray(), brij.uv1.ToArray(), main);
+            var bri = new BasicRenderInformation(brij.originalText.ToString(), brij.vertices.ToArray(), brij.triangles.ToArray(), brij.uv1.ToArray(),
+                brij.verticesCube.ToArray(), brij.trianglesCube.ToArray(), brij.uv1Cube.ToArray(), main);
             if (bri.Mesh == null) return null;
 
             bri.m_colors32 = brij.colors.ToArray();
+            bri.m_colors32Cube = brij.colorsCube.ToArray();
 
             bri.m_sizeMetersUnscaled = bri.Mesh.bounds.size;
             //   if (BasicIMod.DebugMode) LogUtils.DoLog($"MESH: {m_mesh} {m_mesh.vertices[0]} {m_mesh.vertices[1]}...  {m_mesh.tangents[0]} {m_mesh.tangents[1]}...  {m_mesh.normals[0]} {m_mesh.normals[1]}... {m_mesh.vertices.Length} {m_mesh.triangles.Length} {m_sizeMetersUnscaled}m");
@@ -55,7 +77,16 @@ namespace BelzontWE.Font.Utility
         private Color32[] m_colors32;
         private readonly Vector2[] m_uv;
         public readonly Bounds3 m_bounds;
+
+
+        private readonly Vector3[] m_verticesCube;
+        private readonly int[] m_trianglesCube;
+        private Color32[] m_colors32Cube;
+        private readonly Vector2[] m_uvCube;
+        public readonly Bounds3 m_boundsCube;
+
         private Mesh m_mesh;
+        private Mesh m_meshCube;
 
         [XmlIgnore]
         public Texture Main { get; private set; }
@@ -64,8 +95,12 @@ namespace BelzontWE.Font.Utility
         public Texture Control { get; private set; }
         public Texture Mask { get; private set; }
 
+        public Bounds2 BoundsUV { get; }
+
+        public Mesh GetMesh(WEShader shader) => shader == WEShader.Decal ? MeshCube : Mesh;
+
         [XmlIgnore]
-        public Mesh Mesh
+        private Mesh Mesh
         {
             get
             {
@@ -85,7 +120,27 @@ namespace BelzontWE.Font.Utility
                 return m_mesh;
             }
         }
-        public int MeshSize { get => Mesh.vertices.Length; set { } }
+        [XmlIgnore]
+        private Mesh MeshCube
+        {
+            get
+            {
+                if (m_meshCube is null && m_verticesCube?.Length > 0)
+                {
+                    m_meshCube = new Mesh
+                    {
+                        vertices = m_verticesCube,
+                        triangles = m_trianglesCube,
+                        colors32 = m_colors32Cube,
+                        uv = m_uvCube,
+                    };
+                    m_meshCube.RecalculateBounds();
+                    m_meshCube.RecalculateNormals();
+                    m_meshCube.RecalculateTangents();
+                }
+                return m_meshCube;
+            }
+        }
         public Colossal.Hash128 Guid { get; private set; }
 
 
@@ -93,17 +148,6 @@ namespace BelzontWE.Font.Utility
         public readonly string m_refText;
         public bool m_isError = false;
 
-        private static Vector3[] AlignVertices(List<Vector3> points)
-        {
-            if (points.Count == 0)
-            {
-                return points.ToArray();
-            }
-            var max = new Vector3(points.Select(x => x.x).Max(), 0, points.Select(x => x.z).Max());
-            var min = new Vector3(points.Select(x => x.x).Min(), 0, points.Select(x => x.z).Min());
-            Vector3 offset = (max + min) / 2;
-            return points.Select(k => k - offset).ToArray();
-        }
 
         public override string ToString() => $"BRI [r={m_refText};v={m_vertices?.Length};sz={m_sizeMetersUnscaled}]";
 
@@ -151,6 +195,13 @@ namespace BelzontWE.Font.Utility
         public NativeArray<Vector3> vertices;
         public NativeArray<int> triangles;
         public NativeArray<Vector2> uv1;
+
+
+        public NativeArray<Color32> colorsCube;
+        public NativeArray<Vector3> verticesCube;
+        public NativeArray<int> trianglesCube;
+        public NativeArray<Vector2> uv1Cube;
+
         public RangeVector m_YAxisOverflows;
         public RangeVector m_fontBaseLimits;
         public uint AtlasVersion;

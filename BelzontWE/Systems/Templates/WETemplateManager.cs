@@ -92,18 +92,40 @@ namespace BelzontWE
                 reader.ReadNullCheck(out WETextDataXmlTree dataTree);
                 try
                 {
+                    LogUtils.DoLog($"DS1 = {dataTree.self}");
+                    LogUtils.DoLog($"DS2 = {dataTree.children?.Length}");
+                    LogUtils.DoLog($"DS3 = {dataTree.Guid}");
+                    LogUtils.DoLog("DESERIAL = " + dataTree.ToXML());
+                }
+                catch { }
+                try
+                {
                     if (dataTree?.children?.Length > 0)
                     {
                         var children = dataTree.children;
-                        foreach (var item in children)
+                        m_executionQueue.Enqueue((cmd) =>
                         {
-                            m_executionQueue.Enqueue((cmd) =>
+                            ComponentLookup<WETextDataMain> tdLookup = GetComponentLookup<WETextDataMain>();
+                            BufferLookup<WESubTextRef> subTextLookup = GetBufferLookup<WESubTextRef>();
+                            if (!subTextLookup.TryGetBuffer(key, out var buff))
                             {
-                                ComponentLookup<WETextDataMain> tdLookup = GetComponentLookup<WETextDataMain>();
-                                BufferLookup<WESubTextRef> subTextLookup = GetBufferLookup<WESubTextRef>();
-                                WELayoutUtility.DoCreateLayoutItem(false, null, item, key, key, ref tdLookup, ref subTextLookup, cmd);
-                            });
-                        }
+                                cmd.AddBuffer<WESubTextRef>(key);
+                                m_executionQueue.Enqueue((cmd2) =>
+                                {
+                                    foreach (var item in children)
+                                    {
+                                        WELayoutUtility.DoCreateLayoutItem(false, null, item, key, key, ref tdLookup, ref subTextLookup, cmd2);
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                foreach (var item in children)
+                                {
+                                    WELayoutUtility.DoCreateLayoutItem(false, null, item, key, key, ref tdLookup, ref subTextLookup, cmd);
+                                }
+                            }
+                        });
                     }
                 }
                 catch (Exception e)
@@ -137,7 +159,7 @@ namespace BelzontWE
         private Dictionary<string, Dictionary<string, string>> DeserializeReplacementData(string data)
         {
             return data.Split(L1_ITEM_SEPARATOR)
-                .Where(x=>x.Contains(L1_KV_SEPARATOR))
+                .Where(x => x.Contains(L1_KV_SEPARATOR))
                 .Select(x => x.Split(L1_KV_SEPARATOR))
                 .ToDictionary(
                     x => x[0],
@@ -168,6 +190,15 @@ namespace BelzontWE
                 {
                     writer.Write(prefabsWithLayout[j]);
                     var data = WETextDataXmlTree.FromEntity(prefabsWithLayout[j], EntityManager);
+                    try
+                    {
+                        LogUtils.DoLog($"S1 = {data.self}");
+                        LogUtils.DoLog($"S2 = {data.children?.Length}");
+                        LogUtils.DoLog($"S3 = {data.Guid}");
+                        LogUtils.DoLog("SERIAL = " + data.ToXML());
+                    }
+                    catch { }
+
                     writer.WriteNullCheck(data);
                 }
             }

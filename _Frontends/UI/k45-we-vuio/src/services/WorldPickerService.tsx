@@ -2,6 +2,7 @@ import { Entity, MultiUIValueBinding, UIColorRGBA } from "@klyte45/vuio-commons"
 import { WEComponentTypeDesc, WEStaticMethodDesc, WETextItemResume } from "./WEFormulaeElement";
 import { ObjectTyped } from "object-typed";
 import { translate } from "utils/translate";
+import engine from "cohtml/cohtml";
 
 type number3 = [number, number, number]
 
@@ -142,6 +143,10 @@ const WETextDataMaterialController = {
     GlassThicknessFormulaeStr: MultiUIValueBinding<string>,
     GlassThicknessFormulaeCompileResult: MultiUIValueBinding<number>,
     GlassThicknessFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
+    AffectSmoothness: MultiUIValueBinding<boolean>,
+    AffectAO: MultiUIValueBinding<boolean>,
+    AffectEmission: MultiUIValueBinding<boolean>,
+    DrawOrder: MultiUIValueBinding<number>,  
 }
 
 type FormulableMaterialKeys =
@@ -287,5 +292,11 @@ export class WorldPickerService {
     }
     static async addEmpty(parent?: Entity) {
         return await engine.call("k45::we.wpicker.addItem", parent ?? { Index: 0, Version: 0, __Type: 'Unity.Entities.Entity, Unity.Entities, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null' });
+    }
+    static async debugAvailable(): Promise<boolean> {
+        return await engine.call("k45::we.wpicker.debugAvailable");
+    }
+    static async currentIsDecal(): Promise<boolean> {
+        return await engine.call("k45::we.dataMaterial.isDecalMesh");
     }
 }

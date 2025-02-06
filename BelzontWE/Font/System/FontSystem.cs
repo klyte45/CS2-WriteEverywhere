@@ -107,7 +107,7 @@ namespace BelzontWE.Font
             {
                 if (!m_textCache.TryGetValue("", out bri))
                 {
-                    bri = new BasicRenderInformation(str, null, null, null, null);
+                    bri = new BasicRenderInformation(str, null, null, null, null, null, null, null);
                     m_textCache.TryAdd("", bri);
                     return bri;
                 }
@@ -135,7 +135,15 @@ namespace BelzontWE.Font
                 triangles.Add(count + kTriangleIndices[i]);
             }
         }
-        private static int[] kTriangleIndices = new int[]{
+        private static void AddTriangleIndicesCube(IList<int> triangles)
+        {
+            int verricesCount = triangles.Count * 2 / 3;
+            for (int i = WERenderingHelper.kTriangleIndicesCube.Length - 1; i >= 0; i--)
+            {
+                triangles.Add(verricesCount + WERenderingHelper.kTriangleIndicesCube[i]);
+            }
+        }
+        private readonly static int[] kTriangleIndices = new int[]{
                 0,
                 1,
                 3,
@@ -376,7 +384,7 @@ namespace BelzontWE.Font
         {
             if (!m_textCache.ContainsKey(""))
             {
-                m_textCache[""] = new BasicRenderInformation("", new Vector3[0], new int[0], new Vector2[0], null);
+                m_textCache[""] = new BasicRenderInformation("", new Vector3[0], new int[0], new Vector2[0], new Vector3[0], new int[0], new Vector2[0], null);
             }
 
             if (itemsQueue.Count != 0)

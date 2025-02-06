@@ -9,6 +9,7 @@ import { CityLayoutsTab } from "./CityLayoutsTab";
 import { FontsTab } from "./FontsTab";
 import { CityAtlasesTab } from "./CityAtlasesTab";
 import { PrefabTemplatesReplacementsTab } from "./PrefabTemplatesReplacementsTab";
+import engine from "cohtml/cohtml";
 
 export const WeMainPanelId = "BelzontWE.UI.WEMainPanel";
 

@@ -22,6 +22,7 @@
   <PropertyGroup>
     <ModId>92908</ModId>
     <Version>0.1.1.5</Version>
+    <Version Condition="'$(Configuration)'=='Debug'">65534.$([System.DateTime]::Now.ToString("yyyy.Mdd.HHmm"))</Version>
     <GameVersion>1.2.*</GameVersion>
     <ThumbnailPath>Properties/Thumbnail.png</ThumbnailPath>
     <DisplayName>Write Everywhere</DisplayName> 
@@ -35,28 +36,11 @@
   <ItemGroup>
     <ModTag Include="Code Mod" />
     <Screenshots Include="Screenshots/*.jpg" />
-    <!--<Dependency Include="EUIS">
-      <ModId>74151</ModId> 
-      <DisplayName>Extra UI Screens</DisplayName>
-    </Dependency>-->
     <Dependency Include="UnifiedIconLibrary">
       <ModId>74417</ModId>
       <DisplayName>Unified Icon Library</DisplayName>
     </Dependency>
   </ItemGroup>
-
-  <Target Condition="'$(Configuration)'=='Debug'" Name="EUIS Build" BeforeTargets="DeployWIP" AfterTargets="RunModPostProcessor">
-    <Message Importance="high" Text="EUIS Build!" />
-    <MSBuild Projects="../WE_EUIS/WE_EUIS.csproj" Targets="Build" BuildInParallel="false" />
-    <ItemGroup>
-      <EuisResult Include="..\WE_EUIS\bin\$(Configuration)\$(TargetFramework)\*.euis" />
-    </ItemGroup>
-    <Copy SourceFiles="@(EuisResult)" DestinationFolder="$(OutDir)" ContinueOnError="false" />
-    
-  </Target>
-
-
-
   <ItemGroup>
     <Reference Include="Game">
       <Private>false</Private>

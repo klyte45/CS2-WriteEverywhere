@@ -1,4 +1,4 @@
-import { ItemPickerProps } from "@klyte45/vuio-commons";
+import engine from "cohtml/cohtml";
 
 export type DataProvider = { displayName: string, directory: boolean, fullPath: string }[]
 

@@ -95,6 +95,11 @@ namespace BelzontWE.Font
                     IList<Vector2> uvs = new List<Vector2>();
                     IList<int> triangles = new List<int>();
 
+                    IList<Vector3> verticesCube = new List<Vector3>();
+                    IList<Color32> colorsCube = new List<Color32>();
+                    IList<Vector2> uvsCube = new List<Vector2>();
+                    IList<int> trianglesCube = new List<int>();
+
 
                     FontGlyph prevGlyph = default;
 
@@ -131,6 +136,7 @@ namespace BelzontWE.Font
                 LogUtils.DoLog($"[Main] codepoint #{i}: destRect = {destRect} scale = {scale}");
 #endif
                         DrawChar(glyph, vertices, triangles, uvs, colors, Color.black, Color.white, destRect);
+                        DrawCharCube(glyph, verticesCube, trianglesCube, uvsCube, colorsCube, Color.black, Color.white, destRect);
 
                         prevGlyph = glyph;
                     }
@@ -147,6 +153,13 @@ namespace BelzontWE.Font
                     result.colors = new NativeArray<Color32>(colors.ToArray(), Allocator.Persistent);
                     result.uv1 = new(uvs.ToArray(), Allocator.Persistent);
                     result.triangles = new(triangles.ToArray(), Allocator.Persistent);
+
+                    result.verticesCube = new NativeArray<Vector3>(AlignVertices(verticesCube), Allocator.Persistent);
+                    result.colorsCube = new NativeArray<Color32>(colorsCube.ToArray(), Allocator.Persistent);
+                    result.uv1Cube = new(uvsCube.ToArray(), Allocator.Persistent);
+                    result.trianglesCube = new(trianglesCube.ToArray(), Allocator.Persistent);
+
+
                     result.m_fontBaseLimits = new RangeVector { min = prevGlyph.Font.Descent, max = prevGlyph.Font.Ascent };
                     result.AtlasVersion = AtlasVersion;
                     result.originalText = strOr;
@@ -181,6 +194,20 @@ namespace BelzontWE.Font
                 colors.Add(item4);
                 AddUVCoords(uvs, glyph);
             }
+            private void DrawCharCube(FontGlyph glyph, IList<Vector3> vertices, IList<int> triangles, IList<Vector2> uvs, IList<Color32> colors, Color overrideColor, Color bottomColor, Rect bounds)
+            {
+                AddTriangleIndicesCube(triangles);
+                Color32 item3 = overrideColor.linear;
+                Color32 item4 = bottomColor.linear;
+                foreach (var vertex in WERenderingHelper.kVerticesPositionsCube)
+                {
+                    vertices.Add(new(vertex.x > 0 ? bounds.xMax : bounds.xMin, vertex.y * .5f, vertex.z < 0 ? bounds.yMax : bounds.yMin));
+                    colors.Add(vertex.z < 0 ? item4 : item3);
+                    uvs.Add(new Vector2((vertex.x > 0 ? glyph.xMax : glyph.xMin) / CurrentAtlasSize.x, (vertex.z > 0 ? glyph.yMax : glyph.yMin) / CurrentAtlasSize.y));
+                }
+            }
+
+
             private Vector3[] AlignVertices(IList<Vector3> points)
             {
                 if (points.Count == 0)
@@ -188,8 +215,8 @@ namespace BelzontWE.Font
                     return points.ToArray();
                 }
 
-                var max = new Vector3(points.Select(x => x.x).Max(), 0, points.Select(x => x.z).Max());
-                var min = new Vector3(points.Select(x => x.x).Min(), 0, points.Select(x => x.z).Min());
+                var max = new Vector3(points.Select(x => x.x).Max(), 0, 0);
+                var min = new Vector3(points.Select(x => x.x).Min(), 0, 0);
                 Vector3 offset = (max + min) / 2;
 
                 return points.Select(x => x - offset).ToArray();

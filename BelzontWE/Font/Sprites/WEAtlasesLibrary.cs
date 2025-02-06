@@ -5,7 +5,6 @@ using BelzontWE.Font;
 using BelzontWE.Font.Utility;
 using BelzontWE.Layout;
 using Colossal.IO.AssetDatabase;
-using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Colossal.OdinSerializer.Utilities;
 using Colossal.Serialization.Entities;
 using Game;
@@ -277,7 +276,7 @@ namespace BelzontWE.Sprites
             return true;
         }
 
-        public string ExportCityAtlas(FixedString32Bytes atlasName, string folderName) 
+        public string ExportCityAtlas(FixedString32Bytes atlasName, string folderName)
             => CityAtlases.TryGetValue(atlasName, out var atlas) ? ExportAtlas(folderName, atlas) : null;
 
         private static string ExportAtlas(string folderName, WETextureAtlas atlas)
@@ -309,7 +308,12 @@ namespace BelzontWE.Sprites
         #endregion
 
         #region Geometry
-        private static BasicRenderInformation m_bgTexture;
+#if DEBUG
+        internal
+#else
+        private
+#endif
+           static BasicRenderInformation m_bgTexture;
         public static BasicRenderInformation GetWhiteTextureBRI()
         {
             m_bgTexture ??= WERenderingHelper.GenerateBri("\0whiteTexture\0", new WEImageInfo() { Main = Texture2D.whiteTexture });
@@ -329,7 +333,7 @@ namespace BelzontWE.Sprites
 
 
 
-        internal string ExportModAtlas(string atlasFullName, string folder) 
+        internal string ExportModAtlas(string atlasFullName, string folder)
             => ModAtlases.TryGetValue(atlasFullName, out var atlas) ? ExportAtlas(folder, atlas) : null;
 
 
@@ -409,7 +413,7 @@ namespace BelzontWE.Sprites
         internal ModAtlasRegistry[] ListModAtlases() => RegisteredMods
             .Select(x => new ModAtlasRegistry(GetModIdentifier(x.Value.asset.assembly), x.Value.asset.mod.displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
 
-    
+
         [BurstCompile]
         private unsafe struct WEPlaceholcerAtlasesUsageCount : IJobChunk
         {

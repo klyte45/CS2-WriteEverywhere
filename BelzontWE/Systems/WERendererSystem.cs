@@ -202,9 +202,10 @@ namespace BelzontWE
                         {
                             Material ownMaterial;
                             if (ìsPlaceholder) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
-                            else material.GetOwnMaterial(ref mesh, out ownMaterial);
-                            Graphics.DrawMesh(bri.Mesh, item.transformMatrix, ownMaterial, 0, null, 0);
-                            if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {mesh.RenderInformation?.m_refText} | {mesh.RenderInformation?.Mesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
+                            else material.GetOwnMaterial(ref mesh, bri.BoundsUV, out ownMaterial);
+                            var geomMesh = bri.GetMesh(item.material.Shader);
+                            Graphics.DrawMesh(geomMesh, item.transformMatrix, ownMaterial, 0, null, 0);
+                            if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {mesh.RenderInformation?.m_refText} | {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
                         }
                     }
                     if (EntityManager.HasComponent<WETextDataMain>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, main);

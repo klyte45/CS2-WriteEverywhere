@@ -15,7 +15,7 @@ namespace BelzontWE
 {
     public class WETextDataXml : ISerializable
     {
-        private const int CURRENT_VERSION = 0;
+        private const int CURRENT_VERSION = 1;
         [XmlAttribute] public string itemName;
 
         [XmlElement] public TransformXml transform;
@@ -25,6 +25,7 @@ namespace BelzontWE
         [XmlElement][DefaultValue(null)] public MeshDataWhiteTextureXml whiteMesh;
         [XmlElement] public DefaultStyleXml defaultStyle;
         [XmlElement] public GlassStyleXml glassStyle;
+        [XmlElement] public DecalStyleXml decalStyle;
 
         internal WESimulationTextType EffectiveTextType => textMesh?.textType
             ?? imageMesh?.textType
@@ -38,6 +39,7 @@ namespace BelzontWE
         public bool ShouldSerializewhiteMesh() => whiteMesh != null;
         public bool ShouldSerializedefaultStyle() => layoutMesh is null && defaultStyle != null;
         public bool ShouldSerializeglassStyle() => layoutMesh is null && glassStyle != null;
+        public bool ShouldSerializedecalStyle() => layoutMesh is null && decalStyle != null;
 
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
@@ -50,6 +52,7 @@ namespace BelzontWE
             writer.WriteNullCheck(whiteMesh);
             writer.WriteNullCheck(defaultStyle);
             writer.WriteNullCheck(glassStyle);
+            writer.WriteNullCheck(decalStyle);
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -68,6 +71,10 @@ namespace BelzontWE
             reader.ReadNullCheck(out whiteMesh);
             reader.ReadNullCheck(out defaultStyle);
             reader.ReadNullCheck(out glassStyle);
+            if (version >= 1)
+            {
+                reader.ReadNullCheck(out decalStyle);
+            }
 
         }
 
@@ -265,6 +272,49 @@ namespace BelzontWE
             }
         }
 
+        public class DecalStyleXml : ISerializable
+        {
+            private const int CURRENT_VERSION = 0;
+            [XmlIgnore] public WEShader shader => WEShader.Decal;
+            [XmlAttribute][DefaultValue(WETextDataMaterial.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextDataMaterial.DEFAULT_DECAL_FLAGS;
+            [XmlElement] public FormulaeColorRgbaXml color = new() { defaultValue = Color.white };
+            [XmlElement] public FormulaeFloatXml metallic;
+            [XmlElement] public FormulaeFloatXml smoothness;
+            [XmlAttribute] public bool affectSmoothness;
+            [XmlAttribute] public bool affectAO;
+            [XmlAttribute] public bool affectEmission;
+            [XmlAttribute] public float drawOrder;
+
+            public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+            {
+                writer.Write(CURRENT_VERSION);
+                writer.Write(decalFlags);
+                writer.WriteNullCheck(color);
+                writer.WriteNullCheck(metallic);
+                writer.WriteNullCheck(smoothness);
+                writer.Write(affectSmoothness);
+                writer.Write(affectAO);
+                writer.Write(affectEmission);
+                writer.Write(drawOrder);
+            }
+            public void Deserialize<TReader>(TReader reader) where TReader : IReader
+            {
+                reader.Read(out int version);
+                if (version > CURRENT_VERSION)
+                {
+                    LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                    return;
+                }
+                reader.Read(out decalFlags);
+                reader.ReadNullCheck(out color);
+                reader.ReadNullCheck(out metallic);
+                reader.ReadNullCheck(out smoothness);
+                reader.Read(out affectSmoothness);
+                reader.Read(out affectAO);
+                reader.Read(out affectEmission);
+                reader.Read(out drawOrder);
+            }
+        }
         public class GlassStyleXml : ISerializable
         {
             private const int CURRENT_VERSION = 0;

@@ -31,7 +31,17 @@ namespace BelzontWE
             callBinder($"{PREFIX}changeParent", ChangeParent);
             callBinder($"{PREFIX}cloneAsChild", CloneAsChild);
             callBinder($"{PREFIX}dumpBris", DumpBris);
+            callBinder($"{PREFIX}debugAvailable", DebugAvailable);
             if (m_eventCaller != null) InitValueBindings();
+        }
+
+        private bool DebugAvailable()
+        {
+#if DEBUG
+            return true;
+#else
+            return false;
+#endif
         }
 
         private void DumpBris()
@@ -112,7 +122,7 @@ namespace BelzontWE
             {
                 EntityManager.AddBuffer<WESubTextRef>(newParent);
             }
-            WELayoutUtility.DoCreateLayoutItem(WETextDataXmlTree.FromEntity(target, EntityManager), newParent, weData.TargetEntity, EntityManager);
+            WELayoutUtility.DoCreateLayoutItem(XmlUtils.CloneViaXml(WETextDataXmlTree.FromEntity(target, EntityManager)), newParent, weData.TargetEntity, EntityManager);
             ReloadTree();
             return true;
         }
@@ -164,6 +174,14 @@ namespace BelzontWE
             };
 
             m_initialized = true;
+        }
+
+        public void ForceReload()
+        {
+            if (IsValidEditingItem())
+            {
+                m_executionQueue.Enqueue(() => OnCurrentItemChanged(CurrentSubEntity.Value));
+            }
         }
 
         private void OnCurrentItemChanged(Entity entity)

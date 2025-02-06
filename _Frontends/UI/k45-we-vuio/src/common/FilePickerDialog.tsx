@@ -6,6 +6,7 @@ import { translate } from "utils/translate";
 import "../style/filePickerDialog.scss"
 import classNames from "classnames";
 import { ContextMenuButton } from "./ContextMenuButton";
+import engine from "cohtml/cohtml";
 
 type FilePickerDialogProps = {
     isActive: boolean,

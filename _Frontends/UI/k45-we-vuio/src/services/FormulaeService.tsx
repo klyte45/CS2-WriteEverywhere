@@ -1,3 +1,4 @@
+import engine from "cohtml/cohtml";
 import { WETypeMemberDesc, WEFormulaeElement, WEComponentTypeDesc } from "./WEFormulaeElement";
 import { IndexedStaticMethodsListing, IndexedComponentListing } from "./WorldPickerService";
 

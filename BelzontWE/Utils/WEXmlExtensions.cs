@@ -23,6 +23,9 @@ namespace BelzontWE.Utils
                     case WEShader.Glass:
                         result.glassStyle = weMat.ToGlassXml();
                         break;
+                    case WEShader.Decal:
+                        result.decalStyle = weMat.ToDecalXml();
+                        break;
                 }
             }
             if (em.TryGetComponent<WETextDataMesh>(e, out var weMesh))
@@ -74,6 +77,8 @@ namespace BelzontWE.Utils
                 material = WETextDataMaterial.ToComponent(xml.defaultStyle);
             else if (xml.glassStyle != null)
                 material = WETextDataMaterial.ToComponent(xml.glassStyle);
+            else if (xml.decalStyle != null)
+                material = WETextDataMaterial.ToComponent(xml.decalStyle);
             else material = default;
 
             mesh = xml.textMesh?.ToComponent()

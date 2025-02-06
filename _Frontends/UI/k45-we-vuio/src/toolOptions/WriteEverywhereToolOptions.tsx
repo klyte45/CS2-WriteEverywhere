@@ -10,7 +10,8 @@ import { WETextValueSettings } from "./WETextValueSettings";
 import { WETextHierarchyView } from "./WETextHierarchyView";
 import { WETextShaderProperties } from "./WETextShaderProperties";
 import { WEFormulaeEditor } from "./WEFormulaeEditor";
-
+import i_debug from "../images/debug.svg"
+import { WEDebugWindow } from "./WEDebugWindow";
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
 
@@ -77,7 +78,12 @@ const WEWorldPickerToolPanel = () => {
 
     const [displayAppearenceWindow, setDisplayAppearenceWindow] = useState(false);
     const [displayShaderWindow, setDisplayShaderWindow] = useState(false);
+    const [displayDebugWindow, setDisplayDebugWindow] = useState(false);
+    const [debugAvailable, setDebugAvailable] = useState(false);
 
+    useEffect(() => {
+        WorldPickerService.debugAvailable().then(setDebugAvailable);
+    }, []);
 
     const wps = WorldPickerService.instance.bindingList.picker;
     const main = WorldPickerService.instance.bindingList.main;
@@ -168,9 +174,14 @@ const WEWorldPickerToolPanel = () => {
                 </>}
 
 
-            <VanillaComponentResolver.instance.Section title={L_actions}>
+            <VanillaComponentResolver.instance.Section title={L_actions} >
                 <>
                     {currentItemIsValid && <>
+                        {debugAvailable && <>
+                            <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayDebugWindow(!displayDebugWindow)} selected={displayDebugWindow} src={i_debug} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={"DEBUG"} />
+                            <div style={{ width: "20rem", flexShrink: 1 }}></div>
+                        </>
+                        }
                         <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayShaderWindow(!displayShaderWindow)} selected={displayShaderWindow} src={i_ShaderBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ShaderBtn} />
                         <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
                         <div style={{ width: "10rem" }}></div>
@@ -178,10 +189,12 @@ const WEWorldPickerToolPanel = () => {
                     }
                     <VanillaComponentResolver.instance.ToolButton onSelect={() => wps.CurrentEntity.set(null)} src={i_UnselectCurrentIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_picker} />
                 </>
-            </VanillaComponentResolver.instance.Section>
-            {currentItemIsValid && displayAppearenceWindow && <WETextAppearenceSettings />}
+            </VanillaComponentResolver.instance.Section >
+            {currentItemIsValid && displayAppearenceWindow && <WETextAppearenceSettings />
+            }
             {currentItemIsValid && displayShaderWindow && <WETextShaderProperties />}
             {currentItemIsValid && <WETextValueSettings />}
+            {debugAvailable && currentItemIsValid && displayDebugWindow && <WEDebugWindow />}
             {<WETextHierarchyView clipboard={clipboard} setClipboard={setClipboard} />}
             {currentEditingFormulaeStr() && <WEFormulaeEditor formulaeStr={currentEditingFormulaeStr()!} formulaeType={getCurrentEditingFormulaeType()!} lastCompileStatus={currentEditingFormulaeResult()!} />}
         </>

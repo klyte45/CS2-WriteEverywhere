@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using Unity.Entities;
 
 namespace BelzontWE.Bridge
 {
@@ -21,5 +22,7 @@ namespace BelzontWE.Bridge
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
             WETemplateManager.Instance.RegisterLoadableTemplatesFolder(mainAssembly, new() { ModName = modData.mod.displayName, Location = rootFolder });
         }
+
+        public static void ForceReloadLayouts() => World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<WETemplateManager>().MarkPrefabsDirty();
     }
 }

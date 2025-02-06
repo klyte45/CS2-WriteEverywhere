@@ -16,10 +16,12 @@ namespace BelzontWE
     {
         public const int CURRENT_VERSION = 0;
 
+        [XmlElement("self")]
         public WETextDataXml self;
         [XmlIgnore] public Colossal.Hash128 Guid { get; } = System.Guid.NewGuid();
+
         [XmlElement("children")]
-        public WETextDataXmlTree[] children;
+        public WETextDataXmlTree[] children = new WETextDataXmlTree[0];
 
         public bool ShouldSerializechildren() => self.layoutMesh is null;
 
@@ -29,7 +31,7 @@ namespace BelzontWE
             var result = new WETextDataXmlTree
             {
                 self = WEXmlExtensions.ToXml(e, em)
-            };
+            };            
             if (em.TryGetBuffer<WESubTextRef>(e, true, out var subTextData))
             {
                 result.children = new WETextDataXmlTree[subTextData.Length];

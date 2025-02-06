@@ -28,6 +28,12 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
     const T_normalStrength = translate("appearenceSettings.normalStrength"); //"Emissive Exposure"
     const T_glassThickness = translate("appearenceSettings.glassThickness"); //"Emissive Exposure"
 
+    const T_affectSmoothness = translate("appearenceSettings.affectSmoothness");
+    const T_affectAO = translate("appearenceSettings.affectAO");
+    const T_affectEmission = translate("appearenceSettings.affectEmission");
+    const T_drawOrder = translate("appearenceSettings.drawOrder");
+
+
     const [buildIdx, setBuild] = useState(0);
     useEffect(() => {
         WorldPickerService.instance.registerBindings(() => setBuild(buildIdx + 1))
@@ -36,13 +42,16 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
     const material = WorldPickerService.instance.bindingList.material;
     const mesh = WorldPickerService.instance.bindingList.mesh;
 
+    const ToggleField = VanillaWidgets.instance.ToggleField;
+    const IntInputField = VanillaWidgets.instance.IntInputField;
+
     const defaultPosition = props.initialPosition ?? { x: 1 - 200 / window.innerWidth, y: 200 / window.innerHeight }
 
     return <Portal>
         <Panel draggable header={T_appearenceTitle} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
             {/* <VanillaWidgets.instance.ColorPicker showAlpha={true} value={material.MainColor.value} onChange={(x) => { material.MainColor.set(x) }} label={T_mainColor} /> */}
             <FormulaeEditorRowColor showAlpha={true} formulaeField="MainColor" formulaeModule="material" label={T_mainColor} />
-            {material.ShaderType.value == 0 && <>
+            {[0].includes(material.ShaderType.value) && <>
                 {mesh.TextSourceType.value == WESimulationTextType.Image && <>
                     <FormulaeEditorRowColor formulaeModule="material" formulaeField="ColorMask1" label={T_colorMask1} />
                     <FormulaeEditorRowColor formulaeModule="material" formulaeField="ColorMask2" label={T_colorMask2} />
@@ -54,6 +63,14 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="Metallic" label={T_Metallic} max={1} min={0} />
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="CoatStrength" label={T_CoatStrength} max={1} min={0} />
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="Smoothness" label={T_Smoothness} max={1} min={0} />
+            </>}
+            {[2].includes(material.ShaderType.value) && <>
+                <FormulaeEditorRowFloat formulaeModule="material" formulaeField="Metallic" label={T_Metallic} max={1} min={0} />
+                <FormulaeEditorRowFloat formulaeModule="material" formulaeField="Smoothness" label={T_Smoothness} max={1} min={0} />
+                <ToggleField label={T_affectSmoothness} value={material.AffectSmoothness.value} onChange={(x) => material.AffectSmoothness.set(x)} />
+                <ToggleField label={T_affectAO} value={material.AffectAO.value} onChange={(x) => material.AffectAO.set(x)} />
+                <ToggleField label={T_affectEmission} value={material.AffectEmission.value} onChange={(x) => material.AffectEmission.set(x)} />
+                <IntInputField label={T_drawOrder} value={material.DrawOrder.value} onChange={(x) => material.DrawOrder.set(x)} />
             </>}
             {material.ShaderType.value == 1 && <>
                 <FormulaeEditorRowColor formulaeModule="material" formulaeField="GlassColor" label={T_glassColor} />
