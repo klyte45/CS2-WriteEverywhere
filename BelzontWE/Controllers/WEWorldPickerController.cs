@@ -147,6 +147,7 @@ namespace BelzontWE
         public MultiUIValueBinding<bool> CurrentItemIsValid { get; private set; }
         public MultiUIValueBinding<bool> CameraLocked { get; private set; }
         public MultiUIValueBinding<bool> CameraRotationLocked { get; private set; }
+        public MultiUIValueBinding<bool> ShowProjectionCube { get; private set; }
         public MultiUIValueBinding<string[]> FontList { get; private set; }
         private void InitValueBindings()
         {
@@ -162,6 +163,7 @@ namespace BelzontWE
             MouseSensibility = new(6, $"{PREFIX}{nameof(MouseSensibility)}", m_eventCaller, m_callBinder, (x, _) => x % WEWorldPickerTool.precisionIdx.Length);
             CameraLocked = new(default, $"{PREFIX}{nameof(CameraLocked)}", m_eventCaller, m_callBinder);
             CameraRotationLocked = new(default, $"{PREFIX}{nameof(CameraRotationLocked)}", m_eventCaller, m_callBinder);
+            ShowProjectionCube = new(true, $"{PREFIX}{nameof(ShowProjectionCube)}", m_eventCaller, m_callBinder);
             FontList = new(default, $"{PREFIX}{nameof(FontList)}", m_eventCaller, m_callBinder);
             CurrentSubEntity.OnScreenValueChanged += (x) => OnCurrentItemChanged();
             FontList.Value = FontServer.Instance.GetLoadedFontsNames();

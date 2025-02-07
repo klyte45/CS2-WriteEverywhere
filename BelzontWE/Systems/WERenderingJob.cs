@@ -5,6 +5,8 @@ using Unity.Mathematics;
 using UnityEngine;
 using Unity.Burst.Intrinsics;
 using Colossal.Mathematics;
+using Colossal.AssetPipeline.Diagnostic;
+
 
 
 
@@ -108,7 +110,7 @@ namespace BelzontWE
                     case WESimulationTextType.Archetype:
                         if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout2))
                         {
-                            prevMatrix *= Matrix4x4.TRS(new Vector3(0, 0, .0008f), default, Vector3.one);
+                            prevMatrix *= Matrix4x4.TRS(new Vector3(0, 0, .001f), default, Vector3.one);
                             for (int j = 0; j < subLayout2.Length; j++)
                             {
                                 DrawTree(geometryEntity, subLayout2[j].m_weTextData, prevMatrix, unfilteredChunkIndex);
@@ -123,7 +125,7 @@ namespace BelzontWE
                                 return;
                             }
 
-                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref prevMatrix, out _, out _, out _, out int minLod, ref this);
+                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref prevMatrix, out int minLod, ref this);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 var scale2 = transform.scale;
@@ -148,7 +150,7 @@ namespace BelzontWE
                             var isDecal = material.CheckIsDecal(mesh);
                             var effRot = isDecal ? ((Quaternion)transform.offsetRotation) * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)transform.offsetRotation;
                             var WTmatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? transform.scale.xzy : new float3(transform.scale.xy, 1));
-                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref WTmatrix, out _, out _, out _, out int minLod, ref this);
+                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref WTmatrix, out int minLod, ref this);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 availToDraw.Enqueue(new WERenderData
@@ -165,7 +167,7 @@ namespace BelzontWE
 
                             if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayoutWt))
                             {
-                                var itemMatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, .001f)), transform.offsetRotation, Vector3.one);
+                                var itemMatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, material.Shader == WEShader.Decal ? .002f : .001f)), transform.offsetRotation, Vector3.one);
                                 for (int j = 0; j < subLayoutWt.Length; j++)
                                 {
                                     DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, unfilteredChunkIndex);
@@ -202,8 +204,7 @@ namespace BelzontWE
                             {
                                 if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
                                 {
-                                    int lod = CalculateLod(mesh.Bounds, ref mesh, ref transform, ref matrix, out Bounds3 refBounds, out float minDist, out float3 boundsSize, out int minLod, ref this);
-                                    //        if (doLog) Debug.Log($"G {geometryEntity.Index} {geometryEntity.Version} | E {nextEntity.Index} {nextEntity.Version}: minDist = {minDist} - refBounds = {refBounds.min} {refBounds.max} ({boundsSize}) - lod = {lod} - minLod = {minLod} - m_LodParameters = {m_LodParameters}");
+                                    int lod = CalculateLod(mesh.Bounds, ref mesh, ref transform, ref matrix, out int minLod, ref this);
                                     if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                     {
                                         availToDraw.Enqueue(new WERenderData
@@ -234,7 +235,7 @@ namespace BelzontWE
                             }
                             if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout))
                             {
-                                var itemMatrix = prevMatrix * Matrix4x4.TRS(refPos + (float3)Matrix4x4.Rotate(refRot).MultiplyPoint(new float3(0, 0, .00075f)), refRot, Vector3.one);
+                                var itemMatrix = prevMatrix * Matrix4x4.TRS(refPos + (float3)Matrix4x4.Rotate(refRot).MultiplyPoint(new float3(0, 0, material.Shader == WEShader.Decal ? .002f : .001f)), refRot, Vector3.one);
                                 for (int j = 0; j < subLayout.Length; j++)
                                 {
                                     DrawTree(geometryEntity, subLayout[j].m_weTextData, itemMatrix, unfilteredChunkIndex);
@@ -245,12 +246,10 @@ namespace BelzontWE
                 }
             }
 
-            private static int CalculateLod(Bounds3 meshBounds, ref WETextDataMesh meshData, ref WETextDataTransform transformData, ref Matrix4x4 matrix, out Bounds3 refBounds,
-                out float minDist, out float3 boundsSize, out int minLod, ref WERenderingJob job)
+            private static int CalculateLod(Bounds3 meshBounds, ref WETextDataMesh meshData, ref WETextDataTransform transformData, ref Matrix4x4 matrix, out int minLod, ref WERenderingJob job)
             {
-                refBounds = new Bounds3(matrix.MultiplyPoint(meshBounds.min), matrix.MultiplyPoint(meshBounds.max));
-                minDist = RenderingUtils.CalculateMinDistance(refBounds, job.m_CameraPosition, job.m_CameraDirection, job.m_LodParameters);
-                boundsSize = refBounds.max - refBounds.min;
+                var refBounds = new Bounds3(matrix.MultiplyPoint(meshBounds.min), matrix.MultiplyPoint(meshBounds.max));
+                var minDist = RenderingUtils.CalculateMinDistance(refBounds, job.m_CameraPosition, job.m_CameraDirection, job.m_LodParameters);
                 var isDirty = meshData.LodReferenceScale != transformData.scale;
                 if (isDirty.x || isDirty.y || isDirty.z || meshData.MinLod <= 0)
                 {

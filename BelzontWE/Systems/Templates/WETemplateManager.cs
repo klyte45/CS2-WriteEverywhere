@@ -107,24 +107,7 @@ namespace BelzontWE
                         {
                             ComponentLookup<WETextDataMain> tdLookup = GetComponentLookup<WETextDataMain>();
                             BufferLookup<WESubTextRef> subTextLookup = GetBufferLookup<WESubTextRef>();
-                            if (!subTextLookup.TryGetBuffer(key, out var buff))
-                            {
-                                cmd.AddBuffer<WESubTextRef>(key);
-                                m_executionQueue.Enqueue((cmd2) =>
-                                {
-                                    foreach (var item in children)
-                                    {
-                                        WELayoutUtility.DoCreateLayoutItem(false, null, item, key, key, ref tdLookup, ref subTextLookup, cmd2);
-                                    }
-                                });
-                            }
-                            else
-                            {
-                                foreach (var item in children)
-                                {
-                                    WELayoutUtility.DoCreateLayoutItem(false, null, item, key, key, ref tdLookup, ref subTextLookup, cmd);
-                                }
-                            }
+                            WELayoutUtility.DoCreateLayoutItemArray(false, null, children, key, key, ref tdLookup, ref subTextLookup, cmd);
                         });
                     }
                 }

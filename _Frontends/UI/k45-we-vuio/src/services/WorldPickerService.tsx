@@ -53,6 +53,7 @@ const WEWorldPickerController = {
     CameraLocked: MultiUIValueBinding<boolean>,
     CameraRotationLocked: MultiUIValueBinding<boolean>,
     FontList: MultiUIValueBinding<string[]>,
+    ShowProjectionCube: MultiUIValueBinding<boolean>,
 }
 const WETextDataMainController = {
     _prefix: "k45::we.dataMain",

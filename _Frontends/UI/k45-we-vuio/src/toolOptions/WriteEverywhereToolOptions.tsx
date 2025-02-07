@@ -12,9 +12,11 @@ import { WETextShaderProperties } from "./WETextShaderProperties";
 import { WEFormulaeEditor } from "./WEFormulaeEditor";
 import i_debug from "../images/debug.svg"
 import { WEDebugWindow } from "./WEDebugWindow";
+import { ShaderPropertyType } from "services/DebugService";
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
 
+const i_ProjectionCube = "coui://uil/Standard/Cube.svg";
 const i_XYplaneIcon = "coui://uil/Standard/BoxFront.svg";
 const i_ZYplaneIcon = "coui://uil/Standard/BoxSide.svg";
 const i_XZplaneIcon = "coui://uil/Standard/BoxTop.svg";
@@ -59,6 +61,7 @@ const WEWorldPickerToolPanel = () => {
     const T_editingPlane_XY = translate("toolOption.editingPlane_XY.tooltip"); //"move in XY, rotate in Z (front)"
     const T_editingPlane_ZY = translate("toolOption.editingPlane_ZY.tooltip"); //"move in ZY, rotate in X (right)"
     const T_editingPlane_XZ = translate("toolOption.editingPlane_XZ.tooltip"); //"move in XZ, rotate in Y (top)"
+    const T_ProjectionCube = translate("toolOption.decalProjectionCube.tooltip"); //"move in XZ, rotate in Y (top)"
     const T_picker = translate("toolOption.picker.tooltip"); //"Pick another object"
     const T_lockCamera = translate("toolOption.lockCamera.tooltip"); //"Lock camera to editing plane area and angle"
     const T_AppearenceBtn = translate("toolOption.AppearenceBtn.tooltip"); //"Appearance settings"
@@ -87,6 +90,7 @@ const WEWorldPickerToolPanel = () => {
 
     const wps = WorldPickerService.instance.bindingList.picker;
     const main = WorldPickerService.instance.bindingList.main;
+    const material = WorldPickerService.instance.bindingList.material;
     const transform = WorldPickerService.instance.bindingList.transform;
     const Locale = VanillaFnResolver.instance.localization.useCachedLocalization();
     const decimalsFormat = (value: number) => VanillaFnResolver.instance.localizedNumber.formatFloat(Locale, value, false, 3, true, false, Infinity);
@@ -146,6 +150,10 @@ const WEWorldPickerToolPanel = () => {
                         }}
                     />
                     <VanillaComponentResolver.instance.Section title={L_editingPlane}>
+                        {material.ShaderType.value == 2 && <>
+                            <VanillaComponentResolver.instance.ToolButton selected={wps.ShowProjectionCube.value} onSelect={() => wps.ShowProjectionCube.set(!wps.ShowProjectionCube.value)} src={i_ProjectionCube} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ProjectionCube}></VanillaComponentResolver.instance.ToolButton>
+                            <div style={{ width: "10rem" }}></div>
+                        </>}
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 0} onSelect={() => wps.CurrentPlaneMode.set(0)} src={i_XYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XY}></VanillaComponentResolver.instance.ToolButton>
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 1} onSelect={() => wps.CurrentPlaneMode.set(1)} src={i_ZYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_ZY}></VanillaComponentResolver.instance.ToolButton>
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 2} onSelect={() => wps.CurrentPlaneMode.set(2)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XZ}></VanillaComponentResolver.instance.ToolButton>

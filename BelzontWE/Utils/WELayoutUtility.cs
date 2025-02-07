@@ -46,6 +46,16 @@ namespace BelzontWE
             if (!subTextLookup.TryGetBuffer(parentEntity, out var buff)) buff = childTargetMode == ParentEntityMode.TARGET_IS_TARGET ? cmd.AddBuffer<WESubTextRef>(parentEntity) : default;
             return DoCreateLayoutItem(fromTemplate, modSource, toCopy, parentEntity, targetEntity, ref tdLookup, ref subTextLookup, cmd, ref buff, childTargetMode);
         }
+        public static void DoCreateLayoutItemArray(bool fromTemplate, string modSource, WETextDataXmlTree[] toCopyArray, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextDataMain> tdLookup,
+                   ref BufferLookup<WESubTextRef> subTextLookup, EntityCommandBuffer cmd,
+                   ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET)
+        {
+            if (!subTextLookup.TryGetBuffer(parentEntity, out var buff)) buff = childTargetMode == ParentEntityMode.TARGET_IS_TARGET ? cmd.AddBuffer<WESubTextRef>(parentEntity) : default;
+            foreach (var toCopy in toCopyArray)
+            {
+                DoCreateLayoutItem(fromTemplate, modSource, toCopy, parentEntity, targetEntity, ref tdLookup, ref subTextLookup, cmd, ref buff, childTargetMode);
+            }
+        }
 
         private static Entity DoCreateLayoutItem(bool fromTemplate, string modSource, WETextDataXmlTree toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextDataMain> tdLookup,
         ref BufferLookup<WESubTextRef> subTextLookup, EntityCommandBuffer cmd,
