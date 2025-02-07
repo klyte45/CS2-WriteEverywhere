@@ -97,7 +97,7 @@ namespace BelzontWE
                         new Vector2(0, 0),
                     },
                 triangles: kTriangleIndices,
-                verticesCube: kVerticesPositionsCube.Select(x => new Vector3(.5f * proportion * x.x, .5f * x.y, .5f * x.z)).ToArray(),
+                verticesCube: kVerticesPositionsCube.Select(x => new Vector3(.5f * x.x, .5f * x.y, .5f * x.z)).ToArray(),
                 uvCube: kUvCube,
                 trianglesCube: kTriangleIndicesCube,
                  main: main,
@@ -188,7 +188,7 @@ namespace BelzontWE
                                 min
                             },
                         triangles: kTriangleIndices,
-                        verticesCube: kVerticesPositionsCube.Select(x => new Vector3(.5f * proportion * x.x, .5f * x.y, .5f * x.z)).ToArray(),
+                        verticesCube: kVerticesPositionsCube.Select(x => new Vector3(.5f * x.x, .5f * x.y, .5f * x.z)).ToArray(),
                         uvCube: kUvCube,
                         trianglesCube: kTriangleIndicesCube,
                         main: textureAtlas.Main,

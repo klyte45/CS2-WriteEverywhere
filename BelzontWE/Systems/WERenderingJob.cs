@@ -5,7 +5,6 @@ using Unity.Mathematics;
 using UnityEngine;
 using Unity.Burst.Intrinsics;
 using Colossal.Mathematics;
-using Colossal.AssetPipeline.Diagnostic;
 
 
 
@@ -198,8 +197,8 @@ namespace BelzontWE
                             var refRot = parentIsPlaceholder ? default : transform.offsetRotation;
                             var material = m_weMaterialLookup[nextEntity];
                             var isDecal = material.CheckIsDecal(mesh);
-                            var effRot = parentIsPlaceholder ? default : isDecal ? ((Quaternion)transform.offsetRotation) * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)refRot;
-                            var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? scale.xzy : new float3(scale.xy, 1));
+                            var effRot = parentIsPlaceholder ? default : isDecal ? refRot * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)refRot;
+                            var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? (scale.xzy * new float3(mesh.TextType == WESimulationTextType.Image ? mesh.BriWidthMetersUnscaled : 1, 1, 1)) : new float3(scale.xy, 1));
                             if (mesh.HasBRI)
                             {
                                 if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
