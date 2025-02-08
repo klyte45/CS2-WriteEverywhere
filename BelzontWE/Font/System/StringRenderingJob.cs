@@ -52,8 +52,11 @@ namespace BelzontWE.Font
 
             private void DrawGlyphsForString(FixedString512Bytes strOr)
             {
-                var result = new BasicRenderInformationJob();
-                result.m_YAxisOverflows = new RangeVector { min = float.MaxValue, max = float.MinValue };
+                var result = new BasicRenderInformationJob
+                {
+                    originalText = strOr,
+                    m_YAxisOverflows = new RangeVector { min = float.MaxValue, max = float.MinValue }
+                };
 #if JOBS_DEBUG
                 LogUtils.DoLog($"Result created");
 #endif
@@ -61,6 +64,7 @@ namespace BelzontWE.Font
                 var str = ToFilteredString(strOr.ConvertToString());
                 if (string.IsNullOrEmpty(str))
                 {
+                    output.Enqueue(result);
                     return;
                 }
 
@@ -162,7 +166,6 @@ namespace BelzontWE.Font
 
                     result.m_fontBaseLimits = new RangeVector { min = prevGlyph.Font.Descent, max = prevGlyph.Font.Ascent };
                     result.AtlasVersion = AtlasVersion;
-                    result.originalText = strOr;
 #if JOBS_DEBUG
                 
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"result.m_YAxisOverflows.min: {result.m_YAxisOverflows.min}");

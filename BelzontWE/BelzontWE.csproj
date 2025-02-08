@@ -176,6 +176,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Remove="Resources\SourceSansPro-Regular.ttf" />
+    <None Remove="UI\Images\FontHasNoGlyphs.png" />
     <None Remove="UI\Images\FrameBorder.png" />
     <None Remove="UI\Images\FrameParamsFolderRequired.png" />
     <None Remove="UI\Images\FrameParamsImageRequired.png" />
@@ -197,6 +198,7 @@
     <EmbeddedResource Include="UI\Images\FrameParamsInvalidImage.png" />
     <EmbeddedResource Include="UI\Images\FrameParamsInvalidImageAsset.png" />
     <EmbeddedResource Include="UI\Images\FrameParamsNotSet.png" />
+    <EmbeddedResource Include="UI\Images\FontHasNoGlyphs.png" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Screenshots\" />

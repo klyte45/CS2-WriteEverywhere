@@ -3,6 +3,7 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font.Utility;
+using BelzontWE.Sprites;
 using Game.SceneFlow;
 using System;
 using System.Collections;
@@ -333,6 +334,14 @@ namespace BelzontWE.Font
 
             var originalText = brij.originalText.ToString();
             if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] Post job for {originalText} ");
+            if (brij.vertices.Length == 0)
+            {
+                if (originalText.TrimToNull() is not null)
+                {
+                    m_textCache[originalText] = WEAtlasesLibrary.Instance.GetFromLocalAtlases(WEImages.FontHasNoGlyphs);
+                }
+                return;
+            }
             if (brij.AtlasVersion != CurrentAtlas.Version)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} since atlas changed");

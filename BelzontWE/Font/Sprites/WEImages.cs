@@ -8,6 +8,7 @@
         FrameParamsInvalidFolder,
         FrameParamsInvalidImage,
         FrameParamsInvalidImageAsset,
-        FrameParamsNotSet
+        FrameParamsNotSet,
+        FontHasNoGlyphs
     }
 }
