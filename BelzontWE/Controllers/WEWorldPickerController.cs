@@ -82,47 +82,52 @@ namespace BelzontWE
         }
 
 
-        private bool ChangeParent(Entity target, Entity newParent)
+        private bool ChangeParent(Entity sourceLayoutEntity, Entity newParent)
         {
-            if (target == newParent) return false;
-            var parentCheck = newParent;
-            while (EntityManager.TryGetComponent<WETextDataMain>(parentCheck, out var data))
-            {
-                if (data.ParentEntity == target) return false;
-                parentCheck = data.ParentEntity;
-            }
-            if (!EntityManager.TryGetComponent<WETextDataMain>(target, out var weData)) return false;
+            if (!EntityManager.TryGetComponent<WETextDataMain>(sourceLayoutEntity, out var weData)) return false;
+            if (weData.ParentEntity == newParent) return false;
+            CloneAsChild(sourceLayoutEntity, newParent);
+            DoRemoveItem(sourceLayoutEntity);
 
-            if (weData.ParentEntity == newParent) return true;
-            if (weData.TargetEntity != newParent && (!EntityManager.TryGetComponent<WETextDataMain>(newParent, out var weDataParent) || weDataParent.TargetEntity != weData.TargetEntity)) return false;
-            if (!EntityManager.TryGetBuffer<WESubTextRef>(weData.ParentEntity, false, out var buff)) return false;
-            if (!EntityManager.HasBuffer<WESubTextRef>(newParent))
-            {
-                EntityManager.AddBuffer<WESubTextRef>(newParent);
-            }
-            if (!RemoveSubItemRef(buff, target, false)) return false;
-            var newBuff = EntityManager.GetBuffer<WESubTextRef>(newParent, false);
-            newBuff.Add(new WESubTextRef
-            {
-                m_weTextData = target
-            });
-            if (weData.SetNewParent(newParent, EntityManager))
-            {
-                EntityManager.SetComponentData(target, weData);
-            }
+            //var parentCheck = newParent;
+            //while (EntityManager.TryGetComponent<WETextDataMain>(parentCheck, out var data))
+            //{
+            //    if (data.ParentEntity == sourceLayoutEntity) return false;
+            //    parentCheck = data.ParentEntity;
+            //}
+            //if (!EntityManager.TryGetComponent<WETextDataMain>(sourceLayoutEntity, out var weData)) return false;
+
+            //if (weData.ParentEntity == newParent) return true;
+            //if (weData.TargetEntity != newParent && (!EntityManager.TryGetComponent<WETextDataMain>(newParent, out var weDataParent) || weDataParent.TargetEntity != weData.TargetEntity)) return false;
+            //if (!EntityManager.TryGetBuffer<WESubTextRef>(weData.ParentEntity, false, out var buff)) return false;
+            //if (!EntityManager.HasBuffer<WESubTextRef>(newParent))
+            //{
+            //    EntityManager.AddBuffer<WESubTextRef>(newParent);
+            //}
+            //if (!RemoveSubItemRef(buff, sourceLayoutEntity, false)) return false;
+            //var newBuff = EntityManager.GetBuffer<WESubTextRef>(newParent, false);
+            //newBuff.Add(new WESubTextRef
+            //{
+            //    m_weTextData = sourceLayoutEntity
+            //});
+            //if (weData.SetNewParent(newParent, EntityManager))
+            //{
+            //    EntityManager.SetComponentData(sourceLayoutEntity, weData);
+            //}
             ReloadTree();
             return true;
         }
 
 
-        private bool CloneAsChild(Entity target, Entity newParent)
+        private bool CloneAsChild(Entity sourceLayoutEntity, Entity newParent)
         {
-            if (!EntityManager.TryGetComponent<WETextDataMain>(target, out var weData)) return false;
+            if (!EntityManager.HasComponent<WETextDataMain>(sourceLayoutEntity)) return false;
             if (!EntityManager.HasBuffer<WESubTextRef>(newParent))
             {
                 EntityManager.AddBuffer<WESubTextRef>(newParent);
             }
-            WELayoutUtility.DoCreateLayoutItem(XmlUtils.CloneViaXml(WETextDataXmlTree.FromEntity(target, EntityManager)), newParent, weData.TargetEntity, EntityManager);
+            var newTarget = EntityManager.TryGetComponent<WETextDataMain>(newParent, out var mainParent) ? mainParent.TargetEntity : newParent;
+            WELayoutUtility.DoCreateLayoutItem(XmlUtils.CloneViaXml(WETextDataXmlTree.FromEntity(sourceLayoutEntity, EntityManager)), newParent, newTarget, EntityManager);
             ReloadTree();
             return true;
         }
@@ -265,18 +270,22 @@ namespace BelzontWE
         {
             if (IsValidEditingItem())
             {
-                var subEntity = CurrentSubEntity.Value;
-                var main = EntityManager.GetComponentData<WETextDataMain>(CurrentSubEntity.Value);
-                m_executionQueue.Enqueue(() => DoWithBuffer(main.ParentEntity
-                    , (Action<DynamicBuffer<WESubTextRef>>)((buff) =>
-                    {
-                        if (RemoveSubItemRef(buff, subEntity, true))
-                        {
-                            CurrentSubEntity.ChangeValueWithEffects(Entity.Null);
-                            UpdateTree();
-                        }
-                    })));
+                DoRemoveItem(CurrentSubEntity.Value);
             }
+        }
+
+        private void DoRemoveItem(Entity subEntity)
+        {
+            var main = EntityManager.GetComponentData<WETextDataMain>(subEntity);
+            m_executionQueue.Enqueue(() => DoWithBuffer(main.ParentEntity
+                , (Action<DynamicBuffer<WESubTextRef>>)((buff) =>
+                {
+                    if (RemoveSubItemRef(buff, subEntity, true))
+                    {
+                        CurrentSubEntity.ChangeValueWithEffects(Entity.Null);
+                        UpdateTree();
+                    }
+                })));
         }
         #endregion
 

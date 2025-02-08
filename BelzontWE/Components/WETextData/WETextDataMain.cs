@@ -31,9 +31,5 @@ namespace BelzontWE
             ParentEntity = e;
             return true;
         }
-        public void SetNewParentForced(Entity e)
-        {
-            ParentEntity = e;
-        }
     }
 }
