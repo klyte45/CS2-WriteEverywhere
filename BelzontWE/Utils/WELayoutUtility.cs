@@ -67,7 +67,6 @@ namespace BelzontWE
             cmd.AddComponent(newEntity, mesh);
             cmd.AddComponent(newEntity, material);
             cmd.AddComponent(newEntity, transform);
-            if (fromTemplate) cmd.AddComponent(newEntity, new WETextDataSourceMod { modName = modSource ?? "" });
             cmd.AddComponent<WEWaitingPostInstantiation>(newEntity);
 
             if (childTargetMode == ParentEntityMode.TARGET_IS_TARGET)

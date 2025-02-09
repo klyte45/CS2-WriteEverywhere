@@ -97,13 +97,13 @@ namespace BelzontWE
             valueData.Dispose();
         }
 
-        public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity, string templateModName)
+        public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity)
         {
-            UpdateFormulaes(em, targetEntity, templateModName, true);
+            UpdateFormulaes(em, targetEntity, true);
             FontServer.Instance.EnsureFont(fontName);
             return this;
         }
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string templateModName, bool force = false)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, bool force = false)
         {
             if (!force && nextUpdateFrame > Time.frameCount)
             {

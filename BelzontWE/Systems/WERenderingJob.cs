@@ -44,7 +44,6 @@ namespace BelzontWE
             public ComponentLookup<WETextDataMaterial> m_weMaterialLookup;
             public ComponentLookup<WETextDataMesh> m_weMeshLookup;
             public ComponentLookup<WETextDataTransform> m_weTransformLookup;
-            public ComponentLookup<WETextDataSourceMod> m_weSourceModLookup;
 
             private static readonly Bounds3 whiteTextureBounds = new(new(-.5f, -.5f, 0), new(.5f, .5f, 0));
 
@@ -101,8 +100,6 @@ namespace BelzontWE
                     return;
                 }
                 var transform = m_weTransformLookup[nextEntity];
-                var sourceMod = m_weSourceModLookup.TryGetComponent(nextEntity, out var src) ? src.modName : default;
-
 
                 switch (mesh.TextType)
                 {
@@ -134,7 +131,6 @@ namespace BelzontWE
                                     geometryEntity = geometryEntity,
                                     main = m_weMainLookup[nextEntity],
                                     material = m_weMaterialLookup[nextEntity],
-                                    modSource = sourceMod,
                                     mesh = m_weMeshLookup[nextEntity],
                                     transformMatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, -.001f)), transform.offsetRotation, scale2)
                                 });
@@ -159,7 +155,6 @@ namespace BelzontWE
                                     main = m_weMainLookup[nextEntity],
                                     material = material,
                                     mesh = m_weMeshLookup[nextEntity],
-                                    modSource = sourceMod,
                                     transformMatrix = WTmatrix
                                 });
                             }
@@ -212,7 +207,6 @@ namespace BelzontWE
                                             geometryEntity = geometryEntity,
                                             main = m_weMainLookup[nextEntity],
                                             material = m_weMaterialLookup[nextEntity],
-                                            modSource = sourceMod,
                                             mesh = mesh,
                                             transformMatrix = matrix
                                         });
@@ -227,7 +221,6 @@ namespace BelzontWE
                                     geometryEntity = geometryEntity,
                                     main = m_weMainLookup[nextEntity],
                                     material = m_weMaterialLookup[nextEntity],
-                                    modSource = sourceMod,
                                     mesh = mesh,
                                     transformMatrix = matrix
                                 });

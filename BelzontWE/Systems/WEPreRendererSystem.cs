@@ -38,12 +38,11 @@ namespace BelzontWE
             var entities = m_pendingPostInstantiate.ToEntityArray(Allocator.Temp);
             var meshData = m_pendingPostInstantiate.ToComponentDataArray<WETextDataMesh>(Allocator.Temp);
             var mainData = m_pendingPostInstantiate.ToComponentDataArray<WETextDataMain>(Allocator.Temp);
-            var sourceData = m_pendingPostInstantiate.ToComponentDataArray<WETextDataSourceMod>(Allocator.Temp);
             try
             {
                 for (int i = 0; i < entities.Length; i++)
                 {
-                    meshData[i].OnPostInstantiate(EntityManager, mainData[i].TargetEntity, sourceData[i].ToString());
+                    meshData[i].OnPostInstantiate(EntityManager, mainData[i].TargetEntity);
                     EntityManager.SetComponentData(entities[i], meshData[i]);
                     EntityManager.RemoveComponent<WEWaitingPostInstantiation>(entities[i]);
                 }

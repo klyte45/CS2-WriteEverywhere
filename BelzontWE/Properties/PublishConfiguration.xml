@@ -59,7 +59,7 @@ First of all, read the [files repository](https://github.com/klyte45/CS2-WriteEv
 I want to thank the people that helped me with CS2 modding since first days, specially mentioning **yenyang** and **krzychu**. Also thanks **Chameleon**, **Mimonsi** and **Nullpinter** for testing the mod during the development process.</LongDescription>
   <Thumbnail Value="Properties/Thumbnail.png" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/write-everywhere-cities-skylines-2-version.1711901/" />
-  <ModVersion Value="65534.2025.209.1706" />
+  <ModVersion Value="65534.2025.209.1722" />
   <GameVersion Value="1.2.*" />
   <ChangeLog>#  v0.1.1r5 (27-DEC-24)
 - Fixing misbehavior of destination blinds function in some circumstances
