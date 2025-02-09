@@ -16,7 +16,7 @@ namespace BelzontWE
 
         private GCHandle basicRenderInformation;
         private FixedString64Bytes atlas;
-        public FixedString32Bytes originalName;
+        public FixedString64Bytes originalName;
         private FixedString32Bytes fontName;
         internal ushort lastUpdateModReplacements;
         private WETextDataValueString valueData;
@@ -114,20 +114,18 @@ namespace BelzontWE
             switch (textType)
             {
                 case WESimulationTextType.Text:
-                    if (templateModName?.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
+                    if (lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
                     {
                         lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
-                        fontName = WETemplateManager.Instance.GetFontFor(templateModName, originalName);
-                        result = true;
+                        fontName = WETemplateManager.Instance.GetFontFor(originalName, ref result);
                     }
                     result |= valueData.UpdateEffectiveValue(em, geometryEntity);
                     break;
                 case WESimulationTextType.Image:
-                    if (templateModName?.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
+                    if (lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
                     {
                         lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
-                        atlas = WETemplateManager.Instance.GetAtlasFor(templateModName, originalName);
-                        result = true;
+                        atlas = WETemplateManager.Instance.GetAtlasFor(originalName, ref result);
                     }
                     result |= valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString());
                     break;

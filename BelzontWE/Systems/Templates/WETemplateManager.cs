@@ -92,14 +92,6 @@ namespace BelzontWE
                 reader.ReadNullCheck(out WETextDataXmlTree dataTree);
                 try
                 {
-                    LogUtils.DoLog($"DS1 = {dataTree.self}");
-                    LogUtils.DoLog($"DS2 = {dataTree.children?.Length}");
-                    LogUtils.DoLog($"DS3 = {dataTree.Guid}");
-                    LogUtils.DoLog("DESERIAL = " + dataTree.ToXML());
-                }
-                catch { }
-                try
-                {
                     if (dataTree?.children?.Length > 0)
                     {
                         var children = dataTree.children;
@@ -173,15 +165,6 @@ namespace BelzontWE
                 {
                     writer.Write(prefabsWithLayout[j]);
                     var data = WETextDataXmlTree.FromEntity(prefabsWithLayout[j], EntityManager);
-                    try
-                    {
-                        LogUtils.DoLog($"S1 = {data.self}");
-                        LogUtils.DoLog($"S2 = {data.children?.Length}");
-                        LogUtils.DoLog($"S3 = {data.Guid}");
-                        LogUtils.DoLog("SERIAL = " + data.ToXML());
-                    }
-                    catch { }
-
                     writer.WriteNullCheck(data);
                 }
             }
@@ -373,11 +356,12 @@ namespace BelzontWE
                     {
                         if (PrefabTemplates.TryGetValue(prefabData.m_Index, out var newTemplate))
                         {
+                            var guid = newTemplate.Guid;
                             var childEntity = WELayoutUtility.DoCreateLayoutItem(true, newTemplate.ModSource, newTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_FOR_PARENT);
                             if (m_prefabEmptyLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateForPrefabEmpty>(e);
                             cmd.AddComponent<WETemplateForPrefab>(entities[i], new()
                             {
-                                templateRef = newTemplate.Guid,
+                                templateRef = guid,
                                 childEntity = childEntity
                             });
                             continue;
@@ -466,6 +450,7 @@ namespace BelzontWE
                 {
                     var entitiesToUpdate = m_prefabArchetypesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
                     UpdatePrefabArchetypes(entitiesToUpdate);
+                    ModReplacementDataVersion++;
                     entitiesToUpdate.Dispose();
                 }
                 else if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
@@ -673,18 +658,19 @@ namespace BelzontWE
                 var validationResults = CanBePrefabLayout(tree);
                 if (validationResults == 0)
                 {
-                    var effectiveModId = modId ?? "";
-                    if (!m_atlasesMapped.TryGetValue(effectiveModId, out var dictAtlases))
+                    if (modId is string effectiveModId)
                     {
-                        dictAtlases = m_atlasesMapped[effectiveModId] = new();
+                        if (!m_atlasesMapped.TryGetValue(effectiveModId, out var dictAtlases))
+                        {
+                            dictAtlases = m_atlasesMapped[effectiveModId] = new();
+                        }
+                        if (!m_fontsMapped.TryGetValue(effectiveModId, out var dictFonts))
+                        {
+                            dictFonts = m_fontsMapped[effectiveModId] = new();
+                        }
+                        tree.MapFontAndAtlases(effectiveModId, dictAtlases, dictFonts);
+                        tree.ModSource = effectiveModId.TrimToNull();
                     }
-                    if (!m_fontsMapped.TryGetValue(effectiveModId, out var dictFonts))
-                    {
-                        dictFonts = m_fontsMapped[effectiveModId] = new();
-                    }
-                    tree.MapFontAndAtlases(dictAtlases, dictFonts);
-                    tree.ModSource = effectiveModId.TrimToNull();
-
 
                     if (PrefabTemplates.ContainsKey(idx))
                     {
@@ -899,15 +885,27 @@ namespace BelzontWE
         internal void RegisterLoadableTemplatesFolder(Assembly mainAssembly, ModFolder fontFolder) { integrationLoadableTemplatesFromMod[mainAssembly] = fontFolder; }
         internal List<ModFolder> ListModsExtraFolders() => integrationLoadableTemplatesFromMod.Values.ToList();
 
-        internal FixedString32Bytes GetFontFor(string templateModName, FixedString32Bytes originalFontName)
-            => m_fontsReplacements.TryGetValue(templateModName, out var fontList) && fontList.TryGetValue(originalFontName.ToString(), out var fontName)
-                ? (FixedString32Bytes)fontName
-                : default;
+        internal FixedString32Bytes GetFontFor(FixedString64Bytes originalFontName, ref bool haveChanges)
+        {
+            var strOriginal = originalFontName.ToString();
+            if (!strOriginal.Contains(":")) return strOriginal;
+            var decomposedName = strOriginal.Split(":", 2);
+            haveChanges |= true;
+            return m_fontsReplacements.TryGetValue(decomposedName[0], out var fontList) && fontList.TryGetValue(decomposedName[1], out var fontName)
+                        ? (FixedString32Bytes)fontName
+                        : default;
+        }
 
-        internal FixedString32Bytes GetAtlasFor(string templateModName, FixedString32Bytes originalAtlasName)
-            => m_atlasesReplacements.TryGetValue(templateModName, out var atlasList) && atlasList.TryGetValue(originalAtlasName.ToString(), out var atlasName)
-                ? (FixedString32Bytes)atlasName
-                : originalAtlasName;
+        internal FixedString64Bytes GetAtlasFor(FixedString64Bytes originalAtlasName, ref bool haveChanges)
+        {
+            var strOriginal = originalAtlasName.ToString();
+            if (!strOriginal.Contains(":")) return strOriginal;
+            var decomposedName = strOriginal.Split(":", 2);
+            haveChanges |= true;
+            return m_atlasesReplacements.TryGetValue(decomposedName[0], out var atlasList) && atlasList.TryGetValue(decomposedName[1], out var atlasName)
+                        ? atlasName
+                        : strOriginal;
+        }
 
         [XmlRoot("WEModReplacementData")]
         public class ModReplacementDataXml

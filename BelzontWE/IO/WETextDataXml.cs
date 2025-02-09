@@ -78,15 +78,17 @@ namespace BelzontWE
 
         }
 
-        internal void MapFontAndAtlases(HashSet<string> dictAtlases, HashSet<string> dictFonts)
+        internal void MapFontAndAtlases(string modId, HashSet<string> dictAtlases, HashSet<string> dictFonts)
         {
             if (imageMesh != null && imageMesh.atlas.TrimToNull() != null)
             {
                 dictAtlases.Add(imageMesh.atlas);
+                imageMesh.atlas = $"{modId}:{imageMesh.atlas}";
             }
             if (textMesh != null && textMesh.fontName.TrimToNull() != null)
             {
                 dictFonts.Add(textMesh.fontName);
+                textMesh.fontName = $"{modId}:{textMesh.fontName}";
             }
 
         }

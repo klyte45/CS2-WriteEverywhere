@@ -18,7 +18,7 @@ namespace BelzontWE
 
         [XmlElement("self")]
         public WETextDataXml self;
-        [XmlIgnore] public Colossal.Hash128 Guid { get; } = System.Guid.NewGuid();
+        [XmlIgnore] public Colossal.Hash128 Guid { get; private set; } = System.Guid.NewGuid();
 
         [XmlElement("children")]
         public WETextDataXmlTree[] children = new WETextDataXmlTree[0];
@@ -31,7 +31,7 @@ namespace BelzontWE
             var result = new WETextDataXmlTree
             {
                 self = WEXmlExtensions.ToXml(e, em)
-            };            
+            };
             if (em.TryGetBuffer<WESubTextRef>(e, true, out var subTextData))
             {
                 result.children = new WETextDataXmlTree[subTextData.Length];
@@ -68,6 +68,7 @@ namespace BelzontWE
         public void MergeChildren(WETextDataXmlTree other)
         {
             children = children.Concat(other.children).ToArray();
+            Guid = System.Guid.NewGuid();
         }
 
         public WETextDataXmlTree Clone() => XmlUtils.CloneViaXml(this);
@@ -101,14 +102,14 @@ namespace BelzontWE
             }
         }
 
-        internal void MapFontAndAtlases(HashSet< string> dictAtlases, HashSet<string> dictFonts)
+        internal void MapFontAndAtlases(string modId, HashSet<string> dictAtlases, HashSet<string> dictFonts)
         {
-            self.MapFontAndAtlases(dictAtlases, dictFonts);
+            self.MapFontAndAtlases(modId, dictAtlases, dictFonts);
             if (children?.Length > 0)
             {
                 foreach (var child in children)
                 {
-                    child.MapFontAndAtlases(dictAtlases, dictFonts);
+                    child.MapFontAndAtlases(modId, dictAtlases, dictFonts);
                 }
             }
         }
