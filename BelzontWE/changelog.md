@@ -1,3 +1,12 @@
-#  v0.1.1r5 (27-DEC-24)
-- Fixing misbehavior of destination blinds function in some circumstances
-- Added utility functions to cast between Color32 and Color variable types on formulaes. Some game functions require one type and others another...
+#  v0.2.0r0 (??-FEB-25)
+- ADDED DECAL IMAGES SUPPORT - texts not supported for now
+- Added material debug window - available when mod is at debug logging level or more verbose by clicking a button at the WE Tool toolbox
+- Fixed z-gap of child templates from their parents
+- Fixed issue with cut/copy and paste not targeting the right prefab when pasting in another template tree
+- Fixed bug that prevented layouts loaded from XML or city layouts to be deleted
+- Added error image when the text have none of its glyphs supported by the font
+- Final solution against WHY NULL error exploding at i18n Everywhere
+- Fixed issue related to using more than one source template for the same model preventing fonts and atlases replacement from modules
+- Fixed edge case where an outdated prefab template gets the GUID from updated prefab template, preventing it to get the modifications
+- Fixed atlases names being truncated to 32 bytes when referring modules atlases
+- Code cleanup to speed up the rendering code

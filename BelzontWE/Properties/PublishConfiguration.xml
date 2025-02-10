@@ -59,11 +59,20 @@ First of all, read the [files repository](https://github.com/klyte45/CS2-WriteEv
 I want to thank the people that helped me with CS2 modding since first days, specially mentioning **yenyang** and **krzychu**. Also thanks **Chameleon**, **Mimonsi** and **Nullpinter** for testing the mod during the development process.</LongDescription>
   <Thumbnail Value="Properties/Thumbnail.png" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/write-everywhere-cities-skylines-2-version.1711901/" />
-  <ModVersion Value="65534.2025.209.1722" />
+  <ModVersion Value="0.2.0.0" />
   <GameVersion Value="1.2.*" />
-  <ChangeLog>#  v0.1.1r5 (27-DEC-24)
-- Fixing misbehavior of destination blinds function in some circumstances
-- Added utility functions to cast between Color32 and Color variable types on formulaes. Some game functions require one type and others another...</ChangeLog>
+  <ChangeLog>#  v0.2.0r0 (??-FEB-25)
+- ADDED DECAL IMAGES SUPPORT - texts not supported for now
+- Added material debug window - available when mod is at debug logging level or more verbose by clicking a button at the WE Tool toolbox
+- Fixed z-gap of child templates from their parents
+- Fixed issue with cut/copy and paste not targeting the right prefab when pasting in another template tree
+- Fixed bug that prevented layouts loaded from XML or city layouts to be deleted
+- Added error image when the text have none of its glyphs supported by the font
+- Final solution against WHY NULL error exploding at i18n Everywhere
+- Fixed issue related to using more than one source template for the same model preventing fonts and atlases replacement from modules
+- Fixed edge case where an outdated prefab template gets the GUID from updated prefab template, preventing it to get the modifications
+- Fixed atlases names being truncated to 32 bytes when referring modules atlases
+- Code cleanup to speed up the rendering code</ChangeLog>
   <Tag Value="Code Mod" />
   <Screenshot Value="Screenshots\0_main.jpg" />
   <Screenshot Value="Screenshots\0__new_0.jpg" />

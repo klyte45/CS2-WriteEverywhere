@@ -450,7 +450,6 @@ namespace BelzontWE
                 {
                     var entitiesToUpdate = m_prefabArchetypesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
                     UpdatePrefabArchetypes(entitiesToUpdate);
-                    ModReplacementDataVersion++;
                     entitiesToUpdate.Dispose();
                 }
                 else if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
@@ -885,26 +884,34 @@ namespace BelzontWE
         internal void RegisterLoadableTemplatesFolder(Assembly mainAssembly, ModFolder fontFolder) { integrationLoadableTemplatesFromMod[mainAssembly] = fontFolder; }
         internal List<ModFolder> ListModsExtraFolders() => integrationLoadableTemplatesFromMod.Values.ToList();
 
-        internal FixedString32Bytes GetFontFor(FixedString64Bytes originalFontName, ref bool haveChanges)
+        internal FixedString32Bytes GetFontFor(FixedString64Bytes originalFontName, FixedString32Bytes currentFont, ref bool haveChanges)
         {
             var strOriginal = originalFontName.ToString();
             if (!strOriginal.Contains(":")) return strOriginal;
             var decomposedName = strOriginal.Split(":", 2);
-            haveChanges |= true;
-            return m_fontsReplacements.TryGetValue(decomposedName[0], out var fontList) && fontList.TryGetValue(decomposedName[1], out var fontName)
+            var result = m_fontsReplacements.TryGetValue(decomposedName[0], out var fontList) && fontList.TryGetValue(decomposedName[1], out var fontName)
                         ? (FixedString32Bytes)fontName
                         : default;
+            if (result != currentFont)
+            {
+                haveChanges |= true;
+            }
+            return result;
         }
 
-        internal FixedString64Bytes GetAtlasFor(FixedString64Bytes originalAtlasName, ref bool haveChanges)
+        internal FixedString64Bytes GetAtlasFor(FixedString64Bytes originalAtlasName, FixedString64Bytes currentAtlas, ref bool haveChanges)
         {
             var strOriginal = originalAtlasName.ToString();
             if (!strOriginal.Contains(":")) return strOriginal;
             var decomposedName = strOriginal.Split(":", 2);
-            haveChanges |= true;
-            return m_atlasesReplacements.TryGetValue(decomposedName[0], out var atlasList) && atlasList.TryGetValue(decomposedName[1], out var atlasName)
+            var result = m_atlasesReplacements.TryGetValue(decomposedName[0], out var atlasList) && atlasList.TryGetValue(decomposedName[1], out var atlasName)
                         ? atlasName
-                        : strOriginal;
+                        : strOriginal; 
+            if (result != currentAtlas)
+            {
+                haveChanges |= true;
+            }
+            return result;
         }
 
         [XmlRoot("WEModReplacementData")]

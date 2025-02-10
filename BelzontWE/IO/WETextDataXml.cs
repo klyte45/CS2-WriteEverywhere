@@ -4,6 +4,8 @@ using Colossal.OdinSerializer.Utilities;
 using Colossal.Serialization.Entities;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
+
 
 
 #pragma warning disable IDE1006
@@ -80,15 +82,17 @@ namespace BelzontWE
 
         internal void MapFontAndAtlases(string modId, HashSet<string> dictAtlases, HashSet<string> dictFonts)
         {
-            if (imageMesh != null && imageMesh.atlas.TrimToNull() != null)
+            if (imageMesh != null && imageMesh.atlas.TrimToNull() != null && (imageMesh.atlas.StartsWith($"{modId}:") || !imageMesh.atlas.Contains(":")))
             {
-                dictAtlases.Add(imageMesh.atlas);
-                imageMesh.atlas = $"{modId}:{imageMesh.atlas}";
+                var targetAtlas = imageMesh.atlas.Split(":").Last();
+                dictAtlases.Add(targetAtlas);
+                imageMesh.atlas = $"{modId}:{targetAtlas}";
             }
-            if (textMesh != null && textMesh.fontName.TrimToNull() != null)
+            else if (textMesh != null && textMesh.fontName.TrimToNull() != null && (textMesh.fontName.StartsWith($"{modId}:") || !textMesh.fontName.Contains(":")))
             {
-                dictFonts.Add(textMesh.fontName);
-                textMesh.fontName = $"{modId}:{textMesh.fontName}";
+                var targetFont = textMesh.fontName.Split(":").Last();
+                dictFonts.Add(targetFont);
+                textMesh.fontName = $"{modId}:{targetFont}";
             }
 
         }

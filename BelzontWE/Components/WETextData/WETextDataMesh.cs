@@ -117,7 +117,7 @@ namespace BelzontWE
                     if (lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
                     {
                         lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
-                        fontName = WETemplateManager.Instance.GetFontFor(originalName, ref result);
+                        fontName = WETemplateManager.Instance.GetFontFor(originalName, fontName, ref result);
                     }
                     result |= valueData.UpdateEffectiveValue(em, geometryEntity);
                     break;
@@ -125,7 +125,7 @@ namespace BelzontWE
                     if (lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
                     {
                         lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
-                        atlas = WETemplateManager.Instance.GetAtlasFor(originalName, ref result);
+                        atlas = WETemplateManager.Instance.GetAtlasFor(originalName, atlas, ref result);
                     }
                     result |= valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString());
                     break;
