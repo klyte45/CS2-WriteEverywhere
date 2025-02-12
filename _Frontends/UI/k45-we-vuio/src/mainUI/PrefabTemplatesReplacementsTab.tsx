@@ -118,7 +118,7 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
             selectedKey={selectedMod!} onChangeSelection={setSelectedMod} bodyClasses="layoutReplacementTab" >
             {selectedMod && <>
                 <div className="k45_we_layoutReplacementTab_fonts">
-                    {Object.keys(currentFontList).length == 0 ? <div className="emptyDataContainer">{T_noFontsToReplace}</div> : <>
+                    {Object.keys(currentFontList ?? {}).length == 0 ? <div className="emptyDataContainer">{T_noFontsToReplace}</div> : <>
                         <div className="sectionTitle">{T_fontsToReplace}</div>
                         <Scrollable>
                             {Object.entries(currentFontList).map((x, i) => <Tooltip tooltip={x[0]}><EditorRow key={i} label={x[0]}>
@@ -137,19 +137,20 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
                     </>}
                 </div>
                 <div className="k45_we_layoutReplacementTab_atlases">
-                    {Object.keys(currentAtlasList).length == 0 ? <div className="emptyDataContainer">{T_noAtlasToReplace}</div> : <>
+                    {Object.keys(currentAtlasList ?? {}).length == 0 ? <div className="emptyDataContainer">{T_noAtlasToReplace}</div> : <>
                         <div className="sectionTitle">{T_atlasToReplace}</div>
                         <Scrollable >
-                            {Object.entries(currentAtlasList).map((x, i) => <Tooltip tooltip={x[0]}><EditorRow key={i} label={x[0]}><DropdownField
-                                value={x[1] ?? x[0]}
-                                items={(atlasList ?? []).map(x => { return { displayName: { __Type: LocElementType.String, value: !x ? "--DEFAULT--" : x }, value: x } })}
-                                onChange={(y) => {
-                                    LayoutsService.setModAtlasReplacement(selectedMod, x[0], y).then(z => {
-                                        modsReplacementData[selectedMod].atlases[x[0]] = z
-                                        setModReplacementData({ ...modsReplacementData });
-                                    })
-                                }}
-                            /></EditorRow>
+                            {Object.entries(currentAtlasList).map((x, i) => <Tooltip tooltip={x[0]}><EditorRow key={i} label={x[0]}>
+                                <DropdownField
+                                    value={x[1] ?? `${selectedMod}:${x[0]}`}
+                                    items={(atlasList ?? []).map(x => { return { displayName: { __Type: LocElementType.String, value: !x ? "--DEFAULT--" : x }, value: x } })}
+                                    onChange={(y) => {
+                                        LayoutsService.setModAtlasReplacement(selectedMod, x[0], y).then(z => {
+                                            modsReplacementData[selectedMod].atlases[x[0]] = z
+                                            setModReplacementData({ ...modsReplacementData });
+                                        })
+                                    }}
+                                /></EditorRow>
                             </Tooltip>)}
                         </Scrollable>
                     </>}

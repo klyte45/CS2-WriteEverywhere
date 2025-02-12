@@ -906,7 +906,7 @@ namespace BelzontWE
             var decomposedName = strOriginal.Split(":", 2);
             var result = m_atlasesReplacements.TryGetValue(decomposedName[0], out var atlasList) && atlasList.TryGetValue(decomposedName[1], out var atlasName)
                         ? atlasName
-                        : strOriginal; 
+                        : strOriginal;
             if (result != currentAtlas)
             {
                 haveChanges |= true;
@@ -939,12 +939,23 @@ namespace BelzontWE
         }
 
         internal ModReplacementData[] GetModsReplacementData()
-            => m_modsTemplatesFolder.Select(x => new ModReplacementData(
-                    x.Key,
-                    x.Value.name,
-                    (m_atlasesReplacements.TryGetValue(x.Key, out var atlases) ? atlases : new()).Union((m_atlasesMapped.TryGetValue(x.Key, out var mappedAtlases) ? mappedAtlases : new()).ToDictionary(y => y, y => (string)null)).GroupBy(y => y.Key).ToDictionary(y => y.Key, y => y.First().Value),
-                    (m_fontsReplacements.TryGetValue(x.Key, out var fonts) ? fonts : new()).Union((m_fontsMapped.TryGetValue(x.Key, out var mappedFonts) ? mappedFonts : new()).ToDictionary(y => y, y => (string)null)).GroupBy(y => y.Key).ToDictionary(y => y.Key, y => y.First().Value)
-                )).ToArray();
+            => m_modsTemplatesFolder.Select(x =>
+            {
+                var modId = x.Key;
+                var modName = x.Value.name;
+                var atlasesReplacements = MergeDictionaries(modId, m_atlasesMapped, m_atlasesReplacements);
+                Dictionary<string, string> fontsReplacements = MergeDictionaries(modId, m_fontsMapped, m_fontsReplacements);
+                return new ModReplacementData(modId, modName, atlasesReplacements, fontsReplacements);
+            }).ToArray();
+
+        private static Dictionary<string, string> MergeDictionaries(string modId, Dictionary<string, HashSet<string>> mapped, Dictionary<string, Dictionary<string, string>> replacements)
+        {
+            return mapped.TryGetValue(modId, out var mappedSet)
+                ? replacements.TryGetValue(modId, out var replacementDict)
+                    ? mappedSet.ToDictionary(x => x, x => replacementDict.TryGetValue(x, out var font) ? font : null)
+                    : mappedSet.ToDictionary(x => x, x => (string)null)
+                : null;
+        }
 
         internal string SetModAtlasReplacement(string modId, string original, string target)
         {
