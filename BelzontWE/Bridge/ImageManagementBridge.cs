@@ -32,7 +32,7 @@ namespace BelzontWE.Bridge
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly);
             var modIdentifier = modData.asset.identifier;
             var displayName = modData.asset.mod.displayName;
-            var targetAtlasName = WEAtlasesLibrary.GetModAtlasName(mainAssembly, atlasName);
+            var targetAtlasName = WEModIntegrationUtility.GetModAccessName(mainAssembly, atlasName);
             var notifGroup = $"{LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX}:{targetAtlasName}";
             Dictionary<string, ILocElement> args = new()
             {
@@ -80,7 +80,7 @@ namespace BelzontWE.Bridge
             yield return targetAtlasName;
         }
 
-        public static bool CheckImageAtlasExists(Assembly mainAssembly, string atlasName) => WEAtlasesLibrary.Instance.AtlasExists(WEAtlasesLibrary.GetModAtlasName(mainAssembly, atlasName));
+        public static bool CheckImageAtlasExists(Assembly mainAssembly, string atlasName) => WEAtlasesLibrary.Instance.AtlasExists(WEModIntegrationUtility.GetModAccessName(mainAssembly, atlasName));
 
         public static void EnsureAtlasDeleted(Assembly mainAssembly, string atlasName)
         {

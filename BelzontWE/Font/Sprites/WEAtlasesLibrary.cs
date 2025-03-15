@@ -187,7 +187,7 @@ namespace BelzontWE.Sprites
         }
         internal void UnregisterModAtlas(Assembly modId, string atlasName)
         {
-            var key = GetModAtlasName(modId, atlasName);
+            var key = WEModIntegrationUtility.GetModAccessName(modId, atlasName);
             if (ModAtlases.ContainsKey(key))
             {
                 var item = ModAtlases[key];
@@ -198,13 +198,10 @@ namespace BelzontWE.Sprites
 
         internal void RegisterModAtlas(Assembly modId, string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
         {
-            RegisteredMods[GetModIdentifier(modId)] = ModManagementUtils.GetModDataFromMainAssembly(modId);
-            RegisterAtlas(ModAtlases, GetModAtlasName(modId, atlasName), spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset);
+            RegisteredMods[WEModIntegrationUtility.GetModIdentifier(modId)] = ModManagementUtils.GetModDataFromMainAssembly(modId);
+            RegisterAtlas(ModAtlases, WEModIntegrationUtility.GetModAccessName(modId, atlasName), spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset);
         }
 
-        public static string GetModAtlasName(Assembly modId, string atlasName) => $"{GetModIdentifier(modId)}:{atlasName}";
-
-        private static string GetModIdentifier(Assembly modId) => modId.GetName().Name;
 
         private void RegisterLocalAtlas(string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
         {
@@ -345,7 +342,7 @@ namespace BelzontWE.Sprites
                 m_semiWhiteBriMaterial.SetColor(WERenderingHelper.Transmittance, Color.clear);
                 m_semiWhiteBriMaterial.SetFloat("_NormalStrength", 0);
                 m_semiWhiteBriMaterial.SetFloat("_Thickness", 0);
-                m_semiWhiteBriMaterial.SetVector("colossal_TextureArea", new float4(Vector2.zero, Vector2.one));                
+                m_semiWhiteBriMaterial.SetVector("colossal_TextureArea", new float4(Vector2.zero, Vector2.one));
             }
             return m_semiWhiteBriMaterial;
         }
@@ -431,7 +428,7 @@ namespace BelzontWE.Sprites
 
         internal record struct ModAtlasRegistry(string ModId, string ModName, string[] Atlases) { }
         internal ModAtlasRegistry[] ListModAtlases() => RegisteredMods
-            .Select(x => new ModAtlasRegistry(GetModIdentifier(x.Value.asset.assembly), x.Value.asset.mod.displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
+            .Select(x => new ModAtlasRegistry(WEModIntegrationUtility.GetModIdentifier(x.Value.asset.assembly), x.Value.asset.mod.displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
 
 
         [BurstCompile]

@@ -76,6 +76,7 @@ namespace BelzontWE
                     m_WeMainLkp = GetComponentLookup<WETextDataMain>(true),
                     m_templateManagerEntries = layoutsAvailable
                 }.Schedule(m_pendingQueueEntities, Dependency);
+                
                 layoutsAvailable.Dispose(Dependency);
             }
             Dependency.Complete();
@@ -100,7 +101,7 @@ namespace BelzontWE
                 var entities = chunk.GetNativeArray(m_EntityType);
                 var weTextDatas = chunk.GetNativeArray(ref m_dataMainHdl);
                 var weMeshDatas = chunk.GetNativeArray(ref m_dataMeshHdl);
-                var fontDict = FontDictPtr.Target as Dictionary<FixedString32Bytes, FontSystemData>;
+                var fontDict = FontDictPtr.Target as Dictionary<FixedString64Bytes, FontSystemData>;
 
                 for (var i = 0; i < entities.Length; i++)
                 {
@@ -192,7 +193,7 @@ namespace BelzontWE
             }
 
 
-            private bool UpdateTextMesh(Entity e, ref WETextDataMesh weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, Dictionary<FixedString32Bytes, FontSystemData> fontDict)
+            private bool UpdateTextMesh(Entity e, ref WETextDataMesh weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, Dictionary<FixedString64Bytes, FontSystemData> fontDict)
             {
                 if (m_templateUpdaterLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
                 if (text.Trim() == "")

@@ -51,7 +51,7 @@ namespace BelzontWE
         private static int qualitySize = 100;
 
         public static FontServer Instance { get; private set; }
-        private Dictionary<FixedString32Bytes, FontSystemData> LoadedFonts { get; } = new();
+        private Dictionary<FixedString64Bytes, FontSystemData> LoadedFonts { get; } = new();
 
         private EndFrameBarrier m_endFrameBarrier;
 
@@ -147,7 +147,7 @@ namespace BelzontWE
                 DefaultFont.FontSystem.Reset();
             }
         }
-        public bool TryGetFont(FixedString32Bytes name, out FontSystemData data)
+        public bool TryGetFont(FixedString64Bytes name, out FontSystemData data)
         {
             return LoadedFonts.TryGetValue(name, out data);
         }
@@ -160,7 +160,7 @@ namespace BelzontWE
                 action();
             }
             EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
-            var keysToDispose = new List<FixedString32Bytes>();
+            var keysToDispose = new List<FixedString64Bytes>();
             foreach (var (key, data) in LoadedFonts)
             {
                 if (!UpdateFontSystem(data))
@@ -207,7 +207,7 @@ namespace BelzontWE
 
         public string[] GetLoadedFontsNames() => LoadedFonts.Keys.Select(x => x.ToString()).ToArray();
 
-        internal void EnsureFont(FixedString32Bytes fontName)
+        internal void EnsureFont(FixedString64Bytes fontName)
         {
             fontName = fontName.Trim();
             if (fontName == "" || LoadedFonts.ContainsKey(fontName)) return;

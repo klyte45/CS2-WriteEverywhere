@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using Unity.Entities;
+using static BelzontWE.Sprites.WEAtlasesLibrary;
 using static BelzontWE.WETemplateManager;
 
 namespace BelzontWE
@@ -39,12 +40,14 @@ namespace BelzontWE
             callBinder($"{PREFIX}listModsReplacementData", ListModsReplacementData);
             callBinder($"{PREFIX}setModFontReplacement", SetModFontReplacement);
             callBinder($"{PREFIX}setModAtlasReplacement", SetModAtlasReplacement);
+            callBinder($"{PREFIX}setModSubtemplateReplacement", SetModSubtemplateReplacement);
             callBinder($"{PREFIX}saveReplacementSettings", SaveReplacementSettings);
             callBinder($"{PREFIX}loadReplacementSettings", LoadReplacementSettings);
             callBinder($"{PREFIX}checkReplacementSettingFileExists", CheckReplacementSettingFileExists);
             callBinder($"{PREFIX}getLocationSavedReplacements", GetLocationSavedReplacements);
             callBinder($"{PREFIX}getExtensionSavedReplacements", GetExtensionSavedReplacements);
             callBinder($"{PREFIX}openExportedReplacementSettingsFolder", OpenExportedReplacementSettingsFolder);
+            callBinder($"{PREFIX}listModSubtemplates", ListModSubtemplates);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
@@ -115,7 +118,7 @@ namespace BelzontWE
                 targetEntity = weData.TargetEntity;
             }
             var layout = m_templateManager[templateName];
-            var e = WELayoutUtility.DoCreateLayoutItem(layout, parent, targetEntity, EntityManager);
+            WELayoutUtility.DoCreateLayoutItem(layout, parent, targetEntity, EntityManager);
             m_controller.UpdateTree();
             return true;
         }
@@ -201,7 +204,7 @@ namespace BelzontWE
         private void DuplicateCityTemplate(string srcName, string newName) => m_templateManager.DuplicateCityTemplate(srcName, newName);
 
         private string ExportCityLayoutAsXml(string layoutName, string saveName)
-                    => layoutName.TrimToNull() == null || !m_templateManager.CityTemplateExists(layoutName)
+                    => layoutName.TrimToNull() == null || !m_templateManager.CityTemplateExists(layoutName) || layoutName.Contains(":")
                         ? null
                         : CommonExportAsXml(saveName, m_templateManager[layoutName]);
 
@@ -217,12 +220,14 @@ namespace BelzontWE
         private ModReplacementData[] ListModsReplacementData() => m_templateManager.GetModsReplacementData();
         private string SetModFontReplacement(string modId, string original, string target) => m_templateManager.SetModFontReplacement(modId, original, target);
         private string SetModAtlasReplacement(string modId, string original, string target) => m_templateManager.SetModAtlasReplacement(modId, original, target);
+        private string SetModSubtemplateReplacement(string modId, string original, string target) => m_templateManager.SetModSubtemplateReplacement(modId, original, target);
         private string SaveReplacementSettings(string fileName) => m_templateManager.SaveReplacementSettings(fileName);
         private bool LoadReplacementSettings(string filePath) => m_templateManager.LoadReplacementSettings(filePath);
         private bool CheckReplacementSettingFileExists(string fileName) => m_templateManager.CheckReplacementSettingFileExists(fileName);
         private string GetLocationSavedReplacements() => SAVED_MODREPLACEMENTS_FOLDER;
         private string GetExtensionSavedReplacements() => LAYOUT_REPLACEMENTS_EXTENSION;
         private void OpenExportedReplacementSettingsFolder() => RemoteProcess.OpenFolder(SAVED_MODREPLACEMENTS_FOLDER);
+        private ModSubtemplateRegistry[] ListModSubtemplates() => m_templateManager.ListModSubtemplates();
 
     }
 }

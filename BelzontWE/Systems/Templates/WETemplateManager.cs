@@ -42,7 +42,7 @@ namespace BelzontWE
         public const string LAYOUT_REPLACEMENTS_EXTENSION = "weprefabreplace.xml";
         public static WETemplateManager Instance { get; private set; }
 
-        public const int CURRENT_VERSION = 1;
+        public const int CURRENT_VERSION = 2;
 
         private Dictionary<FixedString128Bytes, WETextDataXmlTree> RegisteredTemplates;
         private PrefabSystem m_prefabSystem;
@@ -58,13 +58,23 @@ namespace BelzontWE
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
         private bool m_templatesDirty;
 
+        private Dictionary<string, Dictionary<string, WETextDataXmlTree>> ModsSubTemplates { get; } = new();
+
         public WETextDataXmlTree this[FixedString128Bytes idx]
         {
             get
             {
-                var value = RegisteredTemplates.TryGetValue(idx, out var tree) ? tree : default;
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded {value} @ {idx}");
-                return value;
+                if (!RegisteredTemplates.TryGetValue(idx, out var tree)
+                    && idx.ToString().Split(":", 2) is string[] nameKv
+                    && nameKv.Length == 2
+                    && ModsSubTemplates.TryGetValue(nameKv[0], out var modTemplates)
+                    && modTemplates.TryGetValue(nameKv[1], out var modtemplate)
+                )
+                {
+                    tree = modtemplate;
+                }
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded {tree} @ {idx}");
+                return tree;
             }
         }
 
@@ -114,15 +124,21 @@ namespace BelzontWE
                 reader.Read(out string fontsReplacementData);
                 m_atlasesReplacements.Clear();
                 m_fontsReplacements.Clear();
+                m_subtemplatesReplacements.Clear();
                 m_atlasesReplacements.AddRange(DeserializeReplacementData(atlasesReplacementData));
                 m_fontsReplacements.AddRange(DeserializeReplacementData(fontsReplacementData));
+                if (version >= 2)
+                {
+                    reader.Read(out string subtemplatesReplacements);
+                    m_subtemplatesReplacements.AddRange(DeserializeReplacementData(subtemplatesReplacements));
+                }
             }
             else
             {
                 m_atlasesReplacements.Clear();
                 m_fontsReplacements.Clear();
             }
-            ModReplacementDataVersion = 1;
+            ModReplacementDataVersion = 2;
             m_templatesDirty = true;
         }
 
@@ -178,8 +194,13 @@ namespace BelzontWE
                 .Select(x => (x.Key, x.Value.Where(x => x.Key != x.Value).ToArray()))
                 .Where(x => x.Item2.Length > 0)
                 .Select(x => $"{x.Key}{L1_KV_SEPARATOR}{string.Join(L2_ITEM_SEPARATOR, x.Item2.Select(y => $"{y.Key}{L2_KV_SEPARATOR}{y.Value}"))}"));
+            string subtemplatesReplacements = string.Join('|', m_subtemplatesReplacements
+                .Select(x => (x.Key, x.Value.Where(x => x.Key != x.Value).ToArray()))
+                .Where(x => x.Item2.Length > 0)
+                .Select(x => $"{x.Key}{L1_KV_SEPARATOR}{string.Join(L2_ITEM_SEPARATOR, x.Item2.Select(y => $"{y.Key}{L2_KV_SEPARATOR}{y.Value}"))}"));
             writer.Write(atlasesReplacementData);
             writer.Write(fontsReplacementData);
+            writer.Write(subtemplatesReplacements);
         }
         protected override void OnCreate()
         {
@@ -399,11 +420,24 @@ namespace BelzontWE
                     }
                     var e = entities[i];
                     var dataToBeProcessed = dataToBeProcessedArray[i];
-                    var newData = RegisteredTemplates.TryGetValue(dataToBeProcessed.layoutName, out var targetTemplate) ? new WETemplateUpdater()
+                    WETemplateUpdater newData;
+                    if (dataToBeProcessed.layoutName.ToString().Split(":", 2) is string[] modEntryName && modEntryName.Length == 2)
                     {
-                        templateEntity = targetTemplate.Guid,
-                        childEntity = WELayoutUtility.DoCreateLayoutItem(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
-                    } : default;
+                        var targetTemplate = ModsSubTemplates[modEntryName[0]][modEntryName[1]];
+                        newData = new WETemplateUpdater()
+                        {
+                            templateEntity = targetTemplate.Guid,
+                            childEntity = WELayoutUtility.DoCreateLayoutItem(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
+                        };
+                    }
+                    else
+                    {
+                        newData = RegisteredTemplates.TryGetValue(dataToBeProcessed.layoutName, out var targetTemplate) ? new WETemplateUpdater()
+                        {
+                            templateEntity = targetTemplate.Guid,
+                            childEntity = WELayoutUtility.DoCreateLayoutItem(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
+                        } : default;
+                    }
                     if (m_templateUpdaterLkp.TryGetComponent(e, out var oldCmp))
                     {
                         cmd.AddComponent<Deleted>(oldCmp.childEntity);
@@ -558,7 +592,9 @@ namespace BelzontWE
         public bool IsLoadingLayouts => LoadingPrefabLayoutsCoroutine != null;
         private Coroutine LoadingPrefabLayoutsCoroutine;
         private const string LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID = "loadingPrefabTemplates";
+        private const string LOADING_SUBTEMPLATES_NOTIFICATION_ID = "loadingModSubtemplates";
         private const string ERRORS_LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID = "errorLoadingPrefabTemplates";
+        private const string ERRORS_LOADING_SUBTEMPLATES_NOTIFICATION_ID = "errorLoadingModSubtemplates";
         private unsafe void UpdatePrefabIndexDictionary()
         {
             if (!isPrefabListDirty) return;
@@ -587,11 +623,12 @@ namespace BelzontWE
             yield return LoadTemplatesFromFolder(20, 80f);
         }
 
-        private IEnumerator LoadTemplatesFromFolder(int offsetPercentage, float totalStep, string modName = null)
+        private IEnumerator LoadTemplatesFromFolder(int offsetPercentage, float totalStepFull, string modName = null)
         {
+            var totalStepPrefabTemplates = modName is null ? totalStepFull : totalStepFull * .7f;
             KFileUtils.EnsureFolderCreation(SAVED_PREFABS_FOLDER);
             var currentValues = PrefabTemplates.Keys.ToArray();
-            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.01f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.erasingCachedLayouts");
+            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.01f * totalStepPrefabTemplates)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.erasingCachedLayouts");
             yield return 0;
             if (modName is null)
             {
@@ -600,7 +637,7 @@ namespace BelzontWE
                     PrefabTemplates.Remove(currentValues[i]);
                     if (i % 3 == 0)
                     {
-                        NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + ((.01f + (.09f * ((i + 1f) / currentValues.Length))) * totalStep)),
+                        NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + ((.01f + (.09f * ((i + 1f) / currentValues.Length))) * totalStepPrefabTemplates)),
                             textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.disposedOldLayout", argsText: new()
                             {
                                 ["progress"] = LocalizedString.Value($"{i}/{currentValues.Length}")
@@ -610,7 +647,7 @@ namespace BelzontWE
                 }
                 PrefabTemplates.Clear();
             }
-            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.11f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.searchingForFiles");
+            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.11f * totalStepPrefabTemplates)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.searchingForFiles");
             yield return 0;
             var files = modName != null
                 ? Directory.GetFiles(m_modsTemplatesFolder[modName].rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => (y, m_modsTemplatesFolder[modName].id, $"{m_modsTemplatesFolder[modName].name}: {y[m_modsTemplatesFolder[modName].rootFolder.Length..]}")).ToArray()
@@ -620,87 +657,7 @@ namespace BelzontWE
             var errorsList = new Dictionary<string, LocalizedString>();
             for (int i = 0; i < files.Length; i++)
             {
-                var fileItemFull = files[i];
-                var modId = fileItemFull.Item2;
-                string fileItem = fileItemFull.Item1;
-                string displayName = fileItemFull.Item3;
-                NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + ((.11f + (.89f * ((i + 1f) / files.Length))) * totalStep)),
-                        textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingPrefabLayoutFile", argsText: new()
-                        {
-                            ["fileName"] = LocalizedString.Value(displayName),
-                            ["progress"] = LocalizedString.Value($"{i}/{files.Length}")
-                        });
-                yield return 0;
-                var prefabName = Path.GetFileName(fileItem)[..^(PREFAB_LAYOUT_EXTENSION.Length + 1)];
-                if (!PrefabNameToIndex.TryGetValue(prefabName, out var idx))
-                {
-                    if (modId is null)
-                    {
-                        LogUtils.DoInfoLog($"No prefab loaded with name: {prefabName}, from custom folder: {fileItem.Replace(SAVED_PREFABS_FOLDER, "")}. This is harmless. Skipping...");
-                        errorsList.Add(displayName, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidPrefabName]", null, new Dictionary<string, ILocElement>()
-                        {
-                            ["fileName"] = LocalizedString.Value(displayName.Replace("\\", "\\\\")),
-                            ["prefabName"] = LocalizedString.Value(prefabName)
-                        }));
-                    }
-                    else
-                    {
-
-                        LogUtils.DoLog($"No prefab loaded with name: {prefabName}, but it's from a mod. This is harmless. Skipping...");
-                    }
-                    continue;
-                }
-                var tree = WETextDataXmlTree.FromXML(File.ReadAllText(fileItem));
-                if (tree is null) continue;
-                tree.self = new WETextDataXml { };
-
-                var validationResults = CanBePrefabLayout(tree);
-                if (validationResults == 0)
-                {
-                    if (modId is string effectiveModId)
-                    {
-                        if (!m_atlasesMapped.TryGetValue(effectiveModId, out var dictAtlases))
-                        {
-                            dictAtlases = m_atlasesMapped[effectiveModId] = new();
-                        }
-                        if (!m_fontsMapped.TryGetValue(effectiveModId, out var dictFonts))
-                        {
-                            dictFonts = m_fontsMapped[effectiveModId] = new();
-                        }
-                        tree.MapFontAndAtlases(effectiveModId, dictAtlases, dictFonts);
-                        tree.ModSource = effectiveModId.TrimToNull();
-                    }
-
-                    if (PrefabTemplates.ContainsKey(idx))
-                    {
-                        PrefabTemplates[idx].MergeChildren(tree);
-                    }
-                    else
-                    {
-                        PrefabTemplates[idx] = tree;
-                    }
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {tree} from {fileItem[SAVED_PREFABS_FOLDER.Length..]}");
-                }
-                else if (modId != null)
-                {
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"An integration mod have a broken template for prefab '{prefabName}' (File at: '{fileItem}'). Contact the developer of the corrupted file to get assistance ({validationResults})");
-                }
-                else
-                {
-                    if (fileItem.StartsWith(SAVED_PREFABS_FOLDER))
-                    {
-                        errorsList.Add(displayName, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidFileContent]", null, new Dictionary<string, ILocElement>()
-                        {
-                            ["fileName"] = LocalizedString.Value(displayName),
-                            ["prefabName"] = LocalizedString.Value(prefabName)
-                        }));
-                        LogUtils.DoWarnLog($"Failed loding default template for prefab '{prefabName}', from custom folder: {fileItem.Replace(SAVED_PREFABS_FOLDER, "")}. Check previous lines at mod log to more information ({validationResults})");
-                    }
-                    else
-                    {
-                        LogUtils.DoWarnLog($"Failed loding default template for prefab '{prefabName}', from a mod located at: {fileItem}. Check previous lines at mod log to more information and contact author from that mod for support ({validationResults})");
-                    }
-                }
+                yield return LoadPrefabFileTemplate(offsetPercentage, totalStepPrefabTemplates, files, errorsList, i);
             }
             if (errorsList.Count > 0)
             {
@@ -726,9 +683,225 @@ namespace BelzontWE
                     });
                 });
             }
-            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + totalStep), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingComplete");
+            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + totalStepPrefabTemplates), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingComplete");
             EntityManager.AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty);
+            if (modName is not null)
+            {
+                yield return LoadModSubtemplates((int)(offsetPercentage + totalStepPrefabTemplates), totalStepFull * .3f, modName);
+            }
         }
+
+        private IEnumerator LoadPrefabFileTemplate(int offsetPercentage, float totalStep, (string, string, string)[] files, Dictionary<string, LocalizedString> errorsList, int i)
+        {
+            var fileItemFull = files[i];
+            var fileItem = fileItemFull.Item1;
+            var modId = fileItemFull.Item2;
+            var displayName = fileItemFull.Item3;
+            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + ((.11f + (.89f * ((i + 1f) / files.Length))) * totalStep)),
+                    textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingPrefabLayoutFile", argsText: new()
+                    {
+                        ["fileName"] = LocalizedString.Value(displayName),
+                        ["progress"] = LocalizedString.Value($"{i}/{files.Length}")
+                    });
+            yield return 0;
+            var prefabName = Path.GetFileName(fileItem)[..^(PREFAB_LAYOUT_EXTENSION.Length + 1)];
+            if (!PrefabNameToIndex.TryGetValue(prefabName, out var idx))
+            {
+                if (modId is null)
+                {
+                    LogUtils.DoInfoLog($"No prefab loaded with name: {prefabName}, from custom folder: {fileItem.Replace(SAVED_PREFABS_FOLDER, "")}. This is harmless. Skipping...");
+                    errorsList.Add(displayName, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidPrefabName]", null, new Dictionary<string, ILocElement>()
+                    {
+                        ["fileName"] = LocalizedString.Value(displayName.Replace("\\", "\\\\")),
+                        ["prefabName"] = LocalizedString.Value(prefabName)
+                    }));
+                }
+                else
+                {
+
+                    LogUtils.DoLog($"No prefab loaded with name: {prefabName}, but it's from a mod. This is harmless. Skipping...");
+                }
+                yield break;
+            }
+            var tree = WETextDataXmlTree.FromXML(File.ReadAllText(fileItem));
+            if (tree is null) yield break;
+            tree.self = new WETextDataXml { };
+
+            var validationResults = CanBePrefabLayout(tree);
+            if (validationResults == 0)
+            {
+                if (modId is string effectiveModId)
+                {
+                    ExtractReplaceableContent(tree, effectiveModId);
+                }
+
+                if (PrefabTemplates.ContainsKey(idx))
+                {
+                    PrefabTemplates[idx].MergeChildren(tree);
+                }
+                else
+                {
+                    PrefabTemplates[idx] = tree;
+                }
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {tree} from {fileItem[SAVED_PREFABS_FOLDER.Length..]}");
+            }
+            else if (modId != null)
+            {
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"An integration mod have a broken template for prefab '{prefabName}' (File at: '{fileItem}'). Contact the developer of the corrupted file to get assistance ({validationResults})");
+            }
+            else
+            {
+                if (fileItem.StartsWith(SAVED_PREFABS_FOLDER))
+                {
+                    errorsList.Add(displayName, new LocalizedString("K45::WE.TEMPLATE_MANAGER[invalidFileContent]", null, new Dictionary<string, ILocElement>()
+                    {
+                        ["fileName"] = LocalizedString.Value(displayName),
+                        ["prefabName"] = LocalizedString.Value(prefabName)
+                    }));
+                    LogUtils.DoWarnLog($"Failed loding default template for prefab '{prefabName}', from custom folder: {fileItem.Replace(SAVED_PREFABS_FOLDER, "")}. Check previous lines at mod log to more information ({validationResults})");
+                }
+                else
+                {
+                    LogUtils.DoWarnLog($"Failed loding default template for prefab '{prefabName}', from a mod located at: {fileItem}. Check previous lines at mod log to more information and contact author from that mod for support ({validationResults})");
+                }
+            }
+        }
+
+        private void ExtractReplaceableContent(WETextDataXmlTree tree, string effectiveModId)
+        {
+            if (!m_atlasesMapped.TryGetValue(effectiveModId, out var dictAtlases))
+            {
+                dictAtlases = m_atlasesMapped[effectiveModId] = new();
+            }
+            if (!m_fontsMapped.TryGetValue(effectiveModId, out var dictFonts))
+            {
+                dictFonts = m_fontsMapped[effectiveModId] = new();
+            }
+            if (!m_subtemplatesMapped.TryGetValue(effectiveModId, out var dictSubTemplates))
+            {
+                dictSubTemplates = m_subtemplatesMapped[effectiveModId] = new();
+            }
+            tree.MapFontAtlasesTemplates(effectiveModId, dictAtlases, dictFonts, dictSubTemplates);
+            tree.ModSource = effectiveModId.TrimToNull();
+        }
+        #endregion
+        #region Mod SubTemplates
+
+        private Coroutine reloadingSubtemplatesCoroutine;
+        public void ReloadSubtemplates()
+        {
+            if (reloadingSubtemplatesCoroutine != null) return;
+            reloadingSubtemplatesCoroutine = GameManager.instance.StartCoroutine(LoadModSubtemplates_Coroutine());
+        }
+
+
+        private IEnumerator LoadModSubtemplates_Coroutine()
+        {
+            yield return 0;
+            var mods = ModsSubTemplates.Keys.ToArray();
+            var eachItemPart = 1f / mods.Length;
+            for (int i = 0; i < mods.Length; i++)
+            {
+                string modId = mods[i];
+                yield return LoadModSubtemplates(i * eachItemPart, eachItemPart, modId, true);
+            }
+            m_templatesDirty = true;
+            reloadingSubtemplatesCoroutine = null;
+        }
+
+
+        private IEnumerator LoadModSubtemplates(float offsetPercentage, float totalStep, string modId, bool isStandalone = false)
+        {
+            var groupId = isStandalone ? LOADING_SUBTEMPLATES_NOTIFICATION_ID : LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID;
+
+            NotificationHelper.NotifyProgress(groupId, Mathf.RoundToInt(offsetPercentage + (.01f * totalStep)), titleI18n: LOADING_SUBTEMPLATES_NOTIFICATION_ID);
+            yield return 0;
+
+            NotificationHelper.NotifyProgress(groupId, Mathf.RoundToInt(offsetPercentage + (.11f * totalStep)), textI18n: $"{LOADING_SUBTEMPLATES_NOTIFICATION_ID}.searchingForFiles");
+            yield return 0;
+            var files = Directory.GetFiles(m_modsTemplatesFolder[modId].rootFolder, $"*.{SIMPLE_LAYOUT_EXTENSION}", SearchOption.TopDirectoryOnly)
+                .Select(y => (y, $"{m_modsTemplatesFolder[modId].name}: {y[m_modsTemplatesFolder[modId].rootFolder.Length..]}"))
+                .ToArray();
+
+            if (!ModsSubTemplates.TryGetValue(modId, out var list))
+            {
+                ModsSubTemplates[modId] = list = new Dictionary<string, WETextDataXmlTree>();
+            }
+            else
+            {
+                list.Clear();
+            }
+
+            if (files.Length > 0)
+            {
+                var errorsList = new Dictionary<string, LocalizedString>();
+                for (int i = 0; i < files.Length; i++)
+                {
+                    var fileItemFull = files[i];
+                    var fileItem = fileItemFull.Item1;
+                    var displayName = fileItemFull.Item2;
+                    NotificationHelper.NotifyProgress(groupId, Mathf.RoundToInt(offsetPercentage + ((.11f + (.89f * ((i + 1f) / files.Length))) * totalStep)),
+                            textI18n: $"{groupId}.loadingLayoutFile", argsText: new()
+                            {
+                                ["fileName"] = LocalizedString.Value(displayName),
+                                ["progress"] = LocalizedString.Value($"{i}/{files.Length}")
+                            });
+                    yield return 0;
+                    try
+                    {
+                        var tree = WETextDataXmlTree.FromXML(File.ReadAllText(fileItem));
+                        if (tree is null) yield break;
+                        ExtractReplaceableContent(tree, modId);
+
+
+                        var templateName = Path.GetFileName(fileItem)[..^(SIMPLE_LAYOUT_EXTENSION.Length + 1)];
+                        list[templateName] = tree;
+
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded subtemplate \"{displayName}\"");
+                    }
+                    catch (Exception e)
+                    {
+                        LogUtils.DoWarnLog($"Failed loading subtemplate \"{displayName}\": {e}");
+                        yield break;
+                    }
+
+                }
+                if (errorsList.Count > 0)
+                {
+                    NotificationHelper.NotifyWithCallback(ERRORS_LOADING_SUBTEMPLATES_NOTIFICATION_ID, Colossal.PSI.Common.ProgressState.Warning, () =>
+                    {
+                        var dialog2 = new MessageDialog(
+                            LocalizedString.Id(NotificationHelper.GetModDefaultNotificationTitle(ERRORS_LOADING_SUBTEMPLATES_NOTIFICATION_ID)),
+                            LocalizedString.Id("K45::WE.TEMPLATE_MANAGER[errorDialogHeader]"),
+                            LocalizedString.Value(string.Join("\n", errorsList.Select(x => $"{x.Key}: {x.Value.Translate()}"))),
+                            true,
+                            LocalizedString.Id("Common.OK"),
+                            LocalizedString.Id(BasicIMod.ModData.FixLocaleId(BasicIMod.ModData.GetOptionLabelLocaleID(nameof(BasicModData.GoToLogFolder))))
+                            );
+                        GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog2, (x) =>
+                        {
+                            switch (x)
+                            {
+                                case 2:
+                                    BasicIMod.ModData.GoToLogFolder = true;
+                                    break;
+                            }
+                            NotificationHelper.RemoveNotification(ERRORS_LOADING_SUBTEMPLATES_NOTIFICATION_ID);
+                        });
+                    });
+                }
+                m_templatesDirty = true;
+            }
+            NotificationHelper.NotifyProgress(groupId, Mathf.RoundToInt(offsetPercentage + totalStep), textI18n: $"{LOADING_SUBTEMPLATES_NOTIFICATION_ID}.loadingComplete");
+
+        }
+        internal record struct ModSubtemplateRegistry(string ModId, string ModName, string[] Subtemplates) { }
+
+        internal ModSubtemplateRegistry[] ListModSubtemplates() => m_modsTemplatesFolder
+            .Where(x => ModsSubTemplates.ContainsKey(x.Key))
+            .Select(x => new ModSubtemplateRegistry(x.Key, x.Value.name, ModsSubTemplates[x.Key].Select(y => $"{x.Key}:{y.Key}").ToArray()))
+            .ToArray();
+
         #endregion
         #region City Templates
         public int CanBeTransformedToTemplate(Entity e)
@@ -862,8 +1035,10 @@ namespace BelzontWE
         private readonly Dictionary<Assembly, ModFolder> integrationLoadableTemplatesFromMod = new();
         private readonly Dictionary<string, HashSet<string>> m_atlasesMapped = new();
         private readonly Dictionary<string, HashSet<string>> m_fontsMapped = new();
+        private readonly Dictionary<string, HashSet<string>> m_subtemplatesMapped = new();
         private readonly Dictionary<string, Dictionary<string, string>> m_atlasesReplacements = new();
         private readonly Dictionary<string, Dictionary<string, string>> m_fontsReplacements = new();
+        private readonly Dictionary<string, Dictionary<string, string>> m_subtemplatesReplacements = new();
         public ushort ModReplacementDataVersion { get; private set; } = 0;
 
         private Dictionary<string, (string name, string id, string rootFolder)> m_modsTemplatesFolder = new();
@@ -871,7 +1046,7 @@ namespace BelzontWE
         public void RegisterModTemplatesForLoading(Assembly mainAssembly, string folderTemplatesSource)
         {
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
-            var modId = mainAssembly.GetName().Name;
+            var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
             var modName = modData.mod.displayName;
 
             if (m_modsTemplatesFolder.TryGetValue(modId, out var folder) && folder.rootFolder == folderTemplatesSource) return;
@@ -879,18 +1054,17 @@ namespace BelzontWE
             GameManager.instance.StartCoroutine(LoadTemplatesFromFolder(0, 100, modId));
         }
 
-        public FixedString128Bytes[] GetTemplateAvailableKeys() => RegisteredTemplates.Keys.ToArray();
+        public FixedString128Bytes[] GetTemplateAvailableKeys() => RegisteredTemplates.Keys.Union(ModsSubTemplates.SelectMany(x => x.Value.Keys.Select(y => new FixedString128Bytes($"{x.Key}:{y}")))).ToArray();
 
         internal void RegisterLoadableTemplatesFolder(Assembly mainAssembly, ModFolder fontFolder) { integrationLoadableTemplatesFromMod[mainAssembly] = fontFolder; }
         internal List<ModFolder> ListModsExtraFolders() => integrationLoadableTemplatesFromMod.Values.ToList();
 
-        internal FixedString32Bytes GetFontFor(FixedString64Bytes originalFontName, FixedString32Bytes currentFont, ref bool haveChanges)
+        internal FixedString64Bytes GetFontFor(string strOriginal, FixedString64Bytes currentFont, ref bool haveChanges)
         {
-            var strOriginal = originalFontName.ToString();
             if (!strOriginal.Contains(":")) return strOriginal;
             var decomposedName = strOriginal.Split(":", 2);
             var result = m_fontsReplacements.TryGetValue(decomposedName[0], out var fontList) && fontList.TryGetValue(decomposedName[1], out var fontName)
-                        ? (FixedString32Bytes)fontName
+                        ? (FixedString64Bytes)fontName
                         : default;
             if (result != currentFont)
             {
@@ -899,15 +1073,29 @@ namespace BelzontWE
             return result;
         }
 
-        internal FixedString64Bytes GetAtlasFor(FixedString64Bytes originalAtlasName, FixedString64Bytes currentAtlas, ref bool haveChanges)
+        internal FixedString64Bytes GetAtlasFor(string strOriginal, FixedString64Bytes currentAtlas, ref bool haveChanges)
         {
-            var strOriginal = originalAtlasName.ToString();
             if (!strOriginal.Contains(":")) return strOriginal;
             var decomposedName = strOriginal.Split(":", 2);
-            var result = m_atlasesReplacements.TryGetValue(decomposedName[0], out var atlasList) && atlasList.TryGetValue(decomposedName[1], out var atlasName)
+            FixedString64Bytes result = (m_atlasesReplacements.TryGetValue(decomposedName[0], out var atlasList) && atlasList.TryGetValue(decomposedName[1], out var atlasName)
                         ? atlasName
-                        : strOriginal;
+                        : strOriginal) ?? "";
             if (result != currentAtlas)
+            {
+                haveChanges |= true;
+            }
+            return result;
+        }
+
+
+        internal FixedString64Bytes GetTemplateFor(string strOriginal, string currentTemplate, ref bool haveChanges)
+        {
+            if (!strOriginal.Contains(":")) return strOriginal;
+            var decomposedName = strOriginal.Split(":", 2);
+            FixedString64Bytes result = (m_subtemplatesReplacements.TryGetValue(decomposedName[0], out var templateList) && templateList.TryGetValue(decomposedName[1], out var templateName)
+                        ? templateName
+                        : strOriginal) ?? "";
+            if (result != currentTemplate)
             {
                 haveChanges |= true;
             }
@@ -927,14 +1115,16 @@ namespace BelzontWE
             [XmlIgnore] public string displayName;
             public StringableXmlDictionary atlases;
             public StringableXmlDictionary fonts;
+            public StringableXmlDictionary subtemplates;
 
             public ModReplacementData() { }
-            internal ModReplacementData(string modId, string displayName, Dictionary<string, string> atlases, Dictionary<string, string> fonts)
+            internal ModReplacementData(string modId, string displayName, Dictionary<string, string> atlases, Dictionary<string, string> fonts, Dictionary<string, string> subtemplates)
             {
                 this.modId = modId;
                 this.displayName = displayName;
                 this.atlases = new(); this.atlases.AddRange(atlases);
                 this.fonts = new(); this.fonts.AddRange(fonts);
+                this.subtemplates = new(); this.subtemplates.AddRange(subtemplates);
             }
         }
 
@@ -944,15 +1134,16 @@ namespace BelzontWE
                 var modId = x.Key;
                 var modName = x.Value.name;
                 var atlasesReplacements = MergeDictionaries(modId, m_atlasesMapped, m_atlasesReplacements);
-                Dictionary<string, string> fontsReplacements = MergeDictionaries(modId, m_fontsMapped, m_fontsReplacements);
-                return new ModReplacementData(modId, modName, atlasesReplacements, fontsReplacements);
+                var fontsReplacements = MergeDictionaries(modId, m_fontsMapped, m_fontsReplacements);
+                var subtemplateReplacements = MergeDictionaries(modId, m_subtemplatesMapped, m_subtemplatesReplacements);
+                return new ModReplacementData(modId, modName, atlasesReplacements, fontsReplacements, subtemplateReplacements);
             }).ToArray();
 
         private static Dictionary<string, string> MergeDictionaries(string modId, Dictionary<string, HashSet<string>> mapped, Dictionary<string, Dictionary<string, string>> replacements)
         {
             return mapped.TryGetValue(modId, out var mappedSet)
                 ? replacements.TryGetValue(modId, out var replacementDict)
-                    ? mappedSet.ToDictionary(x => x, x => replacementDict.TryGetValue(x, out var font) ? font : null)
+                    ? mappedSet.ToDictionary(x => x, x => replacementDict.TryGetValue(x, out var data) ? data : null)
                     : mappedSet.ToDictionary(x => x, x => (string)null)
                 : null;
         }
@@ -985,25 +1176,44 @@ namespace BelzontWE
 
         internal string SetModFontReplacement(string modId, string original, string target)
         {
-            if (m_fontsMapped.ContainsKey(modId))
+            if (m_fontsMapped.TryGetValue(modId, out var mapping) && mapping.Contains(original))
             {
                 if (!m_fontsReplacements.TryGetValue(modId, out var fonts))
                 {
                     fonts = m_fontsReplacements[modId] = new();
                 }
-                if (m_fontsMapped[modId].Contains(original))
+                unchecked
                 {
-                    unchecked
-                    {
-                        ModReplacementDataVersion++;
-                    }
-                    if (target.TrimToNull() is null)
-                    {
-                        fonts.Remove(original);
-                        return null;
-                    }
-                    return fonts[original] = target.TrimToNull() ?? original;
+                    ModReplacementDataVersion++;
                 }
+                if (target.TrimToNull() is null)
+                {
+                    fonts.Remove(original);
+                    return null;
+                }
+                return fonts[original] = target.TrimToNull() ?? original;
+            }
+
+            return null;
+        }
+        internal string SetModSubtemplateReplacement(string modId, string original, string target)
+        {
+            if (m_subtemplatesMapped.TryGetValue(modId, out var mapping) && mapping.Contains(original))
+            {
+                if (!m_subtemplatesReplacements.TryGetValue(modId, out var subtemplates))
+                {
+                    subtemplates = m_subtemplatesReplacements[modId] = new();
+                }
+                unchecked
+                {
+                    ModReplacementDataVersion++;
+                }
+                if (target.TrimToNull() is null)
+                {
+                    subtemplates.Remove(original);
+                    return null;
+                }
+                return subtemplates[original] = target.TrimToNull() ?? original;
             }
             return null;
         }
@@ -1030,8 +1240,10 @@ namespace BelzontWE
                 var content = XmlUtils.DefaultXmlDeserialize<ModReplacementDataXml>(File.ReadAllText(fullPath));
                 m_atlasesReplacements.Clear();
                 m_fontsReplacements.Clear();
+                m_subtemplatesReplacements.Clear();
                 m_atlasesReplacements.AddRange(m_atlasesMapped.Keys.Select(x => (content.Mods.Where(y => y.modId == x).FirstOrDefault()) ?? new() { modId = x }).ToDictionary(x => x.modId, x => x.atlases ?? new()));
-                m_fontsReplacements.AddRange(m_fontsMapped.Keys.Select(x => (content.Mods.Where(y => y.modId == x).FirstOrDefault()) ?? new() { modId = x }).ToDictionary(x => x.modId, x => x.fonts ?? new())); ;
+                m_fontsReplacements.AddRange(m_fontsMapped.Keys.Select(x => (content.Mods.Where(y => y.modId == x).FirstOrDefault()) ?? new() { modId = x }).ToDictionary(x => x.modId, x => x.fonts ?? new()));
+                m_subtemplatesReplacements.AddRange(m_subtemplatesMapped.Keys.Select(x => (content.Mods.Where(y => y.modId == x).FirstOrDefault()) ?? new() { modId = x }).ToDictionary(x => x.modId, x => x.subtemplates ?? new()));
                 unchecked
                 {
                     ModReplacementDataVersion++;

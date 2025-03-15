@@ -310,7 +310,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.removeItem()} src={i_delete} tooltip={T_delete} focusKey={FocusDisabled} className={buttonClass} />
             </EditorItemRow>
         </Panel>
-        {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissable={false} message={alertToDisplay} confirm={"OK"} />}
+        {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissible={false} message={alertToDisplay} confirm={"OK"} />}
         <StringInputWithOverrideDialog dialogTitle={T_addItemDialogTitle} dialogPromptText={T_addItemDialogPromptText} dialogOverrideText={T_confirmOverrideSaveAsCityTemplate}
             isActive={savingCityTemplate} setIsActive={setSavingCityTemplate}
             isShortCircuitCheckFn={(x) => !x || !wps.CurrentSubEntity.value}

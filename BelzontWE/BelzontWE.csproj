@@ -190,6 +190,9 @@
     <Resource Remove="README.md" />
   </ItemGroup>
   <ItemGroup>
+    <Screenshots Remove="Screenshots\0_main02.jpg" />
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="Resources\SourceSansPro-Regular.ttf" />
     <EmbeddedResource Include="UI\Images\FrameBorder.png" />
     <EmbeddedResource Include="UI\Images\FrameParamsFolderRequired.png" />
@@ -199,9 +202,6 @@
     <EmbeddedResource Include="UI\Images\FrameParamsInvalidImageAsset.png" />
     <EmbeddedResource Include="UI\Images\FrameParamsNotSet.png" />
     <EmbeddedResource Include="UI\Images\FontHasNoGlyphs.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Screenshots\" />
   </ItemGroup>
 
 </Project>

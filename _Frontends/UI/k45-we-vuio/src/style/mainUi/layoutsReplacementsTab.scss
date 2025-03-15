@@ -1,16 +1,4 @@
 .k45_we_tabWithContent_body.layoutReplacementTab {
-    display: flex;
-    flex-direction: row;
-
-    >div {
-        display: flex;
-        width: 50%;
-        padding: 5rem;
-        flex-direction: column;
-        overflow: hidden;
-        position: relative;
-    }
-
     .sectionTitle {
         font-size: 200%;
         color: var(--accentColorNormal);
@@ -21,14 +9,10 @@
         padding-top: 5rem;
     }
 
-    .emptyDataContainer {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-
     div[class^=row_] {
+        padding-top: 5rem;
+        padding-bottom: 5rem;
+
         >div[class^=label_] {
             padding-right: 5rem;
             max-width: 66%;
@@ -42,6 +26,10 @@
             [class^=dropdown-toggle_] {
                 color: white;
             }
+        }
+
+        &:hover {
+            background-color: var(--sectionBackgroundColorLight);
         }
     }
 }

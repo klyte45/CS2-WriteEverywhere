@@ -14,6 +14,8 @@ using Game.Tools;
 using Game.Common;
 using System.Collections.Generic;
 using Game.Prefabs;
+using Belzont.Interfaces;
+
 
 #if BURST
 using UnityEngine.Scripting;
@@ -166,7 +168,7 @@ namespace BelzontWE
                             {
                                 mesh.ClearTemplateDirty();
                                 cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
-                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType}\nTEMPLATE DIRTY");
+                                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - {mesh.originalName}\nTEMPLATE DIRTY");
                             }
                             doRender = m_pickerTool.IsSelected;
                             break;

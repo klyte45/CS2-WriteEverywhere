@@ -1,6 +1,5 @@
 ﻿using Belzont.Utils;
 using Colossal.Entities;
-using Colossal.OdinSerializer.Utilities;
 using System.Runtime.InteropServices;
 using Unity.Entities;
 using UnityEngine;
@@ -130,7 +129,7 @@ namespace BelzontWE.Utils
             => value is null ? default : new()
             {
                 FontName = value.fontName ?? "",
-                originalName = value.fontName ?? "",
+                originalName = $"{value.fontName}",
                 MaxWidthMeters = value.maxWidthMeters,
                 ValueData = value.text?.ToComponent() ?? default,
                 TextType = value.textType
@@ -145,7 +144,7 @@ namespace BelzontWE.Utils
             => value is null ? default : new()
             {
                 Atlas = value.atlas ?? "",
-                originalName = value.atlas ?? "",
+                originalName = $"{value.atlas}",
                 ValueData = value.image?.ToComponent() ?? default,
                 TextType = value.textType
             };
@@ -158,8 +157,10 @@ namespace BelzontWE.Utils
             => value is null ? default : new()
             {
                 ValueData = value.layout.ToComponent(),
-                TextType = value.textType
+                TextType = value.textType,
+                originalName = $"{value.layout.defaultValue}",
             };
+
         public static WETextDataXml.MeshDataWhiteTextureXml ToWhiteTextureXml(this WETextDataMesh value)
             => new() { };
         public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataWhiteTextureXml value)

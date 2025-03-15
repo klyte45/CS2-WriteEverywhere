@@ -49,12 +49,14 @@ export class LayoutsService {
     static async listModsReplacementData(): Promise<ModReplacementData[]> { return await engine.call("k45::we.layouts.listModsReplacementData"); }
     static async setModFontReplacement(modId: string, original: string, target: string): Promise<string> { return await engine.call("k45::we.layouts.setModFontReplacement", modId, original, target); }
     static async setModAtlasReplacement(modId: string, original: string, target: string): Promise<string> { return await engine.call("k45::we.layouts.setModAtlasReplacement", modId, original, target); }
+    static async setModSubtemplateReplacement(modId: string, original: string, target: string): Promise<string> { return await engine.call("k45::we.layouts.setModSubtemplateReplacement", modId, original, target); }
     static async saveReplacementSettings(fileName: string): Promise<string> { return await engine.call("k45::we.layouts.saveReplacementSettings", fileName); }
     static async loadReplacementSettings(filePath: string): Promise<boolean> { return await engine.call("k45::we.layouts.loadReplacementSettings", filePath); }
     static async checkReplacementSettingFileExists(fileName: string | undefined): Promise<boolean> { return await engine.call("k45::we.layouts.checkReplacementSettingFileExists", fileName); }
     static async getLocationSavedReplacements(): Promise<string> { return await engine.call("k45::we.layouts.getLocationSavedReplacements"); }
     static async getExtensionSavedReplacements(): Promise<string> { return await engine.call("k45::we.layouts.getExtensionSavedReplacements"); }
     static async openExportedReplacementSettingsFolder(): Promise<void> { return await engine.call("k45::we.layouts.openExportedReplacementSettingsFolder"); }
+    static async listModSubtemplates(): Promise<ModSubtemplateRegistry[]> { return await engine.call("k45::we.layouts.listModSubtemplates"); }
 }
 
 export type CityDetailResponse = {
@@ -67,5 +69,11 @@ export type ModReplacementData = {
     displayName: string
     atlases: Record<string, string>
     fonts: Record<string, string>
+    subtemplates: Record<string, string>
 }
 
+export type ModSubtemplateRegistry = {
+    ModId: string
+    ModName: string
+    Subtemplates: string[]
+}

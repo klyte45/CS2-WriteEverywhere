@@ -14,7 +14,7 @@ using BelzontWE.Sprites;
 
 namespace BelzontWE
 {
-    [FileLocation("ModsSettings\\Klyte45Mods\\WriteEverywhere\\settings")]
+    [FileLocation("K45_WE_settings")]
     [SettingsUIShowGroupName(kLogSection, kFontsSection, kSpritesSection,
          kToolControlsSection, kItemEditing, kViewPerspectiveSection)]
     [SettingsUIMouseAction(kActionApplyMouse, ActionType.Button, false, false, new string[] { "K45_WE.Tool" })]

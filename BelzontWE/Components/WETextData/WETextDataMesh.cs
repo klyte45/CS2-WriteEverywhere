@@ -16,8 +16,8 @@ namespace BelzontWE
 
         private GCHandle basicRenderInformation;
         private FixedString64Bytes atlas;
-        public FixedString64Bytes originalName;
-        private FixedString32Bytes fontName;
+        public FixedString128Bytes originalName;
+        private FixedString64Bytes fontName;
         internal ushort lastUpdateModReplacements;
         private WETextDataValueString valueData;
         private bool dirty;
@@ -38,7 +38,7 @@ namespace BelzontWE
             }
         }
         public FixedString64Bytes Atlas { readonly get => atlas; set { atlas = value; templateDirty = dirty = true; } }
-        public FixedString32Bytes FontName { readonly get => fontName; set { fontName = value; templateDirty = dirty = true; } }
+        public FixedString64Bytes FontName { readonly get => fontName; set { fontName = value; templateDirty = dirty = true; } }
         public WETextDataValueString ValueData { readonly get => valueData; set => valueData = value; }
         public int MinLod { get; set; }
         public float3 LodReferenceScale { get; set; }
@@ -95,6 +95,7 @@ namespace BelzontWE
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             basicRenderInformation = default;
             valueData.Dispose();
+
         }
 
         public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity)
@@ -114,23 +115,28 @@ namespace BelzontWE
             switch (textType)
             {
                 case WESimulationTextType.Text:
-                    if (lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
+                    if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
                     {
                         lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
-                        fontName = WETemplateManager.Instance.GetFontFor(originalName, fontName, ref result);
+                        fontName = WETemplateManager.Instance.GetFontFor(originalName.ToString(), fontName, ref result);
                     }
                     result |= valueData.UpdateEffectiveValue(em, geometryEntity);
                     break;
                 case WESimulationTextType.Image:
-                    if (lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
+                    if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
                     {
                         lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
-                        atlas = WETemplateManager.Instance.GetAtlasFor(originalName, atlas, ref result);
+                        atlas = WETemplateManager.Instance.GetAtlasFor(originalName.ToString(), atlas, ref result);
                     }
                     result |= valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString());
                     break;
                 case WESimulationTextType.Placeholder:
-                    result = valueData.UpdateEffectiveValue(em, geometryEntity);
+                    if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
+                    {
+                        lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
+                        valueData.DefaultValue = WETemplateManager.Instance.GetTemplateFor(originalName.ToString(), valueData.DefaultValue, ref result).ToString();
+                    }
+                    result |= valueData.UpdateEffectiveValue(em, geometryEntity);
                     break;
                 case WESimulationTextType.WhiteTexture:
                     templateDirty = dirty = false;

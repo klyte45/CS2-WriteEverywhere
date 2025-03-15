@@ -80,7 +80,7 @@ namespace BelzontWE
 
         }
 
-        internal void MapFontAndAtlases(string modId, HashSet<string> dictAtlases, HashSet<string> dictFonts)
+        internal void MapFontAtlasesTemplates(string modId, HashSet<string> dictAtlases, HashSet<string> dictFonts, HashSet<string> dictTemplates)
         {
             if (imageMesh != null && imageMesh.atlas.TrimToNull() != null && (imageMesh.atlas.StartsWith($"{modId}:") || !imageMesh.atlas.Contains(":")))
             {
@@ -93,6 +93,12 @@ namespace BelzontWE
                 var targetFont = textMesh.fontName.Split(":").Last();
                 dictFonts.Add(targetFont);
                 textMesh.fontName = $"{modId}:{targetFont}";
+            }
+            else if (layoutMesh != null && layoutMesh.layout.defaultValue is string layoutName && layoutName.TrimToNull() != null && (layoutName.StartsWith($"{modId}:") || !layoutName.Contains(":")))
+            {
+                var targetLayout = layoutName.Split(":").Last();
+                dictTemplates.Add(targetLayout);
+                layoutMesh.layout.defaultValue = $"{modId}:{targetLayout}";
             }
 
         }

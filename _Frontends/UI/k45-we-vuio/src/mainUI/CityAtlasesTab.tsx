@@ -148,7 +148,7 @@ export const CityAtlasesTab = (props: Props) => {
             maxLength={30} isActive={isCopyingToCity} setIsActive={setIsCopyingToCity} actionOnSuccess={onCopyToCity}
         />
         <Portal>
-            {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissable={false} message={alertToDisplay} confirm={"OK"} />}
+            {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissible={false} message={alertToDisplay} confirm={"OK"} />}
             {displayingModal()}
         </Portal>
     </>

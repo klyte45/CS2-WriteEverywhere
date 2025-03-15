@@ -351,3 +351,4 @@ MigrationBackup/
 
 *.pid
 *.drawio.bkp
+/BelzontWE/Properties/PublishConfiguration.xml
