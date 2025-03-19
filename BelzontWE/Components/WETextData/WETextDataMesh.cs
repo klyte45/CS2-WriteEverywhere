@@ -57,6 +57,7 @@ namespace BelzontWE
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             basicRenderInformation = default;
             MinLod = 0;
+            Bounds = new Bounds3(new float3(-.5f, -.5f, 0), new float3(.5f, .5f, 0));
         }
         public static WETextDataMesh CreateDefault(Entity target, Entity? parent = null)
             => new()

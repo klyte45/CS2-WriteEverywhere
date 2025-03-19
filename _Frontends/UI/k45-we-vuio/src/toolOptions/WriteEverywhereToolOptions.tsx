@@ -3,7 +3,7 @@ import { useValue } from "cs2/api";
 import { tool } from "cs2/bindings";
 import { ModuleRegistryExtend } from "cs2/modding";
 import { useCallback, useEffect, useState } from "react";
-import { WorldPickerService } from "services/WorldPickerService";
+import { WEPlacementPivot, WorldPickerService } from "services/WorldPickerService";
 import { translate } from "../utils/translate";
 import { WETextAppearenceSettings } from "./WETextAppearenceSettings";
 import { WETextValueSettings } from "./WETextValueSettings";
@@ -12,7 +12,7 @@ import { WETextShaderProperties } from "./WETextShaderProperties";
 import { WEFormulaeEditor } from "./WEFormulaeEditor";
 import i_debug from "../images/debug.svg"
 import { WEDebugWindow } from "./WEDebugWindow";
-import { ShaderPropertyType } from "services/DebugService";
+import { ObjectTyped } from "object-typed";
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
 
@@ -27,6 +27,10 @@ const i_moveModeHorizontal = "coui://uil/Standard/ArrowsMoveLeftRight.svg";
 const i_moveModeVertical = "coui://uil/Standard/ArrowsMoveUpDown.svg";
 const i_AppearenceBtnIcon = "coui://uil/Standard/ColorPalette.svg";
 const i_ShaderBtnIcon = "coui://uil/Standard/HouseAlternative.svg";
+
+
+const i_unselectedPivot = "coui://uil/Standard/Circle.svg";
+const i_selectedPivot = "coui://uil/Standard/CircleXClose.svg";
 
 const iarr_moveMode = [i_moveModeAll, i_moveModeHorizontal, i_moveModeVertical]
 
@@ -52,6 +56,7 @@ const WEWorldPickerToolPanel = () => {
     const L_itemName = translate("toolOption.itemName"); //"Name";
     const L_mousePrecision = translate("toolOption.mousePrecision"); //"Mouse precision";
     const L_editingPlane = translate("toolOption.editingPlane"); //"Editing plane";
+    const L_pivot = translate("toolOption.pivot"); //"Position"
     const L_position = translate("toolOption.position"); //"Position"
     const L_rotation = translate("toolOption.rotation"); //"Rotation"
     const L_actions = translate("toolOption.actions"); //"Actions"
@@ -66,6 +71,25 @@ const WEWorldPickerToolPanel = () => {
     const T_lockCamera = translate("toolOption.lockCamera.tooltip"); //"Lock camera to editing plane area and angle"
     const T_AppearenceBtn = translate("toolOption.AppearenceBtn.tooltip"); //"Appearance settings"
     const T_ShaderBtn = translate("toolOption.ShaderBtn.tooltip"); //"Shader settings"
+    const T_pivot_Left = translate("toolOption.pivot_Left.tooltip"); //"move in XY, rotate in Z (front)"
+    const T_pivot_Center = translate("toolOption.pivot_Center.tooltip"); //"move in ZY, rotate in X (right)"
+    const T_pivot_Right = translate("toolOption.pivot_Right.tooltip"); //"move in XZ, rotate in Y (top)"
+    const T_pivot_Top = translate("toolOption.pivot_Top.tooltip"); //"move in XY, rotate in Z (front)"
+    const T_pivot_Middle = translate("toolOption.pivot_Middle.tooltip"); //"move in ZY, rotate in X (right)"
+    const T_pivot_Bottom = translate("toolOption.pivot_Bottom.tooltip"); //"move in XZ, rotate in Y (top)"
+
+    const descriptionPivotPosition: Record<WEPlacementPivot, string> = {
+        [WEPlacementPivot.TopLeft]: `${T_pivot_Top}, ${T_pivot_Left}`,
+        [WEPlacementPivot.TopCenter]: `${T_pivot_Top}, ${T_pivot_Center}`,
+        [WEPlacementPivot.TopRight]: `${T_pivot_Top}, ${T_pivot_Right}`,
+        [WEPlacementPivot.MiddleLeft]: `${T_pivot_Middle}, ${T_pivot_Left}`,
+        [WEPlacementPivot.MiddleCenter]: `${T_pivot_Middle}, ${T_pivot_Center}`,
+        [WEPlacementPivot.MiddleRight]: `${T_pivot_Middle}, ${T_pivot_Right}`,
+        [WEPlacementPivot.BottomLeft]: `${T_pivot_Bottom}, ${T_pivot_Left}`,
+        [WEPlacementPivot.BottomCenter]: `${T_pivot_Bottom}, ${T_pivot_Center}`,
+        [WEPlacementPivot.BottomRight]: `${T_pivot_Bottom}, ${T_pivot_Right}`,
+    }
+
 
     const Tarr_moveMode = [
         `${translate("toolOption.moveMode.tooltip")} ${translate("toolOption.moveMode.descriptionBoth")}`,// "Toggle between modes to lock/unlock a axis in current plane. Currently: Move in any direction",
@@ -160,6 +184,23 @@ const WEWorldPickerToolPanel = () => {
                         <div style={{ width: "10rem" }}></div>
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentMoveMode.value > 0} onSelect={() => wps.CurrentMoveMode.set((wps.CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[wps.CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[wps.CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
+                    </VanillaComponentResolver.instance.Section>
+                    <VanillaComponentResolver.instance.Section title={L_pivot}>
+                        {ObjectTyped.values(WEPlacementPivot)
+                            .filter(x => typeof x == "number")
+                            .map(x => <>
+                                <VanillaComponentResolver.instance.ToolButton
+                                    key={x}
+                                    tooltip={descriptionPivotPosition[x]}
+                                    selected={transform.Pivot.value == x}
+                                    onSelect={() => transform.Pivot.set(x)}
+                                    src={transform.Pivot.value == x ? i_selectedPivot : i_unselectedPivot}
+                                    focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
+                                    className={VanillaComponentResolver.instance.toolButtonTheme.button} />
+                                {(x & 3) == 2 ? <div style={{ flexBasis:"100%"}} /> : <></>}
+                            </>)
+                        }
+
                     </VanillaComponentResolver.instance.Section>
                     <VectorSectionEditable title={L_position}
                         valueGetter={() => transform.CurrentPosition.value?.map(x => x.toFixed(3))}

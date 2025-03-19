@@ -105,10 +105,11 @@ namespace BelzontWE
 
         public class TransformXml : ISerializable
         {
-            private const int CURRENT_VERSION = 1;
+            private const int CURRENT_VERSION = 2;
             public Vector3Xml offsetPosition = new();
             public Vector3Xml offsetRotation = new();
             public Vector3Xml scale = (Vector3Xml)Vector3.one;
+            [XmlAttribute] public WEPlacementPivot pivot = WEPlacementPivot.MiddleCenter;
             [XmlAttribute][DefaultValue(false)] public bool isAbsoluteScale;
 
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
@@ -118,6 +119,7 @@ namespace BelzontWE
                 writer.Write((Vector3)offsetRotation);
                 writer.Write((Vector3)scale);
                 writer.Write(isAbsoluteScale);
+                writer.Write(pivot);
             }
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
             {
@@ -137,6 +139,14 @@ namespace BelzontWE
                 if (version >= 1)
                 {
                     reader.Read(out isAbsoluteScale);
+                }
+                if (version >= 2)
+                {
+                    reader.Read(out pivot, WEPlacementPivot.MiddleCenter);
+                }
+                else
+                {
+                    pivot = WEPlacementPivot.MiddleCenter;
                 }
             }
         }

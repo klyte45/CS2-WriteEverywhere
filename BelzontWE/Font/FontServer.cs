@@ -196,7 +196,7 @@ namespace BelzontWE
             }
             catch (Exception e)
             {
-                LogUtils.DoWarnLog($"Error on UpdateFontSystem for {data.Name}: {e}");
+                LogUtils.DoWarnLog($"Error on UpdateFontSystem for {data.Name ?? "<Default>"}: {e.Message}\n{e}");
                 return false;
             }
         }

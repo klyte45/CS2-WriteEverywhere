@@ -8,6 +8,7 @@ namespace BelzontWE
         public float3 offsetPosition;
         public quaternion offsetRotation;
         public float3 scale;
+        public WEPlacementPivot pivot;
         public bool useAbsoluteSizeEditing;
         public static WETextDataTransform CreateDefault(Entity target, Entity? parent = null)
             => new()
@@ -15,6 +16,7 @@ namespace BelzontWE
                 offsetPosition = new(0, 0, 0),
                 offsetRotation = new(),
                 scale = new(1, 1, 1),
+                pivot = WEPlacementPivot.MiddleCenter
             };
     }
 }

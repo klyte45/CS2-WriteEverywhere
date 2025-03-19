@@ -1,4 +1,9 @@
-#  v0.2.0r0 (18-MAR-25)
+#  v0.2.0r1 (19-MAR-25)
+- Added layout item postion pivot select support
+- Fixing some missing icons on UI
+- Fixing max width (cm) of the text can't be reset to 0 if already set once
+
+## FROM v0.2.0r0
 - ADDED DECAL IMAGES SUPPORT - texts not supported for now
 - Support to default subtemplates on WE Modules - will load default layout files from them and replace if applicable at all layouts from that module
 - Support to replace subtemplates with city savegame WE layouts

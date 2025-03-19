@@ -1,6 +1,5 @@
 ﻿using Belzont.Utils;
 using Colossal.Entities;
-using System.Runtime.InteropServices;
 using Unity.Entities;
 using UnityEngine;
 
@@ -106,7 +105,8 @@ namespace BelzontWE.Utils
                 offsetPosition = (Vector3Xml)value.offsetPosition,
                 offsetRotation = (Vector3Xml)((Quaternion)value.offsetRotation).eulerAngles,
                 scale = (Vector3Xml)value.scale,
-                isAbsoluteScale = value.useAbsoluteSizeEditing
+                isAbsoluteScale = value.useAbsoluteSizeEditing,
+                pivot = value.pivot
             };
         public static WETextDataTransform ToComponent(this WETextDataXml.TransformXml value)
             => value is null ? default : new()
@@ -114,7 +114,8 @@ namespace BelzontWE.Utils
                 offsetPosition = value.offsetPosition ?? default,
                 offsetRotation = Quaternion.Euler(value.offsetRotation ?? default),
                 scale = value.scale ?? Vector3.one,
-                useAbsoluteSizeEditing = value.isAbsoluteScale
+                useAbsoluteSizeEditing = value.isAbsoluteScale,
+                pivot = value.pivot
             };
 
 

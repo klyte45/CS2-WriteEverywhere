@@ -130,7 +130,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
                 {material.ShaderType.value == 2 && <FloatInputField label={T_decalAreaThickness} min={.001} max={100} value={decalAreaThickness} onChange={saveDecalThickness} onChangeEnd={() => saveDecalThickness(decalAreaThickness)} />}
                 {mesh.TextSourceType.value == WESimulationTextType.Text && <>
-                    <FloatInputField label={T_maxWidth} min={.001} max={1000000} value={maxWidth} onChange={setMaxWidth} onChangeEnd={() => saveMaxWidth(maxWidth)} />
+                    <FloatInputField label={T_maxWidth} min={.0} max={1000000} value={maxWidth} onChange={setMaxWidth} onChangeEnd={() => saveMaxWidth(maxWidth)} />
                     <EditorItemRow label={T_fontFieldTitle} styleContent={{ paddingLeft: "34rem" }}>
                         <DropdownField
                             value={mesh.SelectedFont.value}

@@ -13,6 +13,7 @@ namespace BelzontWE
         public MultiUIValueBinding<float3, float[]> CurrentScale { get; private set; }
         public MultiUIValueBinding<float3, float[]> CurrentRotation { get; private set; }
         public MultiUIValueBinding<float3, float[]> CurrentPosition { get; private set; }
+        public MultiUIValueBinding<WEPlacementPivot, int> Pivot { get; private set; }
         public MultiUIValueBinding<bool> UseAbsoluteSizeEditing { get; private set; }
 
         protected override void DoInitValueBindings(Action<string, object[]> EventCaller, Action<string, Delegate> CallBinder)
@@ -22,12 +23,14 @@ namespace BelzontWE
             CurrentRotation = new(default, $"{PREFIX}{nameof(CurrentRotation)}", EventCaller, CallBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new float3(x[0], x[1], x[2]));
             CurrentPosition = new(default, $"{PREFIX}{nameof(CurrentPosition)}", EventCaller, CallBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new float3(x[0], x[1], x[2]));
             UseAbsoluteSizeEditing = new(default, $"{PREFIX}{nameof(UseAbsoluteSizeEditing)}", EventCaller, CallBinder);
+            Pivot = new(default, $"{PREFIX}{nameof(Pivot)}", EventCaller, CallBinder, (x, _) => (int)x, (x, _) => (WEPlacementPivot)x);
 
 
             CurrentScale.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float3, WETextDataTransform>(x, (x, currentItem) => { currentItem.scale = x; return currentItem; });
             CurrentRotation.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float3, WETextDataTransform>(x, (x, currentItem) => { currentItem.offsetRotation = KMathUtils.UnityEulerToQuaternion(x); return currentItem; });
             CurrentPosition.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float3, WETextDataTransform>(x, (x, currentItem) => { currentItem.offsetPosition = x; return currentItem; });
             UseAbsoluteSizeEditing.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataTransform>(x, (x, currentItem) => { currentItem.useAbsoluteSizeEditing = x; return currentItem; });
+            Pivot.OnScreenValueChanged += (x) => PickerController.EnqueueModification<WEPlacementPivot, WETextDataTransform>(x, (x, currentItem) => { currentItem.pivot = x; return currentItem; });
         }
 
         public override void OnCurrentItemChanged(Entity entity)
@@ -38,6 +41,7 @@ namespace BelzontWE
             CurrentRotation.Value = KMathUtils.UnityQuaternionToEuler(transform.offsetRotation);
             CurrentScale.Value = transform.scale;
             UseAbsoluteSizeEditing.Value = transform.useAbsoluteSizeEditing;
+            Pivot.Value = transform.pivot;
         }
     }
 }

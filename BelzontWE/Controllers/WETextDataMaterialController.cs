@@ -195,7 +195,6 @@ namespace BelzontWE
             SetupOnFormulaeChangedAction((ref WETextDataMaterial data, string newFormulae, out string[] errorArgs) => data.SetFormulaeNormalStrength(newFormulae, out errorArgs), NormalStrengthFormulaeStr, NormalStrengthFormulaeCompileResult, NormalStrengthFormulaeCompileResultErrorArgs);
 
             CallBinder($"{PREFIX}isDecalMesh", () => EntityManager.TryGetComponent<WETextDataMaterial>(m_pickerController.CurrentSubEntity.Value, out var material) && EntityManager.TryGetComponent<WETextDataMesh>(m_pickerController.CurrentSubEntity.Value, out var mesh) ? material.CheckIsDecal(mesh) : false);
-
         }
         private delegate int FormulaeSetter(ref WETextDataMaterial material, string newFormulae, out string[] errorArgs);
         private void SetupOnFormulaeChangedAction(FormulaeSetter formulaeSetter, MultiUIValueBinding<string> formulaeStr, MultiUIValueBinding<int> formulaeCompileResult, MultiUIValueBinding<string[]> formulaeCompileResultErrorArgs)

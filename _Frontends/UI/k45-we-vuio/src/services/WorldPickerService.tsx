@@ -65,6 +65,7 @@ const WETextDataTransformController = {
     CurrentRotation: MultiUIValueBinding<number3>,
     CurrentPosition: MultiUIValueBinding<number3>,
     UseAbsoluteSizeEditing: MultiUIValueBinding<boolean>,
+    Pivot: MultiUIValueBinding<WEPlacementPivot>,
 
 }
 const WETextDataMeshController = {
@@ -147,7 +148,7 @@ const WETextDataMaterialController = {
     AffectSmoothness: MultiUIValueBinding<boolean>,
     AffectAO: MultiUIValueBinding<boolean>,
     AffectEmission: MultiUIValueBinding<boolean>,
-    DrawOrder: MultiUIValueBinding<number>,  
+    DrawOrder: MultiUIValueBinding<number>,
 }
 
 type FormulableMaterialKeys =
@@ -173,6 +174,17 @@ export const FormulableMaterialEntries = ObjectTyped.fromEntries(([
     'MainColor', 'EmissiveColor', 'ShaderType', 'GlassColor', 'ColorMask1', 'ColorMask2', 'ColorMask3', 'Metallic', 'Smoothness', 'EmissiveIntensity', 'CoatStrength', 'EmissiveExposureWeight', 'DecalFlags', 'GlassRefraction', 'NormalStrength', 'GlassThickness'
 ] as FormulableMaterialKeys[]).map(x => [x, { str: `${x}FormulaeStr`, result: `${x}FormulaeCompileResult`, args: `${x}FormulaeCompileResultErrorArgs` }])) as FormulableMaterialEntries
 
+export enum WEPlacementPivot {
+    TopLeft = 0,
+    TopCenter = 1,
+    TopRight = 2,
+    MiddleLeft = 4,
+    MiddleCenter = 5,
+    MiddleRight = 6,
+    BottomLeft = 8,
+    BottomCenter = 9,
+    BottomRight = 10,
+}
 
 export class WorldPickerService {
     public static get instance(): WorldPickerService { return _instance ??= new WorldPickerService() }
@@ -235,7 +247,7 @@ export class WorldPickerService {
             Object.values(y).map(z => z.subscribe(async () => refreshFn()));
         })
         this.refreshFnRegistered.push(refreshFn);
-        
+
         this.bindingList.picker.CurrentSubEntity.subscribe(async () => {
             this.clearCurrentEditingFormulaeParam();
         })
@@ -270,7 +282,7 @@ export class WorldPickerService {
         return this.currentFormulaeField && this.currentFormulaeModule ? this.bindingList[this.currentFormulaeModule][this.currentFormulaeField] : null
     }
     getCurrentEditingFormulaeFieldTitle(): string {
-        return this.currentFormulaeField && this.currentFormulaeModule ? (this.formulaeTitleNames[this.currentFormulaeModule]?.[this.currentFormulaeField] as any)?.() : null
+        return this.currentFormulaeField && this.currentFormulaeModule ? (this.formulaeTitleNames[this.currentFormulaeModule]?.[this.currentFormulaeField] as any)?.() : null!
     }
     getCurrentEditingFormulaeFn(): MultiUIValueBinding<string> | null {
         return this.currentFormulaeField && this.currentFormulaeModule ? this.bindingList[this.currentFormulaeModule][this.currentFormulaeField + "FormulaeStr" as never] : null
