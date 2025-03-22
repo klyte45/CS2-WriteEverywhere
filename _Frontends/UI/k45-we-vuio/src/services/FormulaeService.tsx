@@ -18,5 +18,8 @@ export class FormulaeService {
     static async formulaeToPathObjects(formulae: string): Promise<WEFormulaeElement[]> {
         return engine.call("k45::we.formulae.formulaeToPathObjects", formulae);
     }
+    static async isTypeIndexable(dllName: string, typeName: string): Promise<boolean> {
+        return await engine.call("k45::we.formulae.isTypeIndexable", dllName, typeName);
+    }
 }
 

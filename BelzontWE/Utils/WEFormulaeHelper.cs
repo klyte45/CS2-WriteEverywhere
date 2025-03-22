@@ -17,6 +17,37 @@ namespace BelzontWE
 {
     public static class WEFormulaeHelper
     {
+        private interface IBaseCache
+        {
+            byte ResultCode { get; }
+            string[] ErrorArgs { get; }
+            object FnObj { get; }
+            void SetData(byte resultCode, object fn, string[] errorArgs = null);
+        }
+        private class BaseCache<T> : IBaseCache
+        {
+
+            public byte ResultCode { get; private set; }
+
+            public string[] ErrorArgs { get; private set; }
+
+            public object FnObj => Fn;
+
+            public Func<EntityManager, Entity, T> Fn { get; set; }
+
+            public void SetData(byte resultCode, Func<EntityManager, Entity, T> fn, string[] errorArgs = null)
+            {
+                this.ResultCode = resultCode;
+                this.Fn = fn;
+                this.ErrorArgs = errorArgs;
+            }
+
+            public void SetData(byte resultCode, object fn, string[] errorArgs = null)
+            {
+                SetData(resultCode, (Func<EntityManager, Entity, T>)fn, errorArgs);
+            }
+        }
+
         internal static readonly BindingFlags MEMBER_FLAGS = ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly;
 
         private static MethodInfo r_GetComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
@@ -24,21 +55,24 @@ namespace BelzontWE
         private static MethodInfo r_HasComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
             .First(x => x.Name == "HasComponent" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 1 && pi[0].ParameterType == typeof(Entity));
 
-        private static readonly Dictionary<string, (byte, Func<EntityManager, Entity, string>)> cachedFnsString = new();
-        private static readonly Dictionary<string, (byte, Func<EntityManager, Entity, float>)> cachedFnsFloat = new();
-        private static readonly Dictionary<string, (byte, Func<EntityManager, Entity, Color>)> cachedFnsColor = new();
+        private static readonly Dictionary<string, BaseCache<string>> cachedFnsString = new();
+        private static readonly Dictionary<string, BaseCache<float>> cachedFnsFloat = new();
+        private static readonly Dictionary<string, BaseCache<Color>> cachedFnsColor = new();
+        private static readonly Dictionary<string, BaseCache<IList<Entity>>> cachedFnsEntityArray = new();
 
-        public static Func<EntityManager, Entity, string> GetCachedStringFn(string formulae) => cachedFnsString.TryGetValue(formulae, out var cached) ? cached.Item2 : null;
-        public static Func<EntityManager, Entity, float> GetCachedFloatFn(string formulae) => cachedFnsFloat.TryGetValue(formulae, out var cached) ? cached.Item2 : null;
-        public static Func<EntityManager, Entity, Color> GetCachedColorFn(string formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached.Item2 : null;
+        public static Func<EntityManager, Entity, string> GetCachedStringFn(string formulae) => cachedFnsString.TryGetValue(formulae, out var cached) ? cached.Fn : null;
+        public static Func<EntityManager, Entity, float> GetCachedFloatFn(string formulae) => cachedFnsFloat.TryGetValue(formulae, out var cached) ? cached.Fn : null;
+        public static Func<EntityManager, Entity, Color> GetCachedColorFn(string formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached.Fn : null;
+        public static Func<EntityManager, Entity, IList<Entity>> GetCachedEntityArrayFn(string formulae) => cachedFnsEntityArray.TryGetValue(formulae, out var cached) ? cached.Fn : null;
 
         public static byte SetFormulae<T>(string newFormulae512, out string[] errorFmtArgs, out string resultFormulaeStr, out Func<EntityManager, Entity, T> resultFormulaeFn)
         {
             IDictionary refDic = typeof(T) == typeof(string) ? cachedFnsString
                 : typeof(T) == typeof(float) ? cachedFnsFloat
-                : typeof(T) == typeof(Color) ? (IDictionary)cachedFnsColor
+                : typeof(T) == typeof(Color) ? cachedFnsColor
+                : typeof(T) == typeof(IList<Entity>) ? (IDictionary)cachedFnsEntityArray
                 : typeof(T) == typeof(Entity) ? null
-                : throw new InvalidCastException("Formulae only support types float, string or UnityEngine.Color");
+                : throw new InvalidCastException("Formulae only support types float, string, UnityEngine.Color or list of Entities");
             resultFormulaeStr = default;
             resultFormulaeFn = default;
             if (newFormulae512.Trim() == default)
@@ -48,13 +82,13 @@ namespace BelzontWE
             }
             if (refDic != null && refDic.Contains(newFormulae512))
             {
-                var handle = ((byte, Func<EntityManager, Entity, T>))refDic[newFormulae512];
-                if (handle.Item2 != null || handle.Item1 != 0)
+                var handle = (IBaseCache)refDic[newFormulae512];
+                if (handle.FnObj != null || handle.ResultCode != 0)
                 {
                     resultFormulaeStr = newFormulae512;
-                    resultFormulaeFn = handle.Item2;
-                    errorFmtArgs = null;
-                    return handle.Item1;
+                    resultFormulaeFn = handle.FnObj as Func<EntityManager, Entity, T>;
+                    errorFmtArgs = handle.ErrorArgs;
+                    return handle.ResultCode;
                 }
             }
             var newFormulae = newFormulae512;
@@ -66,9 +100,9 @@ namespace BelzontWE
                 );
             ILGenerator iLGenerator = dynamicMethodDefinition.GetILGenerator();
             byte result = 0;
+            errorFmtArgs = null;
             try
             {
-                errorFmtArgs = null;
                 var entityLocalField = iLGenerator.DeclareLocal(typeof(Entity));
                 var currentComponentType = typeof(Entity);
                 LocalBuilder localVarEntity = null;
@@ -92,6 +126,7 @@ namespace BelzontWE
                         }
                         if (resultQuery.Count() > 1)
                         {
+                            errorFmtArgs = new[] { currentComponentType.ToString(), className, method };
                             return result = 9; // Class or method matches more than one result. Please be more specific.
                         }
                         var methodInfo = resultQuery[0];
@@ -181,7 +216,10 @@ namespace BelzontWE
                 resultFormulaeFn = (x, e) => (T)generatedMethod.Invoke(null, new object[] { x, e });
                 if (refDic != null)
                 {
-                    refDic[newFormulae512] = refDic[resultFormulaeStr] = (result, resultFormulaeFn);
+                    var cacheType = refDic.GetType().GetGenericArguments()[1];
+                    var cache = cacheType.GetConstructors()[0].Invoke(new object[0]) as IBaseCache;
+                    cache.SetData(result, resultFormulaeFn);
+                    refDic[newFormulae512] = refDic[resultFormulaeStr] = cache;
                 }
 
                 return result;
@@ -191,7 +229,10 @@ namespace BelzontWE
                 dynamicMethodDefinition.Dispose();
                 if (refDic != null && result != 0 && result != 255)
                 {
-                    refDic[newFormulae512] = (result, default(Func<EntityManager, Entity, T>));
+                    var cacheType = refDic.GetType().GetGenericArguments()[1];
+                    var cache = cacheType.GetConstructors()[0].Invoke(new object[0]) as IBaseCache;
+                    cache.SetData(result, null, errorFmtArgs);
+                    refDic[newFormulae512] = cache;
                 }
             }
         }
@@ -301,36 +342,60 @@ namespace BelzontWE
                     iLGenerator.Emit(OpCodes.Ldloca, local0);
                 }
                 skipValueTypeVar = false;
-                if (currentComponentType.GetField(field, MEMBER_FLAGS) is FieldInfo targetField)
+                if (int.TryParse(field, out int idx))
                 {
-                    iLGenerator.Emit(OpCodes.Ldfld, targetField);
-                    currentComponentType = targetField.FieldType;
-                    continue;
-                }
-                else if (currentComponentType.GetProperty(field, MEMBER_FLAGS) is PropertyInfo targetProperty && targetProperty.GetMethod != null)
-                {
-                    if (currentComponentType.IsValueType && (targetProperty.GetMethod.IsVirtual || currentComponentType.IsGenericType))
+                    if (currentComponentType.IsArray)
                     {
-                        iLGenerator.Emit(OpCodes.Constrained, currentComponentType);
+                        iLGenerator.Emit(OpCodes.Ldc_I4, idx);
+                        iLGenerator.Emit(OpCodes.Ldelem_I4);
+                        currentComponentType = currentComponentType.GetElementType();
                     }
-                    iLGenerator.EmitCall(targetProperty.GetMethod.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, targetProperty.GetMethod, null);
-                    currentComponentType = targetProperty.GetMethod.ReturnType;
-                    continue;
-                }
-                else if (currentComponentType.GetMethod(field, MEMBER_FLAGS, null, new Type[0], null) is MethodInfo targetMethod && targetMethod.ReturnType != typeof(void))
-                {
-                    if (currentComponentType.IsValueType && (targetMethod.IsVirtual || currentComponentType.IsGenericType))
+                    else if (currentComponentType.IsAssignableFrom(typeof(IList<>)))
                     {
-                        iLGenerator.Emit(OpCodes.Constrained, currentComponentType);
+                        iLGenerator.Emit(OpCodes.Ldc_I4, idx);
+                        currentComponentType.GetMethod("get_Item");
+                        iLGenerator.Emit(OpCodes.Call, currentComponentType);
+                        currentComponentType = currentComponentType.GetInterfaces().Where(x => x.IsAssignableFrom(typeof(IList<>))).First().GetGenericArguments()[0];
                     }
-                    iLGenerator.EmitCall(targetMethod.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, targetMethod, null);
-                    currentComponentType = targetMethod.ReturnType;
-                    continue;
+                    else
+                    {
+                        errorFmtArgs = new[] { field, currentComponentType.FullName };
+                        return 10; // Member type {1} isn't a list nor array type (indexing {0})
+                    }
                 }
                 else
                 {
-                    errorFmtArgs = new[] { field, currentComponentType.FullName, string.Join("\n", currentComponentType.GetMembers(ReflectionUtils.allFlags).Where(x => x is not MethodBase m || m.GetParameters().Length == 0).Select(x => x.Name)) };
-                    return 3; // Member {0} not found at component type {1}; Available Members: {2}
+                    if (currentComponentType.GetField(field, MEMBER_FLAGS) is FieldInfo targetField)
+                    {
+                        iLGenerator.Emit(OpCodes.Ldfld, targetField);
+                        currentComponentType = targetField.FieldType;
+                        continue;
+                    }
+                    else if (currentComponentType.GetProperty(field, MEMBER_FLAGS) is PropertyInfo targetProperty && targetProperty.GetMethod != null)
+                    {
+                        if (currentComponentType.IsValueType && (targetProperty.GetMethod.IsVirtual || currentComponentType.IsGenericType))
+                        {
+                            iLGenerator.Emit(OpCodes.Constrained, currentComponentType);
+                        }
+                        iLGenerator.EmitCall(targetProperty.GetMethod.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, targetProperty.GetMethod, null);
+                        currentComponentType = targetProperty.GetMethod.ReturnType;
+                        continue;
+                    }
+                    else if (currentComponentType.GetMethod(field, MEMBER_FLAGS, null, new Type[0], null) is MethodInfo targetMethod && targetMethod.ReturnType != typeof(void))
+                    {
+                        if (currentComponentType.IsValueType && (targetMethod.IsVirtual || currentComponentType.IsGenericType))
+                        {
+                            iLGenerator.Emit(OpCodes.Constrained, currentComponentType);
+                        }
+                        iLGenerator.EmitCall(targetMethod.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, targetMethod, null);
+                        currentComponentType = targetMethod.ReturnType;
+                        continue;
+                    }
+                    else
+                    {
+                        errorFmtArgs = new[] { field, currentComponentType.FullName, string.Join("\n", currentComponentType.GetMembers(ReflectionUtils.allFlags).Where(x => x is not MethodBase m || m.GetParameters().Length == 0).Select(x => x.Name)) };
+                        return 3; // Member {0} not found at component type {1}; Available Members: {2}
+                    }
                 }
             }
             return 0;

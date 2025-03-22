@@ -22,6 +22,7 @@ namespace BelzontWE
             callBinder($"{PREFIX}listAvailableMembersForType", ListAvailableMembersForType);
             callBinder($"{PREFIX}listAvailableComponents", ListAvailableComponents);
             callBinder($"{PREFIX}listComponentsOnCurrentEntity", ListComponentsOnCurrentEntity);
+            callBinder($"{PREFIX}isTypeIndexable", IsTypeIndexable);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
@@ -32,7 +33,11 @@ namespace BelzontWE
         {
             m_weToolController = World.GetExistingSystemManaged<WEWorldPickerController>();
         }
-
+        private bool IsTypeIndexable(string assemblyName, string typeFullName)
+        {
+            var type = Type.GetType($"{typeFullName}, {assemblyName}");
+            return type != null && (type.IsArray || type.IsAssignableFrom(typeof(IList<>)));
+        }
         private Dictionary<int, Dictionary<string, Dictionary<string, WEStaticMethodDesc[]>>> ListAvailableMethodsForType(string assemblyName, string typeFullName)
         {
             var type = Type.GetType($"{typeFullName}, {assemblyName}");
@@ -134,7 +139,25 @@ namespace BelzontWE
             for (int j = 0; j < fieldPath.Length; j++)
             {
                 string field = fieldPath[j];
-                if (currentType.GetField(field, ReflectionUtils.allFlags) is FieldInfo targetField)
+                if (int.TryParse(field, out int val))
+                {
+                    if (currentType.IsArray)
+                    {
+                        currentType = currentType.GetElementType();
+                        result.Add(WETypeMemberDesc.FromIndexing(val, currentType));
+                    }
+                    else if (currentType.IsAssignableFrom(typeof(IList<>)))
+                    {
+                        currentType = currentType.GetInterfaces().Where(x => x.IsAssignableFrom(typeof(IList<>))).First().GetGenericArguments()[0];
+                        result.Add(WETypeMemberDesc.FromIndexing(val, currentType));
+                    }
+                    else
+                    {
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"INVALID IDX for non-array type: {currentType} [{field}]");
+                        return false;
+                    }
+                }
+                else if (currentType.GetField(field, ReflectionUtils.allFlags) is FieldInfo targetField)
                 {
                     currentType = targetField.FieldType;
                     result.Add(WETypeMemberDesc.FromMemberInfo(targetField));

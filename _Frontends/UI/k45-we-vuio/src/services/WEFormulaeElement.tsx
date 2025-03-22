@@ -21,7 +21,8 @@ export type EnumWrapper<T> = { value__: T; };
 export enum WEMemberType {
     Field,
     Property,
-    ParameterlessMethod
+    ParameterlessMethod,
+    ArraylikeIndexing
 }
 export enum WEMethodSource {
     Game,
@@ -34,7 +35,8 @@ export enum WEMethodSource {
 export enum WEDescType {
     MEMBER = "MEMBER",
     COMPONENT = "COMPONENT",
-    STATIC_METHOD = "STATIC_METHOD"
+    STATIC_METHOD = "STATIC_METHOD",
+    ARRAY_INDEXING = "ARRAY_INDEXING"
 }
 
 export type WETypeMemberDesc = {
@@ -66,6 +68,11 @@ export type WEStaticMethodDesc = {
     returnTypeDll: string;
     FormulaeString: string;
 };
+
+export type WEArrayIndexingDesc = {
+    WEDescType: WEDescType.ARRAY_INDEXING,
+    index: number
+}
 
 export function getDllNameFrom(el: WEFormulaeElement) {
     switch (el.WEDescType) {

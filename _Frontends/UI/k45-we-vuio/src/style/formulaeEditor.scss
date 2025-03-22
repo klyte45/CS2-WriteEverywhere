@@ -22,6 +22,7 @@
     --colorComponentField: #240f8a;
     --colorComponentMethod: #0f618a;
     --colorComponentProperty: #0f388a;
+    --colorComponentIndexing: #3e8b3b;
     --colorAssembly: #b84b14;
     --colorPackage: #8a610f;
 
@@ -31,6 +32,7 @@
     --iconAssembly: url("coui://uil/Colored/Puzzle.svg");
     --iconClass: url("coui://uil/Colored/PaperWithArrow.svg");
     --iconMethodName: url("coui://uil/Colored/ArrowRightThickStroke.svg");
+    --iconArrayIndex: url("coui://uil/Colored/BoxesWalltoWall.svg");
     --iconFieldName: url("coui://uil/Colored/ListViewDense.svg");
     --iconPropertyName: url("coui://uil/Colored/ArrowRightTriangleNotch.svg");
     --iconBwAssembly: url("coui://uil/Standard/Puzzle.svg");
@@ -192,6 +194,11 @@
                 @include generate-border-color(var(--colorComponentProperty));
             }
 
+            .k45_we_formulaeEditor_componentArrayIndex {
+                @include advanced-container;
+                @include generate-border-color(var(--colorComponentIndexing));
+            }
+
 
 
             >*> {
@@ -216,6 +223,11 @@
                     background-image: var(--iconMethodName);
                 }
 
+                .k45_we_formulaeEditor_arrayIndex {
+                    @include icon-based-innerline;
+                    background-image: var(--iconArrayIndex);
+                }
+                
                 .k45_we_formulaeEditor_fieldName {
                     @include icon-based-innerline;
                     background-image: var(--iconFieldName);
@@ -328,7 +340,7 @@
             border-left-color: var(---selfColor);
             border-bottom-color: var(---selfColor);
             border-right-color: var(---selfColor);
-            border-top-color: var(---selfColor);    
+            border-top-color: var(---selfColor);
             display: flex;
             align-items: center;
             flex-direction: column;
@@ -413,7 +425,7 @@
     ---selfColor: black;
 
     button,
-    div[class^=k45_we_formulaeDialog_btn]  {
+    div[class^=k45_we_formulaeDialog_btn] {
         height: 40rem;
         margin-left: 3rem;
         margin-right: 3rem;

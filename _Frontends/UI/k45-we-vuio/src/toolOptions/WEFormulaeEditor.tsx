@@ -2,7 +2,7 @@ import { ColorUtils, MultiUIValueBinding, UIColorRGBA, VanillaComponentResolver,
 import { Portal } from "cs2/ui";
 import { useCallback, useEffect, useState } from "react";
 import { FormulaeService } from "services/FormulaeService";
-import { WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEMemberType, WEMethodSource, WEStaticMethodDesc, WETypeMemberDesc } from "services/WEFormulaeElement";
+import { WEArrayIndexingDesc, WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEMemberType, WEMethodSource, WEStaticMethodDesc, WETypeMemberDesc } from "services/WEFormulaeElement";
 import { translate } from "utils/translate";
 import "../style/formulaeEditor.scss";
 import { WEAddFormulaeStageDialog } from "./WEAddFormulaeStageDialog";
@@ -65,14 +65,14 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
             }
         }, [formulaeType, lastCompileStatus])
 
-    const [formulaeSteps, setFormulaeSteps] = useState([] as WEFormulaeElement[])
+    const [formulaeSteps, setFormulaeSteps] = useState([] as (WEFormulaeElement | WEArrayIndexingDesc)[])
 
 
     useEffect(() => {
         FormulaeService.formulaeToPathObjects(formulaeStr.value).then(x => setFormulaeSteps(x))
     }, [formulaeStr.value])
 
-    const pathObjectsToFormulae = (arr: WEFormulaeElement[]) => {
+    const pathObjectsToFormulae = (arr: (WEFormulaeElement | WEArrayIndexingDesc)[]) => {
         let output = "";
         for (let item of arr) {
             switch (item?.WEDescType) {
@@ -87,12 +87,15 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
                     if (output.length > 0) output += '/';
                     output += `${item.FormulaeString}`
                     break;
+                case WEDescType.ARRAY_INDEXING:
+                    output += `.${item.index}`
+                    break;
             }
         }
         return output;
     }
 
-    const requiresConvert = (x: WEFormulaeElement) => {
+    const requiresConvert = (x: (WEFormulaeElement | WEArrayIndexingDesc)) => {
         switch (x?.WEDescType) {
             case WEDescType.COMPONENT:
                 return true
@@ -112,7 +115,7 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
         formulaeStr.set(pathObjectsToFormulae(formulaeSteps))
     }
 
-    const onAppend = (appendItem?: WEFormulaeElement) => {
+    const onAppend = (appendItem?: WEFormulaeElement | WEArrayIndexingDesc) => {
         setAddingItem(false);
         if (appendItem) {
             formulaeSteps.push(appendItem);
@@ -135,7 +138,7 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
                 return "???"
         }
     }
-
+    console.log(formulaeSteps)
 
     return <Portal>
         <div className="k45_we_formulaeEditor">
@@ -169,7 +172,7 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
                 <div className="k45_we_formulaeEditor_footnote">{T_editorFootnote}</div>
             </div>
         </div>
-        {addingItem && <WEAddFormulaeStageDialog formulaeStr={formulaeStr.value} callback={onAppend} referenceElement={formulaeSteps[formulaeSteps.length - 1]} />}
+        {addingItem && <WEAddFormulaeStageDialog formulaeStr={formulaeStr.value} callback={onAppend} referenceElement={formulaeSteps[formulaeSteps.length - 1] as WEFormulaeElement} />}
     </Portal>;
 };
 
@@ -204,10 +207,12 @@ const WEComponentMemberBlock = (data: WETypeMemberDesc & { i: number }) => {
     const T_descType_fieldGetter = translate("formulaeEditor.descType.fieldGetter"); //Load field
     const T_descType_propertyGetter = translate("formulaeEditor.descType.propertyGetter"); //Get property
     const T_descType_parameterlessInstanceMethodCall = translate("formulaeEditor.descType.parameterlessInstanceMethodCall"); //Call instance method
+    const T_descType_arrayIndexing = translate("formulaeEditor.descType.arrayIndexing"); //Call instance method
     switch (data.type.value__) {
         case WEMemberType.Field: title = T_descType_fieldGetter; className = "k45_we_formulaeEditor_componentField"; break;
         case WEMemberType.ParameterlessMethod: title = T_descType_parameterlessInstanceMethodCall; className = "k45_we_formulaeEditor_componentMethod"; break;
         case WEMemberType.Property: title = T_descType_propertyGetter; className = "k45_we_formulaeEditor_componentProperty"; break;
+        case WEMemberType.ArraylikeIndexing: title = T_descType_arrayIndexing; className = "k45_we_formulaeEditor_componentArrayIndex"; break;
     }
     return <>
         <div className={className}>
@@ -215,6 +220,7 @@ const WEComponentMemberBlock = (data: WETypeMemberDesc & { i: number }) => {
             {data.type.value__ == WEMemberType.Field && <div className="k45_we_formulaeEditor_fieldName">{data.memberName}</div>}
             {data.type.value__ == WEMemberType.Property && <div className="k45_we_formulaeEditor_propertyName">{data.memberName}</div>}
             {data.type.value__ == WEMemberType.ParameterlessMethod && <div className="k45_we_formulaeEditor_methodName">{data.memberName}</div>}
+            {data.type.value__ == WEMemberType.ArraylikeIndexing && <div className="k45_we_formulaeEditor_arrayIndex">{data.memberName}</div>}
             <WEReturnType>{data.memberTypeClassName}</WEReturnType>
         </div>
         <div className="k45_we_formulaeEditor_downArrow" />

@@ -4,7 +4,8 @@
     {
         Field,
         Property,
-        ParameterlessMethod
+        ParameterlessMethod,
+        ArraylikeIndexing
     }
 
 }

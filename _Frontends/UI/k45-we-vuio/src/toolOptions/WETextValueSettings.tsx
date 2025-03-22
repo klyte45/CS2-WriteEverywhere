@@ -1,4 +1,4 @@
-import { LocElementType, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { LocElementType, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { Panel, Portal } from "cs2/ui";
 import { useCallback, useEffect, useState } from "react";
 import { TextureAtlasService } from "services/TextureAtlasService";
@@ -139,15 +139,16 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                             style={{ flexGrow: 1, width: "inherit" }}
                         />
                     </EditorItemRow>
-                    <FormulaeEditRow formulaeField={formulaeField} formulaeModule={formulaeModule} label={T_fixedText} defaultInputField={<StringInputField
-                        value={fixedTextTyping}
-                        onChange={(x) => { setFixedTextTyping(x) }}
-                        onChangeEnd={() => {
-                            mesh.ValueText.set(fixedTextTyping.trim());
-                            mesh.ValueTextFormulaeStr.set("");
-                        }}
-                        maxLength={400}
-                    />} />
+                    <FormulaeEditRow formulaeField={formulaeField} formulaeModule={formulaeModule} label={T_fixedText}
+                        defaultInputField={<StringInputField
+                            value={fixedTextTyping}
+                            onChange={(x) => { setFixedTextTyping(x) }}
+                            onChangeEnd={() => {
+                                mesh.ValueText.set(fixedTextTyping.trim());
+                                mesh.ValueTextFormulaeStr.set("");
+                            }}
+                            maxLength={400}
+                        />} />
                 </>}
                 {mesh.TextSourceType.value == WESimulationTextType.Image && <>
                     <EditorItemRow label={T_atlas}>

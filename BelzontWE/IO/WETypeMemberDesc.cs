@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 
 namespace BelzontWE
 {
@@ -9,6 +10,17 @@ namespace BelzontWE
         public string memberTypeDllName;
         public string memberTypeClassName;
         public WEMemberType type;
+
+        public static WETypeMemberDesc FromIndexing(int idx, Type resultType)
+        {
+            return new WETypeMemberDesc
+            {
+                memberName = idx.ToString(),
+                memberTypeDllName = resultType.Assembly.GetName().Name,
+                memberTypeClassName = resultType.FullName,
+                type = WEMemberType.ArraylikeIndexing
+            };
+        }
 
         public static WETypeMemberDesc FromMemberInfo(MemberInfo m) => m switch
         {
