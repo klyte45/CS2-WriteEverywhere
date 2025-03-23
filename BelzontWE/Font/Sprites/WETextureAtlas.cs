@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Unity.Collections;
 using UnityEngine;
 using HeuristicMethod = MaxRectsBinPack.FreeRectChoiceHeuristic;
@@ -326,7 +327,7 @@ namespace BelzontWE.Font
 
         internal void _SaveDebug(string atlasName)
         {
-            var baseFolder = Path.Combine(BasicIMod.ModSettingsRootFolder, "_DebugAtlases", atlasName);
+            var baseFolder = Path.Combine(BasicIMod.ModSettingsRootFolder, "_DebugAtlases", Regex.Replace(atlasName, $"[{new string(Path.GetInvalidFileNameChars())}]", "="));
             KFileUtils.EnsureFolderCreation(baseFolder);
             File.WriteAllBytes(Path.Combine(baseFolder, "__Main.png"), Main.EncodeToPNG());
             File.WriteAllBytes(Path.Combine(baseFolder, "__Emissive.png"), Emissive.EncodeToPNG());

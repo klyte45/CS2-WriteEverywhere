@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Unity.Collections;
 using Unity.Entities;
 
 namespace BelzontWE
@@ -36,7 +37,7 @@ namespace BelzontWE
         private bool IsTypeIndexable(string assemblyName, string typeFullName)
         {
             var type = Type.GetType($"{typeFullName}, {assemblyName}");
-            return type != null && (type.IsArray || type.IsAssignableFrom(typeof(IList<>)));
+            return type != null && (type.IsArray || (type.GetMethod("get_Item", new[] { typeof(int) }) != null && type.GetInterfaces().Any(x => x.IsGenericType && (x.GetGenericTypeDefinition() == typeof(IList<>) || x.GetGenericTypeDefinition() == typeof(IIndexable<>)))));
         }
         private Dictionary<int, Dictionary<string, Dictionary<string, WEStaticMethodDesc[]>>> ListAvailableMethodsForType(string assemblyName, string typeFullName)
         {
@@ -61,14 +62,14 @@ namespace BelzontWE
 
         private WETypeMemberDesc[] ListAvailableMembersForType(string assemblyName, string typeFullName)
         {
-            var type = AppDomain.CurrentDomain.GetAssemblies().Where(x => x.GetName().Name == assemblyName).SelectMany(assembly => assembly.GetTypes()).Where(t => t.FullName == typeFullName).FirstOrDefault();
+            var type = Type.GetType($"{typeFullName}, {assemblyName}");
             return type?.GetMembers(WEFormulaeHelper.MEMBER_FLAGS).Where(x =>
-            (x is PropertyInfo pi && pi.GetMethod != null) || x is FieldInfo || (x is MethodInfo mi && mi.GetParameters().Length == 0 && mi.ReturnType != typeof(void) && !mi.Name.StartsWith("get_"))
+            (x is PropertyInfo pi &&  pi.GetMethod?.GetParameters().Length == 0) || x is FieldInfo || (x is MethodInfo mi && mi.GetParameters().Length == 0 && mi.ReturnType != typeof(void) && !mi.Name.StartsWith("get_"))
             ).Select(x => WETypeMemberDesc.FromMemberInfo(x)).ToArray();
         }
 
         private Dictionary<int, Dictionary<string, Dictionary<string, WEComponentTypeDesc[]>>> ListAvailableComponents() =>
-         m_cachedComponentsList ??= TypeManager.AllTypes.Where(x => x.Type != null && typeof(IComponentData).IsAssignableFrom(x.Type))
+         m_cachedComponentsList ??= TypeManager.AllTypes.Where(x => x.Type != null && (typeof(IComponentData).IsAssignableFrom(x.Type) || typeof(IBufferElementData).IsAssignableFrom(x.Type)))
                 .Select(x => WEComponentTypeDesc.From(x.Type))
                 .OrderBy(x => x.source)
                 .GroupBy(x => x.source)
@@ -97,11 +98,18 @@ namespace BelzontWE
                 if (WEFormulaeHelper.SetFormulae(formulaeStr, out _, out _, out Func<EntityManager, Entity, Entity> resultFormulaeFn) != 0 || resultFormulaeFn is null) return null;
                 targetEntity = resultFormulaeFn(EntityManager, m_weToolController.CurrentEntity.Value);
             }
-            return TypeManager.AllTypes
-                .Where(x => x.Type != null && typeof(IComponentData).IsAssignableFrom(x.Type) && EntityManager.HasComponent(targetEntity, x.Type))
-                   .Select(x => WEComponentTypeDesc.From(x.Type))
-                   .ToArray();
+            if (targetEntity == Entity.Null) return null;
+            var array = EntityManager.GetComponentTypes(targetEntity);
+            try
+            {
+                return array.ToArray().Select(x => WEComponentTypeDesc.From(x.GetManagedType())).ToArray();
+            }
+            finally
+            {
+                array.Dispose();
+            }
         }
+
 
         private List<object> FormulaeToPathObjects(string formulae)
         {
@@ -128,6 +136,11 @@ namespace BelzontWE
                 {
                     if (WEFormulaeHelper.ParseComponentEntryType(ref currentType, part, out _, out var fieldPath) != 0) break;
                     result.Add(WEComponentTypeDesc.From(currentType));
+                    if (currentType.GetInterfaces().Any(x => x == typeof(IBufferElementData)))
+                    {
+                        currentType = typeof(DynamicBuffer<>).MakeGenericType(currentType);
+                    }
+
                     if (!IterateFieldPath(result, ref currentType, fieldPath)) break;
                 }
             }
@@ -146,9 +159,9 @@ namespace BelzontWE
                         currentType = currentType.GetElementType();
                         result.Add(WETypeMemberDesc.FromIndexing(val, currentType));
                     }
-                    else if (currentType.IsAssignableFrom(typeof(IList<>)))
+                    else if (currentType.GetInterfaces().FirstOrDefault(x => x.IsGenericType && (x.GetGenericTypeDefinition() == typeof(IList<>) || x.GetGenericTypeDefinition() == typeof(IIndexable<>))) is Type t)
                     {
-                        currentType = currentType.GetInterfaces().Where(x => x.IsAssignableFrom(typeof(IList<>))).First().GetGenericArguments()[0];
+                        currentType = t.GetGenericArguments()[0];
                         result.Add(WETypeMemberDesc.FromIndexing(val, currentType));
                     }
                     else

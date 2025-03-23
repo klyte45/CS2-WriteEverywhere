@@ -233,7 +233,7 @@ namespace BelzontWE.Sprites
                     }
                 }
                 targetDict[atlasName].Apply();
-                if (BasicIMod.DebugMode && atlasName is string s) targetDict[atlasName]._SaveDebug(s);
+                if (BasicIMod.TraceMode && atlasName is string s) targetDict[atlasName]._SaveDebug(s);
             }
         }
 

@@ -54,6 +54,9 @@ export type WEComponentTypeDesc = {
     source: EnumWrapper<WEMethodSource>;
     modUrl: string;
     modName: string;
+    returnDllName: string;
+    returnClassName: string;
+    isBuffer: boolean;
 };
 
 export type WEStaticMethodDesc = {
@@ -76,14 +79,14 @@ export type WEArrayIndexingDesc = {
 
 export function getDllNameFrom(el: WEFormulaeElement) {
     switch (el.WEDescType) {
-        case WEDescType.COMPONENT: return el.dllName;
+        case WEDescType.COMPONENT: return el.returnDllName;
         case WEDescType.STATIC_METHOD: return el.returnTypeDll;
         case WEDescType.MEMBER: return el.memberTypeDllName;
     }
 }
 export function getClassNameFrom(el: WEFormulaeElement) {
     switch (el.WEDescType) {
-        case WEDescType.COMPONENT: return el.className;
+        case WEDescType.COMPONENT: return el.returnClassName;
         case WEDescType.STATIC_METHOD: return el.returnType;
         case WEDescType.MEMBER: return el.memberTypeClassName;
     }

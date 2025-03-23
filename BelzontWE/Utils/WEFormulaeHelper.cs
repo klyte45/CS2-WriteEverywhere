@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
+using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 
@@ -50,10 +51,14 @@ namespace BelzontWE
 
         internal static readonly BindingFlags MEMBER_FLAGS = ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly;
 
-        private static MethodInfo r_GetComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
+        private static readonly MethodInfo r_GetComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
             .First(x => x.Name == "GetComponentData" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 1 && pi[0].ParameterType == typeof(Entity));
-        private static MethodInfo r_HasComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
+        private static readonly MethodInfo r_HasComponent = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
             .First(x => x.Name == "HasComponent" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 1 && pi[0].ParameterType == typeof(Entity));
+        private static readonly MethodInfo r_HasBuffer = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
+            .First(x => x.Name == "HasBuffer" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 1 && pi[0].ParameterType == typeof(Entity));
+        private static readonly MethodInfo r_GetBuffer = typeof(EntityManager).GetMethods(ReflectionUtils.allFlags)
+            .First(x => x.Name == "GetBuffer" && x.GetParameters() is ParameterInfo[] pi && pi.Length == 2 && pi[0].ParameterType == typeof(Entity) && pi[1].ParameterType == typeof(bool));
 
         private static readonly Dictionary<string, BaseCache<string>> cachedFnsString = new();
         private static readonly Dictionary<string, BaseCache<float>> cachedFnsFloat = new();
@@ -291,8 +296,14 @@ namespace BelzontWE
                     iLGenerator.Emit(OpCodes.Ldloc, localVarEntity);
                 }
             }
+
+            var isBufferElement = currentComponentType.GetInterfaces().Any(x => x == typeof(IBufferElementData));
+
+            var componentCheckFn = isBufferElement ? r_HasBuffer : r_HasComponent;
+            var componentGetFn = isBufferElement ? r_GetBuffer : r_GetComponent;
+
             loadParameters(ref localVarEntity, true);
-            iLGenerator.EmitCall(OpCodes.Call, r_HasComponent.MakeGenericMethod(currentComponentType), null);
+            iLGenerator.EmitCall(OpCodes.Call, componentCheckFn.MakeGenericMethod(currentComponentType), null);
             var lbl_ok = iLGenerator.DefineLabel();
             iLGenerator.Emit(OpCodes.Brtrue_S, lbl_ok);
             if (typeof(T) == typeof(string))
@@ -326,7 +337,15 @@ namespace BelzontWE
             iLGenerator.Emit(OpCodes.Ret);
             iLGenerator.MarkLabel(lbl_ok);
             loadParameters(ref localVarEntity, false);
-            iLGenerator.EmitCall(OpCodes.Call, r_GetComponent.MakeGenericMethod(currentComponentType), null);
+            if (isBufferElement)
+            {
+                iLGenerator.Emit(OpCodes.Ldc_I4_1);
+            }
+            iLGenerator.EmitCall(OpCodes.Call, componentGetFn.MakeGenericMethod(currentComponentType), null);
+            if (isBufferElement)
+            {
+                currentComponentType = typeof(DynamicBuffer<>).MakeGenericType(currentComponentType);
+            }
             skipValueTypeVar = false;
             return NavigateThroughPath(ref currentComponentType, iLGenerator, ref errorFmtArgs, fieldPath, ref skipValueTypeVar);
         }
@@ -350,12 +369,14 @@ namespace BelzontWE
                         iLGenerator.Emit(OpCodes.Ldelem_I4);
                         currentComponentType = currentComponentType.GetElementType();
                     }
-                    else if (currentComponentType.IsAssignableFrom(typeof(IList<>)))
+                    else if (currentComponentType.GetMethod("get_Item", new[] { typeof(int) }) is MethodInfo getItem && currentComponentType.GetInterfaces().FirstOrDefault(x =>
+                       x.IsGenericType
+                       && (x.GetGenericTypeDefinition() == typeof(IIndexable<>) || x.GetGenericTypeDefinition() == typeof(IList<>))
+                    ) is Type listType)
                     {
                         iLGenerator.Emit(OpCodes.Ldc_I4, idx);
-                        currentComponentType.GetMethod("get_Item");
-                        iLGenerator.Emit(OpCodes.Call, currentComponentType);
-                        currentComponentType = currentComponentType.GetInterfaces().Where(x => x.IsAssignableFrom(typeof(IList<>))).First().GetGenericArguments()[0];
+                        iLGenerator.Emit(OpCodes.Call, getItem);
+                        currentComponentType = listType.GetGenericArguments()[0];
                     }
                     else
                     {

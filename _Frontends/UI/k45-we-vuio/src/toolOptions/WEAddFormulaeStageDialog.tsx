@@ -72,6 +72,7 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
     const EditorRow = VanillaWidgets.instance.EditorItemRowNoFocus;
     const IntInput = VanillaComponentResolver.instance.IntInput;
 
+    const editorItemTheme = VanillaComponentResolver.instance.editorItemTheme;
     return <Dialog
         onClose={() => callback()}
         wide={true}
@@ -108,12 +109,12 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
                             {
                                 selectedTab == WEDescType.ARRAY_INDEXING ?
                                     <EditorRow label={T_arrayIndexingFieldLabel}>
-                                        <IntInput min={0} onChange={(x) => setIndexSet(x)} value={indexSet} />
+                                        <IntInput className={editorItemTheme.sliderInput}  min={0} onChange={(x) => setIndexSet(x)} value={indexSet} />
                                     </EditorRow>
                                     : selectedTab == WEDescType.MEMBER
                                         ? printWithTooltip(optionsMembers, selectedElement, setSelectedElement)
                                         : selectedTab == WEDescTypeUI.CURRENT_COMPONENT
-                                            ? printWithTooltip(currentEntityComponent.sort((a, b) => a.className.localeCompare(b.className)), selectedElement, setSelectedElement)
+                                            ? printWithTooltip(currentEntityComponent.sort((a, b) => (a.isBuffer as any - (b.isBuffer as any)) || a.className.localeCompare(b.className)), selectedElement, setSelectedElement)
                                             : selectedTab && [WEDescType.COMPONENT, WEDescType.STATIC_METHOD].includes(selectedTab)
                                             && <WEPaginateOverResultObj lastLevelIsPackage={selectedTab == WEDescType.COMPONENT} selectedElement={selectedElement} source={selectedTab == WEDescType.COMPONENT ? optionsComponentGetter! : optionsStaticMethods} currentNavigation={selectedPath} setNavigation={setSelectedPath} setElement={setSelectedElement} />
                             }
@@ -162,7 +163,7 @@ const WEFormulaeItemBtn: <T extends string | WEFormulaeElement | number>(x: Prop
     }
     switch (item.WEDescType) {
         case WEDescType.COMPONENT:
-            return <div className={["k45_we_formulaeDialog_btn_component", isSelected ? "selected" : ""].join(" ").trim()} onClick={() => onSelect(item)} >{breakIntoFlexComponents(displayName ?? item.className)}</div>
+            return <div className={["k45_we_formulaeDialog_btn_component" + (item.isBuffer ? "Buffer" : ""), isSelected ? "selected" : ""].join(" ").trim()} onClick={() => onSelect(item)} >{breakIntoFlexComponents(displayName ?? item.className)}</div>
         case WEDescType.MEMBER:
             switch (item.type.value__) {
                 case WEMemberType.Field:

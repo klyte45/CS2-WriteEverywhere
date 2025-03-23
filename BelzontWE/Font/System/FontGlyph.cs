@@ -11,6 +11,11 @@ namespace BelzontWE.Font
         public static readonly FontGlyph Null = new FontGlyph();
 
         private NativeHashMap<int, int> _kernings;
+
+        public int Codepoint;
+        public int Index;
+        public int Height;
+        public int Blur;
         private GCHandle fontAddr;
         public Font Font
         {
@@ -18,14 +23,10 @@ namespace BelzontWE.Font
             set
             {
                 if (fontAddr.IsAllocated) fontAddr.Free();
-                fontAddr = GCHandle.Alloc(value);
+                fontAddr = GCHandle.Alloc(value, GCHandleType.Weak);
             }
         }
-        public int Codepoint;
-        public int Index;
-        public int Height;
-        public int Blur;
-
+        public readonly bool IsValid => fontAddr.IsAllocated && fontAddr.Target != null;
         public readonly float xMin => x;
         public readonly float yMin => y;
         public readonly float xMax => x + width;
@@ -41,7 +42,6 @@ namespace BelzontWE.Font
         public int YOffset;
 
         public readonly int Pad => PadFromBlur(Blur);
-        public bool IsValid => fontAddr.IsAllocated;
 
         public bool AtlasGenerated { get; internal set; }
 
@@ -65,7 +65,6 @@ namespace BelzontWE.Font
 
         public void Dispose()
         {
-            if (fontAddr.IsAllocated) fontAddr.Free();
             _kernings.Dispose();
         }
 

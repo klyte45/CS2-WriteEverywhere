@@ -70,20 +70,21 @@ namespace BelzontWE.Font
 
                 // Determine ascent and lineHeight from first character
                 float ascent = 0, lineHeight = 0;
+                var fsdTarget = fsd.Target as FontSystemData;
                 for (int i = 0; i < str.Length; i += char.IsSurrogatePair(str, i) ? 2 : 1)
                 {
                     int codepoint = char.ConvertToUtf32(str, i);
 #if JOBS_DEBUG
                 LogUtils.DoLog($"codepoint #{i}: {codepoint}");
 #endif
-                    FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, fsd.Target as FontSystemData);
+                    FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, fsdTarget);
                     if (!glyph.IsValid)
                     {
                         continue;
                     }
 
-                    ascent = glyph.Font.Ascent;
-                    lineHeight = glyph.Font.LineHeight;
+                    ascent = fsdTarget.Font.Ascent;
+                    lineHeight = fsdTarget.Font.LineHeight;
                     break;
                 }
 
@@ -164,7 +165,7 @@ namespace BelzontWE.Font
                     result.trianglesCube = new(trianglesCube.ToArray(), Allocator.Persistent);
 
 
-                    result.m_fontBaseLimits = new RangeVector { min = prevGlyph.Font.Descent, max = prevGlyph.Font.Ascent };
+                    result.m_fontBaseLimits = new RangeVector { min = fsdTarget.Font.Descent, max = fsdTarget.Font.Ascent };
                     result.AtlasVersion = AtlasVersion;
 #if JOBS_DEBUG
                 

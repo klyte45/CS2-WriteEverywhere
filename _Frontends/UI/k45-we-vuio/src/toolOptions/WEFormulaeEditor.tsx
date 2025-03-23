@@ -88,7 +88,7 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
                     output += `${item.FormulaeString}`
                     break;
                 case WEDescType.ARRAY_INDEXING:
-                    output += `.${item.index}`
+                    output += `${output.endsWith(";") ? "" : "."}${item.index}`
                     break;
             }
         }
@@ -193,9 +193,9 @@ const WEMethodCallBlock = (data: WEStaticMethodDesc & { i: number }) => {
 const WEComponentGetterBlock = (data: WEComponentTypeDesc & { i: number }) => {
     const T_descType_componentGetter = translate("formulaeEditor.descType.componentGetter"); //Get component
     return <>
-        <div className="k45_we_formulaeEditor_componentGet">
-            <div className="k45_we_formulaeEditor_dotTitle">{T_descType_componentGetter}</div>
-            <WEReturnType>{data.className}</WEReturnType>
+        <div className={"k45_we_formulaeEditor_componentGet" + (data.isBuffer ? "Buffer" : "")}>
+            <div className="k45_we_formulaeEditor_dotTitle">{T_descType_componentGetter + (data.isBuffer ? " (Buffer)" : "")}</div>
+            <WEReturnType>{data.returnClassName}</WEReturnType>
         </div>
         <div className="k45_we_formulaeEditor_downArrow" />
     </>

@@ -183,8 +183,7 @@ namespace BelzontWE.Font
                 return glyph;
             }
 
-            int g = GetCodepointIndex(codepoint, data.Font);
-            if (g == 0)
+            if (data.Font?.GetGlyphIndex(codepoint) is not int g || g == 0)
             {
                 return FontGlyph.Null;
             }
@@ -284,7 +283,7 @@ namespace BelzontWE.Font
         private FontGlyph GetGlyph(NativeHashMap<int, FontGlyph> glyphs, int codepoint, out bool hasResetted, bool ignoreDefaultChar = false)
         {
             FontGlyph result = GetGlyphInternal(glyphs, codepoint, out hasResetted);
-            if (!ignoreDefaultChar && result.Font is not null && DefaultCharacter != null)
+            if (!ignoreDefaultChar && DefaultCharacter != null)
             {
                 result = GetGlyphInternal(glyphs, DefaultCharacter.Value, out hasResetted);
             }
