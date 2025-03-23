@@ -10,7 +10,7 @@ using Target = Game.Common.Target;
 
 namespace BelzontWE.Builtin
 {
-    public class WEVehicleFn
+    public static class WEVehicleFn
     {
         public const string LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         public const string NUMBERS = "0123456789";
@@ -25,7 +25,7 @@ namespace BelzontWE.Builtin
                         : WEUtitlitiesFn.GetEntityName(owner.m_Owner)
                 : target.m_Target == Entity.Null ? "Cities Skylines II"
                 : !em.TryGetComponent<Connected>(target.m_Target, out var connected)
-                    ? !em.TryGetComponent(entity, out owner) 
+                    ? !em.TryGetComponent(entity, out owner)
                         ? WEUtitlitiesFn.GetEntityName(target.m_Target)
                         : WEUtitlitiesFn.GetEntityName(owner.m_Owner)
                 : WEUtitlitiesFn.GetEntityName(connected.m_Connected);

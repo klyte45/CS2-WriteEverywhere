@@ -147,6 +147,10 @@ namespace BelzontWE
                             iLGenerator.Emit(OpCodes.Stloc, local0);
                             iLGenerator.Emit(OpCodes.Ldloc_S, local0);
                         }
+                        if (methodInfo.GetParameters().Length == 2)
+                        {
+                            iLGenerator.Emit(OpCodes.Ldarg_2);
+                        }
                         iLGenerator.EmitCall(OpCodes.Call, methodInfo, null);
                         currentComponentType = methodInfo.ReturnType;
                         skipValueTypeVar = false;
@@ -267,15 +271,19 @@ namespace BelzontWE
                                                  .SelectMany(assembly => assembly.GetTypes())
                                                  .SelectMany(x => x.GetMethods(BindingFlags.Static | BindingFlags.Public))
                                                  .Where(m => m.GetParameters() is ParameterInfo[] p
-                                                    && p.Length == 1
+                                                    && (p.Length == 1 || (p.Length == 2 && p[1].ParameterType == typeof(Dictionary<string, string>)))
                                                     && !p[0].ParameterType.IsByRefLike
                                                     && m.ReturnType != typeof(void)
                                                  ).ToList();
 
-            return CACHED_AVAILABLE_STATIC_METHODS.Where(m => (className is null || m.DeclaringType.FullName == className || m.DeclaringType.FullName.EndsWith($".{className}"))
-                                                    && (method is null || m.Name == method)
-                                                    && m.GetParameters()[0].ParameterType == currentComponentType
-                                                  );
+            return CACHED_AVAILABLE_STATIC_METHODS.Where(m => CheckMethodIsCompatible(currentComponentType, className, method, m));
+        }
+
+        private static bool CheckMethodIsCompatible(Type currentComponentType, string className, string method, MethodInfo m)
+        {
+            return (className is null || m.DeclaringType.FullName == className || m.DeclaringType.FullName.EndsWith($".{className}"))
+                                                                                && (method is null || m.Name == method)
+                                                                                && currentComponentType == m.GetParameters()[0].ParameterType;
         }
 
         private static byte ProcessEntityPath<T>(ref Type currentComponentType, ILGenerator iLGenerator, string path, int blockId, ref LocalBuilder localVarEntity, ref string[] errorFmtArgs, ref bool skipValueTypeVar)

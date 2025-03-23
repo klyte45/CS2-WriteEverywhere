@@ -1,4 +1,8 @@
-#  v0.2.0r1 (19-MAR-25)
+#  v0.2.0r2 (23-MAR-25)
+- Added support to inheritable variables for WE template components
+- Added support to indexing arrays from formulaes, by using directly the array index number at path navigation
+
+## FROM v0.2.0r1
 - Added layout item postion pivot select support
 - Fixing some missing icons on UI
 - Fixing max width (cm) of the text can't be reset to 0 if already set once
