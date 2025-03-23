@@ -13,6 +13,7 @@ import { WEFormulaeEditor } from "./WEFormulaeEditor";
 import i_debug from "../images/debug.svg"
 import { WEDebugWindow } from "./WEDebugWindow";
 import { ObjectTyped } from "object-typed";
+import { WELayoutVariablesView } from "./WELayoutVariablesView";
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
 
@@ -27,6 +28,7 @@ const i_moveModeHorizontal = "coui://uil/Standard/ArrowsMoveLeftRight.svg";
 const i_moveModeVertical = "coui://uil/Standard/ArrowsMoveUpDown.svg";
 const i_AppearenceBtnIcon = "coui://uil/Standard/ColorPalette.svg";
 const i_ShaderBtnIcon = "coui://uil/Standard/HouseAlternative.svg";
+const i_VariablesBtnIcon = "coui://uil/Standard/ExclamationMark.svg";
 
 
 const i_unselectedPivot = "coui://uil/Standard/Circle.svg";
@@ -70,7 +72,8 @@ const WEWorldPickerToolPanel = () => {
     const T_picker = translate("toolOption.picker.tooltip"); //"Pick another object"
     const T_lockCamera = translate("toolOption.lockCamera.tooltip"); //"Lock camera to editing plane area and angle"
     const T_AppearenceBtn = translate("toolOption.AppearenceBtn.tooltip"); //"Appearance settings"
-    const T_ShaderBtn = translate("toolOption.ShaderBtn.tooltip"); //"Shader settings"
+    const T_VariablesBtn = translate("toolOption.VariablesBtn.tooltip");
+    const T_ShaderBtn = translate("toolOption.ShaderBtn.tooltip");//"Shader settings"
     const T_pivot_Left = translate("toolOption.pivot_Left.tooltip"); //"move in XY, rotate in Z (front)"
     const T_pivot_Center = translate("toolOption.pivot_Center.tooltip"); //"move in ZY, rotate in X (right)"
     const T_pivot_Right = translate("toolOption.pivot_Right.tooltip"); //"move in XZ, rotate in Y (top)"
@@ -105,6 +108,7 @@ const WEWorldPickerToolPanel = () => {
 
     const [displayAppearenceWindow, setDisplayAppearenceWindow] = useState(false);
     const [displayShaderWindow, setDisplayShaderWindow] = useState(false);
+    const [displayVariablesWindow, setDisplayVariablesWindow] = useState(false);
     const [displayDebugWindow, setDisplayDebugWindow] = useState(false);
     const [debugAvailable, setDebugAvailable] = useState(false);
 
@@ -197,7 +201,7 @@ const WEWorldPickerToolPanel = () => {
                                     src={transform.Pivot.value == x ? i_selectedPivot : i_unselectedPivot}
                                     focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
                                     className={VanillaComponentResolver.instance.toolButtonTheme.button} />
-                                {(x & 3) == 2 ? <div style={{ flexBasis:"100%"}} /> : <></>}
+                                {(x & 3) == 2 ? <div style={{ flexBasis: "100%" }} /> : <></>}
                             </>)
                         }
 
@@ -231,6 +235,7 @@ const WEWorldPickerToolPanel = () => {
                             <div style={{ width: "20rem", flexShrink: 1 }}></div>
                         </>
                         }
+                        <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayVariablesWindow(!displayVariablesWindow)} selected={displayVariablesWindow} src={i_VariablesBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_VariablesBtn} />
                         <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayShaderWindow(!displayShaderWindow)} selected={displayShaderWindow} src={i_ShaderBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ShaderBtn} />
                         <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
                         <div style={{ width: "10rem" }}></div>
@@ -239,9 +244,9 @@ const WEWorldPickerToolPanel = () => {
                     <VanillaComponentResolver.instance.ToolButton onSelect={() => wps.CurrentEntity.set(null)} src={i_UnselectCurrentIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_picker} />
                 </>
             </VanillaComponentResolver.instance.Section >
-            {currentItemIsValid && displayAppearenceWindow && <WETextAppearenceSettings />
-            }
+            {currentItemIsValid && displayAppearenceWindow && <WETextAppearenceSettings />}
             {currentItemIsValid && displayShaderWindow && <WETextShaderProperties />}
+            {currentItemIsValid && displayVariablesWindow && <WELayoutVariablesView />}
             {currentItemIsValid && <WETextValueSettings />}
             {debugAvailable && currentItemIsValid && displayDebugWindow && <WEDebugWindow />}
             {<WETextHierarchyView clipboard={clipboard} setClipboard={setClipboard} />}

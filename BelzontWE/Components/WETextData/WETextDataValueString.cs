@@ -2,9 +2,11 @@
 using Belzont.Utils;
 using Colossal.OdinSerializer.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
+using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE
 {
@@ -61,11 +63,11 @@ namespace BelzontWE
             return result;
         }
 
-        public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity)
+        public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity, Dictionary<string, string> vars)
         {
-            return UpdateEffectiveValue(em, geometryEntity, EffectiveValue.ToString());
+            return UpdateEffectiveValue(em, geometryEntity, EffectiveValue.ToString(), vars);
         }
-        public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity, string oldEffText)
+        public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity, string oldEffText, Dictionary<string, string> vars)
         {
             InitializedEffectiveText = true;
             var loadedFnNow = false;
@@ -80,8 +82,8 @@ namespace BelzontWE
             try
             {
                 EffectiveValue = formulaeGC.IsAllocated
-                    ? WEFormulaeHelper.GetCachedStringFn(Formulae) is Func<EntityManager, Entity, string> fn
-                        ? (fn(em, geometryEntity)?.ToString().Trim().Truncate(500) ?? "<InvlidFn1>")
+                    ? WEFormulaeHelper.GetCachedStringFn(Formulae) is FormulaeFn<string> fn
+                        ? (fn(em, geometryEntity, vars)?.ToString().Trim().Truncate(500) ?? "<InvlidFn1>")
                         : "<InvalidFn2>"
                     : DefaultValue;
             }

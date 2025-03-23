@@ -14,7 +14,7 @@ namespace BelzontWE
     [XmlRoot("WELayout")]
     public class WETextDataXmlTree : IEquatable<WETextDataXmlTree>, ISerializable
     {
-        public const int CURRENT_VERSION = 0;
+        public const int CURRENT_VERSION = 1;
 
         [XmlElement("self")]
         public WETextDataXml self;
@@ -22,6 +22,9 @@ namespace BelzontWE
 
         [XmlElement("children")]
         public WETextDataXmlTree[] children = new WETextDataXmlTree[0];
+
+        [XmlElement("variable")]
+        public WETemplateVariable[] variables = new WETemplateVariable[0];
 
         public bool ShouldSerializechildren() => self.layoutMesh is null;
 
@@ -38,6 +41,18 @@ namespace BelzontWE
                 for (int i = 0; i < subTextData.Length; i++)
                 {
                     result.children[i] = FromEntity(subTextData[i].m_weTextData, em);
+                }
+            }
+            if (em.TryGetBuffer<WETextDataVariable>(e, true, out var varData))
+            {
+                result.variables = new WETemplateVariable[varData.Length];
+                for (int i = 0; i < varData.Length; i++)
+                {
+                    result.variables[i] = new()
+                    {
+                        key = varData[i].Key.ToString(),
+                        value = varData[i].Value.ToString()
+                    };
                 }
             }
             return result;
@@ -82,6 +97,11 @@ namespace BelzontWE
             {
                 writer.Write(children[i]);
             }
+            writer.Write(variables?.Length ?? 0);
+            for (int i = 0; i < variables?.Length; i++)
+            {
+                writer.Write(variables[i]);
+            }
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -99,6 +119,16 @@ namespace BelzontWE
             {
                 children[i] = new();
                 reader.Read(children[i]);
+            }
+            if (version >= 1)
+            {
+                reader.Read(out int countVar);
+                variables = new WETemplateVariable[countVar];
+                for (int i = 0; i < countVar; i++)
+                {
+                    variables[i] = new();
+                    reader.Read(variables[i]);
+                }
             }
         }
 

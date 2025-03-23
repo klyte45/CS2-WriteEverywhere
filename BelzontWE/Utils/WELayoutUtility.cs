@@ -67,6 +67,19 @@ namespace BelzontWE
             cmd.AddComponent(newEntity, mesh);
             cmd.AddComponent(newEntity, material);
             cmd.AddComponent(newEntity, transform);
+            if (toCopy.variables?.Length > 0)
+            {
+                var buffVars = cmd.AddBuffer<WETextDataVariable>(newEntity);
+                foreach (var item in toCopy.variables)
+                {
+                    buffVars.Add(new()
+                    {
+                        Key = item.key,
+                        Value = item.value
+                    });
+                }
+            }
+
             cmd.AddComponent<WEWaitingPostInstantiation>(newEntity);
 
             if (childTargetMode == ParentEntityMode.TARGET_IS_TARGET)

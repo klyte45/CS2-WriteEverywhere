@@ -2,6 +2,7 @@
 using BelzontWE.Utils;
 using Colossal.Mathematics;
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -95,27 +96,29 @@ namespace BelzontWE
         public int SetFormulaeColorMask2(string value, out string[] cmpErr) => colorMask2.SetFormulae(value, out cmpErr);
         public int SetFormulaeColorMask3(string value, out string[] cmpErr) => colorMask3.SetFormulae(value, out cmpErr);
 
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr)
         {
             if (nextUpdateFrame > Time.frameCount)
             {
                 return false;
             }
             nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
-            return dirty |= color.UpdateEffectiveValue(em, geometryEntity)
-              | emissiveColor.UpdateEffectiveValue(em, geometryEntity)
-              | glassColor.UpdateEffectiveValue(em, geometryEntity)
-              | normalStrength.UpdateEffectiveValue(em, geometryEntity)
-              | glassRefraction.UpdateEffectiveValue(em, geometryEntity)
-              | metallic.UpdateEffectiveValue(em, geometryEntity)
-              | smoothness.UpdateEffectiveValue(em, geometryEntity)
-              | emissiveIntensity.UpdateEffectiveValue(em, geometryEntity)
-              | emissiveExposureWeight.UpdateEffectiveValue(em, geometryEntity)
-              | coatStrength.UpdateEffectiveValue(em, geometryEntity)
-              | glassThickness.UpdateEffectiveValue(em, geometryEntity)
-              | colorMask1.UpdateEffectiveValue(em, geometryEntity)
-              | colorMask2.UpdateEffectiveValue(em, geometryEntity)
-              | colorMask3.UpdateEffectiveValue(em, geometryEntity);
+            var vars = varsStr.Split(WERendererSystem.VARIABLE_ITEM_SEPARATOR).Select(x => x.Split(WERendererSystem.VARIABLE_KV_SEPARATOR, 2))
+                        .Where(x => x.Length == 2).GroupBy(x => x[0]).ToDictionary(x => x.Key, x => x.Last()[1]);
+            return dirty |= color.UpdateEffectiveValue(em, geometryEntity, vars)
+              | emissiveColor.UpdateEffectiveValue(em, geometryEntity, vars)
+              | glassColor.UpdateEffectiveValue(em, geometryEntity, vars)
+              | normalStrength.UpdateEffectiveValue(em, geometryEntity, vars)
+              | glassRefraction.UpdateEffectiveValue(em, geometryEntity, vars)
+              | metallic.UpdateEffectiveValue(em, geometryEntity, vars)
+              | smoothness.UpdateEffectiveValue(em, geometryEntity, vars)
+              | emissiveIntensity.UpdateEffectiveValue(em, geometryEntity, vars)
+              | emissiveExposureWeight.UpdateEffectiveValue(em, geometryEntity, vars)
+              | coatStrength.UpdateEffectiveValue(em, geometryEntity, vars)
+              | glassThickness.UpdateEffectiveValue(em, geometryEntity, vars)
+              | colorMask1.UpdateEffectiveValue(em, geometryEntity, vars)
+              | colorMask2.UpdateEffectiveValue(em, geometryEntity, vars)
+              | colorMask3.UpdateEffectiveValue(em, geometryEntity, vars);
         }
 
         public readonly void UpdateDefaultMaterial(Material material, WESimulationTextType textType)

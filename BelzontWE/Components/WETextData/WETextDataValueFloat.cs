@@ -1,7 +1,9 @@
 ﻿using Colossal.OdinSerializer.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Entities;
+using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE
 {
@@ -42,7 +44,7 @@ namespace BelzontWE
             return result;
         }
 
-        public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity)
+        public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity, Dictionary<string, string> vars)
         {
             InitializedEffectiveText = true;
             var loadedFnNow = false;
@@ -58,8 +60,8 @@ namespace BelzontWE
             try
             {
                 EffectiveValue = formulaeGC.IsAllocated
-                    ? WEFormulaeHelper.GetCachedFloatFn(Formulae) is Func<EntityManager, Entity, float> fn
-                        ? fn(em, geometryEntity)
+                    ? WEFormulaeHelper.GetCachedFloatFn(Formulae) is FormulaeFn<float> fn
+                        ? fn(em, geometryEntity, vars)
                         : float.NaN
                     : defaultValue;
             }

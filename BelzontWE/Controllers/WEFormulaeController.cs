@@ -1,5 +1,6 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
+using Colossal.Entities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using Unity.Collections;
 using Unity.Entities;
+using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE
 {
@@ -24,6 +26,8 @@ namespace BelzontWE
             callBinder($"{PREFIX}listAvailableComponents", ListAvailableComponents);
             callBinder($"{PREFIX}listComponentsOnCurrentEntity", ListComponentsOnCurrentEntity);
             callBinder($"{PREFIX}isTypeIndexable", IsTypeIndexable);
+            callBinder($"{PREFIX}listVariablesOnCurrentEntity", ListVariablesOnCurrentEntity);
+            callBinder($"{PREFIX}setVariablesOnCurrentEntity", SetVariablesOnCurrentEntity);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
@@ -64,7 +68,7 @@ namespace BelzontWE
         {
             var type = Type.GetType($"{typeFullName}, {assemblyName}");
             return type?.GetMembers(WEFormulaeHelper.MEMBER_FLAGS).Where(x =>
-            (x is PropertyInfo pi &&  pi.GetMethod?.GetParameters().Length == 0) || x is FieldInfo || (x is MethodInfo mi && mi.GetParameters().Length == 0 && mi.ReturnType != typeof(void) && !mi.Name.StartsWith("get_"))
+            (x is PropertyInfo pi && pi.GetMethod?.GetParameters().Length == 0) || x is FieldInfo || (x is MethodInfo mi && mi.GetParameters().Length == 0 && mi.ReturnType != typeof(void) && !mi.Name.StartsWith("get_"))
             ).Select(x => WETypeMemberDesc.FromMemberInfo(x)).ToArray();
         }
 
@@ -95,8 +99,8 @@ namespace BelzontWE
             }
             else
             {
-                if (WEFormulaeHelper.SetFormulae(formulaeStr, out _, out _, out Func<EntityManager, Entity, Entity> resultFormulaeFn) != 0 || resultFormulaeFn is null) return null;
-                targetEntity = resultFormulaeFn(EntityManager, m_weToolController.CurrentEntity.Value);
+                if (WEFormulaeHelper.SetFormulae(formulaeStr, out _, out _, out FormulaeFn<Entity> resultFormulaeFn) != 0 || resultFormulaeFn is null) return null;
+                targetEntity = resultFormulaeFn(EntityManager, m_weToolController.CurrentEntity.Value, new());
             }
             if (targetEntity == Entity.Null) return null;
             var array = EntityManager.GetComponentTypes(targetEntity);
@@ -109,7 +113,43 @@ namespace BelzontWE
                 array.Dispose();
             }
         }
+        private string[][] ListVariablesOnCurrentEntity()
+        {
+            var targetEntity = m_weToolController.CurrentSubEntity.Value;
 
+            if (targetEntity == Entity.Null || !EntityManager.TryGetBuffer<WETextDataVariable>(targetEntity, true, out var buff) || buff.IsEmpty) return null;
+
+            var result = new string[buff.Length][];
+            for (int i = 0; i < buff.Length; i++)
+            {
+                result[i] = new string[] { buff[i].Key.ToString(), buff[i].Value.ToString() };
+            }
+            return result;
+        }
+
+        private void SetVariablesOnCurrentEntity(string[][] newVars)
+        {
+            var targetEntity = m_weToolController.CurrentSubEntity.Value;
+            if (targetEntity == Entity.Null) return;
+            if (!EntityManager.TryGetBuffer<WETextDataVariable>(targetEntity, true, out var buff))
+            {
+                buff = EntityManager.AddBuffer<WETextDataVariable>(targetEntity);
+            }
+            if (buff.Length != newVars.Length)
+            {
+                buff.Resize(newVars.Length, NativeArrayOptions.ClearMemory);
+            }
+            var idx = 0;
+            foreach (var kv in newVars)
+            {
+                buff[idx] = new WETextDataVariable
+                {
+                    Key = kv[0],
+                    Value = kv[1]
+                };
+                idx++;
+            }
+        }
 
         private List<object> FormulaeToPathObjects(string formulae)
         {

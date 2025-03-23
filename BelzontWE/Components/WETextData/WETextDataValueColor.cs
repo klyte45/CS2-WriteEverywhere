@@ -1,9 +1,11 @@
 ﻿using Belzont.Utils;
 using Colossal.OdinSerializer.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Entities;
 using UnityEngine;
+using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE
 {
@@ -47,7 +49,7 @@ namespace BelzontWE
             return result;
         }
 
-        public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity)
+        public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity, Dictionary<string, string> vars)
         {
             InitializedEffectiveText = true;
             var loadedFnNow = false;
@@ -63,8 +65,8 @@ namespace BelzontWE
             try
             {
                 EffectiveValue = formulaeGC.IsAllocated
-                    ? WEFormulaeHelper.GetCachedColorFn(Formulae) is Func<EntityManager, Entity, Color> fn
-                        ? fn(em, geometryEntity)
+                    ? WEFormulaeHelper.GetCachedColorFn(Formulae) is FormulaeFn<Color> fn
+                        ? fn(em, geometryEntity, vars)
                         : Color.cyan
                     : defaultValue;
             }

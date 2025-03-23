@@ -21,5 +21,11 @@ export class FormulaeService {
     static async isTypeIndexable(dllName: string, typeName: string): Promise<boolean> {
         return await engine.call("k45::we.formulae.isTypeIndexable", dllName, typeName);
     }
+    static async listVariablesOnCurrentEntity(): Promise<[string, string][]> {
+        return await engine.call("k45::we.formulae.listVariablesOnCurrentEntity");
+    }
+    static async setVariablesOnCurrentEntity(newValue: [string, string][]): Promise<void> {
+        return await engine.call("k45::we.formulae.setVariablesOnCurrentEntity", newValue);
+    }
 }
 

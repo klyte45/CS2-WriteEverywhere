@@ -1,0 +1,38 @@
+.k45_variablesRow {
+    display: flex;
+    width: 100%;
+    text-align: center;
+
+    .k45_varKey {
+        width: 45%;
+    }
+
+    .k45_varValue {
+        flex-grow: 1;
+        flex-shrink: 1;
+        display: flex;
+        justify-content: center;
+        flex-direction: row;
+
+        >* {
+            flex-shrink: 1;
+            margin-left: 2rem;
+            margin-right: 2rem;
+        }
+    }
+}
+.k45_variablesEmpty {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-content: center;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--fontSizeL);
+}
+.k45_variablesListWindow{
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+    padding-left: 5rem;
+    padding-right: 5rem;
+}

@@ -2,6 +2,7 @@
 using Colossal.Entities;
 using Colossal.Mathematics;
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
@@ -101,11 +102,11 @@ namespace BelzontWE
 
         public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity)
         {
-            UpdateFormulaes(em, targetEntity, true);
+            UpdateFormulaes(em, targetEntity, "", true);
             FontServer.Instance.EnsureFont(fontName);
             return this;
         }
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, bool force = false)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr, bool force = false)
         {
             if (!force && nextUpdateFrame > Time.frameCount)
             {
@@ -113,6 +114,8 @@ namespace BelzontWE
             }
             nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
             bool result = false;
+            var vars = varsStr.Split(WERendererSystem.VARIABLE_ITEM_SEPARATOR).Select(x => x.Split(WERendererSystem.VARIABLE_KV_SEPARATOR, 2))
+                        .Where(x => x.Length == 2).GroupBy(x => x[0]).ToDictionary(x => x.Key, x => x.Last()[1]);
             switch (textType)
             {
                 case WESimulationTextType.Text:
@@ -121,7 +124,7 @@ namespace BelzontWE
                         lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
                         fontName = WETemplateManager.Instance.GetFontFor(originalName.ToString(), fontName, ref result);
                     }
-                    result |= valueData.UpdateEffectiveValue(em, geometryEntity);
+                    result |= valueData.UpdateEffectiveValue(em, geometryEntity, vars);
                     break;
                 case WESimulationTextType.Image:
                     if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
@@ -129,7 +132,7 @@ namespace BelzontWE
                         lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
                         atlas = WETemplateManager.Instance.GetAtlasFor(originalName.ToString(), atlas, ref result);
                     }
-                    result |= valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString());
+                    result |= valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString(), vars);
                     break;
                 case WESimulationTextType.Placeholder:
                     if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
@@ -137,7 +140,7 @@ namespace BelzontWE
                         lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
                         valueData.DefaultValue = WETemplateManager.Instance.GetTemplateFor(originalName.ToString(), valueData.DefaultValue, ref result).ToString();
                     }
-                    result |= valueData.UpdateEffectiveValue(em, geometryEntity);
+                    result |= valueData.UpdateEffectiveValue(em, geometryEntity, vars);
                     break;
                 case WESimulationTextType.WhiteTexture:
                     templateDirty = dirty = false;

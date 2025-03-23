@@ -15,6 +15,26 @@ using UnityEngine;
 
 namespace BelzontWE
 {
+    public class WETemplateVariable : ISerializable
+    {
+        private const int CURRENT_VERSION = 0;
+        [XmlAttribute][DefaultValue("")] public string key = "";
+        [XmlAttribute][DefaultValue("")] public string value = "";
+
+        public void Deserialize<TReader>(TReader reader) where TReader : IReader
+        {
+            reader.CheckVersionK45(CURRENT_VERSION, GetType());
+            reader.Read(out key);
+            reader.Read(out value);
+        }
+
+        public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+        {
+            writer.Write(CURRENT_VERSION);
+            writer.Write(key ?? "");
+            writer.Write(value ?? "");
+        }
+    }
     public class WETextDataXml : ISerializable
     {
         private const int CURRENT_VERSION = 1;

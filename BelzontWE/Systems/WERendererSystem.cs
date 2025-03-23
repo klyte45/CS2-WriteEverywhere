@@ -17,6 +17,8 @@ using Game.Prefabs;
 using Belzont.Interfaces;
 
 
+
+
 #if BURST
 using UnityEngine.Scripting;
 using Unity.Burst;
@@ -37,6 +39,10 @@ namespace BelzontWE
         private WEWorldPickerTool m_pickerTool;
         private NativeQueue<WERenderData> availToDraw = new(Allocator.Persistent);
         internal static bool dumpNextFrame;
+
+        internal const char VARIABLE_ITEM_SEPARATOR = '↓';
+        internal const char VARIABLE_KV_SEPARATOR = '→';
+
         private uint FrameCounter { get; set; } = 0;
 #if BURST
         [Preserve]
@@ -148,8 +154,9 @@ namespace BelzontWE
 
                     bool ìsPlaceholder = false;
                     bool doRender = true;
-                    mesh.UpdateFormulaes(EntityManager, item.geometryEntity);
-                    material.UpdateFormulaes(EntityManager, item.geometryEntity);
+                    var vars = item.variables.ToString();
+                    mesh.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
+                    material.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
 
 
                     switch (mesh.TextType)
@@ -251,6 +258,7 @@ namespace BelzontWE
                     m_selectedSubEntity = m_pickerController.CurrentSubEntity.Value,
                     m_selectedEntity = m_pickerController.CurrentEntity.Value,
                     m_weSubRefLookup = GetBufferLookup<WESubTextRef>(true),
+                    m_weVariablesLookup = GetBufferLookup<WETextDataVariable>(true),
                     //doLog = dumpNextFrame,
                     m_weTransformLookup = GetComponentLookup<WETextDataTransform>(true),
                 };
@@ -267,6 +275,7 @@ namespace BelzontWE
             public WETextDataMesh mesh;
             public WETextDataMaterial material;
             public Matrix4x4 transformMatrix;
+            public FixedString512Bytes variables;
         }
 #if BURST
         [Preserve]

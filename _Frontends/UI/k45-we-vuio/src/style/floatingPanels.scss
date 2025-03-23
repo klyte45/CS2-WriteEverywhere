@@ -5,6 +5,15 @@
         background-color: silver !important;
     }
 
+    &.k45_contentFillPanel {
+        [class*=child-opacity-transition_]>[class^=scrollable_] {
+            height: 100%;
+
+            >[class^=content_] {
+                height: 100%;
+            }
+        }
+    }
 }
 
 .k45_we_actionSectionButton {

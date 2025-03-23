@@ -18,6 +18,8 @@ namespace BelzontWE
 {
     public static class WEFormulaeHelper
     {
+        public delegate T FormulaeFn<T>(EntityManager em, Entity e, Dictionary<string, string> vars);
+
         private interface IBaseCache
         {
             byte ResultCode { get; }
@@ -34,18 +36,18 @@ namespace BelzontWE
 
             public object FnObj => Fn;
 
-            public Func<EntityManager, Entity, T> Fn { get; set; }
+            public FormulaeFn<T> Fn { get; private set; }
 
-            public void SetData(byte resultCode, Func<EntityManager, Entity, T> fn, string[] errorArgs = null)
+            private void SetData_Eff(byte resultCode, FormulaeFn<T> fn, string[] errorArgs = null)
             {
-                this.ResultCode = resultCode;
-                this.Fn = fn;
-                this.ErrorArgs = errorArgs;
+                ResultCode = resultCode;
+                Fn = fn;
+                ErrorArgs = errorArgs;
             }
 
             public void SetData(byte resultCode, object fn, string[] errorArgs = null)
             {
-                SetData(resultCode, (Func<EntityManager, Entity, T>)fn, errorArgs);
+                SetData_Eff(resultCode, (FormulaeFn<T>)fn, errorArgs);
             }
         }
 
@@ -65,12 +67,12 @@ namespace BelzontWE
         private static readonly Dictionary<string, BaseCache<Color>> cachedFnsColor = new();
         private static readonly Dictionary<string, BaseCache<IList<Entity>>> cachedFnsEntityArray = new();
 
-        public static Func<EntityManager, Entity, string> GetCachedStringFn(string formulae) => cachedFnsString.TryGetValue(formulae, out var cached) ? cached.Fn : null;
-        public static Func<EntityManager, Entity, float> GetCachedFloatFn(string formulae) => cachedFnsFloat.TryGetValue(formulae, out var cached) ? cached.Fn : null;
-        public static Func<EntityManager, Entity, Color> GetCachedColorFn(string formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached.Fn : null;
-        public static Func<EntityManager, Entity, IList<Entity>> GetCachedEntityArrayFn(string formulae) => cachedFnsEntityArray.TryGetValue(formulae, out var cached) ? cached.Fn : null;
+        public static FormulaeFn<string> GetCachedStringFn(string formulae) => cachedFnsString.TryGetValue(formulae, out var cached) ? cached.Fn : null;
+        public static FormulaeFn<float> GetCachedFloatFn(string formulae) => cachedFnsFloat.TryGetValue(formulae, out var cached) ? cached.Fn : null;
+        public static FormulaeFn<Color> GetCachedColorFn(string formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached.Fn : null;
+        public static FormulaeFn<IList<Entity>> GetCachedEntityArrayFn(string formulae) => cachedFnsEntityArray.TryGetValue(formulae, out var cached) ? cached.Fn : null;
 
-        public static byte SetFormulae<T>(string newFormulae512, out string[] errorFmtArgs, out string resultFormulaeStr, out Func<EntityManager, Entity, T> resultFormulaeFn)
+        public static byte SetFormulae<T>(string newFormulae512, out string[] errorFmtArgs, out string resultFormulaeStr, out FormulaeFn<T> resultFormulaeFn)
         {
             IDictionary refDic = typeof(T) == typeof(string) ? cachedFnsString
                 : typeof(T) == typeof(float) ? cachedFnsFloat
@@ -91,7 +93,7 @@ namespace BelzontWE
                 if (handle.FnObj != null || handle.ResultCode != 0)
                 {
                     resultFormulaeStr = newFormulae512;
-                    resultFormulaeFn = handle.FnObj as Func<EntityManager, Entity, T>;
+                    resultFormulaeFn = handle.FnObj as FormulaeFn<T>;
                     errorFmtArgs = handle.ErrorArgs;
                     return handle.ResultCode;
                 }
@@ -101,7 +103,7 @@ namespace BelzontWE
             DynamicMethodDefinition dynamicMethodDefinition = new(
                 $"__WE_CS2_{typeof(T).Name}_formulae_{new Regex("[^A-Za-z0-9_]").Replace(newFormulae, "_")}",
                 typeof(T),
-                new Type[] { typeof(EntityManager), typeof(Entity) }
+                new Type[] { typeof(EntityManager), typeof(Entity), typeof(Dictionary<string, string>) }
                 );
             ILGenerator iLGenerator = dynamicMethodDefinition.GetILGenerator();
             byte result = 0;
@@ -218,7 +220,7 @@ namespace BelzontWE
                 var generatedMethod = dynamicMethodDefinition.Generate();
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => (" + string.Join(", ", dynamicMethodDefinition.Definition.Parameters.Select(x => $"{(x.IsIn ? "in " : x.IsOut ? "out " : "")}{x.ParameterType} {x.Name}")) + ")");
                 if (BasicIMod.DebugMode) LogUtils.DoLog("FN => \n" + string.Join("\n", dynamicMethodDefinition.Definition.Body.Instructions.Select(x => x.ToString())));
-                resultFormulaeFn = (x, e) => (T)generatedMethod.Invoke(null, new object[] { x, e });
+                resultFormulaeFn = (x, e, d) => (T)generatedMethod.Invoke(null, new object[] { x, e, d });
                 if (refDic != null)
                 {
                     var cacheType = refDic.GetType().GetGenericArguments()[1];
