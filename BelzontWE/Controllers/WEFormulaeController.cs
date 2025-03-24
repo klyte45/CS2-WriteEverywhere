@@ -154,6 +154,7 @@ namespace BelzontWE
         private List<object> FormulaeToPathObjects(string formulae)
         {
             var result = new List<object>();
+            if (formulae is null) return result;
             var pathParts = WEFormulaeHelper.GetPathParts(formulae);
             var currentType = typeof(Entity);
             foreach (var part in pathParts)

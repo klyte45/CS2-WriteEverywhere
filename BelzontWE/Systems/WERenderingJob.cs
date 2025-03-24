@@ -119,6 +119,21 @@ namespace BelzontWE
                     return;
                 }
                 var transform = m_weTransformLookup[nextEntity];
+                if (transform.useFormulaeToCheckIfDraw && !transform.MustDraw) {
+                    availToDraw.Enqueue(new WERenderData
+                    {
+                        transform = transform,
+                        textDataEntity = nextEntity,
+                        geometryEntity = geometryEntity,
+                        main = m_weMainLookup[nextEntity],
+                        material = m_weMaterialLookup[nextEntity],
+                        mesh = m_weMeshLookup[nextEntity],
+                        transformMatrix = default,
+                        variables = variables
+                    });
+
+                    return;
+                }
 
                 PopulateVars(nextEntity, ref variables);
                 switch (mesh.TextType)
@@ -149,6 +164,7 @@ namespace BelzontWE
 
                                 availToDraw.Enqueue(new WERenderData
                                 {
+                                    transform = transform,
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
                                     main = m_weMainLookup[nextEntity],
@@ -176,6 +192,7 @@ namespace BelzontWE
 
                                 availToDraw.Enqueue(new WERenderData
                                 {
+                                    transform = transform,
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
                                     main = m_weMainLookup[nextEntity],
@@ -230,6 +247,7 @@ namespace BelzontWE
                                     {
                                         availToDraw.Enqueue(new WERenderData
                                         {
+                                            transform = transform,
                                             textDataEntity = nextEntity,
                                             geometryEntity = geometryEntity,
                                             main = m_weMainLookup[nextEntity],
@@ -245,6 +263,7 @@ namespace BelzontWE
                             {
                                 availToDraw.Enqueue(new WERenderData
                                 {
+                                    transform = transform,
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
                                     main = m_weMainLookup[nextEntity],

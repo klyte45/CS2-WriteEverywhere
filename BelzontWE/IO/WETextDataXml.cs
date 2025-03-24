@@ -125,12 +125,14 @@ namespace BelzontWE
 
         public class TransformXml : ISerializable
         {
-            private const int CURRENT_VERSION = 2;
+            private const int CURRENT_VERSION = 3;
             public Vector3Xml offsetPosition = new();
             public Vector3Xml offsetRotation = new();
             public Vector3Xml scale = (Vector3Xml)Vector3.one;
             [XmlAttribute] public WEPlacementPivot pivot = WEPlacementPivot.MiddleCenter;
             [XmlAttribute][DefaultValue(false)] public bool isAbsoluteScale;
+            [XmlAttribute][DefaultValue(false)] public bool useFormulaeToCheckIfDraw;
+            [XmlElement] public FormulaeFloatXml mustDraw;
 
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
@@ -140,6 +142,8 @@ namespace BelzontWE
                 writer.Write((Vector3)scale);
                 writer.Write(isAbsoluteScale);
                 writer.Write(pivot);
+                writer.Write(useFormulaeToCheckIfDraw);
+                writer.WriteNullCheck(mustDraw);
             }
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
             {
@@ -167,6 +171,11 @@ namespace BelzontWE
                 else
                 {
                     pivot = WEPlacementPivot.MiddleCenter;
+                }
+                if (version >= 3)
+                {
+                    reader.Read(out useFormulaeToCheckIfDraw);
+                    reader.ReadNullCheck(out mustDraw);
                 }
             }
         }

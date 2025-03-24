@@ -54,6 +54,7 @@ namespace BelzontWE
         private EntityQuery m_prefabsDataToSerialize;
         private EntityQuery m_entitiesToBeUpdatedInMain;
         private EntityQuery m_prefabArchetypesToBeUpdatedInMain;
+        private EntityQuery m_componentsToDispose;
         private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
         private bool m_templatesDirty;
@@ -308,6 +309,7 @@ namespace BelzontWE
                     {
                         All = new ComponentType[]
                         {
+                            ComponentType.ReadOnly<WETextComponentValid>(),
                             ComponentType.ReadOnly<WETextDataMain>(),
                             ComponentType.ReadOnly<WETextDataMaterial>(),
                             ComponentType.ReadOnly<WETextDataMesh>(),
@@ -332,6 +334,26 @@ namespace BelzontWE
                         },
                         None = new ComponentType[]
                         {
+                            ComponentType.ReadOnly<Temp>(),
+                            ComponentType.ReadOnly<Deleted>(),
+                            ComponentType.ReadOnly<WETemplateForPrefab>(),
+                        }
+                    }
+            });
+
+            m_componentsToDispose = GetEntityQuery(new EntityQueryDesc[]
+            {
+                    new ()
+                    {
+                        Any = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<WETextDataMain>(),
+                            ComponentType.ReadOnly<WETextDataMaterial>(),
+                            ComponentType.ReadOnly<WETextDataTransform>(),
+                        },
+                        None = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<WETextComponentValid>(),
                             ComponentType.ReadOnly<Temp>(),
                             ComponentType.ReadOnly<Deleted>(),
                             ComponentType.ReadOnly<WETemplateForPrefab>(),
@@ -452,6 +474,11 @@ namespace BelzontWE
             }
         }
 
+        public void EnqueueToBeDestructed(Material m)
+        {
+            m_executionQueue.Enqueue((x) => GameObject.Destroy(m));
+        }
+
         protected override void OnUpdate()
         {
             if (GameManager.instance.isLoading || GameManager.instance.isGameLoading) return;
@@ -461,9 +488,10 @@ namespace BelzontWE
                 var cmdBuffer = m_endFrameBarrier.CreateCommandBuffer();
                 while (m_executionQueue.TryDequeue(out var nextAction))
                 {
-                    nextAction(cmdBuffer);
+                    nextAction?.Invoke(cmdBuffer);
                 }
             }
+
 
             UpdatePrefabIndexDictionary();
 
@@ -532,6 +560,17 @@ namespace BelzontWE
                     }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
                     keysWithTemplate.Dispose(Dependency);
                 }
+            }
+            if (!m_componentsToDispose.IsEmpty)
+            {
+                Dependency = new WETemplateDisposalJob
+                {
+                    m_EntityType = GetEntityTypeHandle(),
+                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+                    m_MaterialDataLkp = GetComponentLookup<WETextDataMaterial>(true),
+                    m_MeshDataLkp = GetComponentLookup<WETextDataMesh>(true),
+                    m_TransformDataLkp = GetComponentLookup<WETextDataTransform>(true)
+                }.ScheduleParallel(m_componentsToDispose, Dependency);
             }
             Dependency.Complete();
         }

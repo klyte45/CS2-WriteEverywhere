@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace BelzontWE
 {
-    public struct WETextDataMesh : IComponentData, IDisposable
+    public struct WETextDataMesh : IComponentData, IDisposable, ICleanupComponentData
     {
         private WESimulationTextType textType;
 
@@ -92,12 +92,12 @@ namespace BelzontWE
             MinLod = 0;
             return this;
         }
+
         public void Dispose()
         {
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             basicRenderInformation = default;
             valueData.Dispose();
-
         }
 
         public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity)

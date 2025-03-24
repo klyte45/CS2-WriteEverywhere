@@ -254,6 +254,7 @@ namespace BelzontWE
                        EntityManager.AddComponentData(subref.m_weTextData, WETextDataMesh.CreateDefault(currentEntity, targetParent));
                        EntityManager.AddComponentData(subref.m_weTextData, WETextDataMaterial.CreateDefault(currentEntity, targetParent));
                        EntityManager.AddComponentData(subref.m_weTextData, WETextDataTransform.CreateDefault(currentEntity, targetParent));
+                       EntityManager.AddComponent<WETextComponentValid>(subref.m_weTextData);
                        buff.Add(subref);
                        CurrentSubEntity.ChangeValueWithEffects(subref.m_weTextData);
                        UpdateTree();

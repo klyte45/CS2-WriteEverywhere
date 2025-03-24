@@ -22,6 +22,7 @@ namespace BelzontWE
             em.AddComponentData(newEntity, mesh);
             em.AddComponentData(newEntity, material);
             em.AddComponentData(newEntity, transform);
+            em.AddComponent<WETextComponentValid>(newEntity);
             if (childTargetMode == ParentEntityMode.TARGET_IS_TARGET)
             {
                 if (!em.TryGetBuffer<WESubTextRef>(parentEntity, true, out var subRefBuff)) subRefBuff = em.AddBuffer<WESubTextRef>(parentEntity);
@@ -67,6 +68,7 @@ namespace BelzontWE
             cmd.AddComponent(newEntity, mesh);
             cmd.AddComponent(newEntity, material);
             cmd.AddComponent(newEntity, transform);
+            cmd.AddComponent<WETextComponentValid>(newEntity);
             if (toCopy.variables?.Length > 0)
             {
                 var buffVars = cmd.AddBuffer<WETextDataVariable>(newEntity);

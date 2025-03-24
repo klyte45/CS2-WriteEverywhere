@@ -189,7 +189,7 @@ namespace BelzontWE.Font.Utility
         }
     }
 
-    public unsafe struct BasicRenderInformationJob : IComponentData, IDisposable
+    public unsafe struct BasicRenderInformationJob : IDisposable
     {
         public NativeArray<Color32> colors;
         public NativeArray<Vector3> vertices;

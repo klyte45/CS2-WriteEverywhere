@@ -56,6 +56,7 @@ namespace BelzontWE.Utils
             em.AddComponentData(result, mesh);
             em.AddComponentData(result, material);
             em.AddComponentData(result, transform);
+            em.AddComponent<WETextComponentValid>(result);
             return result;
         }
 
@@ -106,7 +107,10 @@ namespace BelzontWE.Utils
                 offsetRotation = (Vector3Xml)((Quaternion)value.offsetRotation).eulerAngles,
                 scale = (Vector3Xml)value.scale,
                 isAbsoluteScale = value.useAbsoluteSizeEditing,
-                pivot = value.pivot
+                pivot = value.pivot,
+                mustDraw = value.MustDrawFn.ToXml(),
+                useFormulaeToCheckIfDraw = value.useFormulaeToCheckIfDraw
+
             };
         public static WETextDataTransform ToComponent(this WETextDataXml.TransformXml value)
             => value is null ? default : new()
@@ -115,7 +119,9 @@ namespace BelzontWE.Utils
                 offsetRotation = Quaternion.Euler(value.offsetRotation ?? default),
                 scale = value.scale ?? Vector3.one,
                 useAbsoluteSizeEditing = value.isAbsoluteScale,
-                pivot = value.pivot
+                pivot = value.pivot,
+                MustDrawFn = value.mustDraw.ToComponent(),
+                useFormulaeToCheckIfDraw = value.useFormulaeToCheckIfDraw
             };
 
 

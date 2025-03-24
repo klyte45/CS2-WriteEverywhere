@@ -1,5 +1,5 @@
 import { MultiUIValueBinding, UIColorRGBA, VanillaComponentResolver, VanillaWidgets, ColorUtils, VanillaFnResolver, ColorHSVA, replaceArgs } from "@klyte45/vuio-commons";
-import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
 import i_formulae from "../images/Function.svg";
@@ -12,12 +12,14 @@ type Props = {
     label: string
     formulaeModule: keyof typeof WorldPickerService.instance.bindingList,
     formulaeField: string,
-    defaultInputField: JSX.Element,
+    defaultInputField: ReactNode,
+    onToggleFormulaeUse?: (newValue: boolean) => any,
+    isUsingFormulae?: boolean
 }
 
 const i_focus = "coui://uil/Standard/Magnifier.svg";
 
-export const FormulaeEditRow = ({ defaultInputField, label, formulaeModule, formulaeField }: Props) => {
+export const FormulaeEditRow = ({ defaultInputField, label, formulaeModule, formulaeField, onToggleFormulaeUse, isUsingFormulae }: Props) => {
     const T_focusInFormulaePanel = translate("textValueSettings.focusInFormulaePanel"); // 
     const T_useFormulae = translate("textValueSettings.useFormulae"); //  
 
@@ -27,7 +29,7 @@ export const FormulaeEditRow = ({ defaultInputField, label, formulaeModule, form
     const [formulaeCompileResultErrorArgs, setFormulaCompileResultErrorArgs] = useState<MultiUIValueBinding<string[]>>(WorldPickerService.instance.bindingList[formulaeModule][formulaeField + "FormulaeCompileResultErrorArgs" as never]);
 
     const [formulaeTyping, setFormulaeTyping] = useState(formulaeStrField?.value);
-    const [usingFormulae, setUsingFormulae] = useState(!!formulaeStrField?.value);
+    const [usingFormulae, setUsingFormulae] = (isUsingFormulae !== undefined && onToggleFormulaeUse) ? [isUsingFormulae, onToggleFormulaeUse] : useState(!!formulaeStrField?.value);
 
     useEffect(() => { setFormulaeTyping(formulaeStrField.value); }, [formulaeStrField?.value])
     useEffect(() => {
@@ -48,17 +50,19 @@ export const FormulaeEditRow = ({ defaultInputField, label, formulaeModule, form
             WorldPickerService.instance.currentFormulaeField,
             WorldPickerService.instance.currentFormulaeModule,
         ])
-    useEffect(() => { setUsingFormulae(!!formulaeStrField.value); }, [WorldPickerService.instance.bindingList.picker.CurrentSubEntity.value])
-    useEffect(() => {
-        if (!usingFormulae) {
-            formulaeStrField.set("");
-            if (WorldPickerService.instance.currentFormulaeField == formulaeField
-                && WorldPickerService.instance.currentFormulaeModule == formulaeModule) {
-                WorldPickerService.instance.clearCurrentEditingFormulaeParam();
+    if (!onToggleFormulaeUse) {
+        useEffect(() => { setUsingFormulae(!!formulaeStrField.value); }, [WorldPickerService.instance.bindingList.picker.CurrentSubEntity.value])
+        useEffect(() => {
+            if (!usingFormulae) {
+                formulaeStrField.set("");
+                if (WorldPickerService.instance.currentFormulaeField == formulaeField
+                    && WorldPickerService.instance.currentFormulaeModule == formulaeModule) {
+                    WorldPickerService.instance.clearCurrentEditingFormulaeParam();
+                }
             }
-        }
 
-    }, [usingFormulae])
+        }, [usingFormulae])
+    }
     const EditorItemRow = VanillaWidgets.instance.EditorItemRow;
     const StringInputField = VanillaWidgets.instance.StringInputField;
     const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;

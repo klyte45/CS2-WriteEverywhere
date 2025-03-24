@@ -13,6 +13,7 @@ namespace BelzontWE
 {
     public partial class WETemplateManager
     {
+
 #if BURST
         [BurstCompile]
 #endif

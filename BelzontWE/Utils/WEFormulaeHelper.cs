@@ -261,7 +261,7 @@ namespace BelzontWE
             }
         }
 
-        public static string[] GetPathParts(string newFormulae) => newFormulae.Split("/");
+        public static string[] GetPathParts(string newFormulae) => newFormulae?.Split("/");
 
         private static List<MethodInfo> CACHED_AVAILABLE_STATIC_METHODS;
 
@@ -462,6 +462,22 @@ namespace BelzontWE
 
             currentComponentType = itemComponentType[0].Type;
             return 0;
+        }
+
+        public delegate int FormulaeSetter<T>(ref T material, string newFormulae, out string[] errorArgs) where T : unmanaged, IComponentData;
+        public static void SetupOnFormulaeChangedAction<T>(WEWorldPickerController controller, FormulaeSetter<T> formulaeSetter, MultiUIValueBinding<string> formulaeStr, MultiUIValueBinding<int> formulaeCompileResult, MultiUIValueBinding<string[]> formulaeCompileResultErrorArgs) where T : unmanaged, IComponentData
+           => formulaeStr.OnScreenValueChanged += (x) => controller.EnqueueModification<string, T>(x, (x, currentItem) =>
+           {
+               formulaeCompileResult.Value = formulaeSetter(ref currentItem, x, out string[] errorArgs);
+               formulaeCompileResultErrorArgs.Value = errorArgs;
+               return currentItem;
+           });
+
+        public static void ResetScreenFormulaeValue(string formulaeValue, MultiUIValueBinding<string> formulaeStrObj, MultiUIValueBinding<int> formulaeCompileResultObj, MultiUIValueBinding<string[]> formulaeCompileResultErrorArgsObj)
+        {
+            formulaeStrObj.Value = formulaeValue;
+            formulaeCompileResultObj.Value = 0;
+            formulaeCompileResultErrorArgsObj.Value = null;
         }
     }
 }

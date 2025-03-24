@@ -141,9 +141,26 @@ namespace BelzontWE
                 cmd = m_endFrameBarrier.CreateCommandBuffer();
                 while (availToDraw.TryDequeue(out var item))
                 {
+                    ref var transform = ref item.transform;
                     ref var main = ref item.main;
                     ref var material = ref item.material;
                     ref var mesh = ref item.mesh;
+
+
+                    bool ìsPlaceholder = false;
+                    bool doRender = true;
+                    var vars = item.variables.ToString();
+                    var changed = transform.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
+                    if (item.transformMatrix == default)
+                    {
+                        if (changed)
+                        {
+                            if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
+                        }
+                        continue;
+                    }
+                    mesh.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
+                    material.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
 
                     if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
                         && m_pickerController.CurrentSubEntity.Value == item.textDataEntity
@@ -151,13 +168,6 @@ namespace BelzontWE
                     {
                         m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
                     }
-
-                    bool ìsPlaceholder = false;
-                    bool doRender = true;
-                    var vars = item.variables.ToString();
-                    mesh.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
-                    material.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
-
 
                     switch (mesh.TextType)
                     {
@@ -226,6 +236,7 @@ namespace BelzontWE
                     if (EntityManager.HasComponent<WETextDataMain>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, main);
                     if (EntityManager.HasComponent<WETextDataMaterial>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, material);
                     if (EntityManager.HasComponent<WETextDataMesh>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, mesh);
+                    if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
 
                 }
                 dumpNextFrame = false;
@@ -272,6 +283,7 @@ namespace BelzontWE
             public Entity textDataEntity;
             public Entity geometryEntity;
             public WETextDataMain main;
+            public WETextDataTransform transform;
             public WETextDataMesh mesh;
             public WETextDataMaterial material;
             public Matrix4x4 transformMatrix;

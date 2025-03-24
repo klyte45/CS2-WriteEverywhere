@@ -138,8 +138,6 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
                 return "???"
         }
     }
-    console.log(formulaeSteps)
-
     return <Portal>
         <div className="k45_we_formulaeEditor">
             <div className="k45_we_formulaeEditor_title">{T_title}{WorldPickerService.instance.getCurrentEditingFormulaeFieldTitle()}</div>

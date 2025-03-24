@@ -66,6 +66,11 @@ const WETextDataTransformController = {
     CurrentPosition: MultiUIValueBinding<number3>,
     UseAbsoluteSizeEditing: MultiUIValueBinding<boolean>,
     Pivot: MultiUIValueBinding<WEPlacementPivot>,
+    UseFormulaeToCheckIfDraw: MultiUIValueBinding<boolean>,
+    MustDrawFn: MultiUIValueBinding<number>,
+    MustDrawFnFormulaeStr: MultiUIValueBinding<string>,
+    MustDrawFnFormulaeCompileResult: MultiUIValueBinding<number>,
+    MustDrawFnFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
 
 }
 const WETextDataMeshController = {
@@ -237,6 +242,9 @@ export class WorldPickerService {
                 GlassRefraction: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".GlassRefraction"),
                 NormalStrength: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".NormalStrength"),
                 GlassThickness: () => translate("formulaeTitleName.material." + this.bindingList.material.ShaderType.value + ".GlassThickness"),
+            },
+            transform: {
+                MustDrawFn: () => translate("formulaeTitleName.transform.MustDrawFn"),
             }
         }
 

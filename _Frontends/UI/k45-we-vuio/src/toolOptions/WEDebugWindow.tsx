@@ -1,13 +1,10 @@
 import { VanillaWidgets } from "@klyte45/vuio-commons";
 import { Button, Panel, Portal, Scrollable, Tooltip } from "cs2/ui";
 import { ReactNode, useEffect, useState } from "react";
-import { WESimulationTextType } from "services/WEFormulaeElement";
+import { DebugService, ShaderPropertyType, WEDebugPropertyDescriptor } from "services/DebugService";
 import { WorldPickerService } from "services/WorldPickerService";
-import { translate } from "utils/translate";
-import { FormulaeEditorRowColor, FormulaeEditorRowFloat, FormulaeEditorRowFloatLog10 } from "../common/FormulaeEditRow";
 import "../style/floatingPanels.scss";
 import "../style/formulaeEditorField.scss";
-import { DebugService, ShaderPropertyType, WEDebugPropertyDescriptor } from "services/DebugService";
 
 
 export const WEDebugWindow = (props: { initialPosition?: { x: number, y: number } }) => {

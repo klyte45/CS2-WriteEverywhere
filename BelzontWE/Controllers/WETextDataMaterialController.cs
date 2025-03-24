@@ -3,6 +3,7 @@ using Colossal.Entities;
 using System;
 using Unity.Entities;
 using UnityEngine;
+using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE
 {
@@ -196,14 +197,8 @@ namespace BelzontWE
 
             CallBinder($"{PREFIX}isDecalMesh", () => EntityManager.TryGetComponent<WETextDataMaterial>(m_pickerController.CurrentSubEntity.Value, out var material) && EntityManager.TryGetComponent<WETextDataMesh>(m_pickerController.CurrentSubEntity.Value, out var mesh) ? material.CheckIsDecal(mesh) : false);
         }
-        private delegate int FormulaeSetter(ref WETextDataMaterial material, string newFormulae, out string[] errorArgs);
-        private void SetupOnFormulaeChangedAction(FormulaeSetter formulaeSetter, MultiUIValueBinding<string> formulaeStr, MultiUIValueBinding<int> formulaeCompileResult, MultiUIValueBinding<string[]> formulaeCompileResultErrorArgs)
-            => formulaeStr.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMaterial>(x, (x, currentItem) =>
-            {
-                formulaeCompileResult.Value = formulaeSetter(ref currentItem, x, out string[] errorArgs);
-                formulaeCompileResultErrorArgs.Value = errorArgs;
-                return currentItem;
-            });
+        private void SetupOnFormulaeChangedAction(FormulaeSetter<WETextDataMaterial> formulaeSetter, MultiUIValueBinding<string> formulaeStr, MultiUIValueBinding<int> formulaeCompileResult, MultiUIValueBinding<string[]> formulaeCompileResultErrorArgs)
+            => WEFormulaeHelper.SetupOnFormulaeChangedAction(PickerController, formulaeSetter, formulaeStr, formulaeCompileResult, formulaeCompileResultErrorArgs);
 
         public override void OnCurrentItemChanged(Entity entity)
         {
@@ -246,11 +241,6 @@ namespace BelzontWE
             ResetScreenFormulaeValue(material.NormalStrengthFormulae, NormalStrengthFormulaeStr, NormalStrengthFormulaeCompileResult, NormalStrengthFormulaeCompileResultErrorArgs);
         }
 
-        private void ResetScreenFormulaeValue(string formulaeValue, MultiUIValueBinding<string> formulaeStrObj, MultiUIValueBinding<int> formulaeCompileResultObj, MultiUIValueBinding<string[]> formulaeCompileResultErrorArgsObj)
-        {
-            formulaeStrObj.Value = formulaeValue;
-            formulaeCompileResultObj.Value = 0;
-            formulaeCompileResultErrorArgsObj.Value = null;
-        }
+
     }
 }

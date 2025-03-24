@@ -11,7 +11,7 @@ using UnityEngine.Rendering.HighDefinition;
 
 namespace BelzontWE
 {
-    public struct WETextDataMaterial : IComponentData, IDisposable
+    public struct WETextDataMaterial : IComponentData, IDisposable, ICleanupComponentData
     {
         public const int DEFAULT_DECAL_FLAGS = 8;
 
@@ -202,7 +202,7 @@ namespace BelzontWE
         {
             if (ownMaterial.IsAllocated)
             {
-                GameObject.Destroy(ownMaterial.Target as Material);
+                WETemplateManager.Instance.EnqueueToBeDestructed(ownMaterial.Target as Material);
                 ownMaterial.Free();
             }
             ownMaterial = default;
