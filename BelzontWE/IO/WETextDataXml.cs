@@ -133,6 +133,9 @@ namespace BelzontWE
             [XmlAttribute][DefaultValue(false)] public bool isAbsoluteScale;
             [XmlAttribute][DefaultValue(false)] public bool useFormulaeToCheckIfDraw;
             [XmlElement] public FormulaeFloatXml mustDraw;
+            public Vector3Xml arrayInstances = (Vector3Xml)Vector3.one;
+            public Vector3Xml arraySpacing = new();
+            [XmlAttribute] public WETextDataTransform.ArrayInstancingAxisOrder arrayAxisOrder;
 
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
@@ -144,6 +147,11 @@ namespace BelzontWE
                 writer.Write(pivot);
                 writer.Write(useFormulaeToCheckIfDraw);
                 writer.WriteNullCheck(mustDraw);
+                writer.Write((Vector3)arrayInstances);
+                writer.Write((Vector3)arraySpacing);
+                writer.Write(arrayAxisOrder);
+
+
             }
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
             {
@@ -176,6 +184,13 @@ namespace BelzontWE
                 {
                     reader.Read(out useFormulaeToCheckIfDraw);
                     reader.ReadNullCheck(out mustDraw);
+
+
+                    reader.Read(out float3 arrayInstances);
+                    reader.Read(out float3 arraySpacing);
+                    this.arrayInstances = (Vector3Xml)(Vector3)arrayInstances;
+                    this.arraySpacing = (Vector3Xml)(Vector3)arraySpacing;
+                    reader.Read(out arrayAxisOrder);
                 }
             }
         }

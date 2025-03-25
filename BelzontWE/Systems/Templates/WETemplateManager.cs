@@ -25,6 +25,7 @@ using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 
 
@@ -400,7 +401,7 @@ namespace BelzontWE
                         if (PrefabTemplates.TryGetValue(prefabData.m_Index, out var newTemplate))
                         {
                             var guid = newTemplate.Guid;
-                            var childEntity = WELayoutUtility.DoCreateLayoutItem(true, newTemplate.ModSource, newTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_FOR_PARENT);
+                            var childEntity = WELayoutUtility.DoCreateLayoutItemCmdBuffer(true, newTemplate.ModSource, newTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_FOR_PARENT);
                             if (m_prefabEmptyLkp.HasComponent(e)) cmd.RemoveComponent<WETemplateForPrefabEmpty>(e);
                             cmd.AddComponent<WETemplateForPrefab>(entities[i], new()
                             {
@@ -422,8 +423,9 @@ namespace BelzontWE
         }
         private void UpdateLayouts(NativeArray<ArchetypeChunk> chunks)
         {
-            var m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>();
+            var m_templateUpdaterLkp = GetBufferLookup<WETemplateUpdater>();
             var m_TextDataLkp = GetComponentLookup<WETextDataMain>();
+            var m_DataTransformLkp = GetComponentLookup<WETextDataTransform>();
             var m_subRefLkp = GetBufferLookup<WESubTextRef>();
             var toBeProcessedDataHdl = GetComponentTypeHandle<WEPlaceholderToBeProcessedInMain>();
             var globalCounter = 0;
@@ -441,34 +443,62 @@ namespace BelzontWE
                         return;
                     }
                     var e = entities[i];
+                    var buff = cmd.SetBuffer<WETemplateUpdater>(e);
+
                     var dataToBeProcessed = dataToBeProcessedArray[i];
-                    WETemplateUpdater newData;
-                    if (dataToBeProcessed.layoutName.ToString().Split(":", 2) is string[] modEntryName && modEntryName.Length == 2)
+                    m_DataTransformLkp.TryGetComponent(e, out var transformData);
+
+                    WETextDataXmlTree targetTemplate = null;
+                    bool hasTemplate = dataToBeProcessed.layoutName.ToString().Split(":", 2) is string[] modEntryName && modEntryName.Length == 2
+                        ? ModsSubTemplates.TryGetValue(modEntryName[0], out var modTemplates) && modTemplates.TryGetValue(modEntryName[1], out targetTemplate)
+                        : RegisteredTemplates.TryGetValue(dataToBeProcessed.layoutName, out targetTemplate);
+
+                    for (int j = 0; j < buff.Length; j++)
                     {
-                        var targetTemplate = ModsSubTemplates[modEntryName[0]][modEntryName[1]];
-                        newData = new WETemplateUpdater()
+                        cmd.DestroyEntity(buff[j].childEntity);
+                    }
+                    if (hasTemplate)
+                    {
+
+                        var targetSize = math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 10000);
+                        var instancingCount = transformData.InstanceCountByAxisOrder;
+                        var spacingOffsets = transformData.SpacingByAxisOrder;
+                        var item000offset = new float3(transformData.ArrayInstancing.xy * transformData.arrayInstancingGapMeters.xy * transformData.PivotAsFloat2, 0);
+
+                        var localInstanceCounter = 0;
+                        for (int m = 0; m < instancingCount.x; m++)
                         {
-                            templateEntity = targetTemplate.Guid,
-                            childEntity = WELayoutUtility.DoCreateLayoutItem(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
-                        };
-                    }
-                    else
-                    {
-                        newData = RegisteredTemplates.TryGetValue(dataToBeProcessed.layoutName, out var targetTemplate) ? new WETemplateUpdater()
+                            for (int n = 0; n < instancingCount.y; n++)
+                            {
+                                for (int o = 0; o < instancingCount.z; o++)
+                                {
+                                    var offsetPosition = (m * spacingOffsets[0]) + (n * spacingOffsets[1]) + (o * spacingOffsets[2]) - item000offset;
+
+                                    var updater = new WETemplateUpdater()
+                                    {
+                                        templateEntity = targetTemplate.Guid,
+                                        childEntity = WELayoutUtility.DoCreateLayoutItemCmdBuffer(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET, offsetPosition)
+                                    };
+
+                                    if (localInstanceCounter >= buff.Length)
+                                    {
+                                        buff.Add(updater);
+                                    }
+                                    else
+                                    {
+                                        buff[localInstanceCounter++] = updater;
+                                    }
+                                    globalCounter++;
+                                    if (buff.Length >= targetSize) goto end;
+                                }
+                            }
+                        }
+                        if (localInstanceCounter < buff.Length)
                         {
-                            templateEntity = targetTemplate.Guid,
-                            childEntity = WELayoutUtility.DoCreateLayoutItem(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
-                        } : default;
+                            buff.Length = localInstanceCounter;
+                        }
                     }
-                    if (m_templateUpdaterLkp.TryGetComponent(e, out var oldCmp))
-                    {
-                        cmd.AddComponent<Deleted>(oldCmp.childEntity);
-                        cmd.SetComponent(e, newData);
-                    }
-                    else
-                    {
-                        cmd.AddComponent(e, newData);
-                    }
+                end:
                     cmd.RemoveComponent<WEPlaceholderToBeProcessedInMain>(e);
                 }
             }
@@ -533,7 +563,7 @@ namespace BelzontWE
                         m_TextDataLkp = GetComponentLookup<WETextDataMain>(true),
                         m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                         m_indexesWithLayout = keysWithTemplate,
-                        m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
+                        m_templateUpdaterLkp = GetBufferLookup<WETemplateUpdater>(true),
                     }.ScheduleParallel(m_uncheckedWePrefabLayoutQuery, Dependency);
                     keysWithTemplate.Dispose(Dependency);
                 }
@@ -556,7 +586,7 @@ namespace BelzontWE
                         m_TextDataLkp = GetComponentLookup<WETextDataMain>(true),
                         m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                         m_indexesWithLayout = keysWithTemplate,
-                        m_templateUpdaterLkp = GetComponentLookup<WETemplateUpdater>(true),
+                        m_templateUpdaterLkp = GetBufferLookup<WETemplateUpdater>(true),
                     }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
                     keysWithTemplate.Dispose(Dependency);
                 }
@@ -1035,7 +1065,7 @@ namespace BelzontWE
             var job = new WEPlaceholcerTemplateUsageCount
             {
                 m_templateToCheck = templateEntity.Guid,
-                m_updaterHdl = GetComponentTypeHandle<WETemplateUpdater>(),
+                m_updaterHdl = GetBufferTypeHandle<WETemplateUpdater>(),
                 m_counter = &counterResult
             };
             job.Schedule(m_templateBasedEntities, Dependency).Complete();
@@ -1302,15 +1332,18 @@ namespace BelzontWE
         private unsafe struct WEPlaceholcerTemplateUsageCount : IJobChunk
         {
             public Colossal.Hash128 m_templateToCheck;
-            public ComponentTypeHandle<WETemplateUpdater> m_updaterHdl;
+            public BufferTypeHandle<WETemplateUpdater> m_updaterHdl;
             public int* m_counter;
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
-                var templates = chunk.GetNativeArray(ref m_updaterHdl);
+                var templates = chunk.GetBufferAccessor(ref m_updaterHdl);
                 for (int i = 0; i < templates.Length; i++)
                 {
-                    if (templates[i].templateEntity == m_templateToCheck) *m_counter += 1;
+                    for (int j = 0; j < templates[i].Length; j++)
+                    {
+                        if (templates[i][j].templateEntity == m_templateToCheck) *m_counter += 1;
+                    }
                 }
             }
         }

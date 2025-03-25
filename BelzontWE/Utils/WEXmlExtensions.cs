@@ -1,6 +1,7 @@
 ﻿using Belzont.Utils;
 using Colossal.Entities;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace BelzontWE.Utils
@@ -109,7 +110,10 @@ namespace BelzontWE.Utils
                 isAbsoluteScale = value.useAbsoluteSizeEditing,
                 pivot = value.pivot,
                 mustDraw = value.MustDrawFn.ToXml(),
-                useFormulaeToCheckIfDraw = value.useFormulaeToCheckIfDraw
+                useFormulaeToCheckIfDraw = value.useFormulaeToCheckIfDraw,
+                arrayAxisOrder = value.arrayAxisGrowthOrder,
+                arrayInstances = (Vector3Xml)(float3)value.ArrayInstancing,
+                arraySpacing = (Vector3Xml)value.arrayInstancingGapMeters,
 
             };
         public static WETextDataTransform ToComponent(this WETextDataXml.TransformXml value)
@@ -121,7 +125,10 @@ namespace BelzontWE.Utils
                 useAbsoluteSizeEditing = value.isAbsoluteScale,
                 pivot = value.pivot,
                 MustDrawFn = value.mustDraw.ToComponent(),
-                useFormulaeToCheckIfDraw = value.useFormulaeToCheckIfDraw
+                useFormulaeToCheckIfDraw = value.useFormulaeToCheckIfDraw,
+                ArrayInstancing = (uint3)(float3)value.arrayInstances,
+                arrayInstancingGapMeters = value.arraySpacing,
+                arrayAxisGrowthOrder = value.arrayAxisOrder
             };
 
 

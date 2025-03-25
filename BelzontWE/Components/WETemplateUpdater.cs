@@ -2,7 +2,7 @@
 
 namespace BelzontWE
 {
-    public struct WETemplateUpdater : IComponentData, ICleanupComponentData
+    public struct WETemplateUpdater : IBufferElementData, ICleanupBufferElementData
     {
         public static int CURRENT_VERSION = 0;
 

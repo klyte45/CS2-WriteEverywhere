@@ -50,7 +50,6 @@ namespace BelzontWE
         public bool HasBRI => basicRenderInformation.IsAllocated;
         public float BriWidthMetersUnscaled { get; private set; }
         public FixedString512Bytes LastErrorStr { get; private set; }
-
         public int SetFormulae(string value, out string[] cmpErr) => valueData.SetFormulae(value, out cmpErr);
 
         public void ResetBri()
@@ -69,8 +68,8 @@ namespace BelzontWE
                 },
             };
 
-        public bool IsDirty() => dirty;
-        public bool IsTemplateDirty() => templateDirty;
+        public readonly bool IsDirty() => dirty;
+        public readonly bool IsTemplateDirty() => templateDirty;
         public void ClearTemplateDirty() => templateDirty = false;
 
         public WETextDataMesh UpdateBRI(BasicRenderInformation bri, string text)
@@ -80,14 +79,7 @@ namespace BelzontWE
             basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
             Bounds = bri.m_bounds;
             BriWidthMetersUnscaled = bri.m_sizeMetersUnscaled.x;
-            if (bri.m_isError)
-            {
-                LastErrorStr = text;
-            }
-            else
-            {
-                LastErrorStr = default;
-            }
+            LastErrorStr = bri.m_isError ? (FixedString512Bytes)text : default;
             dirty = false;
             MinLod = 0;
             return this;
@@ -161,6 +153,7 @@ namespace BelzontWE
                     : weDataMain.TargetEntity
                 : target;
         }
+
 
         public BasicRenderInformation RenderInformation
         {

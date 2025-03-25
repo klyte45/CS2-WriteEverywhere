@@ -30,7 +30,7 @@ namespace BelzontWE
             public ComponentLookup<WETextDataMain> m_weMainLookup;
             public BufferLookup<WESubTextRef> m_weSubRefLookup;
             public BufferLookup<WETextDataVariable> m_weVariablesLookup;
-            public ComponentLookup<WETemplateUpdater> m_weTemplateUpdaterLookup;
+            public BufferLookup<WETemplateUpdater> m_weTemplateUpdaterLookup;
             public ComponentLookup<WETemplateForPrefab> m_weTemplateForPrefabLookup;
             public ComponentLookup<InterpolatedTransform> m_iTransform;
             public ComponentLookup<Game.Objects.Transform> m_transform;
@@ -119,7 +119,8 @@ namespace BelzontWE
                     return;
                 }
                 var transform = m_weTransformLookup[nextEntity];
-                if (transform.useFormulaeToCheckIfDraw && !transform.MustDraw) {
+                if (transform.useFormulaeToCheckIfDraw && !transform.MustDraw)
+                {
                     availToDraw.Enqueue(new WERenderData
                     {
                         transform = transform,
@@ -150,7 +151,7 @@ namespace BelzontWE
                         return;
                     case WESimulationTextType.Placeholder:
                         {
-                            if (!m_weTemplateUpdaterLookup.TryGetComponent(nextEntity, out var updater))
+                            if (!m_weTemplateUpdaterLookup.TryGetBuffer(nextEntity, out var updaterBuff))
                             {
                                 m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
                                 return;
@@ -174,8 +175,20 @@ namespace BelzontWE
                                     variables = variables
                                 });
                             }
-
-                            DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one), unfilteredChunkIndex, ref variables, true);
+                            for (int i = 0; i < updaterBuff.Length; i++)
+                            {
+                                var updater = updaterBuff[i];
+                                if (updater.childEntity.Index < 0) continue;
+                                var layoutVars = new FixedString512Bytes(variables);
+                                layoutVars.Append('$');
+                                layoutVars.Append('i');
+                                layoutVars.Append('d');
+                                layoutVars.Append('x');
+                                layoutVars.Append(VARIABLE_KV_SEPARATOR);
+                                layoutVars.Append(i);
+                                layoutVars.Append(VARIABLE_ITEM_SEPARATOR);
+                                DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one), unfilteredChunkIndex, ref layoutVars, true);
+                            }
                         }
                         break;
                     case WESimulationTextType.WhiteTexture:
@@ -215,7 +228,7 @@ namespace BelzontWE
                         return;
                     default:
                         {
-                            if (m_weTemplateUpdaterLookup.HasComponent(nextEntity))
+                            if (m_weTemplateUpdaterLookup.HasBuffer(nextEntity))
                             {
                                 m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
                                 return;
@@ -329,9 +342,12 @@ namespace BelzontWE
                     {
                         DestroyRecursive(ref job, data.childEntity, unfilteredChunkIndex, initialDelete);
                     }
-                    if (job.m_weTemplateUpdaterLookup.TryGetComponent(nextEntity, out var updater))
+                    if (job.m_weTemplateUpdaterLookup.TryGetBuffer(nextEntity, out var updater))
                     {
-                        DestroyRecursive(ref job, updater.childEntity, unfilteredChunkIndex, initialDelete);
+                        for (int j = 0; j < updater.Length; j++)
+                        {
+                            DestroyRecursive(ref job, updater[j].childEntity, unfilteredChunkIndex, initialDelete);
+                        }
                     }
                     if (job.m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout))
                     {

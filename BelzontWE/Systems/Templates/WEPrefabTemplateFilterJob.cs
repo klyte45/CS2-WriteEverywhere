@@ -25,7 +25,7 @@ namespace BelzontWE
             public ComponentLookup<WETemplateForPrefabEmpty> m_prefabEmptyLkp;
             public ComponentLookup<WETemplateForPrefabDirty> m_prefabDirtyLkp;
             public ComponentLookup<WETemplateForPrefab> m_prefabLayoutLkp;
-            public ComponentLookup<WETemplateUpdater> m_templateUpdaterLkp;
+            public BufferLookup<WETemplateUpdater> m_templateUpdaterLkp;
             public ComponentLookup<WETextDataMain> m_TextDataLkp;
             public BufferLookup<WESubTextRef> m_subRefLkp;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
@@ -91,9 +91,12 @@ namespace BelzontWE
                     {
                         DestroyRecursive(data.childEntity, unfilteredChunkIndex, initialDelete, iterationCounter + 1);
                     }
-                    if (m_templateUpdaterLkp.TryGetComponent(nextEntity, out var updater))
+                    if (m_templateUpdaterLkp.TryGetBuffer(nextEntity, out var updaterBuff))
                     {
-                        DestroyRecursive(updater.childEntity, unfilteredChunkIndex, initialDelete, iterationCounter + 1);
+                        for (int j = 0; j < updaterBuff.Length; j++)
+                        {
+                            DestroyRecursive(updaterBuff[j].childEntity, unfilteredChunkIndex, initialDelete, iterationCounter + 1);
+                        }
                     }
                     if (m_subRefLkp.TryGetBuffer(nextEntity, out var subLayout))
                     {
