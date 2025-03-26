@@ -17,7 +17,6 @@ export const WEDebugWindow = (props: { initialPosition?: { x: number, y: number 
 
     useEffect(() => {
         DebugService.listCurrentMaterialSettings(wps.CurrentSubEntity.value!).then((x) => {
-            console.log("AKJHDKJAHDKJA", x)
             return setCurrentMaterialSettings(x);
         })
     }, [wps.CurrentSubEntity.value])

@@ -10,6 +10,7 @@ namespace BelzontWE
         public Entity childEntity;
     }
     public struct WETemplateForPrefabDirty : ICleanupComponentData, IQueryTypeParameter { }
+    public struct WETemplateDirtyInstancing : ICleanupComponentData, IQueryTypeParameter { }
     public struct WETemplateForPrefabEmpty : ICleanupComponentData, IQueryTypeParameter { }
     public struct WETemplateForPrefabToRunOnMain : ICleanupComponentData, IQueryTypeParameter { }
 }

@@ -1,8 +1,8 @@
 ﻿using Game.Prefabs;
-using Unity.Burst.Intrinsics;
-using Unity.Entities;
-using Unity.Collections;
 using System;
+using Unity.Burst.Intrinsics;
+using Unity.Collections;
+using Unity.Entities;
 
 
 #if BURST

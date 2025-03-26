@@ -7,6 +7,7 @@ import "../style/filePickerDialog.scss"
 import classNames from "classnames";
 import { ContextMenuButton } from "./ContextMenuButton";
 import engine from "cohtml/cohtml";
+import { FocusDisabled } from "cs2/input";
 
 type FilePickerDialogProps = {
     isActive: boolean,
@@ -29,9 +30,11 @@ export const FilePickerDialog = ({
         actionOnSuccess(x);
     };
     return <Portal>
-        {isActive && <BaseFilePickerDialog onConfirm={onConfirm} dialogTitle={dialogTitle} allowedExtensions={allowedExtensions}
-            dialogPromptText={dialogPromptText} initialFolder={initialFolder} bookmarks={bookmarks} bookmarksTitle={bookmarksTitle}
-            bookmarksIcon={bookmarksIcon} />}
+        {isActive && <FocusDisabled> 
+            <BaseFilePickerDialog onConfirm={onConfirm} dialogTitle={dialogTitle} allowedExtensions={allowedExtensions}
+                dialogPromptText={dialogPromptText} initialFolder={initialFolder} bookmarks={bookmarks} bookmarksTitle={bookmarksTitle}
+                bookmarksIcon={bookmarksIcon} />
+        </FocusDisabled>}
     </Portal>;
 };
 

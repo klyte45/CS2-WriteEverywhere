@@ -74,6 +74,7 @@ namespace BelzontWE
                     m_dataMeshHdl = GetComponentTypeHandle<WETextDataMesh>(),
                     m_WeMeshLkp = GetComponentLookup<WETextDataMesh>(true),
                     m_WeMainLkp = GetComponentLookup<WETextDataMain>(true),
+                    m_WeIsPlaceholderLkp = GetComponentLookup<WEIsPlaceholder>(true),
                     m_templateManagerEntries = layoutsAvailable
                 }.Schedule(m_pendingQueueEntities, Dependency);
 
@@ -91,6 +92,7 @@ namespace BelzontWE
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
             public ComponentLookup<WETextDataMain> m_WeMainLkp;
             public ComponentLookup<WETextDataMesh> m_WeMeshLkp;
+            public ComponentLookup<WEIsPlaceholder> m_WeIsPlaceholderLkp;
             public GCHandle FontDictPtr;
             public EntityStorageInfoLookup m_entityLookup;
             public BufferLookup<WETemplateUpdater> m_templateUpdaterLkp;
@@ -120,6 +122,7 @@ namespace BelzontWE
                         case WESimulationTextType.Text:
                             if (UpdateTextMesh(entity, ref weMeshData, weMeshData.ValueData.EffectiveValue.ToString(), unfilteredChunkIndex, m_CommandBuffer, fontDict))
                             {
+                                if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.RemoveComponent<WEIsPlaceholder>(unfilteredChunkIndex, entity);
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
                                 m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             }
@@ -127,6 +130,7 @@ namespace BelzontWE
                         case WESimulationTextType.Image:
                             if (UpdateImageMesh(entity, ref weMeshData, weMeshData.ValueData.EffectiveValue.ToString(), unfilteredChunkIndex, m_CommandBuffer))
                             {
+                                if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.RemoveComponent<WEIsPlaceholder>(unfilteredChunkIndex, entity);
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
                                 m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             }
@@ -134,11 +138,17 @@ namespace BelzontWE
                         case WESimulationTextType.Placeholder:
                             if (UpdatePlaceholder(entity, ref weCustomData, weMeshData.ValueData.EffectiveValue.ToString(), unfilteredChunkIndex, m_CommandBuffer))
                             {
+                                if (!m_WeIsPlaceholderLkp.HasComponent(entity))
+                                {
+                                    m_CommandBuffer.AddComponent<WEIsPlaceholder>(unfilteredChunkIndex, entity);
+                                    m_CommandBuffer.AddComponent<WETemplateDirtyInstancing>(unfilteredChunkIndex, entity);
+                                }
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
                                 m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             }
                             break;
                         default:
+                            if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.RemoveComponent<WEIsPlaceholder>(unfilteredChunkIndex, entity);
                             m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
                             break;
 

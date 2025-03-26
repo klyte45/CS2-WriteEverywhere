@@ -51,6 +51,7 @@ namespace BelzontWE
         private EntityQuery m_templateBasedEntities;
         private EntityQuery m_uncheckedWePrefabLayoutQuery;
         private EntityQuery m_dirtyWePrefabLayoutQuery;
+        private EntityQuery m_dirtyInstancingWeQuery;
         private EntityQuery m_prefabsToMarkDirty;
         private EntityQuery m_prefabsDataToSerialize;
         private EntityQuery m_entitiesToBeUpdatedInMain;
@@ -218,7 +219,7 @@ namespace BelzontWE
                     {
                         All = new ComponentType[]
                         {
-                            ComponentType.ReadOnly<WETemplateUpdater>(),
+                            ComponentType.ReadOnly<WEIsPlaceholder>(),
                         },
                         None = new ComponentType[]
                         {
@@ -271,6 +272,23 @@ namespace BelzontWE
                             }
                         }
               });
+            m_dirtyInstancingWeQuery = GetEntityQuery(new EntityQueryDesc[]
+                  {
+                      new()
+                        {
+                            All = new ComponentType[]
+                                {
+                                        ComponentType.ReadOnly<WEIsPlaceholder>(),
+                                        ComponentType.ReadOnly<WETemplateDirtyInstancing>(),
+                                },
+                            None = new ComponentType[]
+                            {
+                                ComponentType.ReadOnly<Temp>(),
+                                ComponentType.ReadOnly<Deleted>(),
+                                ComponentType.ReadOnly<WEWaitingRendering>(),
+                            }
+                        }
+              });
             m_prefabsToMarkDirty = GetEntityQuery(new EntityQueryDesc[]
             {
                     new ()
@@ -283,6 +301,7 @@ namespace BelzontWE
                         None = new ComponentType[]
                         {
                             ComponentType.ReadOnly<WETemplateForPrefabDirty>(),
+                            ComponentType.ReadOnly<WETemplateDirtyInstancing>(),
                             ComponentType.ReadOnly<Temp>(),
                             ComponentType.ReadOnly<Deleted>(),
                         }
@@ -423,7 +442,6 @@ namespace BelzontWE
         }
         private void UpdateLayouts(NativeArray<ArchetypeChunk> chunks)
         {
-            var m_templateUpdaterLkp = GetBufferLookup<WETemplateUpdater>();
             var m_TextDataLkp = GetComponentLookup<WETextDataMain>();
             var m_DataTransformLkp = GetComponentLookup<WETextDataTransform>();
             var m_subRefLkp = GetBufferLookup<WESubTextRef>();
@@ -457,22 +475,22 @@ namespace BelzontWE
                     {
                         cmd.DestroyEntity(buff[j].childEntity);
                     }
+                    buff.Clear();
                     if (hasTemplate)
                     {
 
-                        var targetSize = math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 10000);
+                        var targetSize = math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 256);
                         var instancingCount = transformData.InstanceCountByAxisOrder;
                         var spacingOffsets = transformData.SpacingByAxisOrder;
-                        var item000offset = new float3(transformData.ArrayInstancing.xy * transformData.arrayInstancingGapMeters.xy * transformData.PivotAsFloat2, 0);
+                        var item000offset = new float3((transformData.ArrayInstancing.xy - new uint2(1, 1)) * -transformData.arrayInstancingGapMeters.xy * transformData.PivotAsFloat2, 0);
 
-                        var localInstanceCounter = 0;
-                        for (int m = 0; m < instancingCount.x; m++)
+                        for (int o = 0; o < instancingCount.z; o++)
                         {
                             for (int n = 0; n < instancingCount.y; n++)
                             {
-                                for (int o = 0; o < instancingCount.z; o++)
+                                for (int m = 0; m < instancingCount.x; m++)
                                 {
-                                    var offsetPosition = (m * spacingOffsets[0]) + (n * spacingOffsets[1]) + (o * spacingOffsets[2]) - item000offset;
+                                    var offsetPosition = -((m * spacingOffsets[0]) + (n * spacingOffsets[1]) + (o * spacingOffsets[2])) - item000offset;
 
                                     var updater = new WETemplateUpdater()
                                     {
@@ -480,22 +498,11 @@ namespace BelzontWE
                                         childEntity = WELayoutUtility.DoCreateLayoutItemCmdBuffer(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET, offsetPosition)
                                     };
 
-                                    if (localInstanceCounter >= buff.Length)
-                                    {
-                                        buff.Add(updater);
-                                    }
-                                    else
-                                    {
-                                        buff[localInstanceCounter++] = updater;
-                                    }
+                                    buff.Add(updater);
                                     globalCounter++;
                                     if (buff.Length >= targetSize) goto end;
                                 }
                             }
-                        }
-                        if (localInstanceCounter < buff.Length)
-                        {
-                            buff.Length = localInstanceCounter;
                         }
                     }
                 end:
@@ -589,6 +596,29 @@ namespace BelzontWE
                         m_templateUpdaterLkp = GetBufferLookup<WETemplateUpdater>(true),
                     }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
                     keysWithTemplate.Dispose(Dependency);
+                }
+                else if (!m_dirtyInstancingWeQuery.IsEmpty)
+                {
+                    var chunks = m_dirtyInstancingWeQuery.ToArchetypeChunkArray(Allocator.Persistent);
+                    EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
+                    for (int h = 0; h < chunks.Length; h++)
+                    {
+                        var chunk = chunks[h];
+                        var entities = chunk.GetNativeArray(GetEntityTypeHandle());
+                        for (int i = 0; i < entities.Length; i++)
+                        {
+                            var e = entities[i];
+                            var buff = cmd.SetBuffer<WETemplateUpdater>(e);
+                            for (int j = 0; j < buff.Length; j++)
+                            {
+                                cmd.DestroyEntity(buff[j].childEntity);
+                            }
+                            buff.Clear();
+                            cmd.RemoveComponent<WETemplateDirtyInstancing>(e);
+                            cmd.AddComponent<WEWaitingRendering>(e);
+                        }
+                    }
+                    chunks.Dispose();
                 }
             }
             if (!m_componentsToDispose.IsEmpty)

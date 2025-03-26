@@ -71,7 +71,9 @@ const WETextDataTransformController = {
     MustDrawFnFormulaeStr: MultiUIValueBinding<string>,
     MustDrawFnFormulaeCompileResult: MultiUIValueBinding<number>,
     MustDrawFnFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
-
+    ArrayInstancing: MultiUIValueBinding<number3>,
+    ArrayInstancingGapMeters: MultiUIValueBinding<number3>,
+    ArrayAxisGrowthOrder: MultiUIValueBinding<ArrayInstancingAxisOrder>,
 }
 const WETextDataMeshController = {
     _prefix: "k45::we.dataMesh",
@@ -190,7 +192,14 @@ export enum WEPlacementPivot {
     BottomCenter = 9,
     BottomRight = 10,
 }
-
+export enum ArrayInstancingAxisOrder {
+    XYZ,
+    XZY,
+    YXZ,
+    YZX,
+    ZXY,
+    ZYX
+}
 export class WorldPickerService {
     public static get instance(): WorldPickerService { return _instance ??= new WorldPickerService() }
 

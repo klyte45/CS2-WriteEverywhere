@@ -26,7 +26,7 @@ namespace BelzontWE
         {
             WEPlacementPivot.TopLeft => new float2(0, 0),
             WEPlacementPivot.TopCenter => new float2(.5f, 0),
-            WEPlacementPivot.TopRight => new float2(0, 1),
+            WEPlacementPivot.TopRight => new float2(1, 0),
             WEPlacementPivot.MiddleLeft => new float2(0, .5f),
             WEPlacementPivot.MiddleCenter => new float2(.5f, .5f),
             WEPlacementPivot.MiddleRight => new float2(1, .5f),
@@ -44,10 +44,11 @@ namespace BelzontWE
             ZXY,
             ZYX
         }
-        public uint3 ArrayInstancing { readonly get => arrayInstancingCount; set => arrayInstancingCount = math.clamp(value, new(1, 1, 1), new(100, 100, 100)); }
         private uint3 arrayInstancingCount;
+        public uint3 ArrayInstancing { readonly get => arrayInstancingCount; set => arrayInstancingCount = math.clamp(value, new(1, 1, 1), new(100, 100, 100)); }
         public float3 arrayInstancingGapMeters;
-        public ArrayInstancingAxisOrder arrayAxisGrowthOrder; internal readonly float3[] SpacingByAxisOrder
+        public ArrayInstancingAxisOrder arrayAxisGrowthOrder;
+        internal readonly float3[] SpacingByAxisOrder
             => arrayAxisGrowthOrder switch
             {
                 ArrayInstancingAxisOrder.XYZ => new float3[]
@@ -128,7 +129,8 @@ namespace BelzontWE
                 mustDrawFn = new WETextDataValueFloat
                 {
                     defaultValue = 1
-                }
+                },
+                arrayInstancingCount = new(1, 1, 1),
             };
 
         public void Dispose()
