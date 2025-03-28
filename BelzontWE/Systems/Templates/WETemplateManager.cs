@@ -245,6 +245,7 @@ namespace BelzontWE
                         None = new ComponentType[]
                         {
                             ComponentType.ReadOnly<WETemplateForPrefabEmpty>(),
+                            ComponentType.ReadOnly<WETemplateForPrefabDirty>(),
                             ComponentType.ReadOnly<WETemplateForPrefab>(),
                             ComponentType.ReadOnly<Temp>(),
                             ComponentType.ReadOnly<Deleted>(),
@@ -519,7 +520,7 @@ namespace BelzontWE
 
         protected override void OnUpdate()
         {
-            if (GameManager.instance.isLoading || GameManager.instance.isGameLoading) return;
+            if (GameManager.instance.isLoading || GameManager.instance.isGameLoading || IsLoadingLayouts) return;
 
             if (m_executionQueue.Count > 0)
             {
@@ -564,14 +565,8 @@ namespace BelzontWE
                         m_EntityType = GetEntityTypeHandle(),
                         m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>(true),
                         m_prefabDataLkp = GetComponentLookup<PrefabData>(true),
-                        m_prefabEmptyLkp = GetComponentLookup<WETemplateForPrefabEmpty>(true),
-                        m_prefabDirtyLkp = GetComponentLookup<WETemplateForPrefabDirty>(true),
-                        m_prefabLayoutLkp = GetComponentLookup<WETemplateForPrefab>(true),
-                        m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
-                        m_TextDataLkp = GetComponentLookup<WETextDataMain>(true),
                         m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                         m_indexesWithLayout = keysWithTemplate,
-                        m_templateUpdaterLkp = GetBufferLookup<WETemplateUpdater>(true),
                     }.ScheduleParallel(m_uncheckedWePrefabLayoutQuery, Dependency);
                     keysWithTemplate.Dispose(Dependency);
                 }
@@ -582,16 +577,13 @@ namespace BelzontWE
                     {
                         keysWithTemplate[i.Key] = i.Value.Guid;
                     }
-                    Dependency = new WEPrefabTemplateFilterJob
+                    Dependency = new WEPrefabTemplateDirtyJob
                     {
                         m_EntityType = GetEntityTypeHandle(),
-                        m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>(true),
-                        m_prefabDataLkp = GetComponentLookup<PrefabData>(true),
                         m_prefabEmptyLkp = GetComponentLookup<WETemplateForPrefabEmpty>(true),
                         m_prefabDirtyLkp = GetComponentLookup<WETemplateForPrefabDirty>(true),
                         m_prefabLayoutLkp = GetComponentLookup<WETemplateForPrefab>(true),
                         m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
-                        m_TextDataLkp = GetComponentLookup<WETextDataMain>(true),
                         m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                         m_indexesWithLayout = keysWithTemplate,
                         m_templateUpdaterLkp = GetBufferLookup<WETemplateUpdater>(true),
@@ -722,6 +714,7 @@ namespace BelzontWE
             }
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 20, textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.prefabIndexesLoaded");
             yield return LoadTemplatesFromFolder(20, 80f);
+            LoadingPrefabLayoutsCoroutine = null;
         }
 
         private IEnumerator LoadTemplatesFromFolder(int offsetPercentage, float totalStepFull, string modName = null)
@@ -785,8 +778,7 @@ namespace BelzontWE
                 });
             }
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + totalStepPrefabTemplates), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingComplete");
-            EntityManager.RemoveComponent<WETemplateForPrefab>(m_prefabsToMarkDirty);
-            EntityManager.RemoveComponent<WETemplateForPrefabEmpty>(m_prefabsToMarkDirty);
+            m_endFrameBarrier.CreateCommandBuffer().AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty, EntityQueryCaptureMode.AtPlayback);
             if (modName is not null)
             {
                 yield return LoadModSubtemplates((int)(offsetPercentage + totalStepPrefabTemplates), totalStepFull * .3f, modName);
