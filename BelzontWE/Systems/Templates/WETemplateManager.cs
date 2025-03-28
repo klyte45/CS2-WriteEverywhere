@@ -478,11 +478,12 @@ namespace BelzontWE
                     buff.Clear();
                     if (hasTemplate)
                     {
+                        targetTemplate = targetTemplate.Clone();
 
                         var targetSize = math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 256);
                         var instancingCount = transformData.InstanceCountByAxisOrder;
                         var spacingOffsets = transformData.SpacingByAxisOrder;
-                        var item000offset = new float3((transformData.ArrayInstancing.xy - new uint2(1, 1)) * -transformData.arrayInstancingGapMeters.xy * transformData.PivotAsFloat2, 0);
+                        var item000offset = new float3((transformData.ArrayInstancing.xy - new uint2(1, 1)) * transformData.arrayInstancingGapMeters.xy * transformData.PivotAsFloat2, 0);
 
                         for (int o = 0; o < instancingCount.z; o++)
                         {
@@ -490,12 +491,12 @@ namespace BelzontWE
                             {
                                 for (int m = 0; m < instancingCount.x; m++)
                                 {
-                                    var offsetPosition = -((m * spacingOffsets[0]) + (n * spacingOffsets[1]) + (o * spacingOffsets[2])) - item000offset;
+                                    targetTemplate.self.transform.offsetPosition = (Vector3Xml)(Vector3)((m * spacingOffsets[0]) + (n * spacingOffsets[1]) + (o * spacingOffsets[2]) - item000offset);
 
                                     var updater = new WETemplateUpdater()
                                     {
                                         templateEntity = targetTemplate.Guid,
-                                        childEntity = WELayoutUtility.DoCreateLayoutItemCmdBuffer(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET, offsetPosition)
+                                        childEntity = WELayoutUtility.DoCreateLayoutItemCmdBuffer(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
                                     };
 
                                     buff.Add(updater);
@@ -1005,46 +1006,46 @@ namespace BelzontWE
         #region City Templates
         public int CanBeTransformedToTemplate(Entity e)
         {
-            if (!EntityManager.TryGetComponent<WETextDataMesh>(e, out var weData))
-            {
-                LogUtils.DoInfoLog($"Failed validation to transform to City Template: No text data found");
-                return 1;
-            }
+            //if (!EntityManager.TryGetComponent<WETextDataMesh>(e, out var weData))
+            //{
+            //    LogUtils.DoInfoLog($"Failed validation to transform to City Template: No text data found");
+            //    return 1;
+            //}
 
-            if (weData.TextType != WESimulationTextType.Text && weData.TextType != WESimulationTextType.Image && weData.TextType != WESimulationTextType.WhiteTexture)
-            {
-                LogUtils.DoInfoLog($"Failed validation to transform to City Template: Only white textures, text and image items are allowed in a city template");
-                return 2;
-            }
-            if (EntityManager.TryGetBuffer<WESubTextRef>(e, true, out var subRef))
-            {
-                for (int i = 0; i < subRef.Length; i++)
-                {
-                    if (CanBeTransformedToTemplate(subRef[i].m_weTextData) != 0)
-                    {
-                        LogUtils.DoInfoLog($"Failed validation to transform to City Template: Item #{i} failed validation");
-                        return 3;
-                    }
-                }
-            }
+            ////if (weData.TextType != WESimulationTextType.Text && weData.TextType != WESimulationTextType.Image && weData.TextType != WESimulationTextType.WhiteTexture)
+            ////{
+            ////    LogUtils.DoInfoLog($"Failed validation to transform to City Template: Only white textures, text and image items are allowed in a city template");
+            ////    return 2;
+            ////}
+            //if (EntityManager.TryGetBuffer<WESubTextRef>(e, true, out var subRef))
+            //{
+            //    for (int i = 0; i < subRef.Length; i++)
+            //    {
+            //        if (CanBeTransformedToTemplate(subRef[i].m_weTextData) != 0)
+            //        {
+            //            LogUtils.DoInfoLog($"Failed validation to transform to City Template: Item #{i} failed validation");
+            //            return 3;
+            //        }
+            //    }
+            //}
             return 0;
         }
         public int CanBeTransformedToTemplate(WETextDataXmlTree treeStruct)
         {
-            var weData = treeStruct.self;
-            if (weData.textMesh is null && weData.imageMesh is null && weData.whiteMesh is null)
-            {
-                LogUtils.DoInfoLog($"Failed validation to transform to City Template: Only white textures, text and image items are allowed in a city template");
-                return 2;
-            }
-            for (int i = 0; i < treeStruct.children?.Length; i++)
-            {
-                if (CanBeTransformedToTemplate(treeStruct.children[i]) != 0)
-                {
-                    LogUtils.DoInfoLog($"Failed validation to transform to City Template: Item #{i} failed validation");
-                    return 3;
-                }
-            }
+            //var weData = treeStruct.self;
+            ////if (weData.textMesh is null && weData.imageMesh is null && weData.whiteMesh is null)
+            ////{
+            ////    LogUtils.DoInfoLog($"Failed validation to transform to City Template: Only white textures, text and image items are allowed in a city template");
+            ////    return 2;
+            ////}
+            //for (int i = 0; i < treeStruct.children?.Length; i++)
+            //{
+            //    if (CanBeTransformedToTemplate(treeStruct.children[i]) != 0)
+            //    {
+            //        LogUtils.DoInfoLog($"Failed validation to transform to City Template: Item #{i} failed validation");
+            //        return 3;
+            //    }
+            //}
             return 0;
         }
         public bool SaveCityTemplate(string name, Entity e)
@@ -1244,7 +1245,7 @@ namespace BelzontWE
                 ? replacements.TryGetValue(modId, out var replacementDict)
                     ? mappedSet.ToDictionary(x => x, x => replacementDict.TryGetValue(x, out var data) ? data : null)
                     : mappedSet.ToDictionary(x => x, x => (string)null)
-                : null;
+                : new();
         }
 
         internal string SetModAtlasReplacement(string modId, string original, string target)

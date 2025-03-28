@@ -19,7 +19,7 @@ namespace BelzontWE.Font
         private GCHandle fontAddr;
         public Font Font
         {
-            get => (fontAddr.IsAllocated) ? (Font)fontAddr.Target : null;
+            get => fontAddr.IsAllocated && fontAddr.Target is Font fnt ? fnt : null;
             set
             {
                 if (fontAddr.IsAllocated) fontAddr.Free();

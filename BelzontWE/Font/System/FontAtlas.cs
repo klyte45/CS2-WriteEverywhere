@@ -199,6 +199,7 @@ namespace BelzontWE.Font
         public bool RenderGlyph(FontGlyph glyph)
         {
             Color[] colorBuffer = GetGlyphColors(glyph);
+            if (colorBuffer.Length == 0) return true;
             bool wasRecreated = false;
             // Write to texture
             if (Texture == null)
@@ -225,6 +226,8 @@ namespace BelzontWE.Font
 
             int g = glyph.Index;
             var dst = new FakePtr<byte>(buffer, pad + (pad * Mathf.RoundToInt(glyph.width)));
+            var font = glyph.Font;
+            if (font is null) return new Color[0];
             glyph.Font.RenderGlyphBitmap(dst,
                Mathf.RoundToInt(glyph.width) - (pad * 2),
                Mathf.RoundToInt(glyph.height) - (pad * 2),

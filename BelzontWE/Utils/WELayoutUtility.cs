@@ -15,11 +15,22 @@ namespace BelzontWE
             TARGET_IS_SELF_PARENT_HAS_TARGET,
             TARGET_IS_PARENT
         }
-        public static Entity DoCreateLayoutItem(WETextDataXmlTree toCopy, Entity parentEntity, Entity targetEntity, EntityManager em, ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET, float3 offsetPosition = default)
+        public static Entity DoCreateLayoutItem(WETextDataXmlTree toCopy, Entity parentEntity, Entity targetEntity, EntityManager em, ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET)
         {
             var newEntity = em.CreateEntity();
             var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, newEntity, out WETextDataMain weData, out WETextDataMesh mesh, out WETextDataMaterial material, out WETextDataTransform transform);
-            transform.offsetPosition += offsetPosition;
+            var variablesBuffer = em.AddBuffer<WETextDataVariable>(newEntity);
+            if (toCopy.variables?.Length > 0)
+            {
+                foreach (var entry in toCopy.variables)
+                {
+                    variablesBuffer.Add(new WETextDataVariable
+                    {
+                        Key = entry.key ?? "",
+                        Value = entry.value ?? ""
+                    });
+                }
+            }
             em.AddComponentData(newEntity, weData);
             em.AddComponentData(newEntity, mesh);
             em.AddComponentData(newEntity, material);
@@ -44,37 +55,36 @@ namespace BelzontWE
         }
         public static Entity DoCreateLayoutItemCmdBuffer(bool fromTemplate, string modSource, WETextDataXmlTree toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextDataMain> tdLookup,
                    ref BufferLookup<WESubTextRef> subTextLookup, EntityCommandBuffer cmd,
-                   ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET, float3 offsetPosition = default)
+                   ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET)
         {
             if (!subTextLookup.TryGetBuffer(parentEntity, out var buff)) buff = childTargetMode == ParentEntityMode.TARGET_IS_TARGET ? cmd.AddBuffer<WESubTextRef>(parentEntity) : default;
-            return DoCreateLayoutItemCommandBuffer(fromTemplate, modSource, toCopy, parentEntity, targetEntity, ref tdLookup, ref subTextLookup, cmd, ref buff, childTargetMode, offsetPosition);
+            return DoCreateLayoutItemCommandBuffer(fromTemplate, modSource, toCopy, parentEntity, targetEntity, ref tdLookup, ref subTextLookup, cmd, ref buff, childTargetMode);
         }
         public static void DoCreateLayoutItemArray(bool fromTemplate, string modSource, WETextDataXmlTree[] toCopyArray, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextDataMain> tdLookup,
                    ref BufferLookup<WESubTextRef> subTextLookup, EntityCommandBuffer cmd,
-                   ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET, float3 offsetPosition = default)
+                   ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET)
         {
             if (!subTextLookup.TryGetBuffer(parentEntity, out var buff)) buff = childTargetMode == ParentEntityMode.TARGET_IS_TARGET ? cmd.AddBuffer<WESubTextRef>(parentEntity) : default;
             foreach (var toCopy in toCopyArray)
             {
-                DoCreateLayoutItemCommandBuffer(fromTemplate, modSource, toCopy, parentEntity, targetEntity, ref tdLookup, ref subTextLookup, cmd, ref buff, childTargetMode, offsetPosition);
+                DoCreateLayoutItemCommandBuffer(fromTemplate, modSource, toCopy, parentEntity, targetEntity, ref tdLookup, ref subTextLookup, cmd, ref buff, childTargetMode);
             }
         }
 
         private static Entity DoCreateLayoutItemCommandBuffer(bool fromTemplate, string modSource, WETextDataXmlTree toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextDataMain> tdLookup,
         ref BufferLookup<WESubTextRef> subTextLookup, EntityCommandBuffer cmd,
-        ref DynamicBuffer<WESubTextRef> parentSubRefArray, ParentEntityMode childTargetMode, float3 offsetPosition = default)
+        ref DynamicBuffer<WESubTextRef> parentSubRefArray, ParentEntityMode childTargetMode)
         {
             var newEntity = cmd.CreateEntity();
             var childTarget = CommonDataSetup(toCopy, parentEntity, targetEntity, childTargetMode, newEntity, out WETextDataMain weData, out WETextDataMesh mesh, out WETextDataMaterial material, out WETextDataTransform transform);
-            transform.offsetPosition += offsetPosition;
             cmd.AddComponent(newEntity, weData);
             cmd.AddComponent(newEntity, mesh);
             cmd.AddComponent(newEntity, material);
             cmd.AddComponent(newEntity, transform);
             cmd.AddComponent<WETextComponentValid>(newEntity);
+            var buffVars = cmd.AddBuffer<WETextDataVariable>(newEntity);
             if (toCopy.variables?.Length > 0)
             {
-                var buffVars = cmd.AddBuffer<WETextDataVariable>(newEntity);
                 foreach (var item in toCopy.variables)
                 {
                     buffVars.Add(new()

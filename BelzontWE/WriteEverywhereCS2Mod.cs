@@ -4,7 +4,6 @@ using BelzontWE.Sprites;
 using BelzontWE.UI;
 using Game;
 using Game.Modding;
-using Game.SceneFlow;
 using Game.UI.InGame;
 using Unity.Entities;
 
@@ -16,18 +15,21 @@ namespace BelzontWE
 
         public override void DoOnCreateWorld(UpdateSystem updateSystem)
         {
-            updateSystem.UpdateAt<FontServer>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WEWorldPickerTool>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<WEWorldPickerTooltip>(SystemUpdatePhase.UITooltip);
-            updateSystem.UpdateBefore<WEPreRendererSystem>(SystemUpdatePhase.Rendering);
-            updateSystem.UpdateAfter<WERendererSystem>(SystemUpdatePhase.MainLoop);
-            updateSystem.UpdateAfter<WEPostRendererSystem>(SystemUpdatePhase.Rendering);
+
             updateSystem.UpdateAt<WEWorldPickerController>(SystemUpdatePhase.ModificationEnd);
             updateSystem.UpdateAt<WEUISystem>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<WEMainUISystem>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAt<WELayoutController>(SystemUpdatePhase.UIUpdate);
+
+            updateSystem.UpdateAt<FontServer>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WEAtlasesLibrary>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateManager>(SystemUpdatePhase.Rendering);
+
+            updateSystem.UpdateBefore<WEPreRendererSystem>(SystemUpdatePhase.MainLoop);
+            updateSystem.UpdateAfter<WERendererSystem>(SystemUpdatePhase.MainLoop);
+            updateSystem.UpdateAfter<WEPostRendererSystem>(SystemUpdatePhase.MainLoop);
         }
 
         public override void OnDispose()

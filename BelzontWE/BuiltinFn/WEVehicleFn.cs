@@ -55,8 +55,7 @@ namespace BelzontWE.Builtin
             return !em.TryGetComponent<Target>(entity, out var target) ? "<T>"
                 : target.m_Target == Entity.Null ? "CS2"
                 : !em.TryGetComponent<Owner>(target.m_Target, out var ownerRoute) ? "---"
-                : !em.TryGetComponent<RouteNumber>(ownerRoute.m_Owner, out var number) ? "<?>"
-                : number.m_Number.ToString();
+                : WERouteFn.GetTransportLineNumber(ownerRoute.m_Owner);
         };
         public static Func<Entity, string> GetSerialNumber_binding = (entity) => (entity.Index % 100000).ToString().PadLeft(5, '0');
         public static Func<Entity, string> GetVehiclePlateLine1_binding = (entity) => { var plate = GetVehiclePlate(entity); return plate[..(plate.Length / 2)]; };
@@ -70,6 +69,7 @@ namespace BelzontWE.Builtin
         public static string GetTransportLineNumber(Entity reference) => GetTargetTransportLineNumber_binding?.Invoke(reference) ?? "<!>";
         public static string GetSerialNumber(Entity reference) => GetSerialNumber_binding?.Invoke(reference) ?? "<???>";
     }
+
 }
 //&BelzontWE.Builtin.WEBuildingFn;GetBuildingMainRenter/Game.Companies.CompanyData;m_Brand/Game.Prefabs.BrandData;m_ColorSet.m_Channel0
 //&Color32;get_cyan
