@@ -15,6 +15,7 @@ namespace BelzontWE
             public ComponentLookup<WETextDataMaterial> m_MaterialDataLkp;
             public ComponentLookup<WETextDataTransform> m_TransformDataLkp;
             public ComponentLookup<WETextDataMesh> m_MeshDataLkp;
+            public BufferLookup<WETemplateUpdater> m_UpdaterDataLkp;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -30,12 +31,20 @@ namespace BelzontWE
                     if (m_TransformDataLkp.TryGetComponent(entity, out var data2))
                     {
                         data2.Dispose();
-                        m_CommandBuffer.RemoveComponent<WETextDataMaterial>(unfilteredChunkIndex, entity);
+                        m_CommandBuffer.RemoveComponent<WETextDataTransform>(unfilteredChunkIndex, entity);
                     }
                     if (m_MeshDataLkp.TryGetComponent(entity, out var data3))
                     {
                         data3.Dispose();
-                        m_CommandBuffer.RemoveComponent<WETextDataMaterial>(unfilteredChunkIndex, entity);
+                        m_CommandBuffer.RemoveComponent<WETextDataMesh>(unfilteredChunkIndex, entity);
+                    }
+                    if (m_UpdaterDataLkp.TryGetBuffer(entity, out var buff))
+                    {
+                        for(int j = 0; j < buff.Length; j++)
+                        {
+                            m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, buff[j].childEntity) ;
+                        }
+                        m_CommandBuffer.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, entity);
                     }
                     m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, entity);
                 }

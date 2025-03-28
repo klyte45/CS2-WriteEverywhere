@@ -630,7 +630,8 @@ namespace BelzontWE
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
                     m_MaterialDataLkp = GetComponentLookup<WETextDataMaterial>(true),
                     m_MeshDataLkp = GetComponentLookup<WETextDataMesh>(true),
-                    m_TransformDataLkp = GetComponentLookup<WETextDataTransform>(true)
+                    m_TransformDataLkp = GetComponentLookup<WETextDataTransform>(true),
+                    m_UpdaterDataLkp = GetBufferLookup<WETemplateUpdater>(true),
                 }.ScheduleParallel(m_componentsToDispose, Dependency);
             }
             Dependency.Complete();
@@ -784,7 +785,8 @@ namespace BelzontWE
                 });
             }
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + totalStepPrefabTemplates), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingComplete");
-            EntityManager.AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty);
+            EntityManager.RemoveComponent<WETemplateForPrefab>(m_prefabsToMarkDirty);
+            EntityManager.RemoveComponent<WETemplateForPrefabEmpty>(m_prefabsToMarkDirty);
             if (modName is not null)
             {
                 yield return LoadModSubtemplates((int)(offsetPercentage + totalStepPrefabTemplates), totalStepFull * .3f, modName);

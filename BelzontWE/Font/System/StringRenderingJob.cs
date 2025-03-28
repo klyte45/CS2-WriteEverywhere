@@ -61,40 +61,40 @@ namespace BelzontWE.Font
                 LogUtils.DoLog($"Result created");
 #endif
 
-                var str = ToFilteredString(strOr.ConvertToString());
-                if (string.IsNullOrEmpty(str))
+                try
                 {
-                    output.Enqueue(result);
-                    return;
-                }
+                    var str = ToFilteredString(strOr.ConvertToString());
+                    if (string.IsNullOrEmpty(str))
+                    {
+                        output.Enqueue(result);
+                        return;
+                    }
 
-                // Determine ascent and lineHeight from first character
-                float ascent = 0, lineHeight = 0;
-                var fsdTarget = fsd.Target as FontSystemData;
-                for (int i = 0; i < str.Length; i += char.IsSurrogatePair(str, i) ? 2 : 1)
-                {
-                    int codepoint = char.ConvertToUtf32(str, i);
+                    // Determine ascent and lineHeight from first character
+                    float ascent = 0, lineHeight = 0;
+                    var fsdTarget = fsd.Target as FontSystemData;
+                    for (int i = 0; i < str.Length; i += char.IsSurrogatePair(str, i) ? 2 : 1)
+                    {
+                        int codepoint = char.ConvertToUtf32(str, i);
 #if JOBS_DEBUG
                 LogUtils.DoLog($"codepoint #{i}: {codepoint}");
 #endif
-                    FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, fsdTarget);
-                    if (!glyph.IsValid)
-                    {
-                        continue;
+                        FontGlyph glyph = GetGlyphWithoutBitmap(glyphs, codepoint, fsdTarget);
+                        if (!glyph.IsValid)
+                        {
+                            continue;
+                        }
+
+                        ascent = fsdTarget.Font.Ascent;
+                        lineHeight = fsdTarget.Font.LineHeight;
+                        break;
                     }
 
-                    ascent = fsdTarget.Font.Ascent;
-                    lineHeight = fsdTarget.Font.LineHeight;
-                    break;
-                }
+                    var q = new FontGlyphBounds();
 
-                var q = new FontGlyphBounds();
+                    float originX = 0.0f;
+                    float originY = 0.0f;
 
-                float originX = 0.0f;
-                float originY = 0.0f;
-
-                try
-                {
                     IList<Vector3> vertices = new List<Vector3>();
                     IList<Color32> colors = new List<Color32>();
                     IList<Vector2> uvs = new List<Vector2>();
@@ -175,10 +175,13 @@ namespace BelzontWE.Font
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"uvs: {uvs.Count}");
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"colors: {colors.Count}");
 #endif
-                    output.Enqueue(result);
+                }
+                catch
+                {
                 }
                 finally
                 {
+                    output.Enqueue(result);
                 }
 
             }
