@@ -1,20 +1,20 @@
-﻿using Game;
+﻿using Belzont.Interfaces;
+using Belzont.Utils;
+using BelzontWE.Font.Utility;
+using BelzontWE.Sprites;
+using Game;
+using Game.Common;
+using Game.Prefabs;
 using Game.Rendering;
 using Game.SceneFlow;
+using Game.Tools;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
-using BelzontWE.Font.Utility;
-using BelzontWE.Sprites;
-using Belzont.Utils;
-using Game.Tools;
-using Game.Common;
-using System.Collections.Generic;
-using Game.Prefabs;
-using Belzont.Interfaces;
 
 
 
@@ -23,8 +23,6 @@ using Belzont.Interfaces;
 using UnityEngine.Scripting;
 using Unity.Burst;
 #else
-using Belzont.Interfaces;
-using Belzont.Utils;
 #endif
 
 namespace BelzontWE
@@ -150,17 +148,26 @@ namespace BelzontWE
                     bool ìsPlaceholder = false;
                     bool doRender = true;
                     var vars = item.variables.ToString();
-                    var changed = transform.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
-                    if (item.transformMatrix == default)
+                    //   if (!WETemplateManager.Instance.IsAnyGarbagePending)
                     {
-                        if (changed)
+                        var changed = transform.UpdateFormulaes(EntityManager, item.geometryEntity, vars, out var inconsistentTransf);
+                        if (item.transformMatrix == default)
                         {
-                            if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
+                            if (changed)
+                            {
+                                if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
+                            }
+                            continue;
                         }
-                        continue;
+                        mesh.UpdateFormulaes(EntityManager, item.geometryEntity, vars, out var inconsistentMesh);
+                        material.UpdateFormulaes(EntityManager, item.geometryEntity, vars, out var inconsistentMaterial);
+                        if (inconsistentMaterial || inconsistentMesh || inconsistentTransf)
+                        {
+                            if (BasicIMod.DebugMode) LogUtils.DoLog($"Entity {item.geometryEntity} seems to have invalid archetype, resetting!");
+                            EntityManager.AddComponent<WETemplateForPrefabDirty>(item.geometryEntity);
+                            continue;
+                        }
                     }
-                    mesh.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
-                    material.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
 
                     if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
                         && m_pickerController.CurrentSubEntity.Value == item.textDataEntity
@@ -233,10 +240,13 @@ namespace BelzontWE
                             if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {mesh.RenderInformation?.m_refText} | {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
                         }
                     }
-                    if (EntityManager.HasComponent<WETextDataMain>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, main);
-                    if (EntityManager.HasComponent<WETextDataMaterial>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, material);
-                    if (EntityManager.HasComponent<WETextDataMesh>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, mesh);
-                    if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
+                    //      if (!WETemplateManager.Instance.IsAnyGarbagePending)
+                    {
+                        if (EntityManager.HasComponent<WETextDataMain>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, main);
+                        if (EntityManager.HasComponent<WETextDataMaterial>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, material);
+                        if (EntityManager.HasComponent<WETextDataMesh>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, mesh);
+                        if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
+                    }
 
                 }
                 dumpNextFrame = false;
@@ -256,7 +266,7 @@ namespace BelzontWE
                     m_transform = GetComponentLookup<Game.Objects.Transform>(true),
                     m_iTransform = GetComponentLookup<InterpolatedTransform>(true),
                     m_weMainLookup = GetComponentLookup<WETextDataMain>(true),
-                    m_weMeshLookup = GetComponentLookup<WETextDataMesh>(false),                    
+                    m_weMeshLookup = GetComponentLookup<WETextDataMesh>(false),
                     m_weMaterialLookup = GetComponentLookup<WETextDataMaterial>(true),
                     m_weTemplateUpdaterLookup = GetBufferLookup<WETemplateUpdater>(true),
                     m_weTemplateForPrefabLookup = GetComponentLookup<WETemplateForPrefab>(true),

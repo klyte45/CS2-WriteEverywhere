@@ -27,7 +27,7 @@ namespace BelzontWE
             updateSystem.UpdateAt<WEAtlasesLibrary>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateManager>(SystemUpdatePhase.Rendering);
 
-            updateSystem.UpdateBefore<WEPreRendererSystem>(SystemUpdatePhase.MainLoop);
+            updateSystem.UpdateAt<WEPreRendererSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateAfter<WERendererSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateAfter<WEPostRendererSystem>(SystemUpdatePhase.MainLoop);
         }

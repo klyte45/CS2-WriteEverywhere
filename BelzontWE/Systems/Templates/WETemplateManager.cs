@@ -2,7 +2,6 @@
 using Belzont.Serialization;
 using Belzont.Utils;
 using BelzontWE.Sprites;
-using Colossal.Entities;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.Common;
@@ -399,7 +398,6 @@ namespace BelzontWE
             var m_subRefLkp = GetBufferLookup<WESubTextRef>();
             var m_prefabEmptyLkp = GetComponentLookup<WETemplateForPrefabEmpty>();
             var globalCounter = 0;
-            EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
             for (int h = 0; h < chunks.Length; h++)
             {
                 var chunk = chunks[h];
@@ -407,7 +405,7 @@ namespace BelzontWE
                 var prefabRefs = chunk.GetNativeArray(ref m_prefabRefHdl);
                 for (int i = 0; i < entities.Length; i++, globalCounter++)
                 {
-                    if (globalCounter >= 1000)
+                    if (globalCounter >= 100_000)
                     {
                         m_updatingEntitiesOnMain = null;
                         return;
@@ -415,6 +413,7 @@ namespace BelzontWE
                     var e = entities[i];
                     var prefabRef = prefabRefs[i];
 
+                    EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
                     cmd.RemoveComponent<WETemplateForPrefabToRunOnMain>(e);
                     if (m_prefabDataLkp.TryGetComponent(prefabRef.m_Prefab, out var prefabData))
                     {
@@ -448,7 +447,6 @@ namespace BelzontWE
             var m_subRefLkp = GetBufferLookup<WESubTextRef>();
             var toBeProcessedDataHdl = GetComponentTypeHandle<WEPlaceholderToBeProcessedInMain>();
             var globalCounter = 0;
-            EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
             for (int h = 0; h < chunks.Length; h++)
             {
                 var chunk = chunks[h];
@@ -456,12 +454,13 @@ namespace BelzontWE
                 var dataToBeProcessedArray = chunk.GetNativeArray(ref toBeProcessedDataHdl);
                 for (int i = 0; i < entities.Length; i++, globalCounter++)
                 {
-                    if (globalCounter >= 100)
+                    if (globalCounter >= 10_000)
                     {
                         m_updatingEntitiesOnMain = null;
                         return;
                     }
                     var e = entities[i];
+                    EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
                     var buff = cmd.SetBuffer<WETemplateUpdater>(e);
 
                     var dataToBeProcessed = dataToBeProcessedArray[i];
@@ -541,16 +540,16 @@ namespace BelzontWE
             }
             if (m_updatingEntitiesOnMain is null)
             {
-                if (!m_entitiesToBeUpdatedInMain.IsEmpty)
-                {
-                    var entitiesToUpdate = m_entitiesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
-                    UpdateLayouts(entitiesToUpdate);
-                    entitiesToUpdate.Dispose();
-                }
-                else if (!m_prefabArchetypesToBeUpdatedInMain.IsEmpty)
+                if (!m_prefabArchetypesToBeUpdatedInMain.IsEmpty)
                 {
                     var entitiesToUpdate = m_prefabArchetypesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
                     UpdatePrefabArchetypes(entitiesToUpdate);
+                    entitiesToUpdate.Dispose();
+                }
+                else if (!m_entitiesToBeUpdatedInMain.IsEmpty)
+                {
+                    var entitiesToUpdate = m_entitiesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
+                    UpdateLayouts(entitiesToUpdate);
                     entitiesToUpdate.Dispose();
                 }
                 else if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
@@ -683,6 +682,13 @@ namespace BelzontWE
             return 0;
         }
         public bool IsLoadingLayouts => LoadingPrefabLayoutsCoroutine != null;
+        public bool IsAnyQueuePending => IsLoadingLayouts ||
+            !m_entitiesToBeUpdatedInMain.IsEmpty ||
+            !m_prefabArchetypesToBeUpdatedInMain.IsEmpty;
+        public bool IsAnyGarbagePending => IsAnyQueuePending ||
+            !m_uncheckedWePrefabLayoutQuery.IsEmpty ||
+            !m_dirtyWePrefabLayoutQuery.IsEmpty ||
+            !m_dirtyInstancingWeQuery.IsEmpty || !m_componentsToDispose.IsEmpty;
         private Coroutine LoadingPrefabLayoutsCoroutine;
         private const string LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID = "loadingPrefabTemplates";
         private const string LOADING_SUBTEMPLATES_NOTIFICATION_ID = "loadingModSubtemplates";

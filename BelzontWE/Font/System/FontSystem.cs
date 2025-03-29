@@ -344,6 +344,7 @@ namespace BelzontWE.Font
             if (brij.AtlasVersion != CurrentAtlas.Version)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} since atlas changed");
+                m_textCache[originalText] = null;
                 itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
                 return;
             }
@@ -351,20 +352,24 @@ namespace BelzontWE.Font
             if (result is null)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} ");
-                itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
-                return;
             }
+            else if (m_textCache.TryGetValue(originalText, out var currentVal))
+            {
+                if ((currentVal == null || currentVal == BasicRenderInformation.LOADING_PLACEHOLDER))
+                {
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] SET UP to val '{originalText}'");
+                    m_textCache[originalText] = result;
+                    return;
+                }
+                else
+                {
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] KEEPING '{originalText}' (already filled with {currentVal})");
+                    return;
+                }
 
-            if (m_textCache.TryGetValue(originalText, out var currentVal) && (currentVal == null || currentVal == BasicRenderInformation.LOADING_PLACEHOLDER))
-            {
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] SET UP to val '{originalText}'");
-                m_textCache[originalText] = result;
             }
-            else
-            {
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] REMOVING '{originalText}'");
-                //m_textCache.Remove(originalText);
-            }
+            m_textCache[originalText] = null;
+            itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
         }
 
         public void Dispose()

@@ -5,7 +5,6 @@ using System;
 using System.Linq;
 using System.Xml.Serialization;
 using Unity.Collections;
-using Unity.Entities;
 using UnityEngine;
 
 namespace BelzontWE.Font.Utility
@@ -59,6 +58,10 @@ namespace BelzontWE.Font.Utility
         }
         public static BasicRenderInformation Fill(BasicRenderInformationJob brij, Texture main)
         {
+            if (brij.Invalid)
+            {                
+                return null;
+            }
             var bri = new BasicRenderInformation(brij.originalText.ToString(), brij.vertices.ToArray(), brij.triangles.ToArray(), brij.uv1.ToArray(),
                 brij.verticesCube.ToArray(), brij.trianglesCube.ToArray(), brij.uv1Cube.ToArray(), main);
             if (bri.Mesh == null) return null;
@@ -206,6 +209,7 @@ namespace BelzontWE.Font.Utility
         public RangeVector m_fontBaseLimits;
         public uint AtlasVersion;
         public FixedString512Bytes originalText;
+        public bool Invalid;
 
         public void Dispose()
         {

@@ -1,10 +1,10 @@
-﻿using Game.Rendering;
+﻿using Colossal.Mathematics;
+using Game.Rendering;
+using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
-using Unity.Burst.Intrinsics;
-using Colossal.Mathematics;
 
 
 
@@ -13,8 +13,6 @@ using Colossal.Mathematics;
 #if BURST
 using Unity.Burst;
 #else
-using Belzont.Interfaces;
-using Belzont.Utils;
 #endif
 
 namespace BelzontWE
@@ -252,11 +250,14 @@ namespace BelzontWE
                             var isDecal = material.CheckIsDecal(mesh);
                             var effRot = parentIsPlaceholder ? default : isDecal ? refRot * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)refRot;
                             var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? (scale.xzy * new float3(mesh.TextType == WESimulationTextType.Image ? mesh.BriWidthMetersUnscaled : 1, 1, 1)) : new float3(scale.xy, 1));
-                            if (mesh.HasBRI)
+                            var zeroedBounds = (Vector3)(mesh.Bounds.min - mesh.Bounds.max) == default;
+                            var invalidBri = (mesh.EffectiveText.Length >= 0 && zeroedBounds);
+                            if (mesh.HasBRI || invalidBri)
                             {
                                 if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
                                 {
-                                    int lod = CalculateLod(mesh.Bounds, ref mesh, ref transform, ref matrix, out int minLod, ref this);
+                                    int minLod = -1;
+                                    int lod = invalidBri ? 0 : CalculateLod(mesh.Bounds, ref mesh, ref transform, ref matrix, out minLod, ref this);
                                     if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                     {
                                         availToDraw.Enqueue(new WERenderData

@@ -1,9 +1,6 @@
-﻿using Unity.Burst.Intrinsics;
+﻿using Unity.Burst;
+using Unity.Burst.Intrinsics;
 using Unity.Entities;
-
-
-#if BURST
-#endif
 
 namespace BelzontWE
 {

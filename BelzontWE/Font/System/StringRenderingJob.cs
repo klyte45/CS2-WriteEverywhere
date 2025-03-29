@@ -18,7 +18,7 @@ namespace BelzontWE.Font
     {
         private unsafe struct StringRenderingJob : IJobParallelFor
         {
-            public int Size => sizeof(StringRenderingJob);
+            public readonly int Size => sizeof(StringRenderingJob);
 
 
             public NativeQueue<BasicRenderInformationJob>.ParallelWriter output;
@@ -176,8 +176,10 @@ namespace BelzontWE.Font
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"colors: {colors.Count}");
 #endif
                 }
-                catch
+                catch (Exception e)
                 {
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Thrown exception gen String: '{result.originalText}' {(fsd.IsAllocated ? fsd.Target : "???")}\n{e}");
+                    result.Invalid = true;
                 }
                 finally
                 {

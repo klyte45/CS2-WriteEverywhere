@@ -74,6 +74,7 @@ namespace BelzontWE
 
         public WETextDataMesh UpdateBRI(BasicRenderInformation bri, string text)
         {
+            if (bri.m_sizeMetersUnscaled.x < 0 && !bri.m_isError && bri.m_refText != "") return this;
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             basicRenderInformation = default;
             basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
@@ -94,15 +95,27 @@ namespace BelzontWE
 
         public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity)
         {
-            UpdateFormulaes(em, targetEntity, "", true);
+            UpdateFormulaes(em, targetEntity, "", out _, true);
             FontServer.Instance.EnsureFont(fontName);
             return this;
         }
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr, bool force = false)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr, out bool inconsistent, bool force = false)
         {
+            inconsistent = false;
             if (!force && nextUpdateFrame > Time.frameCount)
             {
                 return false;
+            }
+            if (inconsistent = ValueData.IsInconsistent)
+            {
+                return true;
+            }
+            if (HasBRI && basicRenderInformation.Target == null)
+            {
+                basicRenderInformation.Free();
+                basicRenderInformation = default;
+                dirty = true;
+                return true;
             }
             nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
             bool result = false;
@@ -172,5 +185,6 @@ namespace BelzontWE
         }
 
         public string Text { readonly get => valueData.DefaultValue.ToString(); set { valueData.DefaultValue = value; dirty = true; } }
+        public readonly FixedString512Bytes EffectiveText => valueData.EffectiveValue;
     }
 }

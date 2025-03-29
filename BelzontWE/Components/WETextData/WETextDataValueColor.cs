@@ -24,7 +24,7 @@ namespace BelzontWE
                     if (value == (formulaeGC.Target as string)) return;
                     formulaeGC.Free();
                 }
-                if (!value.IsNullOrWhitespace()) formulaeGC = GCHandle.Alloc(value);
+                if (!value.IsNullOrWhitespace()) formulaeGC = GCHandle.Alloc(new string(value));
                 loadingFnDone = false;
             }
         }
@@ -62,6 +62,7 @@ namespace BelzontWE
                 loadedFnNow = loadingFnDone = true;
             }
             var oldVal = EffectiveValue;
+            
             try
             {
                 EffectiveValue = formulaeGC.IsAllocated
@@ -82,5 +83,7 @@ namespace BelzontWE
         {
             if (formulaeGC.IsAllocated) formulaeGC.Free();
         }
+
+        public bool IsInconsistent => formulaeGC.IsAllocated && formulaeGC.Target == null;
     }
 }
