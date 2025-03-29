@@ -374,9 +374,17 @@ namespace BelzontWE
                         None = new ComponentType[]
                         {
                             ComponentType.ReadOnly<WETextComponentValid>(),
-                            ComponentType.ReadOnly<Temp>(),
-                            ComponentType.ReadOnly<Deleted>(),
+                        }
+                    },
+                    new ()
+                    {
+                        Any = new ComponentType[]
+                        {
                             ComponentType.ReadOnly<WETemplateForPrefab>(),
+                        },
+                        None = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<PrefabRef>(),
                         }
                     }
             });
@@ -454,7 +462,7 @@ namespace BelzontWE
                 var dataToBeProcessedArray = chunk.GetNativeArray(ref toBeProcessedDataHdl);
                 for (int i = 0; i < entities.Length; i++, globalCounter++)
                 {
-                    if (globalCounter >= 10_000)
+                    if (globalCounter >= 5_000)
                     {
                         m_updatingEntitiesOnMain = null;
                         return;
@@ -622,6 +630,7 @@ namespace BelzontWE
                     m_MaterialDataLkp = GetComponentLookup<WETextDataMaterial>(true),
                     m_MeshDataLkp = GetComponentLookup<WETextDataMesh>(true),
                     m_TransformDataLkp = GetComponentLookup<WETextDataTransform>(true),
+                    m_WETemplateForPrefabLkp = GetComponentLookup<WETemplateForPrefab>(true),
                     m_UpdaterDataLkp = GetBufferLookup<WETemplateUpdater>(true),
                 }.Schedule(m_componentsToDispose, Dependency);
             }

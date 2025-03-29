@@ -14,6 +14,8 @@ namespace BelzontWE
             public ComponentLookup<WETextDataMesh> m_MeshDataLkp;
             public BufferLookup<WETemplateUpdater> m_UpdaterDataLkp;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
+            internal ComponentLookup<WETemplateForPrefab> m_WETemplateForPrefabLkp;
+
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
                 var entities = chunk.GetNativeArray(m_EntityType);
@@ -29,6 +31,11 @@ namespace BelzontWE
                     {
                         data3.Dispose();
                         m_CommandBuffer.RemoveComponent<WETextDataMesh>(unfilteredChunkIndex, entity);
+                    }
+                    if (m_WETemplateForPrefabLkp.TryGetComponent(entity, out var data2))
+                    {
+                        m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, data2.childEntity);
+                        m_CommandBuffer.RemoveComponent<WETemplateForPrefab>(unfilteredChunkIndex, entity);
                     }
                     if (m_UpdaterDataLkp.TryGetBuffer(entity, out var buff))
                     {
