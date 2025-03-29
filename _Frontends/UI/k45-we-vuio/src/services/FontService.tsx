@@ -10,6 +10,7 @@ export class FontService {
     static async deleteCityFont(fontName: string): Promise<void> { return await engine.call("k45::we.fonts.deleteCityFont", fontName); }
     static async duplicateCityFont(srcName: string, newName: string): Promise<void> { return await engine.call("k45::we.fonts.duplicateCityFont", srcName, newName); }
     static async listModsFonts(): Promise<ModFolder[]> { return await engine.call("k45::we.fonts.listModsFonts"); }
+    static async cleanFontCache(fontName: string): Promise<void> { return await engine.call("k45::we.fonts.cleanFontCache", fontName); }
 }
 export type FontDetailResponse = {
     name: string;

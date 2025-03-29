@@ -116,6 +116,17 @@ namespace BelzontWE
             }
             return true;
         }
+        public void CleanTextCache(string name)
+        {
+            if (name == null)
+            {
+                DefaultFont.FontSystem.ResetCache();
+            }
+            else if (LoadedFonts.ContainsKey(name))
+            {
+                LoadedFonts[name].FontSystem.ResetCache();
+            }
+        }
         public void DestroyFont(string name)
         {
             if (name != null && LoadedFonts.ContainsKey(name))

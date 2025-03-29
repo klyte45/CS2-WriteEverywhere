@@ -1,4 +1,8 @@
-#  v0.2.0r2 (23-MAR-25)
+# v0.2.1r0
+- Added support to template placeholder arrays! It may be useful when making dynamic content (like reading lines passing at a station)
+- Added support to 
+
+## FROM v0.2.0r2
 - Added support to inheritable variables for WE template components
 - Added support to indexing arrays from formulaes, by using directly the array index number at path navigation
 

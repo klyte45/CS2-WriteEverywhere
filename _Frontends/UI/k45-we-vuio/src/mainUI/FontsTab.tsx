@@ -40,6 +40,7 @@ export const FontsTab = (props: Props) => {
     const T_addItem = translate("cityFontsTab.addFont")
     const T_rename = translate("cityFontsTab.rename")
     const T_duplicate = translate("cityFontsTab.duplicate")
+    const T_cleanCache = translate("cityFontsTab.cleanCache")
     const T_delete = translate("cityFontsTab.delete")
     const T_confirmDeleteText = translate("cityFontsTab.confirmDeleteText")
     const T_renameDialogTitle = translate("cityFontsTab.renameDialog.title")
@@ -99,6 +100,7 @@ export const FontsTab = (props: Props) => {
         { className: "negativeBtn", action() { setCurrentModal(Modals.CONFIRMING_DELETE) }, text: T_delete },
         { className: "neutralBtn", action() { setIsRenamingLayout(true) }, text: T_rename },
         { className: "neutralBtn", action() { setIsDuplicatingLayout(true) }, text: T_duplicate },
+        { className: "neutralBtn", action() { FontService.cleanFontCache(selectedFont!) }, text: T_cleanCache},
 
     ]
     const detailsFields = [] as any[]

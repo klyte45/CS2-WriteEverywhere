@@ -212,7 +212,7 @@ namespace BelzontWE.Sprites
         {
             if (spritesToAdd.Count > 0)
             {
-                targetDict[atlasName] = new(512 << WEModData.InstanceWE.StartTextureSizeFont);
+                targetDict[atlasName] = new(512);
                 for (int j = 0; j < spritesToAdd.Count; j++)
                 {
                     WEImageInfo entry = spritesToAdd[j];

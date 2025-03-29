@@ -189,23 +189,23 @@ namespace BelzontWE.Utils
 
         public static WETextDataXml.FormulaeStringXml ToXml(this WETextDataValueString value) => new()
         {
-            defaultValue = value.DefaultValue.ToString(),
-            formulae = value.Formulae.ToString()
+            defaultValue = value.DefaultValue,
+            formulae = value.Formulae
         };
         public static WETextDataXml.FormulaeFloatXml ToXml(this WETextDataValueFloat value) => new()
         {
             defaultValue = value.defaultValue,
-            formulae = value.Formulae.ToString()
+            formulae = value.Formulae
         };
         public static WETextDataXml.FormulaeColorRgbaXml ToRgbaXml(this WETextDataValueColor value) => new()
         {
             defaultValue = value.defaultValue,
-            formulae = value.Formulae.ToString()
+            formulae = value.Formulae
         };
         public static WETextDataXml.FormulaeColorRgbXml ToRgbXml(this WETextDataValueColor value) => new()
         {
             defaultValue = value.defaultValue,
-            formulae = value.Formulae.ToString()
+            formulae = value.Formulae
         };
 
         public static WETextDataValueString ToComponent(this WETextDataXml.FormulaeStringXml value) => value is null ? default : new()

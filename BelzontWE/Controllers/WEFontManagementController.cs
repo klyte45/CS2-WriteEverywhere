@@ -24,6 +24,7 @@ namespace BelzontWE
             callBinder($"{PREFIX}deleteCityFont", DeleteCityFont);
             callBinder($"{PREFIX}duplicateCityFont", DuplicateCityFont);
             callBinder($"{PREFIX}listModsFonts", ListModsFonts);
+            callBinder($"{PREFIX}cleanFontCache", CleanFontCache);
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller) { }
@@ -73,6 +74,7 @@ namespace BelzontWE
                 };
 
         private void RenameCityFont(string oldName, string newName) => m_fontServer.RenameFont(oldName, newName);
+        private void CleanFontCache(string oldName) => m_fontServer.CleanTextCache(oldName);
         private void DeleteCityFont(string name) => m_fontServer.DestroyFont(name);
         private void DuplicateCityFont(string srcName, string newName) => m_fontServer.DuplicateFont(srcName, newName);
         private List<ModFolder> ListModsFonts() => m_fontServer.ListModsExtraFolders();
