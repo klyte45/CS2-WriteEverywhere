@@ -2,29 +2,23 @@
 using Colossal.OdinSerializer.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Unity.Entities;
 using UnityEngine;
 using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE
 {
-    public struct WETextDataValueColor : IDisposable
+    public struct WETextDataValueColor
     {
         public Color defaultValue;
-        private GCHandle formulaeGC;
+        private int formulaeStrBnk;
         public byte formulaeCompilationStatus;
         public string Formulae
         {
-            get => formulaeGC.IsAllocated ? formulaeGC.Target as string ?? "" : "";
+            get => WEStringsBank.Instance[formulaeStrBnk];
             set
             {
-                if (formulaeGC.IsAllocated)
-                {
-                    if (value == (formulaeGC.Target as string)) return;
-                    formulaeGC.Free();
-                }
-                if (!value.IsNullOrWhitespace()) formulaeGC = GCHandle.Alloc(new string(value));
+                formulaeStrBnk = WEStringsBank.Instance[value];
                 loadingFnDone = false;
             }
         }
@@ -37,7 +31,7 @@ namespace BelzontWE
         {
             if (newFormulae.IsNullOrWhitespace())
             {
-                if (formulaeGC.IsAllocated) formulaeGC.Free();
+                formulaeStrBnk = 0;
                 errorFmtArgs = null;
                 return 0;
             }
@@ -55,17 +49,17 @@ namespace BelzontWE
             var loadedFnNow = false;
             if (!loadingFnDone)
             {
-                if (formulaeGC.IsAllocated)
+                if (formulaeStrBnk > 0)
                 {
                     formulaeCompilationStatus = SetFormulae(Formulae, out _);
                 }
                 loadedFnNow = loadingFnDone = true;
             }
             var oldVal = EffectiveValue;
-            
+
             try
             {
-                EffectiveValue = formulaeGC.IsAllocated
+                EffectiveValue = formulaeStrBnk > 0
                     ? WEFormulaeHelper.GetCachedColorFn(Formulae) is FormulaeFn<Color> fn
                         ? fn(em, geometryEntity, vars)
                         : Color.cyan
@@ -79,11 +73,5 @@ namespace BelzontWE
             return loadedFnNow || EffectiveValue != oldVal;
         }
 
-        public void Dispose()
-        {
-            if (formulaeGC.IsAllocated) formulaeGC.Free();
-        }
-
-        public bool IsInconsistent => formulaeGC.IsAllocated && formulaeGC.Target == null;
     }
 }

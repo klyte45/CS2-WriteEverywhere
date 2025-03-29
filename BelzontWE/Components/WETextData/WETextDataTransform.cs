@@ -1,12 +1,11 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
 namespace BelzontWE
 {
-    public struct WETextDataTransform : IComponentData, IDisposable, ICleanupComponentData
+    public struct WETextDataTransform : IComponentData
     {
         public float3 offsetPosition;
         public quaternion offsetRotation;
@@ -107,18 +106,14 @@ namespace BelzontWE
 
         public int SetFormulaeMustDraw(string value, out string[] cmpErr) => mustDrawFn.SetFormulae(value, out cmpErr);
 
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr, out bool isInconsistent)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr)
         {
-            isInconsistent = false;
             if (!useFormulaeToCheckIfDraw || nextUpdateFrame > Time.frameCount)
             {
                 return false;
             }
             nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
-            if(isInconsistent = mustDrawFn.IsInconsistent)
-            {
-                return true;
-            }
+
             var vars = varsStr.Split(WERendererSystem.VARIABLE_ITEM_SEPARATOR).Select(x => x.Split(WERendererSystem.VARIABLE_KV_SEPARATOR, 2))
                         .Where(x => x.Length == 2).GroupBy(x => x[0]).ToDictionary(x => x.Key, x => x.Last()[1]);
             return mustDrawFn.UpdateEffectiveValue(em, geometryEntity, vars);
@@ -138,9 +133,5 @@ namespace BelzontWE
                 arrayInstancingCount = new(1, 1, 1),
             };
 
-        public void Dispose()
-        {
-            mustDrawFn.Dispose();
-        }
     }
 }

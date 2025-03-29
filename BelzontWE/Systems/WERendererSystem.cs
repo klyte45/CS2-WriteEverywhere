@@ -150,7 +150,7 @@ namespace BelzontWE
                     var vars = item.variables.ToString();
                     //   if (!WETemplateManager.Instance.IsAnyGarbagePending)
                     {
-                        var changed = transform.UpdateFormulaes(EntityManager, item.geometryEntity, vars, out var inconsistentTransf);
+                        var changed = transform.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
                         if (item.transformMatrix == default)
                         {
                             if (changed)
@@ -159,14 +159,9 @@ namespace BelzontWE
                             }
                             continue;
                         }
-                        mesh.UpdateFormulaes(EntityManager, item.geometryEntity, vars, out var inconsistentMesh);
-                        material.UpdateFormulaes(EntityManager, item.geometryEntity, vars, out var inconsistentMaterial);
-                        if (inconsistentMaterial || inconsistentMesh || inconsistentTransf)
-                        {
-                            if (BasicIMod.DebugMode) LogUtils.DoLog($"Entity {item.geometryEntity} seems to have invalid archetype, resetting!");
-                            EntityManager.AddComponent<WETemplateForPrefabDirty>(item.geometryEntity);
-                            continue;
-                        }
+                        mesh.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
+                        material.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
+                       
                     }
 
                     if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value

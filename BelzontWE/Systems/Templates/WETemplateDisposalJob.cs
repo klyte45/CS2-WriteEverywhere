@@ -25,11 +25,6 @@ namespace BelzontWE
                         data1.Dispose();
                         m_CommandBuffer.RemoveComponent<WETextDataMaterial>(unfilteredChunkIndex, entity);
                     }
-                    if (m_TransformDataLkp.TryGetComponent(entity, out var data2))
-                    {
-                        data2.Dispose();
-                        m_CommandBuffer.RemoveComponent<WETextDataTransform>(unfilteredChunkIndex, entity);
-                    }
                     if (m_MeshDataLkp.TryGetComponent(entity, out var data3))
                     {
                         data3.Dispose();

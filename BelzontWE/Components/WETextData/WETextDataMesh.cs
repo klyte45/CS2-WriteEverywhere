@@ -74,6 +74,12 @@ namespace BelzontWE
 
         public WETextDataMesh UpdateBRI(BasicRenderInformation bri, string text)
         {
+            if (ValueData.IsEmpty)
+            {
+                ResetBri();
+                dirty = false;
+                return this;
+            }
             if (bri.m_sizeMetersUnscaled.x < 0 && !bri.m_isError && bri.m_refText != "") return this;
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             basicRenderInformation = default;
@@ -90,27 +96,21 @@ namespace BelzontWE
         {
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             basicRenderInformation = default;
-            valueData.Dispose();
         }
 
         public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity)
         {
-            UpdateFormulaes(em, targetEntity, "", out _, true);
+            UpdateFormulaes(em, targetEntity, "", true);
             FontServer.Instance.EnsureFont(fontName);
             return this;
         }
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr, out bool inconsistent, bool force = false)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr, bool force = false)
         {
-            inconsistent = false;
             if (!force && nextUpdateFrame > Time.frameCount)
             {
                 return false;
             }
-            if (inconsistent = ValueData.IsInconsistent)
-            {
-                return true;
-            }
-            if (HasBRI && basicRenderInformation.Target == null)
+            if (HasBRI && (basicRenderInformation.Target is not BasicRenderInformation bri))
             {
                 basicRenderInformation.Free();
                 basicRenderInformation = default;

@@ -341,7 +341,7 @@ namespace BelzontWE.Font
                 }
                 return;
             }
-            if (brij.AtlasVersion != CurrentAtlas.Version)
+            if (brij.Invalid || brij.AtlasVersion != CurrentAtlas.Version)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} since atlas changed");
                 m_textCache[originalText] = null;
@@ -352,6 +352,8 @@ namespace BelzontWE.Font
             if (result is null)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} ");
+                m_textCache[originalText] = null;
+                itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
             }
             else if (m_textCache.TryGetValue(originalText, out var currentVal))
             {
@@ -359,17 +361,16 @@ namespace BelzontWE.Font
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] SET UP to val '{originalText}'");
                     m_textCache[originalText] = result;
-                    return;
                 }
                 else
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] KEEPING '{originalText}' (already filled with {currentVal})");
-                    return;
                 }
-
             }
-            m_textCache[originalText] = null;
-            itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
+            else
+            {
+                m_textCache[originalText] = result;
+            }
         }
 
         public void Dispose()
@@ -402,7 +403,7 @@ namespace BelzontWE.Font
 
             if (itemsQueue.Count != 0)
             {
-                NativeArray<StringRenderingQueueItem> queueItems = itemsQueue.ToArray(Allocator.Temp);
+                NativeArray<StringRenderingQueueItem> queueItems = itemsQueue.ToArray(Allocator.TempJob);
                 itemsQueue.Clear();
                 NativeArray<StringRenderingQueueItem> itemsStarted;
                 if (queueItems.Length > 5)
@@ -451,8 +452,8 @@ namespace BelzontWE.Font
                     scale = FontServer.Instance.ScaleEffective
                 };
                 dependency = job.Schedule(itemsStarted.Length, 32, dependency);
+                queueItems.Dispose(dependency);
                 dependency.Complete();
-                queueItems.Dispose();
             }
             var postJobCounter = 0;
             while (results.TryDequeue(out var result))

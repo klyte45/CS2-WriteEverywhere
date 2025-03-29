@@ -27,6 +27,7 @@ namespace BelzontWE.Font
             public GCHandle fsd;
             public NativeHashMap<int, FontGlyph> glyphs;
             public Vector3 CurrentAtlasSize;
+            public int FontId;
             public uint AtlasVersion;
             public Vector3 scale;
 
@@ -54,6 +55,7 @@ namespace BelzontWE.Font
             {
                 var result = new BasicRenderInformationJob
                 {
+                    AtlasVersion = ~0u,
                     originalText = strOr,
                     m_YAxisOverflows = new RangeVector { min = float.MaxValue, max = float.MinValue }
                 };

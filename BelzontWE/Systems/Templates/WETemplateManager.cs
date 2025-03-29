@@ -369,7 +369,7 @@ namespace BelzontWE
                         {
                             ComponentType.ReadOnly<WETextDataMain>(),
                             ComponentType.ReadOnly<WETextDataMaterial>(),
-                            ComponentType.ReadOnly<WETextDataTransform>(),
+                            ComponentType.ReadOnly<WETemplateUpdater>(),
                         },
                         None = new ComponentType[]
                         {
@@ -623,7 +623,7 @@ namespace BelzontWE
                     m_MeshDataLkp = GetComponentLookup<WETextDataMesh>(true),
                     m_TransformDataLkp = GetComponentLookup<WETextDataTransform>(true),
                     m_UpdaterDataLkp = GetBufferLookup<WETemplateUpdater>(true),
-                }.ScheduleParallel(m_componentsToDispose, Dependency);
+                }.Schedule(m_componentsToDispose, Dependency);
             }
             Dependency.Complete();
         }

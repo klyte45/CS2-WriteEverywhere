@@ -3,55 +3,46 @@ using Belzont.Utils;
 using Colossal.OdinSerializer.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE
 {
-    public struct WETextDataValueString : IDisposable
+    public struct WETextDataValueString
     {
-        private GCHandle defaultValueGC;
-        private GCHandle formulaeGC;
+        private int defaultValueStrBnk;
+        private int formulaeStrBnk;
         public bool InitializedEffectiveText { get; private set; }
         public FixedString512Bytes EffectiveValue { get; private set; }
         private bool loadingFnDone;
 
         public string Formulae
         {
-            get => formulaeGC.IsAllocated ? formulaeGC.Target as string ?? "" : "";
+            readonly get => WEStringsBank.Instance[formulaeStrBnk];
             set
             {
-                if (formulaeGC.IsAllocated)
-                {
-                    if (value == (formulaeGC.Target as string)) return;
-                    formulaeGC.Free();
-                }
-                if (!value.IsNullOrWhitespace()) formulaeGC = GCHandle.Alloc(new string(value));
+                formulaeStrBnk = WEStringsBank.Instance[value];
                 loadingFnDone = false;
             }
         }
 
         public string DefaultValue
         {
-            get => defaultValueGC.IsAllocated ? defaultValueGC.Target as string ?? "" : "";
+            readonly get => WEStringsBank.Instance[defaultValueStrBnk];
             set
             {
-                if (defaultValueGC.IsAllocated)
-                {
-                    if (value == (defaultValueGC.Target as string)) return;
-                    defaultValueGC.Free();
-                }
-                if (!value.IsNullOrWhitespace()) defaultValueGC = GCHandle.Alloc(new string(value));
+                defaultValueStrBnk = WEStringsBank.Instance[value];
             }
         }
+
+        public readonly bool IsEmpty => defaultValueStrBnk <= 0 && formulaeStrBnk <= 0;
 
         public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
         {
             if (newFormulae.IsNullOrWhitespace())
             {
-                if (formulaeGC.IsAllocated) formulaeGC.Free();
+                formulaeStrBnk = 0;
                 errorFmtArgs = null;
                 return 0;
             }
@@ -73,7 +64,7 @@ namespace BelzontWE
             var loadedFnNow = false;
             if (!loadingFnDone)
             {
-                if (formulaeGC.IsAllocated)
+                if (formulaeStrBnk > 0)
                 {
                     SetFormulae(Formulae, out _);
                 }
@@ -81,7 +72,7 @@ namespace BelzontWE
             }
             try
             {
-                EffectiveValue = formulaeGC.IsAllocated
+                EffectiveValue = formulaeStrBnk > 0
                     ? WEFormulaeHelper.GetCachedStringFn(Formulae) is FormulaeFn<string> fn
                         ? (fn(em, geometryEntity, vars)?.ToString().Trim().Truncate(500) ?? "<InvlidFn1>")
                         : "<InvalidFn2>"
@@ -97,12 +88,5 @@ namespace BelzontWE
             }
             return loadedFnNow || EffectiveValue.ToString() != oldEffText;
         }
-
-        public void Dispose()
-        {
-            if (formulaeGC.IsAllocated) formulaeGC.Free();
-            if (defaultValueGC.IsAllocated) defaultValueGC.Free();
-        }
-        public bool IsInconsistent => formulaeGC.IsAllocated && formulaeGC.Target == null;
     }
 }

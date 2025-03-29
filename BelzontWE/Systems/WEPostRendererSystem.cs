@@ -76,7 +76,7 @@ namespace BelzontWE
                     m_WeMainLkp = GetComponentLookup<WETextDataMain>(true),
                     m_WeIsPlaceholderLkp = GetComponentLookup<WEIsPlaceholder>(true),
                     m_templateManagerEntries = layoutsAvailable
-                }.ScheduleParallel(m_pendingQueueEntities, Dependency);
+                }.Schedule(m_pendingQueueEntities, Dependency);
 
                 layoutsAvailable.Dispose(Dependency);
             }
@@ -193,7 +193,6 @@ namespace BelzontWE
                             }
                         }
                         templateUpdatedBuff.Clear();
-                        return false;
                     }
 
                 }

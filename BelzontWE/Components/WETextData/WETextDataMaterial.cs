@@ -96,21 +96,14 @@ namespace BelzontWE
         public int SetFormulaeColorMask2(string value, out string[] cmpErr) => colorMask2.SetFormulae(value, out cmpErr);
         public int SetFormulaeColorMask3(string value, out string[] cmpErr) => colorMask3.SetFormulae(value, out cmpErr);
 
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr, out bool isInconsistent)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr)
         {
             if (nextUpdateFrame > Time.frameCount)
             {
-                isInconsistent = false;
                 return false;
             }
             nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
-            if (isInconsistent = color.IsInconsistent || emissiveColor.IsInconsistent || glassColor.IsInconsistent || normalStrength.IsInconsistent || glassRefraction.IsInconsistent
-            || metallic.IsInconsistent || smoothness.IsInconsistent || emissiveIntensity.IsInconsistent || emissiveExposureWeight.IsInconsistent || coatStrength.IsInconsistent
-            || glassThickness.IsInconsistent || colorMask1.IsInconsistent || colorMask2.IsInconsistent || colorMask3.IsInconsistent
-            )
-            {
-                return true;
-            }
+          
             var vars = varsStr.Split(WERendererSystem.VARIABLE_ITEM_SEPARATOR).Select(x => x.Split(WERendererSystem.VARIABLE_KV_SEPARATOR, 2))
                         .Where(x => x.Length == 2).GroupBy(x => x[0]).ToDictionary(x => x.Key, x => x.Last()[1]);
             return dirty |= color.UpdateEffectiveValue(em, geometryEntity, vars)
@@ -214,20 +207,6 @@ namespace BelzontWE
                 ownMaterial.Free();
             }
             ownMaterial = default;
-            color.Dispose();
-            emissiveColor.Dispose();
-            glassColor.Dispose();
-            normalStrength.Dispose();
-            glassRefraction.Dispose();
-            metallic.Dispose();
-            smoothness.Dispose();
-            emissiveIntensity.Dispose();
-            emissiveExposureWeight.Dispose();
-            coatStrength.Dispose();
-            glassThickness.Dispose();
-            colorMask1.Dispose();
-            colorMask2.Dispose();
-            colorMask3.Dispose();
         }
 
         public bool GetOwnMaterial(ref WETextDataMesh mesh, Bounds2 uvBounds, out Material result)

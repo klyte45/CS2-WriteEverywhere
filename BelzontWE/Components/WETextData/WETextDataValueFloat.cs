@@ -1,30 +1,23 @@
 ﻿using Colossal.OdinSerializer.Utilities;
-using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Unity.Entities;
 using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE
 {
-    public struct WETextDataValueFloat : IDisposable
+    public struct WETextDataValueFloat
     {
         public float defaultValue;
-        private GCHandle formulaeGC;
+        private int formulaeStrBnk;
         public bool InitializedEffectiveText { get; private set; }
         public float EffectiveValue { get; private set; }
         private bool loadingFnDone;
         public string Formulae
         {
-            get => formulaeGC.IsAllocated ? formulaeGC.Target as string ?? "" : "";
+            get => WEStringsBank.Instance[formulaeStrBnk];
             set
             {
-                if (formulaeGC.IsAllocated)
-                {
-                    if (value == (formulaeGC.Target as string)) return;
-                    formulaeGC.Free();
-                }
-                if (!value.IsNullOrWhitespace()) formulaeGC = GCHandle.Alloc(new string(value));
+                formulaeStrBnk = WEStringsBank.Instance[value];
                 loadingFnDone = false;
             }
         }
@@ -32,7 +25,7 @@ namespace BelzontWE
         {
             if (newFormulae.IsNullOrWhitespace())
             {
-                if (formulaeGC.IsAllocated) formulaeGC.Free();
+                formulaeStrBnk = 0;
                 errorFmtArgs = null;
                 return 0;
             }
@@ -50,7 +43,7 @@ namespace BelzontWE
             var loadedFnNow = false;
             if (!loadingFnDone)
             {
-                if (formulaeGC.IsAllocated)
+                if (formulaeStrBnk > 0)
                 {
                     SetFormulae(Formulae, out _);
                 }
@@ -59,7 +52,7 @@ namespace BelzontWE
             var oldValue = EffectiveValue;
             try
             {
-                EffectiveValue = formulaeGC.IsAllocated
+                EffectiveValue = formulaeStrBnk > 0
                     ? WEFormulaeHelper.GetCachedFloatFn(Formulae) is FormulaeFn<float> fn
                         ? fn(em, geometryEntity, vars)
                         : float.NaN
@@ -71,12 +64,5 @@ namespace BelzontWE
             }
             return loadedFnNow || EffectiveValue != oldValue;
         }
-
-        public void Dispose()
-        {
-            if (formulaeGC.IsAllocated) formulaeGC.Free();
-        }
-
-        public bool IsInconsistent => formulaeGC.IsAllocated && formulaeGC.Target == null;
     }
 }
