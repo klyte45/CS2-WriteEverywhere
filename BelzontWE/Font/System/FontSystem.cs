@@ -332,7 +332,7 @@ namespace BelzontWE.Font
         {
 
             var originalText = brij.originalText.ToString();
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] Post job for {originalText} ");
+            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] Post job for {originalText} ");
             if (brij.vertices.Length == 0)
             {
                 if (originalText.TrimToNull() is not null)
@@ -343,7 +343,7 @@ namespace BelzontWE.Font
             }
             if (brij.Invalid || brij.AtlasVersion != CurrentAtlas.Version)
             {
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} since atlas changed");
+                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] removing {originalText} since atlas changed");
                 m_textCache[originalText] = null;
                 itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
                 return;
@@ -351,7 +351,7 @@ namespace BelzontWE.Font
             BasicRenderInformation result = BasicRenderInformation.Fill(brij, CurrentAtlas.Texture);
             if (result is null)
             {
-                if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] removing {originalText} ");
+                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] removing {originalText} ");
                 m_textCache[originalText] = null;
                 itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
             }
@@ -359,12 +359,12 @@ namespace BelzontWE.Font
             {
                 if ((currentVal == null || currentVal == BasicRenderInformation.LOADING_PLACEHOLDER))
                 {
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] SET UP to val '{originalText}'");
+                    if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] SET UP to val '{originalText}'");
                     m_textCache[originalText] = result;
                 }
                 else
                 {
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] KEEPING '{originalText}' (already filled with {currentVal})");
+                    if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] KEEPING '{originalText}' (already filled with {currentVal})");
                 }
             }
             else
@@ -381,6 +381,9 @@ namespace BelzontWE.Font
             if (dataPointer.IsAllocated) dataPointer.Free();
             _currentAtlas?.Dispose();
         }
+
+        private const int queueConsumptionFrame = 256;
+        private byte framesBuffering = 0;
 
         public unsafe struct StringRenderingQueueItem
         {
@@ -400,66 +403,71 @@ namespace BelzontWE.Font
             {
                 m_textCache[""] = new BasicRenderInformation("", new Vector3[0], new int[0], new Vector2[0], new Vector3[0], new int[0], new Vector2[0], null);
             }
-
-            if (itemsQueue.Count != 0)
+            if (itemsQueue.Count >= queueConsumptionFrame || framesBuffering++ > 60)
             {
-                NativeArray<StringRenderingQueueItem> queueItems = itemsQueue.ToArray(Allocator.TempJob);
-                itemsQueue.Clear();
-                NativeArray<StringRenderingQueueItem> itemsStarted;
-                if (queueItems.Length > 5)
+                framesBuffering = 0;
+                if (itemsQueue.Count != 0)
                 {
-                    itemsStarted = queueItems.GetSubArray(0, 5);
-                    var itemsOverflew = queueItems.GetSubArray(5, queueItems.Length - 5);
-                    for (int i = 0; i < itemsOverflew.Length; i++)
+                    NativeArray<StringRenderingQueueItem> itemsStarted;
+                    if (itemsQueue.Count > queueConsumptionFrame)
                     {
-                        itemsQueue.Enqueue(itemsOverflew[i]);
-                    }
-                }
-                else
-                {
-                    itemsStarted = queueItems;
-                }
-                var glyphs = GetGlyphsCollection(FontHeight);
-                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Gliphs collection size = {glyphs.Count}");
-                var charsToRender = itemsStarted.ToArray().SelectMany(x => Enumerate(StringInfo.GetTextElementEnumerator(x.text.ToString())).Cast<string>()).GroupBy(x => x).Select(x => x.Key);
-                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"charsToRender = ['{string.Join("', '", charsToRender)}']");
-
-                var countSucceeded = 0;
-                foreach (var charact in charsToRender)
-                {
-                    var result = GetGlyph(glyphs, char.ConvertToUtf32(charact, 0), out bool hasReseted);
-                    if (result.IsValid)
-                    {
-                        if (hasReseted)
+                        itemsStarted = new(queueConsumptionFrame, Allocator.TempJob);
+                        for (int i = 0; i < queueConsumptionFrame; i++)
                         {
-                            LogUtils.DoInfoLog($"[FontSystem: {Name}] Reset texture! (Now {CurrentAtlas.Texture.width})");
-                            m_textCache.Clear();
-                            continue;
+                            itemsStarted[i] = itemsQueue.Dequeue();
                         }
-
-                        countSucceeded++;
                     }
+                    else
+                    {
+                        itemsStarted = itemsQueue.ToArray(Allocator.TempJob);
+                        itemsQueue.Clear();
+                    }
+                    var glyphs = GetGlyphsCollection(FontHeight);
+                    if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Gliphs collection size = {glyphs.Count}");
+                    var charsToRender = itemsStarted.ToArray().SelectMany(x => Enumerate(StringInfo.GetTextElementEnumerator(x.text.ToString())).Cast<string>()).GroupBy(x => x).Select(x => x.Key);
+                    if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"charsToRender = ['{string.Join("', '", charsToRender)}']");
+
+                    var countSucceeded = 0;
+                    foreach (var charact in charsToRender)
+                    {
+                        var result = GetGlyph(glyphs, char.ConvertToUtf32(charact, 0), out bool hasReseted);
+                        if (result.IsValid)
+                        {
+                            if (hasReseted)
+                            {
+                                LogUtils.DoInfoLog($"[FontSystem: {Name}] Reset texture! (Now {CurrentAtlas.Texture.width})");
+                                m_textCache.Clear();
+                                continue;
+                            }
+
+                            countSucceeded++;
+                        }
+                    }
+                    if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Glyphs rendered: {countSucceeded}");
+                    var job = new StringRenderingJob
+                    {
+                        fsd = dataPointer,
+                        CurrentAtlasSize = new Vector3(CurrentAtlas.Width, CurrentAtlas.Height),
+                        inputArray = itemsStarted.AsReadOnly(),
+                        glyphs = GetGlyphsCollection(FontHeight),
+                        output = results.AsParallelWriter(),
+                        AtlasVersion = CurrentAtlas.Version,
+                        scale = FontServer.Instance.ScaleEffective
+                    };
+                    dependency = job.Schedule(itemsStarted.Length, 32, dependency);
+                    itemsStarted.Dispose(dependency);
+                    dependency.Complete();
                 }
-                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Glyphs rendered: {countSucceeded}");
-                var job = new StringRenderingJob
-                {
-                    fsd = dataPointer,
-                    CurrentAtlasSize = new Vector3(CurrentAtlas.Width, CurrentAtlas.Height),
-                    inputArray = itemsStarted.AsReadOnly(),
-                    glyphs = GetGlyphsCollection(FontHeight),
-                    output = results.AsParallelWriter(),
-                    AtlasVersion = CurrentAtlas.Version,
-                    scale = FontServer.Instance.ScaleEffective
-                };
-                dependency = job.Schedule(itemsStarted.Length, 32, dependency);
-                queueItems.Dispose(dependency);
-                dependency.Complete();
             }
             var postJobCounter = 0;
             while (results.TryDequeue(out var result))
             {
                 PostJob(result);
-                if (++postJobCounter > 5) break;
+                if (++postJobCounter > queueConsumptionFrame)
+                {
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Skipping next frame; strings yet to process at font {Name}: {results.Count}");
+                    break;
+                }
             }
             return dependency;
         }

@@ -409,11 +409,11 @@ namespace BelzontWE
             for (int h = 0; h < chunks.Length; h++)
             {
                 var chunk = chunks[h];
-                var entities = chunk.GetNativeArray(GetEntityTypeHandle());
-                var prefabRefs = chunk.GetNativeArray(ref m_prefabRefHdl);
+                using var entities = chunk.GetNativeArray(GetEntityTypeHandle());
+                using var prefabRefs = chunk.GetNativeArray(ref m_prefabRefHdl);
                 for (int i = 0; i < entities.Length; i++, globalCounter++)
                 {
-                    if (globalCounter >= 100_000)
+                    if (globalCounter >= 10_000)
                     {
                         m_updatingEntitiesOnMain = null;
                         return;
@@ -458,11 +458,11 @@ namespace BelzontWE
             for (int h = 0; h < chunks.Length; h++)
             {
                 var chunk = chunks[h];
-                var entities = chunk.GetNativeArray(GetEntityTypeHandle());
-                var dataToBeProcessedArray = chunk.GetNativeArray(ref toBeProcessedDataHdl);
+                using var entities = chunk.GetNativeArray(GetEntityTypeHandle());
+                using var dataToBeProcessedArray = chunk.GetNativeArray(ref toBeProcessedDataHdl);
                 for (int i = 0; i < entities.Length; i++, globalCounter++)
                 {
-                    if (globalCounter >= 5_000)
+                    if (globalCounter >= 10_000)
                     {
                         m_updatingEntitiesOnMain = null;
                         return;
