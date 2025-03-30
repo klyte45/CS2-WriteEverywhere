@@ -450,7 +450,7 @@ namespace BelzontWE
         }
         private void UpdateLayouts(NativeArray<ArchetypeChunk> chunks)
         {
-            var m_TextDataLkp = GetComponentLookup<WETextDataMain>();
+            var m_MainDataLkp = GetComponentLookup<WETextDataMain>();
             var m_DataTransformLkp = GetComponentLookup<WETextDataTransform>();
             var m_subRefLkp = GetBufferLookup<WESubTextRef>();
             var toBeProcessedDataHdl = GetComponentTypeHandle<WEPlaceholderToBeProcessedInMain>();
@@ -491,7 +491,11 @@ namespace BelzontWE
                         var targetSize = math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 256);
                         var instancingCount = transformData.InstanceCountByAxisOrder;
                         var spacingOffsets = transformData.SpacingByAxisOrder;
-                        var item000offset = new float3((transformData.ArrayInstancing.xy - new uint2(1, 1)) * transformData.arrayInstancingGapMeters.xy * transformData.PivotAsFloat2, 0);
+                        var totalArea = (transformData.ArrayInstancing - 1) * transformData.arrayInstancingGapMeters;
+
+                        var effectivePivot = transformData.PivotAsFloat2 - (math.sign(totalArea.xy) / 2) - .5f;
+
+                        var pivotOffset = new float3(effectivePivot, 0) * math.abs(totalArea);
 
                         for (int o = 0; o < instancingCount.z; o++)
                         {
@@ -499,12 +503,13 @@ namespace BelzontWE
                             {
                                 for (int m = 0; m < instancingCount.x; m++)
                                 {
-                                    targetTemplate.self.transform.offsetPosition = (Vector3Xml)(Vector3)((m * spacingOffsets[0]) + (n * spacingOffsets[1]) + (o * spacingOffsets[2]) - item000offset);
+                                    targetTemplate.self.transform.offsetPosition = (Vector3Xml)(Vector3)(pivotOffset + (m * spacingOffsets[0]) + (n * spacingOffsets[1]) + (o * spacingOffsets[2]));
+                                    targetTemplate.self.transform.pivot = transformData.pivot;
 
                                     var updater = new WETemplateUpdater()
                                     {
                                         templateEntity = targetTemplate.Guid,
-                                        childEntity = WELayoutUtility.DoCreateLayoutItemCmdBuffer(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_TextDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
+                                        childEntity = WELayoutUtility.DoCreateLayoutItemCmdBuffer(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_MainDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
                                     };
 
                                     buff.Add(updater);
@@ -519,6 +524,7 @@ namespace BelzontWE
                 }
             }
         }
+
 
         public void EnqueueToBeDestructed(Material m)
         {

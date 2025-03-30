@@ -1,13 +1,11 @@
 ﻿using Belzont.Utils;
-using Game.SceneFlow;
-using System;
 using Unity.Entities;
 
 namespace BelzontWE
 {
     public abstract class WETextDataBaseController : DataBaseController
-    {    
-        protected WEWorldPickerController PickerController { get; private set; }            
+    {
+        protected WEWorldPickerController PickerController { get; private set; }
 
         protected override void OnCreate()
         {

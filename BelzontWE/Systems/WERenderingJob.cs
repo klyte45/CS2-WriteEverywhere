@@ -160,7 +160,7 @@ namespace BelzontWE
                             if (!mesh.ValueData.InitializedEffectiveText || lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 var scale2 = transform.scale;
-                                var effectiveOffsetPosition = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform.offsetPosition, new float2(1, 1) - transform.PivotAsFloat2, transform.scale);
+                                var effectiveOffsetPosition = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform);
 
                                 availToDraw.Enqueue(new WERenderData
                                 {
