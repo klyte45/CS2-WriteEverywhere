@@ -6,6 +6,7 @@ using MonoMod.Utils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -118,55 +119,71 @@ namespace BelzontWE
                 {
                     var codePart = path[i];
 
-                    if (codePart.StartsWith("&"))
+                    switch (codePart[0])
                     {
-                        var parts = codePart[1..].Split(";");
-                        var className = parts[0];
-                        var pathNav = parts[1].Split(".");
-                        var method = pathNav[0];
-                        var navFields = pathNav.Length > 1 ? pathNav[1..] : new string[0];
-                        var candidateMethods = FilterAvailableMethodsForFormulae(currentComponentType, className, method);
-                        var resultQuery = candidateMethods.ToList();
-                        if (resultQuery.Count == 0)
-                        {
-                            return result = 8; // Class or method not found.
-                        }
-                        if (resultQuery.Count() > 1)
-                        {
-                            errorFmtArgs = new[] { currentComponentType.ToString(), className, method };
-                            return result = 9; // Class or method matches more than one result. Please be more specific.
-                        }
-                        var methodInfo = resultQuery[0];
-                        if (i == 0)
-                        {
-                            iLGenerator.Emit(OpCodes.Ldarg_1);
-                        }
-                        else if (skipValueTypeVar)
-                        {
-                            var local0 = iLGenerator.DeclareLocal(currentComponentType);
-                            iLGenerator.Emit(OpCodes.Stloc, local0);
-                            iLGenerator.Emit(OpCodes.Ldloc_S, local0);
-                        }
-                        if (methodInfo.GetParameters().Length == 2)
-                        {
-                            iLGenerator.Emit(OpCodes.Ldarg_2);
-                        }
-                        iLGenerator.EmitCall(OpCodes.Call, methodInfo, null);
-                        currentComponentType = methodInfo.ReturnType;
-                        skipValueTypeVar = false;
-                        var navPathRes = NavigateThroughPath(ref currentComponentType, iLGenerator, ref errorFmtArgs, navFields, ref skipValueTypeVar);
-                        if (navPathRes != 0) return result = navPathRes;
+                        case '&':
+                            {
+                                var parts = codePart[1..].Split(";");
+                                var className = parts[0];
+                                var pathNav = parts[1].Split(".");
+                                var method = pathNav[0];
+                                var navFields = pathNav.Length > 1 ? pathNav[1..] : new string[0];
+                                var candidateMethods = FilterAvailableMethodsForFormulae(currentComponentType, className, method);
+                                var resultQuery = candidateMethods.ToList();
+                                if (resultQuery.Count == 0)
+                                {
+                                    return result = 8; // Class or method not found.
+                                }
+                                if (resultQuery.Count() > 1)
+                                {
+                                    errorFmtArgs = new[] { currentComponentType.ToString(), className, method };
+                                    return result = 9; // Class or method matches more than one result. Please be more specific.
+                                }
+                                var methodInfo = resultQuery[0];
+                                if (i == 0)
+                                {
+                                    iLGenerator.Emit(OpCodes.Ldarg_1);
+                                }
+                                else if (skipValueTypeVar)
+                                {
+                                    var local0 = iLGenerator.DeclareLocal(currentComponentType);
+                                    iLGenerator.Emit(OpCodes.Stloc, local0);
+                                    iLGenerator.Emit(OpCodes.Ldloc_S, local0);
+                                }
+                                if (methodInfo.GetParameters().Length == 2)
+                                {
+                                    iLGenerator.Emit(OpCodes.Ldarg_2);
+                                }
+                                iLGenerator.EmitCall(OpCodes.Call, methodInfo, null);
+                                currentComponentType = methodInfo.ReturnType;
+                                skipValueTypeVar = false;
+                                var navPathRes = NavigateThroughPath(ref currentComponentType, iLGenerator, ref errorFmtArgs, navFields, ref skipValueTypeVar);
+                                if (navPathRes != 0) return result = navPathRes;
+                            }
+                            break;
+                        default:
+                            {
+                                skipValueTypeVar = false;
+                                var processResult = ProcessEntityPath<T>(ref currentComponentType, iLGenerator, codePart, i, ref localVarEntity, ref errorFmtArgs, ref skipValueTypeVar);
+                                if (processResult != 0) return result = processResult;
+                            }
+                            break;
                     }
-                    else
-                    {
-                        skipValueTypeVar = false;
-                        var processResult = ProcessEntityPath<T>(ref currentComponentType, iLGenerator, codePart, i, ref localVarEntity, ref errorFmtArgs, ref skipValueTypeVar);
-                        if (processResult != 0) return result = processResult;
-                    }
+
                 }
                 if (currentComponentType != typeof(T))
                 {
                     if (typeof(T) == typeof(Entity)) return 252;
+#if USE_LOCALE_FORMATTING_NUMERIC_STRING_CAST
+                    if (typeof(T) == typeof(string) && (currentComponentType.IsIntegerType() || currentComponentType.IsDecimalType()))
+                    {                        
+                        var toStringMethod = currentComponentType.GetMethod("ToString", ReflectionUtils.allFlags & ~BindingFlags.DeclaredOnly, null, new Type[] { typeof(IFormatProvider) }, null);                       
+                        iLGenerator.Emit(OpCodes.Call, typeof(WEModData).GetProperty("InstanceWE").GetMethod);
+                        iLGenerator.Emit(OpCodes.Call, typeof(WEModData).GetProperty("FormatCulture", RedirectorUtils.allFlags).GetMethod);
+                        iLGenerator.Emit(OpCodes.Call, toStringMethod);
+                    }
+                    else 
+#endif
                     if (CanCast(currentComponentType, typeof(T)))
                     {
                         var local0 = iLGenerator.DeclareLocal(currentComponentType);
@@ -360,10 +377,160 @@ namespace BelzontWE
             return NavigateThroughPath(ref currentComponentType, iLGenerator, ref errorFmtArgs, fieldPath, ref skipValueTypeVar);
         }
 
+        public static bool IsIntegerType(this Type t) => Type.GetTypeCode(t) switch
+        {
+            TypeCode.Byte or TypeCode.SByte
+            or TypeCode.UInt16 or TypeCode.UInt32
+            or TypeCode.UInt64 or TypeCode.Int16
+            or TypeCode.Int32 or TypeCode.Int64
+            => true,
+            _ => false,
+        };
+        public static bool IsDecimalType(this Type t) => Type.GetTypeCode(t) switch
+        {
+            TypeCode.Decimal or TypeCode.Double
+            or TypeCode.Single => true,
+            _ => false,
+        };
+        private static OpCode CheckAritmeticOp(string opText) => opText[0] switch
+        {
+            '+' => OpCodes.Add,
+            '-' => OpCodes.Sub,
+            '*' => OpCodes.Mul,
+            '÷' => OpCodes.Div,
+            _ => OpCodes.Nop,
+        };
+
+        private static bool SetupMathOperands(ref Type currentType, string targetValue, OpCode operation, ILGenerator generator)
+        {
+            var currentOperand = Type.GetTypeCode(currentType);
+            if (targetValue.EndsWith("f"))
+            {
+                targetValue = targetValue[..^1];
+                if (currentOperand != TypeCode.Single)
+                {
+                    generator.Emit(OpCodes.Conv_R4);
+                    currentOperand = TypeCode.Single;
+                }
+            }
+            else if (targetValue.EndsWith("d"))
+            {
+                targetValue = targetValue[..^1];
+                if (currentOperand != TypeCode.Double)
+                {
+                    generator.Emit(OpCodes.Conv_R8);
+                    currentOperand = TypeCode.Double;
+                }
+            }
+            else if (targetValue.Contains(".") && currentType.IsIntegerType())
+            {
+                generator.Emit(OpCodes.Conv_R4);
+                currentOperand = TypeCode.Single;
+            }
+            switch (currentOperand)
+            {
+                case TypeCode.Byte:
+                    {
+                        if (!byte.TryParse(targetValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueConv)) return false;
+                        generator.Emit(OpCodes.Ldc_I4_S, valueConv);
+                        generator.Emit(operation);
+                        currentType = typeof(int);
+                        return true;
+                    }
+                case TypeCode.SByte:
+                    {
+                        if (!sbyte.TryParse(targetValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueConv)) return false;
+                        generator.Emit(OpCodes.Ldc_I4_S, valueConv);
+                        generator.Emit(operation);
+                        currentType = typeof(int);
+                        return true;
+                    }
+                case TypeCode.UInt16:
+                    {
+                        if (!ushort.TryParse(targetValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueConv)) return false;
+                        generator.Emit(OpCodes.Ldc_I4_S, valueConv);
+                        generator.Emit(operation);
+                        currentType = typeof(int);
+                        return true;
+                    }
+                case TypeCode.UInt32:
+                    {
+                        if (!uint.TryParse(targetValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueConv)) return false;
+                        generator.Emit(OpCodes.Ldc_I4, valueConv);
+                        generator.Emit(operation);
+                        currentType = typeof(int);
+                        return true;
+                    }
+                case TypeCode.UInt64:
+                    {
+                        if (!ulong.TryParse(targetValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueConv)) return false;
+                        generator.Emit(OpCodes.Ldc_I8, valueConv);
+                        generator.Emit(operation);
+                        currentType = typeof(long);
+                        return true;
+                    }
+                case TypeCode.Int16:
+                    {
+                        if (!short.TryParse(targetValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueConv)) return false;
+                        generator.Emit(OpCodes.Ldc_I4_S, valueConv);
+                        generator.Emit(operation);
+                        currentType = typeof(int);
+                        return true;
+                    }
+                case TypeCode.Int32:
+                    {
+                        if (!int.TryParse(targetValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueConv)) return false;
+                        generator.Emit(OpCodes.Ldc_I4, valueConv);
+                        generator.Emit(operation);
+                        currentType = typeof(int);
+                        return true;
+                    }
+                case TypeCode.Int64:
+                    {
+                        if (!long.TryParse(targetValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueConv)) return false;
+                        generator.Emit(OpCodes.Ldc_I8, valueConv);
+                        generator.Emit(operation);
+                        currentType = typeof(long);
+                        return true;
+                    }
+                case TypeCode.Double:
+                case TypeCode.Decimal:
+                    {
+                        if (!double.TryParse(targetValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var valueConv)) return false;
+                        generator.Emit(OpCodes.Ldc_R8, valueConv);
+                        generator.Emit(operation);
+                        currentType = typeof(double);
+                        return true;
+                    }
+                case TypeCode.Single:
+                    {
+                        if (!float.TryParse(targetValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var valueConv)) return false;
+                        generator.Emit(OpCodes.Ldc_R4, valueConv);
+                        generator.Emit(operation);
+                        currentType = typeof(float);
+                        return true;
+                    }
+                default:
+                    return false;
+            }
+        }
+
         private static byte NavigateThroughPath(ref Type currentComponentType, ILGenerator iLGenerator, ref string[] errorFmtArgs, string[] fieldPath, ref bool skipValueTypeVar)
         {
             foreach (string field in fieldPath)
             {
+                var op = CheckAritmeticOp(field);
+                if (op != OpCodes.Nop)
+                {
+                    var value = field[1..].Replace(',', '.').ToLower();
+                    var oldCompType = currentComponentType;
+                    if (!SetupMathOperands(ref currentComponentType, value, op, iLGenerator))
+                    {
+                        errorFmtArgs = new[] { oldCompType.FullName, field[0..1], field[1..] };
+                        return 11; // Invalid arithmetic operation: {0} {1} {2} (comma is decimal separator)
+                    }
+                    continue;
+                }
                 if (currentComponentType.IsValueType && !skipValueTypeVar)
                 {
                     var local0 = iLGenerator.DeclareLocal(currentComponentType);

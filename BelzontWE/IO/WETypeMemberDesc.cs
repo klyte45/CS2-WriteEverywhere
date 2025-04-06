@@ -10,17 +10,20 @@ namespace BelzontWE
         public string memberTypeDllName;
         public string memberTypeClassName;
         public WEMemberType type;
-
-        public static WETypeMemberDesc FromIndexing(int idx, Type resultType)
+        public static WETypeMemberDesc FromOperator(string display, float value, Type resultType) => new()
         {
-            return new WETypeMemberDesc
-            {
-                memberName = idx.ToString(),
-                memberTypeDllName = resultType.Assembly.GetName().Name,
-                memberTypeClassName = resultType.FullName,
-                type = WEMemberType.ArraylikeIndexing
-            };
-        }
+            memberName = $"{display} {value}",
+            memberTypeDllName = resultType.Assembly.GetName().Name,
+            memberTypeClassName = resultType.FullName,
+            type = WEMemberType.MathOperator
+        };
+        public static WETypeMemberDesc FromIndexing(int idx, Type resultType) => new()
+        {
+            memberName = idx.ToString(),
+            memberTypeDllName = resultType.Assembly.GetName().Name,
+            memberTypeClassName = resultType.FullName,
+            type = WEMemberType.ArraylikeIndexing
+        };
 
         public static WETypeMemberDesc FromMemberInfo(MemberInfo m) => m switch
         {

@@ -3,6 +3,7 @@ using Belzont.Utils;
 using Colossal.Entities;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -188,12 +189,24 @@ namespace BelzontWE
             return result;
         }
 
+        private static readonly Dictionary<string, string> MathOperators = new()
+        {
+            ["*"] = "×",
+            ["÷"] = "÷",
+            ["+"] = "+",
+            ["-"] = "-"
+        };
+
         private static bool IterateFieldPath(List<object> result, ref Type currentType, string[] fieldPath)
         {
             for (int j = 0; j < fieldPath.Length; j++)
             {
                 string field = fieldPath[j];
-                if (int.TryParse(field, out int val))
+                if (MathOperators.TryGetValue(field[0..1], out var operatorDisplay))
+                {
+                    result.Add(WETypeMemberDesc.FromOperator(operatorDisplay, float.TryParse(field[1..].Replace(",", "."), NumberStyles.Float, CultureInfo.InvariantCulture, out var valFloat) ? valFloat : float.NaN, currentType));
+                }
+                else if (int.TryParse(field, out int val))
                 {
                     if (currentType.IsArray)
                     {

@@ -18,7 +18,3 @@ namespace BelzontWE.Builtin
         public static Color GetMainMeshColor3(Entity reference) => World.DefaultGameObjectInjectionWorld.EntityManager.TryGetBuffer<MeshColor>(reference, true, out var meshes) && meshes.Length > 0 ? meshes[0].m_ColorSet.m_Channel2 : Color.magenta;
     }
 }
-//&BelzontWE.Builtin.WEBuildingFn;GetBuildingMainRenter/Game.Companies.CompanyData;m_Brand/Game.Prefabs.BrandData;m_ColorSet.m_Channel0
-//&Color32;get_cyan
-
-//&WEBuildingFn;GetBuildingMainRenter/Game.Companies.CompanyData;m_Brand/Game.Prefabs.BrandData;m_ColorSet.m_Channel0
