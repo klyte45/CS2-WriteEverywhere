@@ -1,12 +1,12 @@
-import { ColorUtils, MultiUIValueBinding, UIColorRGBA, VanillaComponentResolver, VanillaFnResolver, VanillaWidgets } from "@klyte45/vuio-commons";
-import { Portal } from "cs2/ui";
+import { MultiUIValueBinding, UIColorRGBA, VanillaComponentResolver, VanillaFnResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { Portal, Tooltip } from "cs2/ui";
 import { useCallback, useEffect, useState } from "react";
 import { FormulaeService } from "services/FormulaeService";
-import { WEArrayIndexingDesc, WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEMemberType, WEMethodSource, WEStaticMethodDesc, WETypeMemberDesc } from "services/WEFormulaeElement";
+import { EnforceType, toFormulae, WEArrayIndexingDesc, WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEFormulaeMathOperation, WEMathOperationDesc, WEMemberType, WEMethodSource, WEStaticMethodDesc, WETypeMemberDesc } from "services/WEFormulaeElement";
+import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
 import "../style/formulaeEditor.scss";
 import { WEAddFormulaeStageDialog } from "./WEAddFormulaeStageDialog";
-import { WorldPickerService } from "services/WorldPickerService";
 
 type Props = {
     formulaeStr: MultiUIValueBinding<string>,
@@ -65,20 +65,23 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
             }
         }, [formulaeType, lastCompileStatus])
 
-    const [formulaeSteps, setFormulaeSteps] = useState([] as (WEFormulaeElement | WEArrayIndexingDesc)[])
+    const [formulaeSteps, setFormulaeSteps] = useState([] as (WEFormulaeElement | WEArrayIndexingDesc | WEMathOperationDesc)[])
 
 
     useEffect(() => {
         FormulaeService.formulaeToPathObjects(formulaeStr.value).then(x => setFormulaeSteps(x))
     }, [formulaeStr.value])
 
-    const pathObjectsToFormulae = (arr: (WEFormulaeElement | WEArrayIndexingDesc)[]) => {
+    const pathObjectsToFormulae = (arr: (WEFormulaeElement | WEArrayIndexingDesc | WEMathOperationDesc)[]) => {
         let output = "";
         for (let item of arr) {
             switch (item?.WEDescType) {
                 case WEDescType.COMPONENT:
                     if (output.length > 0) output += '/';
                     output += `${item.className};`
+                    break;
+                case WEDescType.MATH_OPERATION:
+                    output += `${output.endsWith(";") ? "" : "."}${toFormulae(item)}`
                     break;
                 case WEDescType.MEMBER:
                     output += `${output.endsWith(";") ? "" : "."}${item.memberName}`
@@ -95,7 +98,7 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
         return output;
     }
 
-    const requiresConvert = (x: (WEFormulaeElement | WEArrayIndexingDesc)) => {
+    const requiresConvert = (x: (WEFormulaeElement | WEArrayIndexingDesc | WEMathOperationDesc)) => {
         switch (x?.WEDescType) {
             case WEDescType.COMPONENT:
                 return true
@@ -115,7 +118,7 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
         formulaeStr.set(pathObjectsToFormulae(formulaeSteps))
     }
 
-    const onAppend = (appendItem?: WEFormulaeElement | WEArrayIndexingDesc) => {
+    const onAppend = (appendItem?: WEFormulaeElement | WEArrayIndexingDesc | WEMathOperationDesc) => {
         setAddingItem(false);
         if (appendItem) {
             formulaeSteps.push(appendItem);
@@ -151,6 +154,8 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
                                 return <WEComponentGetterBlock {...x} i={i} />
                             case WEDescType.MEMBER:
                                 return <WEComponentMemberBlock {...x} i={i} />
+                            case WEDescType.MATH_OPERATION:
+                                return <WEMathOperatorBlock {...x} i={i} />
                             case WEDescType.STATIC_METHOD:
                                 return <WEMethodCallBlock {...x} i={i} />
                         }
@@ -206,6 +211,8 @@ const WEComponentMemberBlock = (data: WETypeMemberDesc & { i: number }) => {
     const T_descType_propertyGetter = translate("formulaeEditor.descType.propertyGetter"); //Get property
     const T_descType_parameterlessInstanceMethodCall = translate("formulaeEditor.descType.parameterlessInstanceMethodCall"); //Call instance method
     const T_descType_arrayIndexing = translate("formulaeEditor.descType.arrayIndexing"); //Call instance method
+
+
     switch (data.type.value__) {
         case WEMemberType.Field: title = T_descType_fieldGetter; className = "k45_we_formulaeEditor_componentField"; break;
         case WEMemberType.ParameterlessMethod: title = T_descType_parameterlessInstanceMethodCall; className = "k45_we_formulaeEditor_componentMethod"; break;
@@ -220,6 +227,20 @@ const WEComponentMemberBlock = (data: WETypeMemberDesc & { i: number }) => {
             {data.type.value__ == WEMemberType.ParameterlessMethod && <div className="k45_we_formulaeEditor_methodName">{data.memberName}</div>}
             {data.type.value__ == WEMemberType.ArraylikeIndexing && <div className="k45_we_formulaeEditor_arrayIndex">{data.memberName}</div>}
             <WEReturnType>{data.memberTypeClassName}</WEReturnType>
+        </div>
+        <div className="k45_we_formulaeEditor_downArrow" />
+    </>
+}
+
+
+const WEMathOperatorBlock = (data: WEMathOperationDesc & { i: number }) => {
+    return <>
+        <div className="k45_we_formulaeEditor_mathOpContainer">
+            <div className={["mathOp", "op" + WEFormulaeMathOperation[data.operation.value__]].join(" ")}>
+                {data.value}
+                {data.enforceType.value__ != EnforceType.None && <Tooltip tooltip={translate("formulaeEditor.mathOp.force." + EnforceType[data.enforceType.value__])}><div className={"enforceType_" + EnforceType[data.enforceType.value__]} /></Tooltip>}
+            </div>
+            <WEReturnType>{data.isDecimalResult ? "Single" : "Int32"}</WEReturnType>
         </div>
         <div className="k45_we_formulaeEditor_downArrow" />
     </>

@@ -1,6 +1,6 @@
 import { Entity } from "@klyte45/vuio-commons";
 
-export type WEFormulaeElement = WETypeMemberDesc | WEComponentTypeDesc | WEStaticMethodDesc;
+export type WEFormulaeElement = WETypeMemberDesc | WEComponentTypeDesc | WEStaticMethodDesc | WEMathOperationDesc;
 
 export type WETextItemResume = {
     name: string;
@@ -36,7 +36,41 @@ export enum WEDescType {
     MEMBER = "MEMBER",
     COMPONENT = "COMPONENT",
     STATIC_METHOD = "STATIC_METHOD",
-    ARRAY_INDEXING = "ARRAY_INDEXING"
+    ARRAY_INDEXING = "ARRAY_INDEXING",
+    MATH_OPERATION = "MATH_OPERATION",
+}
+
+export enum WEFormulaeMathOperation {
+    ADD,
+    SUBTRACT,
+    MULTIPLY,
+    DIVIDE
+}
+
+export enum EnforceType {
+    None,
+    Float,
+    Double,
+}
+
+export function toFormulae(op: WEMathOperationDesc) {
+    let result = "";
+    switch (op.operation.value__) {
+        case WEFormulaeMathOperation.ADD: result += "+"; break;
+        case WEFormulaeMathOperation.SUBTRACT: result += "-"; break;
+        case WEFormulaeMathOperation.MULTIPLY: result += "*"; break;
+        case WEFormulaeMathOperation.DIVIDE: result += "÷"; break;
+    }
+    result += op.value.toString().replace(".", ",")
+    switch (op.enforceType.value__) {
+        case EnforceType.Double:
+            result += "d";
+            break;
+        case EnforceType.Float:
+            result += "f";
+            break;
+    }
+    return result;
 }
 
 export type WETypeMemberDesc = {
@@ -45,6 +79,7 @@ export type WETypeMemberDesc = {
     memberTypeDllName: string;
     memberTypeClassName: string;
     type: EnumWrapper<WEMemberType>;
+    supportsMathOp: boolean;
 };
 
 export type WEComponentTypeDesc = {
@@ -57,6 +92,7 @@ export type WEComponentTypeDesc = {
     returnDllName: string;
     returnClassName: string;
     isBuffer: boolean;
+    supportsMathOp?: undefined;
 };
 
 export type WEStaticMethodDesc = {
@@ -70,11 +106,20 @@ export type WEStaticMethodDesc = {
     returnType: string;
     returnTypeDll: string;
     FormulaeString: string;
+    supportsMathOp: boolean;
 };
 
 export type WEArrayIndexingDesc = {
     WEDescType: WEDescType.ARRAY_INDEXING,
     index: number
+}
+export type WEMathOperationDesc = {
+    WEDescType: WEDescType.MATH_OPERATION,
+    value: string,
+    operation: EnumWrapper<WEFormulaeMathOperation>
+    supportsMathOp?: true;
+    isDecimalResult: boolean;
+    enforceType: EnumWrapper<EnforceType>;
 }
 
 export function getDllNameFrom(el: WEFormulaeElement) {
@@ -82,6 +127,7 @@ export function getDllNameFrom(el: WEFormulaeElement) {
         case WEDescType.COMPONENT: return el.returnDllName;
         case WEDescType.STATIC_METHOD: return el.returnTypeDll;
         case WEDescType.MEMBER: return el.memberTypeDllName;
+        case WEDescType.MATH_OPERATION: return "mscorlib";
     }
 }
 export function getClassNameFrom(el: WEFormulaeElement) {
@@ -89,6 +135,7 @@ export function getClassNameFrom(el: WEFormulaeElement) {
         case WEDescType.COMPONENT: return el.returnClassName;
         case WEDescType.STATIC_METHOD: return el.returnType;
         case WEDescType.MEMBER: return el.memberTypeClassName;
+        case WEDescType.MATH_OPERATION: return el.isDecimalResult ? "System.Single" : "System.Int32";
     }
 }
 

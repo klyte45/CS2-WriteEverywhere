@@ -189,12 +189,12 @@ namespace BelzontWE
             return result;
         }
 
-        private static readonly Dictionary<string, string> MathOperators = new()
+        private static readonly Dictionary<string, WETypeMathOperationDesc.WEFormulaeMathOperation> MathOperators = new()
         {
-            ["*"] = "×",
-            ["÷"] = "÷",
-            ["+"] = "+",
-            ["-"] = "-"
+            ["*"] = WETypeMathOperationDesc.WEFormulaeMathOperation.MULTIPLY,
+            ["÷"] = WETypeMathOperationDesc.WEFormulaeMathOperation.DIVIDE,
+            ["+"] = WETypeMathOperationDesc.WEFormulaeMathOperation.ADD,
+            ["-"] = WETypeMathOperationDesc.WEFormulaeMathOperation.SUBTRACT
         };
 
         private static bool IterateFieldPath(List<object> result, ref Type currentType, string[] fieldPath)
@@ -204,7 +204,29 @@ namespace BelzontWE
                 string field = fieldPath[j];
                 if (MathOperators.TryGetValue(field[0..1], out var operatorDisplay))
                 {
-                    result.Add(WETypeMemberDesc.FromOperator(operatorDisplay, float.TryParse(field[1..].Replace(",", "."), NumberStyles.Float, CultureInfo.InvariantCulture, out var valFloat) ? valFloat : float.NaN, currentType));
+                    var isDecimalType = currentType.IsDecimalType();
+                    var fieldValue = field[1..].Replace(",", ".");
+                    var enforceType = WETypeMathOperationDesc.EnforceType.None;
+
+                    if (fieldValue.ToLower().EndsWith('f'))
+                    {
+                        fieldValue = fieldValue[..^1];
+                        enforceType = WETypeMathOperationDesc.EnforceType.Float;
+                        isDecimalType = true;
+                    }
+                    else if (fieldValue.ToLower().EndsWith('d'))
+                    {
+                        fieldValue = fieldValue[..^1];
+                        enforceType = WETypeMathOperationDesc.EnforceType.Double;
+                        isDecimalType = true;
+                    }
+                    else if (fieldValue.Contains("."))
+                    {
+                        isDecimalType = true;
+                    }
+
+                    result.Add(WETypeMathOperationDesc.From(operatorDisplay, float.TryParse(fieldValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var valFloat) ? valFloat : float.NaN, enforceType, isDecimalType));
+                    currentType = isDecimalType ? typeof(float) : typeof(int);
                 }
                 else if (int.TryParse(field, out int val))
                 {

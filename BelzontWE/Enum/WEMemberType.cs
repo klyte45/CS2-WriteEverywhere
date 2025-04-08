@@ -5,8 +5,7 @@
         Field,
         Property,
         ParameterlessMethod,
-        ArraylikeIndexing,
-        MathOperator
+        ArraylikeIndexing
     }
 
 }

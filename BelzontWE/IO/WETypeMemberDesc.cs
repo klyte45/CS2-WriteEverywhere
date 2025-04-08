@@ -10,19 +10,15 @@ namespace BelzontWE
         public string memberTypeDllName;
         public string memberTypeClassName;
         public WEMemberType type;
-        public static WETypeMemberDesc FromOperator(string display, float value, Type resultType) => new()
-        {
-            memberName = $"{display} {value}",
-            memberTypeDllName = resultType.Assembly.GetName().Name,
-            memberTypeClassName = resultType.FullName,
-            type = WEMemberType.MathOperator
-        };
+        public bool supportsMathOp;
+
         public static WETypeMemberDesc FromIndexing(int idx, Type resultType) => new()
         {
             memberName = idx.ToString(),
             memberTypeDllName = resultType.Assembly.GetName().Name,
             memberTypeClassName = resultType.FullName,
-            type = WEMemberType.ArraylikeIndexing
+            type = WEMemberType.ArraylikeIndexing,
+            supportsMathOp = resultType.IsDecimalType() || resultType.IsIntegerType()
         };
 
         public static WETypeMemberDesc FromMemberInfo(MemberInfo m) => m switch
@@ -33,20 +29,23 @@ namespace BelzontWE
                 memberTypeClassName = targetMethod.ReturnType.FullName,
                 memberName = targetMethod.Name,
                 type = WEMemberType.ParameterlessMethod,
+                supportsMathOp = targetMethod.ReturnType.IsDecimalType() || targetMethod.ReturnType.IsIntegerType()
             },
             PropertyInfo targetProperty => new WETypeMemberDesc
             {
                 memberTypeDllName = targetProperty.PropertyType.Assembly.GetName().Name,
                 memberTypeClassName = targetProperty.PropertyType.FullName,
                 memberName = targetProperty.Name,
-                type = WEMemberType.Property
+                type = WEMemberType.Property,
+                supportsMathOp = targetProperty.PropertyType.IsDecimalType() || targetProperty.PropertyType.IsIntegerType()
             },
             FieldInfo targetField => new WETypeMemberDesc
             {
                 memberTypeDllName = targetField.FieldType.Assembly.GetName().Name,
                 memberTypeClassName = targetField.FieldType.FullName,
                 memberName = targetField.Name,
-                type = WEMemberType.Field
+                type = WEMemberType.Field,
+                supportsMathOp = targetField.FieldType.IsDecimalType() || targetField.FieldType.IsIntegerType()
             },
             _ => default,
         };

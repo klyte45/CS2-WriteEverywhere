@@ -1,15 +1,16 @@
-import { replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { LocElementType, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import classNames from "classnames";
 import { FocusDisabled } from "cs2/input";
+import { ObjectTyped } from "object-typed";
 import { useEffect, useState } from "react";
 import { FormulaeService } from "services/FormulaeService";
-import { getClassNameFrom, getDllNameFrom, WEArrayIndexingDesc, WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEMemberType } from "services/WEFormulaeElement";
-import { IndexedComponentListing, IndexedStaticMethodsListing, WorldPickerService } from "services/WorldPickerService";
+import { EnforceType, getClassNameFrom, getDllNameFrom, WEArrayIndexingDesc, WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEFormulaeMathOperation, WEMathOperationDesc, WEMemberType } from "services/WEFormulaeElement";
+import { IndexedComponentListing, IndexedStaticMethodsListing } from "services/WorldPickerService";
 import { breakIntoFlexComponents } from "utils/breakIntoFlexComponents";
 import { translate } from "utils/translate";
 
 type Props = {
-    callback: (appendResult?: WEFormulaeElement | WEArrayIndexingDesc) => any,
+    callback: (appendResult?: WEFormulaeElement | WEArrayIndexingDesc | WEMathOperationDesc) => any,
     referenceElement: WEFormulaeElement,
     formulaeStr: string
 }
@@ -28,10 +29,7 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
     const T_pickAnyComponent = translate("formulaeEditor.addDialog.pickAnyComponent")//Pick component
     const T_pickCurrentComponent = translate("formulaeEditor.addDialog.pickFromCurrent")//Pick component
     const T_arrayIndexing = translate("formulaeEditor.addDialog.arrayIndexing")//Array indexing
-    const T_arrayIndexingFieldLabel = translate("formulaeEditor.addDialog.arrayIndexingFieldLabel")//Array indexing
-
-
-
+    const T_mathOperation = translate("formulaeEditor.addDialog.mathOperation")//Math operation
 
     const Dialog = VanillaComponentResolver.instance.Dialog;
     const EditorScrollable = VanillaWidgets.instance.EditorScrollable;
@@ -46,6 +44,11 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
     const [supportIndexing, setSupportIndexing] = useState(false);
     const [indexSet, setIndexSet] = useState(0);
 
+
+    const [mathOperand, setMathOperand] = useState(0);
+    const [mathOperator, setMathOperator] = useState<WEFormulaeMathOperation>();
+    const [mathOperationForceDecimal, setMathOperationForceDecimal] = useState(false);
+
     useEffect(() => {
         setReady(false);
         const runners = [];
@@ -57,31 +60,46 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
         } else {
             setOptionsComponentGetter(null);
         }
+        const dllName = getDllNameFrom(effectiveRef);
+        const className = getClassNameFrom(effectiveRef);
         if (referenceElement) {
-            runners.push(FormulaeService.listAvailableMembersForType(getDllNameFrom(effectiveRef), getClassNameFrom(effectiveRef)).then(x => setOptionsMembers(x)));
+            runners.push(FormulaeService.listAvailableMembersForType(dllName, className).then(x => setOptionsMembers(x)));
         } else {
             setOptionsMembers([]);
         }
-        runners.push(FormulaeService.listAvailableMethodsForType(getDllNameFrom(effectiveRef), getClassNameFrom(effectiveRef)).then(x => setOptionsStaticMethods(x)));
-        FormulaeService.isTypeIndexable(getDllNameFrom(effectiveRef), getClassNameFrom(effectiveRef)).then(setSupportIndexing)
+        runners.push(FormulaeService.listAvailableMethodsForType(dllName, className).then(x => setOptionsStaticMethods(x)));
+        FormulaeService.isTypeIndexable(dllName, className).then(setSupportIndexing)
         Promise.all(runners).then(() => setReady(true))
     }, [referenceElement?.WEDescType])
 
     useEffect(() => setSelectedElement(undefined), [selectedTab])
 
-    const EditorRow = VanillaWidgets.instance.EditorItemRowNoFocus;
-    const IntInput = VanillaComponentResolver.instance.IntInput;
 
-    const editorItemTheme = VanillaComponentResolver.instance.editorItemTheme;
+    function showSelectedTab() {
+        switch (selectedTab) {
+            case WEDescType.ARRAY_INDEXING:
+                return <ArrayIndexingSelect indexSet={indexSet} setIndexSet={setIndexSet} />
+            case WEDescType.MEMBER:
+                return printWithTooltip(optionsMembers, selectedElement, setSelectedElement)
+            case WEDescTypeUI.CURRENT_COMPONENT:
+                return printWithTooltip(currentEntityComponent.sort((a, b) => (a.isBuffer as any - (b.isBuffer as any)) || a.className.localeCompare(b.className)), selectedElement, setSelectedElement)
+            case WEDescType.STATIC_METHOD:
+            case WEDescType.COMPONENT:
+                return <WEPaginateOverResultObj lastLevelIsPackage={selectedTab == WEDescType.COMPONENT}
+                    selectedElement={selectedElement} source={selectedTab == WEDescType.COMPONENT ? optionsComponentGetter! : optionsStaticMethods}
+                    currentNavigation={selectedPath} setNavigation={setSelectedPath} setElement={setSelectedElement} />
+            case WEDescType.MATH_OPERATION:
+                return <MathOperatorSelect operand={mathOperand} setOperand={setMathOperand} operator={mathOperator} setOperator={setMathOperator} forceDecimal={mathOperationForceDecimal} setForceDecimal={setMathOperationForceDecimal} />
+        }
+    }
+
     return <Dialog
         onClose={() => callback()}
         wide={true}
         title={T_addItemDialogTitle}
         buttons={<div className="k45_we_dialogBtns">
-            {(optionsMembers || optionsStaticMethods || optionsComponentGetter) && <button className="positiveBtn" onClick={() => callback(selectedTab == WEDescType.ARRAY_INDEXING ? {
-                WEDescType: WEDescType.ARRAY_INDEXING,
-                index: indexSet
-            } : selectedElement)} disabled={selectedTab != WEDescType.ARRAY_INDEXING && !selectedElement}>Select</button>}
+            {(optionsMembers || optionsStaticMethods || optionsComponentGetter) && <button className="positiveBtn"
+                onClick={() => callback(getCurrentSelectionObject())} disabled={!isValidSelection()}>Select</button>}
             <button className="negativeBtn" onClick={() => callback()}>Back</button>
         </div>}
     >
@@ -96,6 +114,7 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
                         {currentEntityComponent && !!currentEntityComponent.length && <button onClick={() => setSelectedTab(WEDescTypeUI.CURRENT_COMPONENT)} className={["tabBtn", selectedTab == WEDescTypeUI.CURRENT_COMPONENT ? "selected" : ""].join(" ").trim()}>{T_pickCurrentComponent}</button>}
                         {optionsComponentGetter && !!Object.keys(optionsComponentGetter ?? {}).length && <button onClick={() => setSelectedTab(WEDescType.COMPONENT)} className={["tabBtn", selectedTab == WEDescType.COMPONENT ? "selected" : ""].join(" ").trim()}>{T_pickAnyComponent}</button>}
                         {supportIndexing && <button onClick={() => setSelectedTab(WEDescType.ARRAY_INDEXING)} className={["tabBtn", selectedTab == WEDescType.ARRAY_INDEXING ? "selected" : ""].join(" ").trim()}>{T_arrayIndexing}</button>}
+                        {referenceElement.supportsMathOp && <button onClick={() => setSelectedTab(WEDescType.MATH_OPERATION)} className={["tabBtn", selectedTab == WEDescType.MATH_OPERATION ? "selected" : ""].join(" ").trim()}>{T_mathOperation}</button>}
                     </div>
                     {selectedTab && [WEDescType.COMPONENT, WEDescType.STATIC_METHOD].includes(selectedTab as WEDescType) && <div className="k45_we_formulaeDialog_navRow">
                         <button className="k45_we_formulaeDialog_tabRow_resetNavigation" onClick={() => setSelectedPath([])} />
@@ -105,25 +124,84 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
                         </>)}
                     </div>}
                     <EditorScrollable className={classNames("k45_we_formulaeDialog_content", selectedElement && "anySelected")}>
-                        <FocusDisabled>
-                            {
-                                selectedTab == WEDescType.ARRAY_INDEXING ?
-                                    <EditorRow label={T_arrayIndexingFieldLabel}>
-                                        <IntInput className={editorItemTheme.sliderInput}  min={0} onChange={(x) => setIndexSet(x)} value={indexSet} />
-                                    </EditorRow>
-                                    : selectedTab == WEDescType.MEMBER
-                                        ? printWithTooltip(optionsMembers, selectedElement, setSelectedElement)
-                                        : selectedTab == WEDescTypeUI.CURRENT_COMPONENT
-                                            ? printWithTooltip(currentEntityComponent.sort((a, b) => (a.isBuffer as any - (b.isBuffer as any)) || a.className.localeCompare(b.className)), selectedElement, setSelectedElement)
-                                            : selectedTab && [WEDescType.COMPONENT, WEDescType.STATIC_METHOD].includes(selectedTab)
-                                            && <WEPaginateOverResultObj lastLevelIsPackage={selectedTab == WEDescType.COMPONENT} selectedElement={selectedElement} source={selectedTab == WEDescType.COMPONENT ? optionsComponentGetter! : optionsStaticMethods} currentNavigation={selectedPath} setNavigation={setSelectedPath} setElement={setSelectedElement} />
-                            }
-                        </FocusDisabled>
+                        <FocusDisabled>{showSelectedTab()}</FocusDisabled>
                     </EditorScrollable>
                 </div>}
     </Dialog>
 
+
+    function isValidSelection(): boolean {
+        switch (selectedTab) {
+            case WEDescType.ARRAY_INDEXING:
+                return true
+            case WEDescType.MATH_OPERATION:
+                return mathOperator !== undefined
+            default:
+                return !!selectedElement;
+        }
+    }
+
+    function getCurrentSelectionObject(): WEFormulaeElement | WEArrayIndexingDesc | WEMathOperationDesc | undefined {
+        switch (selectedTab) {
+            case WEDescType.ARRAY_INDEXING:
+                return {
+                    WEDescType: WEDescType.ARRAY_INDEXING,
+                    index: indexSet
+                }
+            case WEDescType.MATH_OPERATION:
+                return {
+                    WEDescType: WEDescType.MATH_OPERATION,
+                    operation: { value__: mathOperator! },
+                    value: mathOperand.toPrecision(7),
+                    enforceType: { value__: mathOperationForceDecimal ? EnforceType.Float : EnforceType.None },
+                    isDecimalResult: mathOperationForceDecimal || mathOperand % 1 != 0
+                }
+            default:
+                return selectedElement;
+        }
+    }
 };
+
+const ArrayIndexingSelect = ({ indexSet, setIndexSet }: { indexSet: number, setIndexSet: (val: number) => any }) => {
+    const T_arrayIndexingFieldLabel = translate("formulaeEditor.addDialog.arrayIndexingFieldLabel")//Array indexing
+    const EditorRow = VanillaWidgets.instance.EditorItemRowNoFocus;
+    const IntInput = VanillaComponentResolver.instance.IntInput;
+    const editorItemTheme = VanillaComponentResolver.instance.editorItemTheme;
+    return <EditorRow label={T_arrayIndexingFieldLabel}>
+        <IntInput className={editorItemTheme.sliderInput} min={0} onChange={(x) => setIndexSet(x)} value={indexSet} />
+    </EditorRow>;
+}
+const MathOperatorSelect = ({ operator, setOperator, operand, setOperand, forceDecimal, setForceDecimal }: {
+    operand: number, setOperand: (val: number) => any,
+    operator: WEFormulaeMathOperation | undefined, setOperator: (val: WEFormulaeMathOperation) => any,
+    forceDecimal: boolean, setForceDecimal: (val: boolean) => any,
+}) => {
+    const T_mathOperationValue = translate("formulaeEditor.addDialog.mathOperationValue")//Math operation
+    const T_mathOperationType = translate("formulaeEditor.addDialog.mathOperationType")//Math operation
+    const T_forceDecimalType = translate("formulaeEditor.addDialog.mathOperationForceDecimals")//Math operation
+    const EditorRow = VanillaWidgets.instance.EditorItemRowNoFocus;
+    const FloatInput = VanillaComponentResolver.instance.FloatInput;
+    const DropdownField = VanillaWidgets.instance.DropdownField<WEFormulaeMathOperation>();
+    const CheckboxInput = VanillaWidgets.instance.Checkbox;
+    const editorItemTheme = VanillaComponentResolver.instance.editorItemTheme;
+    return <>
+        <EditorRow label={T_mathOperationType}>
+            <DropdownField
+                className={editorItemTheme.dropdownToggle}
+                value={operator}
+                items={ObjectTyped.entries(WEFormulaeMathOperation).filter(x => typeof x[1] == 'number').map(x => ({ displayName: { __Type: LocElementType.String, value: translate("mathOperationType." + x[0]) }, value: x[1] }))}
+                onChange={(y) => setOperator(y)}
+                autoFocus={false}
+            />
+        </EditorRow>
+        <EditorRow label={T_mathOperationValue}>
+            <FloatInput className={editorItemTheme.input} onChange={(x) => setOperand(x)} value={operand} />
+        </EditorRow>
+        <EditorRow label={T_forceDecimalType}>
+            <CheckboxInput className={editorItemTheme.toggle} onChange={(x) => setForceDecimal(x)} checked={forceDecimal} />
+        </EditorRow>
+    </>;
+}
 
 function printWithTooltip(fnList: WEFormulaeElement[], selectedElement: WEFormulaeElement | undefined, setSelectedElement: (x: WEFormulaeElement) => any) {
     return fnList.map(x => <VanillaComponentResolver.instance.Tooltip tooltip={getTooltipFor(x)}><WEFormulaeItemBtn item={x} isSelected={x == selectedElement} onSelect={(x) => setSelectedElement(x)} /></VanillaComponentResolver.instance.Tooltip>)
@@ -177,6 +255,8 @@ const WEFormulaeItemBtn: <T extends string | WEFormulaeElement | number>(x: Prop
             }
         case WEDescType.STATIC_METHOD:
             return <div className={["k45_we_formulaeDialog_btn_staticMethod", isSelected ? "selected" : ""].join(" ").trim()} onClick={() => onSelect(item)} >{displayName ?? item.methodName}</div>
+        case WEDescType.MATH_OPERATION:
+            return <></>
     }
 }
 

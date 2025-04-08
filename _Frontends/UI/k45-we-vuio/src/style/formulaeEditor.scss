@@ -24,6 +24,7 @@
     --colorComponentMethod: #0f618a;
     --colorComponentProperty: #0f388a;
     --colorComponentIndexing: #3e8b3b;
+    --colorMathOp: #fefb3b;
     --colorAssembly: #b84b14;
     --colorPackage: #8a610f;
 
@@ -205,6 +206,49 @@
                 @include generate-border-color(var(--colorComponentIndexing));
             }
 
+            .k45_we_formulaeEditor_mathOpContainer {
+                @include basic-container;
+                @include generate-border-color(var(--colorMathOp));
+                background-color: #fffd91;
+
+                .mathOp {
+                    font-size: var(--fontSizeL);
+                    background-size: auto 80%;
+                    padding-left: 25rem;
+                    background-repeat: no-repeat no-repeat;
+                    background-position-y: 50%;
+                    display: flex;
+                    color: black;
+
+                    &.opADD {
+                        background-image: url("../images/math_add.svg");
+                    }
+
+                    &.opSUBTRACT {
+                        background-image: url("../images/math_subtract.svg");
+                    }
+
+                    &.opMULTIPLY {
+                        background-image: url("../images/math_multiply.svg");
+                    }
+
+                    &.opDIVIDE {
+                        background-image: url("../images/math_divide.svg");
+                    }
+
+                    .enforceType_Float {
+                        height: 10rem;
+                        width: 10rem;
+                        margin: 5rem;
+                        background-color: #ff6f8f;
+                        border: 1px solid;
+                        border-color: #cc33bf;
+                    }
+                }
+
+
+
+            }
 
 
             >*> {
@@ -322,6 +366,19 @@
         flex-grow: 1;
         justify-content: center;
 
+        div[class^=row_] {
+            width: 100%;
+            text-align: left;
+
+            input {
+                color: var(--textColorDim)
+            }
+
+            button {
+                color: var(--textColorDim)
+            }
+        }
+
         @include formulae-element-type-styling;
 
         button,
@@ -361,7 +418,7 @@
             ---selfColor: var(--colorComponentGet);
             background-image: var(--iconBwClass);
         }
-        
+
         .k45_we_formulaeDialog_btn_componentBuffer {
             ---selfColor: var(--colorComponentGetBuffer);
             background-image: var(--iconBwClass);

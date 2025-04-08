@@ -13,6 +13,7 @@ namespace BelzontWE
         public string modName;
         public string returnTypeDll;
         public string returnType;
+        public bool supportsMathOp;
         public readonly string FormulaeString => $"&{className};{methodName}";
 
         public static WEStaticMethodDesc From(MethodInfo mi)
@@ -30,7 +31,8 @@ namespace BelzontWE
                 returnType = returnType,
                 source = source,
                 modUrl = modUrl,
-                modName = modName
+                modName = modName,
+                supportsMathOp = mi.ReturnType.IsIntegerType() || mi.ReturnType.IsDecimalType()
             };
         }
     }
