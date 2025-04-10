@@ -65,17 +65,20 @@ namespace BelzontWE
 
         private static readonly Dictionary<string, BaseCache<string>> cachedFnsString = new();
         private static readonly Dictionary<string, BaseCache<float>> cachedFnsFloat = new();
+        private static readonly Dictionary<string, BaseCache<int>> cachedFnsInt = new();
         private static readonly Dictionary<string, BaseCache<Color>> cachedFnsColor = new();
         private static readonly Dictionary<string, BaseCache<IList<Entity>>> cachedFnsEntityArray = new();
 
         public static FormulaeFn<string> GetCachedStringFn(string formulae) => cachedFnsString.TryGetValue(formulae, out var cached) ? cached.Fn : null;
         public static FormulaeFn<float> GetCachedFloatFn(string formulae) => cachedFnsFloat.TryGetValue(formulae, out var cached) ? cached.Fn : null;
+        public static FormulaeFn<int> GetCachedIntFn(string formulae) => cachedFnsInt.TryGetValue(formulae, out var cached) ? cached.Fn : null;
         public static FormulaeFn<Color> GetCachedColorFn(string formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached.Fn : null;
         public static FormulaeFn<IList<Entity>> GetCachedEntityArrayFn(string formulae) => cachedFnsEntityArray.TryGetValue(formulae, out var cached) ? cached.Fn : null;
 
         public static byte SetFormulae<T>(string newFormulae512, out string[] errorFmtArgs, out string resultFormulaeStr, out FormulaeFn<T> resultFormulaeFn)
         {
             IDictionary refDic = typeof(T) == typeof(string) ? cachedFnsString
+                : typeof(T) == typeof(int) ? cachedFnsInt
                 : typeof(T) == typeof(float) ? cachedFnsFloat
                 : typeof(T) == typeof(Color) ? cachedFnsColor
                 : typeof(T) == typeof(IList<Entity>) ? (IDictionary)cachedFnsEntityArray
@@ -201,6 +204,10 @@ namespace BelzontWE
                         if (typeof(T) == typeof(float))
                         {
                             iLGenerator.Emit(OpCodes.Ldc_R4, float.NaN);
+                        }
+                        if (typeof(T) == typeof(int))
+                        {
+                            iLGenerator.Emit(OpCodes.Ldc_I4, int.MinValue);
                         }
                         else if (typeof(T) == typeof(Color))
                         {

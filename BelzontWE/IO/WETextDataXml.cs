@@ -125,14 +125,16 @@ namespace BelzontWE
 
         public class TransformXml : ISerializable
         {
-            private const int CURRENT_VERSION = 3;
+            private const int CURRENT_VERSION = 4;
             public Vector3Xml offsetPosition = new();
             public Vector3Xml offsetRotation = new();
             public Vector3Xml scale = (Vector3Xml)Vector3.one;
             [XmlAttribute] public WEPlacementPivot pivot = WEPlacementPivot.MiddleCenter;
+            [XmlAttribute] public WEPlacementAlignment alignment = default;
             [XmlAttribute][DefaultValue(false)] public bool isAbsoluteScale;
             [XmlAttribute][DefaultValue(false)] public bool useFormulaeToCheckIfDraw;
             [XmlElement] public FormulaeFloatXml mustDraw;
+            [XmlElement] public FormulaeIntXml instanceCount;
             public Vector3Xml arrayInstances = (Vector3Xml)Vector3.one;
             public Vector3Xml arraySpacing = new();
             [XmlAttribute] public WETextDataTransform.ArrayInstancingAxisOrder arrayAxisOrder;
@@ -150,6 +152,8 @@ namespace BelzontWE
                 writer.Write((Vector3)arrayInstances);
                 writer.Write((Vector3)arraySpacing);
                 writer.Write(arrayAxisOrder);
+                writer.Write(instanceCount);
+                writer.Write(alignment);
 
 
             }
@@ -191,6 +195,11 @@ namespace BelzontWE
                     this.arrayInstances = (Vector3Xml)(Vector3)arrayInstances;
                     this.arraySpacing = (Vector3Xml)(Vector3)arraySpacing;
                     reader.Read(out arrayAxisOrder);
+                }
+                if (version >= 4)
+                {
+                    reader.ReadNullCheck(out instanceCount);
+                    reader.Read(out alignment);
                 }
             }
         }
@@ -451,6 +460,30 @@ namespace BelzontWE
         {
             private const int CURRENT_VERSION = 0;
             [XmlText] public float defaultValue;
+            [XmlAttribute] public string formulae;
+            public bool ShouldSerializeformulae() => !formulae.IsNullOrWhitespace();
+            public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+            {
+                writer.Write(CURRENT_VERSION);
+                writer.Write(defaultValue);
+                writer.Write(formulae ?? "");
+            }
+            public void Deserialize<TReader>(TReader reader) where TReader : IReader
+            {
+                reader.Read(out int version);
+                if (version > CURRENT_VERSION)
+                {
+                    LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                    return;
+                }
+                reader.Read(out defaultValue);
+                reader.Read(out formulae);
+            }
+        }
+        public class FormulaeIntXml : ISerializable
+        {
+            private const int CURRENT_VERSION = 0;
+            [XmlText] public int defaultValue;
             [XmlAttribute] public string formulae;
             public bool ShouldSerializeformulae() => !formulae.IsNullOrWhitespace();
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter

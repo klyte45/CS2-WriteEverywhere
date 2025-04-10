@@ -11,16 +11,19 @@ namespace BelzontWE
         public quaternion offsetRotation;
         public float3 scale;
         public WEPlacementPivot pivot;
+        public WEPlacementAlignment alignment;
         public bool useAbsoluteSizeEditing;
 
         public bool useFormulaeToCheckIfDraw;
         private WETextDataValueFloat mustDrawFn;
+        private WETextDataValueInt instanceCount;
 
         private int nextUpdateFrame;
 
         public readonly bool MustDraw => mustDrawFn.EffectiveValue > 0;
         public string MustDrawFormulae => mustDrawFn.Formulae;
         internal WETextDataValueFloat MustDrawFn { readonly get => mustDrawFn; set => mustDrawFn = value; }
+        public WETextDataValueInt InstanceCount { readonly get => instanceCount; set => instanceCount = value; }
         public readonly float2 PivotAsFloat2 => pivot switch
         {
             WEPlacementPivot.TopLeft => new float2(0, 0),

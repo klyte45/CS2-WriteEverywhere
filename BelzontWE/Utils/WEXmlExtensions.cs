@@ -114,6 +114,8 @@ namespace BelzontWE.Utils
                 arrayAxisOrder = value.arrayAxisGrowthOrder,
                 arrayInstances = (Vector3Xml)(float3)value.ArrayInstancing,
                 arraySpacing = (Vector3Xml)value.arrayInstancingGapMeters,
+                alignment = value.alignment,
+                instanceCount = value.InstanceCount.ToXml()
 
             };
         public static WETextDataTransform ToComponent(this WETextDataXml.TransformXml value)
@@ -128,7 +130,9 @@ namespace BelzontWE.Utils
                 useFormulaeToCheckIfDraw = value.useFormulaeToCheckIfDraw,
                 ArrayInstancing = (uint3)(float3)value.arrayInstances,
                 arrayInstancingGapMeters = value.arraySpacing,
-                arrayAxisGrowthOrder = value.arrayAxisOrder
+                arrayAxisGrowthOrder = value.arrayAxisOrder,
+                alignment = value.alignment,
+                InstanceCount = value.instanceCount.ToComponent()
             };
 
 
@@ -197,6 +201,11 @@ namespace BelzontWE.Utils
             defaultValue = value.defaultValue,
             formulae = value.Formulae
         };
+        public static WETextDataXml.FormulaeIntXml ToXml(this WETextDataValueInt value) => new()
+        {
+            defaultValue = value.defaultValue,
+            formulae = value.Formulae
+        };
         public static WETextDataXml.FormulaeColorRgbaXml ToRgbaXml(this WETextDataValueColor value) => new()
         {
             defaultValue = value.defaultValue,
@@ -214,6 +223,11 @@ namespace BelzontWE.Utils
             Formulae = value.formulae
         };
         public static WETextDataValueFloat ToComponent(this WETextDataXml.FormulaeFloatXml value) => value is null ? default : new()
+        {
+            defaultValue = value.defaultValue,
+            Formulae = value.formulae
+        };
+        public static WETextDataValueInt ToComponent(this WETextDataXml.FormulaeIntXml value) => value is null ? default : new()
         {
             defaultValue = value.defaultValue,
             Formulae = value.formulae
