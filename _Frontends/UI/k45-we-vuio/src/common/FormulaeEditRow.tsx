@@ -84,6 +84,7 @@ export const FormulaeEditRow = ({ defaultInputField, label, formulaeModule, form
                             className="we_formulaeInput"
                             maxLength={400}
                         />
+                        <div style={{ width: "5rem" }} />
                         <Button src={i_focus} tooltip={T_focusInFormulaePanel} selected={isCurrentlyFocused()} onSelect={() => setFocusToField()} focusKey={noFocus} />
                         <Button src={i_formulae} tooltip={T_useFormulae} selected={usingFormulae} onSelect={() => setUsingFormulae(!usingFormulae)} focusKey={noFocus} />
                     </div>
@@ -92,6 +93,7 @@ export const FormulaeEditRow = ({ defaultInputField, label, formulaeModule, form
             </> :
             <EditorItemRow label={label} styleContent={{ paddingLeft: "28rem" }}>
                 {defaultInputField}
+                <div style={{ width: "5rem" }} />
                 <Button src={i_formulae} tooltip={T_useFormulae} selected={usingFormulae} onSelect={() => setUsingFormulae(!usingFormulae)} focusKey={noFocus} />
             </EditorItemRow>
         }

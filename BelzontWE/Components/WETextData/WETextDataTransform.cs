@@ -26,14 +26,7 @@ namespace BelzontWE
         internal WETextDataValueFloat MustDrawFn { readonly get => mustDrawFn; set => mustDrawFn = value; }
         public WETextDataValueInt InstanceCountFn { readonly get => instanceCount; set => instanceCount = value; }
         public int DefaultInstanceCount { readonly get => instanceCount.defaultValue; set => instanceCount.defaultValue = value; }
-        public readonly float3 PivotAsFloat3 => new(
-            pivotZ switch
-            {
-                WEZPlacementPivot.Front => 0,
-                WEZPlacementPivot.Middle => .5f,
-                WEZPlacementPivot.Back => 1,
-                _ => 0,
-            }, pivot switch
+        public readonly float3 PivotAsFloat3 => new(pivot switch
             {
                 WEPlacementPivot.TopLeft => new float2(0, 0),
                 WEPlacementPivot.TopCenter => new float2(.5f, 0),
@@ -45,6 +38,13 @@ namespace BelzontWE
                 WEPlacementPivot.BottomCenter => new float2(.5f, 1),
                 WEPlacementPivot.BottomRight => new float2(1, 1),
                 _ => default,
+            },
+            pivotZ switch
+            {
+                WEZPlacementPivot.Front => 0,
+                WEZPlacementPivot.Middle => .5f,
+                WEZPlacementPivot.Back => 1,
+                _ => 0,
             });
         public enum ArrayInstancingAxisOrder
         {

@@ -23,3 +23,7 @@
     flex: 1.000000;
     justify-content: flex-end;
 }
+
+.buttonShrink button {
+    flex-shrink: 1;
+}

@@ -74,6 +74,14 @@ const WETextDataTransformController = {
     ArrayInstancing: MultiUIValueBinding<number3>,
     ArrayInstancingGapMeters: MultiUIValueBinding<number3>,
     ArrayAxisGrowthOrder: MultiUIValueBinding<ArrayInstancingAxisOrder>,
+    PivotZ: MultiUIValueBinding<WEZPlacementPivot>,
+    AlignmentX: MultiUIValueBinding<WEPlacementAlignment>,
+    AlignmentY: MultiUIValueBinding<WEPlacementAlignment>,
+    AlignmentZ: MultiUIValueBinding<WEPlacementAlignment>,
+    InstanceCount: MultiUIValueBinding<number>,
+    InstanceCountFormulaeStr: MultiUIValueBinding<string>,
+    InstanceCountFormulaeCompileResult: MultiUIValueBinding<number>,
+    InstanceCountFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
 }
 const WETextDataMeshController = {
     _prefix: "k45::we.dataMesh",
@@ -191,6 +199,14 @@ export enum WEPlacementPivot {
     BottomLeft = 8,
     BottomCenter = 9,
     BottomRight = 10,
+}
+export enum WEZPlacementPivot {
+    Front = 0,
+    Middle = 1,
+    Back = 2
+}
+export enum WEPlacementAlignment {
+    Start = 0, Center = 1, End = 2, Justified = 3
 }
 export enum ArrayInstancingAxisOrder {
     XYZ,
