@@ -29,6 +29,16 @@ namespace BelzontWE
         public MultiUIValueBinding<float3, float[]> ArrayInstancingGapMeters { get; private set; }
         public MultiUIValueBinding<ArrayInstancingAxisOrder, int> ArrayAxisGrowthOrder { get; private set; }
 
+        public MultiUIValueBinding<WEZPlacementPivot, int> PivotZ { get; private set; }
+        public MultiUIValueBinding<WEPlacementAlignment, int> AlignmentX { get; private set; }
+        public MultiUIValueBinding<WEPlacementAlignment, int> AlignmentY { get; private set; }
+        public MultiUIValueBinding<WEPlacementAlignment, int> AlignmentZ { get; private set; }
+
+        public MultiUIValueBinding<int> InstanceCount { get; private set; }
+        public MultiUIValueBinding<string> InstanceCountFormulaeStr { get; private set; }
+        public MultiUIValueBinding<int> InstanceCountFormulaeCompileResult { get; private set; }
+        public MultiUIValueBinding<string[]> InstanceCountFormulaeCompileResultErrorArgs { get; private set; }
+
         protected override void DoInitValueBindings(Action<string, object[]> EventCaller, Action<string, Delegate> CallBinder)
         {
             m_pickerController = World.GetExistingSystemManaged<WEWorldPickerController>();
@@ -45,6 +55,18 @@ namespace BelzontWE
             MustDrawFnFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(MustDrawFnFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
 
 
+            PivotZ = new(default, $"{PREFIX}{nameof(PivotZ)}", EventCaller, CallBinder, (x, _) => (int)x, (x, _) => (WEZPlacementPivot)x);
+            AlignmentX = new(default, $"{PREFIX}{nameof(AlignmentX)}", EventCaller, CallBinder, (x, _) => (int)x, (x, _) => (WEPlacementAlignment)x);
+            AlignmentY = new(default, $"{PREFIX}{nameof(AlignmentY)}", EventCaller, CallBinder, (x, _) => (int)x, (x, _) => (WEPlacementAlignment)x);
+            AlignmentZ = new(default, $"{PREFIX}{nameof(AlignmentZ)}", EventCaller, CallBinder, (x, _) => (int)x, (x, _) => (WEPlacementAlignment)x);
+
+
+            InstanceCount = new(default, $"{PREFIX}{nameof(InstanceCount)}", EventCaller, CallBinder);
+            InstanceCountFormulaeStr = new(default, $"{PREFIX}{nameof(InstanceCountFormulaeStr)}", EventCaller, CallBinder);
+            InstanceCountFormulaeCompileResult = new(default, $"{PREFIX}{nameof(InstanceCountFormulaeCompileResult)}", EventCaller, CallBinder);
+            InstanceCountFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(InstanceCountFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
+
+
             ArrayInstancing = new(default, $"{PREFIX}{nameof(ArrayInstancing)}", EventCaller, CallBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new uint3(x[0], x[1], x[2]));
             ArrayInstancingGapMeters = new(default, $"{PREFIX}{nameof(ArrayInstancingGapMeters)}", EventCaller, CallBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new float3(x[0], x[1], x[2]));
             ArrayAxisGrowthOrder = new(default, $"{PREFIX}{nameof(ArrayAxisGrowthOrder)}", EventCaller, CallBinder, (x, _) => (int)x, (x, _) => (ArrayInstancingAxisOrder)x);
@@ -57,6 +79,14 @@ namespace BelzontWE
             Pivot.OnScreenValueChanged += (x) => PickerController.EnqueueModification<WEPlacementPivot, WETextDataTransform>(x, (x, currentItem) => { currentItem.pivot = x; if (EntityManager.HasComponent<WEIsPlaceholder>(m_pickerController.CurrentSubEntity.Value)) EntityManager.AddComponent<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value); return currentItem; });
             UseFormulaeToCheckIfDraw.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataTransform>(x, (x, currentItem) => { currentItem.useFormulaeToCheckIfDraw = x; return currentItem; });
             SetupOnFormulaeChangedAction(PickerController, (ref WETextDataTransform data, string newFormulae, out string[] errorArgs) => data.SetFormulaeMustDraw(newFormulae, out errorArgs), MustDrawFnFormulaeStr, MustDrawFnFormulaeCompileResult, MustDrawFnFormulaeCompileResultErrorArgs);
+
+            PivotZ.OnScreenValueChanged += (x) => PickerController.EnqueueModification<WEZPlacementPivot, WETextDataTransform>(x, (x, currentItem) => { currentItem.pivotZ = x; if (EntityManager.HasComponent<WEIsPlaceholder>(m_pickerController.CurrentSubEntity.Value)) EntityManager.AddComponent<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value); return currentItem; });
+            AlignmentX.OnScreenValueChanged += (x) => PickerController.EnqueueModification<WEPlacementAlignment, WETextDataTransform>(x, (x, currentItem) => { currentItem.alignment = WEPlacementAligmentUtility.Encode(x, currentItem.alignment.GetY(), currentItem.alignment.GetZ()); if (EntityManager.HasComponent<WEIsPlaceholder>(m_pickerController.CurrentSubEntity.Value)) EntityManager.AddComponent<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value); return currentItem; });
+            AlignmentY.OnScreenValueChanged += (x) => PickerController.EnqueueModification<WEPlacementAlignment, WETextDataTransform>(x, (x, currentItem) => { currentItem.alignment = WEPlacementAligmentUtility.Encode(currentItem.alignment.GetX(), x, currentItem.alignment.GetZ()); if (EntityManager.HasComponent<WEIsPlaceholder>(m_pickerController.CurrentSubEntity.Value)) EntityManager.AddComponent<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value); return currentItem; });
+            AlignmentZ.OnScreenValueChanged += (x) => PickerController.EnqueueModification<WEPlacementAlignment, WETextDataTransform>(x, (x, currentItem) => { currentItem.alignment = WEPlacementAligmentUtility.Encode(currentItem.alignment.GetX(), currentItem.alignment.GetY(), x); if (EntityManager.HasComponent<WEIsPlaceholder>(m_pickerController.CurrentSubEntity.Value)) EntityManager.AddComponent<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value); return currentItem; });
+
+            InstanceCount.OnScreenValueChanged += (x) => PickerController.EnqueueModification<int, WETextDataTransform>(x, (x, currentItem) => { currentItem.DefaultInstanceCount = x; return currentItem; });
+            SetupOnFormulaeChangedAction(PickerController, (ref WETextDataTransform data, string newFormulae, out string[] errorArgs) => data.SetFormulaeInstanceCount(newFormulae, out errorArgs), InstanceCountFormulaeStr, InstanceCountFormulaeCompileResult, InstanceCountFormulaeCompileResultErrorArgs);
 
 
             ArrayInstancing.OnScreenValueChanged += (x) => PickerController.EnqueueModification<uint3, WETextDataTransform>(x, (x, currentItem) => { currentItem.ArrayInstancing = x; EntityManager.AddComponent<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value); ; return currentItem; });

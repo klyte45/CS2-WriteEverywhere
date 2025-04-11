@@ -488,22 +488,30 @@ namespace BelzontWE
                     {
                         targetTemplate = targetTemplate.Clone();
 
-                        var targetSize = math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 256);
-                        var instancingCount = transformData.InstanceCountByAxisOrder;
+                        var targetSize = transformData.InstanceCountFn.EffectiveValue == 0 ? math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 256) : math.min(256, (uint)transformData.InstanceCountFn.EffectiveValue);
+                        var instancingCount = (uint3)math.min(transformData.InstanceCountByAxisOrder, math.ceil(targetSize / new float3(1, transformData.InstanceCountByAxisOrder[0], transformData.InstanceCountByAxisOrder[0] * transformData.InstanceCountByAxisOrder[1])));
                         var spacingOffsets = transformData.SpacingByAxisOrder;
                         var totalArea = (transformData.ArrayInstancing - 1) * transformData.arrayInstancingGapMeters;
 
-                        var effectivePivot = transformData.PivotAsFloat2 - (math.sign(totalArea.xy) / 2) - .5f;
+                        var effectivePivot = transformData.PivotAsFloat3 - (math.sign(totalArea.xyz) / 2) - .5f;
 
-                        var pivotOffset = new float3(effectivePivot, 0) * math.abs(totalArea);
+                        var pivotOffset = effectivePivot * math.abs(totalArea);
+                        var alignmentByAxisOrder = transformData.AlignmentByAxisOrder;
 
+                        var spacingO = spacingOffsets[2];
+                        GetSpacingAndOffset(targetSize, instancingCount.z, instancingCount.y * instancingCount.x, alignmentByAxisOrder.o, ref spacingO, out float3 offsetO);
                         for (int o = 0; o < instancingCount.z; o++)
                         {
+                            var spacingN = spacingOffsets[1];
+                            GetSpacingAndOffset(targetSize - (uint)buff.Length, instancingCount.y, instancingCount.x, alignmentByAxisOrder.n, ref spacingN, out float3 offsetN);
                             for (int n = 0; n < instancingCount.y; n++)
                             {
+                                var spacingM = spacingOffsets[0];
+                                GetSpacingAndOffset(targetSize - (uint)buff.Length, instancingCount.x, 1, alignmentByAxisOrder.m, ref spacingM, out float3 offsetM);
+                                var totalOffset = pivotOffset + offsetM + offsetN + offsetO;
                                 for (int m = 0; m < instancingCount.x; m++)
                                 {
-                                    targetTemplate.self.transform.offsetPosition = (Vector3Xml)(Vector3)(pivotOffset + (m * spacingOffsets[0]) + (n * spacingOffsets[1]) + (o * spacingOffsets[2]));
+                                    targetTemplate.self.transform.offsetPosition = (Vector3Xml)(Vector3)(totalOffset + (m * spacingM) + (n * spacingN) + (o * spacingO));
                                     targetTemplate.self.transform.pivot = transformData.pivot;
 
                                     var updater = new WETemplateUpdater()
@@ -525,6 +533,29 @@ namespace BelzontWE
             }
         }
 
+        private static void GetSpacingAndOffset(uint remaining, uint rowCount, uint rowCapacity, WEPlacementAlignment axisAlignment, ref float3 spacing, out float3 offset)
+        {
+            offset = float3.zero;
+            uint capacity = rowCapacity * (rowCount - 1);
+            if (remaining <= capacity && axisAlignment != WEPlacementAlignment.Left)
+            {
+                var totalWidth = (rowCount - 1) * spacing;
+                var effectiveRowsCount = math.ceil(remaining / rowCapacity);
+                var effectiveWidth = (effectiveRowsCount - 1) * spacing;
+                switch (axisAlignment)
+                {
+                    case WEPlacementAlignment.Center:
+                        offset = (totalWidth - effectiveWidth) / 2;
+                        break;
+                    case WEPlacementAlignment.Right:
+                        offset = totalWidth - effectiveWidth;
+                        break;
+                    case WEPlacementAlignment.Justified:
+                        spacing = effectiveWidth / effectiveRowsCount;
+                        break;
+                }
+            }
+        }
 
         public void EnqueueToBeDestructed(Material m)
         {
@@ -687,7 +718,8 @@ namespace BelzontWE
                 {
                     LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: All children must have type 'Placeholder', 'WhiteTexture', 'Image' or 'Text'.");
                     return 4;
-                };
+                }
+                ;
                 if (self.layoutMesh is not null && children?.Length > 0)
                 {
                     LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: The node must not have children, as any Placeholder item don't.");

@@ -115,7 +115,8 @@ namespace BelzontWE.Utils
                 arrayInstances = (Vector3Xml)(float3)value.ArrayInstancing,
                 arraySpacing = (Vector3Xml)value.arrayInstancingGapMeters,
                 alignment = value.alignment,
-                instanceCount = value.InstanceCount.ToXml()
+                instanceCount = value.InstanceCountFn.ToXml(),
+                pivotZ = value.pivotZ,
 
             };
         public static WETextDataTransform ToComponent(this WETextDataXml.TransformXml value)
@@ -132,7 +133,8 @@ namespace BelzontWE.Utils
                 arrayInstancingGapMeters = value.arraySpacing,
                 arrayAxisGrowthOrder = value.arrayAxisOrder,
                 alignment = value.alignment,
-                InstanceCount = value.instanceCount.ToComponent()
+                InstanceCountFn = value.instanceCount.ToComponent(),
+                pivotZ = value.pivotZ
             };
 
 

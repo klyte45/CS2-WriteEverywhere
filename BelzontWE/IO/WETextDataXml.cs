@@ -129,7 +129,8 @@ namespace BelzontWE
             public Vector3Xml offsetPosition = new();
             public Vector3Xml offsetRotation = new();
             public Vector3Xml scale = (Vector3Xml)Vector3.one;
-            [XmlAttribute] public WEPlacementPivot pivot = WEPlacementPivot.MiddleCenter;
+            [XmlAttribute][DefaultValue(WEPlacementPivot.MiddleCenter)] public WEPlacementPivot pivot = WEPlacementPivot.MiddleCenter;
+            [XmlAttribute][DefaultValue(WEZPlacementPivot.Middle)] public WEZPlacementPivot pivotZ = WEZPlacementPivot.Middle;
             [XmlAttribute] public WEPlacementAlignment alignment = default;
             [XmlAttribute][DefaultValue(false)] public bool isAbsoluteScale;
             [XmlAttribute][DefaultValue(false)] public bool useFormulaeToCheckIfDraw;
@@ -154,6 +155,7 @@ namespace BelzontWE
                 writer.Write(arrayAxisOrder);
                 writer.Write(instanceCount);
                 writer.Write(alignment);
+                writer.Write(pivotZ);
 
 
             }
@@ -200,6 +202,7 @@ namespace BelzontWE
                 {
                     reader.ReadNullCheck(out instanceCount);
                     reader.Read(out alignment);
+                    reader.Read(out pivotZ);
                 }
             }
         }

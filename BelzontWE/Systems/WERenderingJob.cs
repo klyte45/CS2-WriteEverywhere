@@ -244,7 +244,7 @@ namespace BelzontWE
                                     scale.x = mesh.MaxWidthMeters / mesh.BriWidthMetersUnscaled;
                                 }
                             }
-                            var refPos = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform.offsetPosition, transform.PivotAsFloat2, scale);
+                            var refPos = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform.offsetPosition, transform.PivotAsFloat3, scale);
                             var refRot = parentIsPlaceholder ? default : transform.offsetRotation;
                             var material = m_weMaterialLookup[nextEntity];
                             var isDecal = material.CheckIsDecal(mesh);
@@ -303,14 +303,14 @@ namespace BelzontWE
 
             private readonly float3 GetEffectiveOffsetPosition(WETextDataMesh meshData, WETextDataTransform transform)
             {
-                return GetEffectiveOffsetPosition(meshData, transform.offsetPosition, transform.PivotAsFloat2, transform.scale);
+                return GetEffectiveOffsetPosition(meshData, transform.offsetPosition, transform.PivotAsFloat3, transform.scale);
             }
 
-            private readonly float3 GetEffectiveOffsetPosition(WETextDataMesh meshData, float3 offsetPosition, float2 pivot, float3 scale)
+            private readonly float3 GetEffectiveOffsetPosition(WETextDataMesh meshData, float3 offsetPosition, float3 pivot, float3 scale)
             {
                 var effectiveOffsetPosition = offsetPosition;
                 var meshSize = meshData.Bounds.max - meshData.Bounds.min;
-                effectiveOffsetPosition += new float3(pivot - new float2(.5f, .5f), 0) * meshSize * scale;
+                effectiveOffsetPosition += (pivot - new float3(.5f, .5f, .5f)) * meshSize * scale;
 
                 return effectiveOffsetPosition;
             }
