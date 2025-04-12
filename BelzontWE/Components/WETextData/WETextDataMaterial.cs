@@ -104,8 +104,7 @@ namespace BelzontWE
             }
             nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
           
-            var vars = varsStr.Split(WERendererSystem.VARIABLE_ITEM_SEPARATOR).Select(x => x.Split(WERendererSystem.VARIABLE_KV_SEPARATOR, 2))
-                        .Where(x => x.Length == 2).GroupBy(x => x[0]).ToDictionary(x => x.Key, x => x.Last()[1]);
+            var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[varsStr]];
             return dirty |= color.UpdateEffectiveValue(em, geometryEntity, vars)
               | emissiveColor.UpdateEffectiveValue(em, geometryEntity, vars)
               | glassColor.UpdateEffectiveValue(em, geometryEntity, vars)

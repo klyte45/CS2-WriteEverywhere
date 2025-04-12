@@ -135,7 +135,7 @@ namespace BelzontWE
             [XmlAttribute][DefaultValue(false)] public bool isAbsoluteScale;
             [XmlAttribute][DefaultValue(false)] public bool useFormulaeToCheckIfDraw;
             [XmlElement] public FormulaeFloatXml mustDraw;
-            [XmlElement] public FormulaeIntXml instanceCount;
+            [XmlElement] public FormulaeIntXml instanceCount = new() { defaultValue = -1 };
             public Vector3Xml arrayInstances = (Vector3Xml)Vector3.one;
             public Vector3Xml arraySpacing = new();
             [XmlAttribute] public WETextDataTransform.ArrayInstancingAxisOrder arrayAxisOrder;
@@ -153,7 +153,7 @@ namespace BelzontWE
                 writer.Write((Vector3)arrayInstances);
                 writer.Write((Vector3)arraySpacing);
                 writer.Write(arrayAxisOrder);
-                writer.Write(instanceCount);
+                writer.WriteNullCheck(instanceCount);
                 writer.Write(alignment);
                 writer.Write(pivotZ);
 
@@ -203,6 +203,13 @@ namespace BelzontWE
                     reader.ReadNullCheck(out instanceCount);
                     reader.Read(out alignment);
                     reader.Read(out pivotZ);
+                }
+                else
+                {
+                    instanceCount = new()
+                    {
+                        defaultValue = -1
+                    };
                 }
             }
         }

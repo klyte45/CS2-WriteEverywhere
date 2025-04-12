@@ -2,7 +2,7 @@
 
 namespace BelzontWE
 {
-    public partial class WEStringsBank
+    public class WEStringsBank
     {
         private static WEStringsBank _instance;
         public static WEStringsBank Instance => _instance ??= new WEStringsBank();

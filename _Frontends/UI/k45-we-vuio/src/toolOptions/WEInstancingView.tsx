@@ -1,14 +1,13 @@
+import { LocElementType, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { FormulaeEditRow } from "common/FormulaeEditRow";
-import { Panel, Portal, Tooltip } from "cs2/ui";
+import { FocusDisabled } from "cs2/input";
+import { Panel, Portal } from "cs2/ui";
+import { ObjectTyped } from "object-typed";
 import { useEffect, useState } from "react";
+import { WESimulationTextType } from "services/WEFormulaeElement";
 import { ArrayInstancingAxisOrder, WEPlacementAlignment, WEZPlacementPivot, WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
 import "../style/floatingPanels.scss";
-import { WETextValueSettings } from "./WETextValueSettings";
-import { WESimulationTextType } from "services/WEFormulaeElement";
-import { LocElementType, VanillaComponentResolver, VanillaWidgets, VectorSection } from "@klyte45/vuio-commons";
-import { ObjectTyped } from "object-typed";
-import { FocusDisabled } from "cs2/input";
 
 
 
@@ -44,10 +43,6 @@ export const WEInstancingView = (props: { initialPosition?: { x: number, y: numb
         wps.picker.CurrentSubEntity.subscribe(async () => setBuildIdx(buildIdx + 1))
     }, [buildIdx, wps.picker.CurrentSubEntity.value])
 
-    useEffect(() => {
-
-    }, [buildIdx])
-
     const defaultPosition = props.initialPosition ?? { x: 600 / window.innerWidth, y: 100 / window.innerHeight }
     const arrayToXYZ = (x: number[]) => ({ x: x[0], y: x[1], z: x[2] })
     const xyzToArray = (x: { x: number, y: number, z: number }): [number, number, number] => [x.x, x.y, x.z]
@@ -58,21 +53,21 @@ export const WEInstancingView = (props: { initialPosition?: { x: number, y: numb
                 formulaeModule="transform" formulaeField="MustDrawFn" label={T_showWhenLabel} defaultInputField={T_showWhenAlways}
                 isUsingFormulae={wps.transform.UseFormulaeToCheckIfDraw.value} onToggleFormulaeUse={(x) => wps.transform.UseFormulaeToCheckIfDraw.set(x)}
             />
-            <FormulaeEditRow
-                formulaeModule="transform" formulaeField="InstanceCount" label={T_totalInstancesCount} defaultInputField={<IntInput
-                    className={editorModule.input}
-                    min={-1}
-                    max={256}
-                    value={wps.transform.InstanceCount.value}
-                    onChange={(x) => { wps.transform.InstanceCount.set(x) }}
-                />}
-            />
             {wps.transform.UseFormulaeToCheckIfDraw.value && <div style={{ color: "var(--textColorDim)", fontSize: "var(--fontSizeXS)", textAlign: "center", display: "flex", alignContent: "center", justifyContent: "center" }}>{T_showWhenTooltip}</div>}
             <hr />
             <h4>{T_arrayTitle}</h4>
             {wps.mesh.TextSourceType.value != WESimulationTextType.Placeholder ? <>
                 {T_arraysOnlyForTemplates}
             </> : <>
+                <FormulaeEditRow
+                    formulaeModule="transform" formulaeField="InstanceCount" label={T_totalInstancesCount} defaultInputField={<IntInput
+                        className={editorModule.input}
+                        min={-1}
+                        max={256}
+                        value={wps.transform.InstanceCount.value}
+                        onChange={(x) => { wps.transform.InstanceCount.set(x) }}
+                    />}
+                />
                 <VanillaComponentResolver.instance.Int3Input
                     label={T_arrayInstances}
                     value={arrayToXYZ(wps.transform.ArrayInstancing.value)}

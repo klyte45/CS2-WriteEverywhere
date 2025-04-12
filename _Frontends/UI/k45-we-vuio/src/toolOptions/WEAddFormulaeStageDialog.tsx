@@ -114,7 +114,7 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
                         {currentEntityComponent && !!currentEntityComponent.length && <button onClick={() => setSelectedTab(WEDescTypeUI.CURRENT_COMPONENT)} className={["tabBtn", selectedTab == WEDescTypeUI.CURRENT_COMPONENT ? "selected" : ""].join(" ").trim()}>{T_pickCurrentComponent}</button>}
                         {optionsComponentGetter && !!Object.keys(optionsComponentGetter ?? {}).length && <button onClick={() => setSelectedTab(WEDescType.COMPONENT)} className={["tabBtn", selectedTab == WEDescType.COMPONENT ? "selected" : ""].join(" ").trim()}>{T_pickAnyComponent}</button>}
                         {supportIndexing && <button onClick={() => setSelectedTab(WEDescType.ARRAY_INDEXING)} className={["tabBtn", selectedTab == WEDescType.ARRAY_INDEXING ? "selected" : ""].join(" ").trim()}>{T_arrayIndexing}</button>}
-                        {referenceElement.supportsMathOp && <button onClick={() => setSelectedTab(WEDescType.MATH_OPERATION)} className={["tabBtn", selectedTab == WEDescType.MATH_OPERATION ? "selected" : ""].join(" ").trim()}>{T_mathOperation}</button>}
+                        {referenceElement?.supportsMathOp && <button onClick={() => setSelectedTab(WEDescType.MATH_OPERATION)} className={["tabBtn", selectedTab == WEDescType.MATH_OPERATION ? "selected" : ""].join(" ").trim()}>{T_mathOperation}</button>}
                     </div>
                     {selectedTab && [WEDescType.COMPONENT, WEDescType.STATIC_METHOD].includes(selectedTab as WEDescType) && <div className="k45_we_formulaeDialog_navRow">
                         <button className="k45_we_formulaeDialog_tabRow_resetNavigation" onClick={() => setSelectedPath([])} />

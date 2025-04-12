@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using Unity.Entities;
+﻿using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -25,20 +24,24 @@ namespace BelzontWE
         public string MustDrawFormulae => mustDrawFn.Formulae;
         internal WETextDataValueFloat MustDrawFn { readonly get => mustDrawFn; set => mustDrawFn = value; }
         public WETextDataValueInt InstanceCountFn { readonly get => instanceCount; set => instanceCount = value; }
-        public int DefaultInstanceCount { readonly get => instanceCount.defaultValue; set => instanceCount.defaultValue = value; }
+        public int DefaultInstanceCount
+        {
+            readonly get => instanceCount.defaultValue;
+            set => instanceCount.defaultValue = value;
+        }
         public readonly float3 PivotAsFloat3 => new(pivot switch
-            {
-                WEPlacementPivot.TopLeft => new float2(0, 0),
-                WEPlacementPivot.TopCenter => new float2(.5f, 0),
-                WEPlacementPivot.TopRight => new float2(1, 0),
-                WEPlacementPivot.MiddleLeft => new float2(0, .5f),
-                WEPlacementPivot.MiddleCenter => new float2(.5f, .5f),
-                WEPlacementPivot.MiddleRight => new float2(1, .5f),
-                WEPlacementPivot.BottomLeft => new float2(0, 1),
-                WEPlacementPivot.BottomCenter => new float2(.5f, 1),
-                WEPlacementPivot.BottomRight => new float2(1, 1),
-                _ => default,
-            },
+        {
+            WEPlacementPivot.TopLeft => new float2(0, 0),
+            WEPlacementPivot.TopCenter => new float2(.5f, 0),
+            WEPlacementPivot.TopRight => new float2(1, 0),
+            WEPlacementPivot.MiddleLeft => new float2(0, .5f),
+            WEPlacementPivot.MiddleCenter => new float2(.5f, .5f),
+            WEPlacementPivot.MiddleRight => new float2(1, .5f),
+            WEPlacementPivot.BottomLeft => new float2(0, 1),
+            WEPlacementPivot.BottomCenter => new float2(.5f, 1),
+            WEPlacementPivot.BottomRight => new float2(1, 1),
+            _ => default,
+        },
             pivotZ switch
             {
                 WEZPlacementPivot.Front => 0,
@@ -144,17 +147,21 @@ namespace BelzontWE
         public int SetFormulaeMustDraw(string value, out string[] cmpErr) => mustDrawFn.SetFormulae(value, out cmpErr);
         public int SetFormulaeInstanceCount(string value, out string[] cmpErr) => instanceCount.SetFormulae(value, out cmpErr);
 
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr, bool updateCounter)
         {
-            if (!useFormulaeToCheckIfDraw || nextUpdateFrame > Time.frameCount)
+            if ((!updateCounter && !useFormulaeToCheckIfDraw) || nextUpdateFrame > Time.frameCount)
             {
                 return false;
             }
             nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
 
-            var vars = varsStr.Split(WERendererSystem.VARIABLE_ITEM_SEPARATOR).Select(x => x.Split(WERendererSystem.VARIABLE_KV_SEPARATOR, 2))
-                        .Where(x => x.Length == 2).GroupBy(x => x[0]).ToDictionary(x => x.Key, x => x.Last()[1]);
-            return mustDrawFn.UpdateEffectiveValue(em, geometryEntity, vars) | instanceCount.UpdateEffectiveValue(em, geometryEntity, vars);
+            var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[varsStr]];
+            var changed = (useFormulaeToCheckIfDraw && mustDrawFn.UpdateEffectiveValue(em, geometryEntity, vars));
+            if (updateCounter)
+            {
+                changed |= instanceCount.UpdateEffectiveValue(em, geometryEntity, vars);
+            }
+            return changed;
         }
 
         public static WETextDataTransform CreateDefault(Entity target, Entity? parent = null)
@@ -171,7 +178,7 @@ namespace BelzontWE
                 arrayInstancingCount = new(1, 1, 1),
                 instanceCount = new()
                 {
-                    defaultValue = 1
+                    defaultValue = -1
                 },
                 pivotZ = WEZPlacementPivot.Middle
             };

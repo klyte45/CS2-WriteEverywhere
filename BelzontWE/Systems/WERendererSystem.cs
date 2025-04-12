@@ -148,21 +148,22 @@ namespace BelzontWE
                     bool ìsPlaceholder = false;
                     bool doRender = true;
                     var vars = item.variables.ToString();
-                    //   if (!WETemplateManager.Instance.IsAnyGarbagePending)
+
+                    var canMultiply = mesh.TextType == WESimulationTextType.Placeholder;
+                    var changed = transform.UpdateFormulaes(EntityManager, item.geometryEntity, vars, canMultiply);
+                    if (canMultiply && changed)
                     {
-                        var changed = transform.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
-                        if (item.transformMatrix == default)
-                        {
-                            if (changed)
-                            {
-                                if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
-                            }
-                            continue;
-                        }
-                        mesh.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
-                        material.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
-                       
+                        EntityManager.AddComponent<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value);
+                        if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
+                        continue;
                     }
+                    if (item.transformMatrix == default)
+                    {
+                        if (changed && EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
+                        continue;
+                    }
+                    mesh.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
+                    material.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
 
                     if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
                         && m_pickerController.CurrentSubEntity.Value == item.textDataEntity

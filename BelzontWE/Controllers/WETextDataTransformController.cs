@@ -110,6 +110,12 @@ namespace BelzontWE
             ArrayInstancing.Value = transform.ArrayInstancing;
             ArrayInstancingGapMeters.Value = transform.arrayInstancingGapMeters;
             ArrayAxisGrowthOrder.Value = transform.arrayAxisGrowthOrder;
+            PivotZ.Value = transform.pivotZ;
+            AlignmentX.Value = transform.alignment.GetX();
+            AlignmentY.Value = transform.alignment.GetY();
+            AlignmentZ.Value = transform.alignment.GetZ();
+            ResetScreenFormulaeValue(transform.InstanceCountFn.Formulae, InstanceCountFormulaeStr, InstanceCountFormulaeCompileResult, InstanceCountFormulaeCompileResultErrorArgs);
+            InstanceCount.Value = transform.DefaultInstanceCount;
         }
     }
 }

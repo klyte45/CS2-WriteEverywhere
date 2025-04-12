@@ -488,7 +488,8 @@ namespace BelzontWE
                     {
                         targetTemplate = targetTemplate.Clone();
 
-                        var targetSize = transformData.InstanceCountFn.EffectiveValue == 0 ? math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 256) : math.min(256, (uint)transformData.InstanceCountFn.EffectiveValue);
+                        var targetSize = transformData.InstanceCountFn.EffectiveValue < 0 ? math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 256) : math.min(256, (uint)transformData.InstanceCountFn.EffectiveValue);
+                        if (targetSize == 0) goto end;
                         var instancingCount = (uint3)math.min(transformData.InstanceCountByAxisOrder, math.ceil(targetSize / new float3(1, transformData.InstanceCountByAxisOrder[0], transformData.InstanceCountByAxisOrder[0] * transformData.InstanceCountByAxisOrder[1])));
                         var spacingOffsets = transformData.SpacingByAxisOrder;
                         var totalArea = (transformData.ArrayInstancing - 1) * transformData.arrayInstancingGapMeters;
@@ -551,7 +552,7 @@ namespace BelzontWE
                         offset = totalWidth - effectiveWidth;
                         break;
                     case WEPlacementAlignment.Justified:
-                        spacing = effectiveWidth / effectiveRowsCount;
+                        spacing = effectiveRowsCount == 1 ? 0 : totalWidth / (effectiveRowsCount - 1);
                         break;
                 }
             }
