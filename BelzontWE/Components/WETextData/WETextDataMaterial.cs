@@ -74,6 +74,22 @@ namespace BelzontWE
         public string ColorMask2Formulae => colorMask2.Formulae;
         public string ColorMask3Formulae => colorMask3.Formulae;
 
+
+        public readonly Color ColorEffective => color.EffectiveValue;
+        public readonly Color EmissiveColorEffective => emissiveColor.EffectiveValue;
+        public readonly Color GlassColorEffective => glassColor.EffectiveValue;
+        public readonly float NormalStrengthEffective => normalStrength.EffectiveValue;
+        public readonly float GlassRefractionEffective => glassRefraction.EffectiveValue;
+        public readonly float MetallicEffective => metallic.EffectiveValue;
+        public readonly float SmoothnessEffective => smoothness.EffectiveValue;
+        public readonly float EmissiveIntensityEffective => emissiveIntensity.EffectiveValue;
+        public readonly float EmissiveExposureWeightEffective => emissiveExposureWeight.EffectiveValue;
+        public readonly float CoatStrengthEffective => coatStrength.EffectiveValue;
+        public readonly float GlassThicknessEffective => glassThickness.EffectiveValue;
+        public readonly Color ColorMask1Effective => colorMask1.EffectiveValue;
+        public readonly Color ColorMask2Effective => colorMask2.EffectiveValue;
+        public readonly Color ColorMask3Effective => colorMask3.EffectiveValue;
+
         public int DecalFlags { readonly get => decalFlags; set { decalFlags = value; dirty = true; } }
 
         public bool AffectSmoothness { readonly get => affectSmoothness; set { affectSmoothness = value; dirty = true; } }

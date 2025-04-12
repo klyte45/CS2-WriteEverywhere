@@ -153,7 +153,7 @@ namespace BelzontWE
                     var changed = transform.UpdateFormulaes(EntityManager, item.geometryEntity, vars, canMultiply);
                     if (canMultiply && changed)
                     {
-                        EntityManager.AddComponent<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value);
+                        EntityManager.AddComponent<WETemplateDirtyInstancing>(item.textDataEntity);
                         if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
                         continue;
                     }

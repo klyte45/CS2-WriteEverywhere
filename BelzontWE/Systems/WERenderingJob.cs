@@ -198,7 +198,8 @@ namespace BelzontWE
                             var effectiveOffsetPosition = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform);
 
                             var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? transform.scale.xzy : new float3(transform.scale.xy, 1));
-                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref WTmatrix, out int minLod, ref this);
+                            var lumMultiplier = GetEmissiveMultiplier(ref material);
+                            int lod = CalculateLod(whiteTextureBounds * lumMultiplier, ref mesh, ref transform, ref WTmatrix, out int minLod, ref this);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
 
@@ -257,7 +258,8 @@ namespace BelzontWE
                                 if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
                                 {
                                     int minLod = -1;
-                                    int lod = invalidBri ? 0 : CalculateLod(mesh.Bounds, ref mesh, ref transform, ref matrix, out minLod, ref this);
+                                    float lumMultiplier = GetEmissiveMultiplier(ref material);
+                                    int lod = invalidBri ? 0 : CalculateLod(mesh.Bounds * lumMultiplier, ref mesh, ref transform, ref matrix, out minLod, ref this);
                                     if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                     {
                                         availToDraw.Enqueue(new WERenderData
@@ -300,6 +302,8 @@ namespace BelzontWE
                         break;
                 }
             }
+
+            private static float GetEmissiveMultiplier(ref WETextDataMaterial material) => 1 << (int)math.ceil(math.clamp(material.EmissiveIntensityEffective, 0, 10) * .5f);
 
             private readonly float3 GetEffectiveOffsetPosition(WETextDataMesh meshData, WETextDataTransform transform)
             {
