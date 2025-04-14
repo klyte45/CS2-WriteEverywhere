@@ -31,8 +31,8 @@ namespace BelzontWE.Sprites
 {
     public partial class WEAtlasesLibrary : GameSystemBase, IBelzontSerializableSingleton<WEAtlasesLibrary>
     {
-        public static string IMAGES_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "imageAtlases");
-        public static string ATLAS_EXPORT_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "exportedAtlases");
+        public static string IMAGES_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "imageAtlases");
+        public static string ATLAS_EXPORT_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "exportedAtlases");
         private const string GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID = "generatingAtlasesCache";
 
         public static WEAtlasesLibrary Instance { get; private set; }

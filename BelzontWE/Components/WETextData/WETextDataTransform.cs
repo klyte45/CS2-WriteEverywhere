@@ -20,7 +20,7 @@ namespace BelzontWE
 
         private int nextUpdateFrame;
 
-        public readonly bool MustDraw => mustDrawFn.EffectiveValue > 0;
+        public readonly bool MustDraw => !useFormulaeToCheckIfDraw || mustDrawFn.EffectiveValue > 0;
         public string MustDrawFormulae => mustDrawFn.Formulae;
         internal WETextDataValueFloat MustDrawFn { readonly get => mustDrawFn; set => mustDrawFn = value; }
         public WETextDataValueInt InstanceCountFn { readonly get => instanceCount; set => instanceCount = value; }

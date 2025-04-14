@@ -37,8 +37,8 @@ namespace BelzontWE
     {
         public const string SIMPLE_LAYOUT_EXTENSION = "welayout.xml";
         public const string PREFAB_LAYOUT_EXTENSION = "wedefault.xml";
-        public static readonly string SAVED_PREFABS_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "layouts");
-        public static readonly string SAVED_MODREPLACEMENTS_FOLDER = Path.Combine(BasicIMod.ModSettingsRootFolder, "modReplacementProfiles");
+        public static string SAVED_PREFABS_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "layouts");
+        public static string SAVED_MODREPLACEMENTS_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "modReplacementProfiles");
         public const string LAYOUT_REPLACEMENTS_EXTENSION = "weprefabreplace.xml";
         public static WETemplateManager Instance { get; private set; }
 

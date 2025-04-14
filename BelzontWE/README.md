@@ -68,11 +68,22 @@ Variables are string key-value pairs setup at a WE component. Useful for recycli
 - Both key and value are limited to 30 characters length.
 - At moment, there's no use without custom functions (vanilla WE). The `WEParameterFn` class contains just debug methods for now.
 
+## Sublayout instancing arrays
+
+Since 0.3, it's possible to setup layouts instances to be generated as a layout array, expanding in all three axis.
+
+- Limited to 256 instances, 100 items per axis row (only will render the first 256 of them)
+- Quantity of instances may be controlled manually or using formulae; values < 0 will fill the entire array size while any other number will be read literally (up to 256)
+- Can control format and axis order for growth
+- Can setup incomplete rows alignment (left, center, right or justified) based on full width of a completed row in any axis
+- Pivot alignment based on recent Pivot feature for axis X and Y, special axis Z pivot field on the new Instancing window
+- Use the variable `$idx` to retrieve the current index of the generated layout, at sublayouts formulaes 
+
 ## FAQ
 
 First of all, read the [files repository](https://github.com/klyte45/CS2-WriteEverywhereFiles) to get the basic information.
 
-- - **How can I find the properties of the objects to get the texts?**
+- **How can I find the properties of the objects to get the texts?**
   - If what you want is not in the builtin functions, so you will need to use modders tools like [Scene Explorer](https://mods.paradoxplaza.com/mods/74285/Windows) to inspect the objects you want to extract information from.
 - **There's any Discord server I can ask for help with this mod?**
   - No, I have no specific Discord server for support. Leave your questions at Paradox forums and I will response as soon as I can.

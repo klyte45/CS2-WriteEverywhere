@@ -174,19 +174,22 @@ namespace BelzontWE
                                     variables = variables
                                 });
                             }
-                            for (int i = 0; i < updaterBuff.Length; i++)
+                            if (transform.MustDraw)
                             {
-                                var updater = updaterBuff[i];
-                                if (updater.childEntity.Index < 0) continue;
-                                var layoutVars = new FixedString512Bytes(variables);
-                                layoutVars.Append('$');
-                                layoutVars.Append('i');
-                                layoutVars.Append('d');
-                                layoutVars.Append('x');
-                                layoutVars.Append(VARIABLE_KV_SEPARATOR);
-                                layoutVars.Append(i);
-                                layoutVars.Append(VARIABLE_ITEM_SEPARATOR);
-                                DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one), unfilteredChunkIndex, ref layoutVars, nthCall + 1, true);
+                                for (int i = 0; i < updaterBuff.Length; i++)
+                                {
+                                    var updater = updaterBuff[i];
+                                    if (updater.childEntity.Index < 0) continue;
+                                    var layoutVars = new FixedString512Bytes(variables);
+                                    layoutVars.Append('$');
+                                    layoutVars.Append('i');
+                                    layoutVars.Append('d');
+                                    layoutVars.Append('x');
+                                    layoutVars.Append(VARIABLE_KV_SEPARATOR);
+                                    layoutVars.Append(i);
+                                    layoutVars.Append(VARIABLE_ITEM_SEPARATOR);
+                                    DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one), unfilteredChunkIndex, ref layoutVars, nthCall + 1, true);
+                                }
                             }
                         }
                         break;

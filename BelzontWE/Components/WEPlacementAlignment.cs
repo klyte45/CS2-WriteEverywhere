@@ -1,5 +1,8 @@
-﻿namespace BelzontWE
+﻿using System;
+
+namespace BelzontWE
 {
+    [Flags]
     public enum WEPlacementAlignment
     {
         Left = 0, Center = 1, Right = 2, Justified = 3,

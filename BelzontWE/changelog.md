@@ -1,3 +1,17 @@
-# v0.2.1r0 (06-APR-25)
+# v0.3.0r0 (13-APR-25)
 - Added support to template placeholder arrays! It may be useful when making dynamic content (like reading lines passing at a station)
-- Added support to 
+  - Limited to 256 instances, 100 items per axis row (only will render the first 256 of them)
+  - Quantity of instances may be controlled manually or using formulae; values < 0 will fill the entire array size while any other number will be read literally (up to 256)
+  - Can control format and axis order for growth
+  - Can setup incomplete rows alignment (left, center, right or justified) based on full width of a completed row in any axis
+  - Pivot alignment based on recent Pivot feature for axis X and Y, special axis Z pivot field on the new Instancing window
+  - Use the variable `$idx` to retrieve the current index of the generated layout, at sublayouts formulaes
+- Added support to conditional show/hide layout items via formulae
+- Added basic math operations support: Add (+), Substract (-), Multiply (*) and Divide (÷)
+- Added WEEffectFn class, with a method that returs 1 when night lights are active
+- Now subtemplates can reference other subtemplates. AVOID CREATING CIRCULAR REFERENCES!
+- Fixed subtemplates update process leaving garbage at entity ecosystem
+- Optimizing formulaes and variables storage
+- Variables strings now are cached to avoid parsing content every WE update cycle, speeding up performance
+- Text generation process reviewed: now it may freeze a little longer but render all texts in a short time
+- Adjusted text lods to consider the emission intensity, making bright items to be rendered from a greater distance
