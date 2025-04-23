@@ -101,7 +101,7 @@ namespace BelzontWE
 #endif
         protected override void OnUpdate()
         {
-            if (GameManager.instance.isLoading) return;
+            if (GameManager.instance.isGameLoading) return;
             float4 m_LodParameters = 1f;
             float3 m_CameraPosition = 0f;
             float3 m_CameraDirection = 0f;
@@ -253,7 +253,7 @@ namespace BelzontWE
 #endif
         private void CheckRenderQueue(float4 m_LodParameters, float3 m_CameraPosition, float3 m_CameraDirection)
         {
-            if (!GameManager.instance.isGameLoading && !GameManager.instance.isLoading && !m_renderQueueEntities.IsEmptyIgnoreFilter)
+            if (!GameManager.instance.isGameLoading && !m_renderQueueEntities.IsEmptyIgnoreFilter)
             {
                 var job2 = new WERenderingJob
                 {
