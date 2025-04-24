@@ -1,4 +1,7 @@
 .k45_we_mainPanel {
+    pointer-events: none;
+    z-index: -1;
+
     >div {
         width: 1400rem;
         height: 600rem;
@@ -7,6 +10,12 @@
 
     [class^=title-bar_] {
         padding: 0;
+    }
+
+    [class^=content_] {
+        display: flex;
+        overflow: hidden !important;
+        flex-direction: column;
     }
 
     .k45_we_mainPanel_title {
@@ -21,5 +30,10 @@
 
     .k45_we_mainPanel_tabBar {
         width: 100%;
+    }
+
+    .k45_we_mainPanel_content {
+        flex-grow: 1;
+        flex-shrink: 1;
     }
 }

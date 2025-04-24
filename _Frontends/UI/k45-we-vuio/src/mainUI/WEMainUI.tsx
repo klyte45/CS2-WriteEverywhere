@@ -25,14 +25,14 @@ export const WEButton = () => {
     );
 }
 
-type MainPanelProps = { selectedTab: number, onClose: () => any }
+type MainPanelProps = { selectedTab?: number, noClose?: boolean, moveable?: boolean }
 enum Tabs {
     CityLayouts = "CityLayouts",
     CityFonts = "CityFonts",
     CityAtlases = "CityAtlases",
     PrefabTemplatesReplacements = "PrefabTemplatesReplacements"
 }
-export const WEMainPanel = (props: MainPanelProps) => {
+export const WEMainPanel = ({ selectedTab = 0, noClose, moveable }: MainPanelProps) => {
     const PanelTitleBar = VanillaComponentResolver.instance.PanelTitleBar;
     const Tab = VanillaComponentResolver.instance.Tab;
     const TabBar = VanillaComponentResolver.instance.TabBar;
@@ -40,24 +40,26 @@ export const WEMainPanel = (props: MainPanelProps) => {
     const tabs = Object.values(Tabs);
 
     const onSelect = (i: string) => { engine.trigger("k45::we.main.setTabActive", tabs.indexOf(i as any)) }
-    const selectedTab = tabs[props.selectedTab]
+    const selectedTabId = tabs[selectedTab]
 
     const header = <>
-        <PanelTitleBar className="k45_we_mainPanel_title" onCloseOverride={() => VanillaComponentResolver.instance.toggleGamePanel(WeMainPanelId)}>Write Everywhere</PanelTitleBar>
-        <TabBar className="k45_we_mainPanel_tabBar">{
-            tabs.map(x => <Tab id={x} selectedId={selectedTab} onSelect={onSelect} >{translate(`mainUi.tab.${x}`)}</Tab>)
-        }</TabBar>
+        <PanelTitleBar className="k45_we_mainPanel_title" onCloseOverride={noClose ? undefined : (() => VanillaComponentResolver.instance.toggleGamePanel(WeMainPanelId))}>Write Everywhere</PanelTitleBar>
     </>
 
-    return <div className={classNames(VanillaComponentResolver.instance.gameMainScreenModule.centerPanelLayout, "k45_we_mainPanel")}>
-        <Panel header={header} className="k45_we_mainPanel_content">
-            <TabNav tabs={tabs} selectedTab={selectedTab}>
-                {selectedTab == Tabs.CityLayouts && <CityLayoutsTab />}
-                {selectedTab == Tabs.CityFonts && <FontsTab />}
-                {selectedTab == Tabs.CityAtlases && <CityAtlasesTab />}
-                {selectedTab == Tabs.PrefabTemplatesReplacements && <PrefabTemplatesReplacementsTab />}
+    return <div className={classNames(VanillaComponentResolver.instance.gameMainScreenModule.centerPanelLayout, "k45_we_mainPanel")} style={{}}>
+        <Panel header={header} draggable={moveable}>
+            <TabBar className="k45_we_mainPanel_tabBar">{
+                tabs.map(x => <Tab id={x} selectedId={selectedTabId} onSelect={onSelect} >{translate(`mainUi.tab.${x}`)}</Tab>)
+            }</TabBar>
+            <TabNav tabs={tabs} selectedTab={selectedTabId}>
+                <div className="k45_we_mainPanel_content">
+                    {selectedTabId == Tabs.CityLayouts && <CityLayoutsTab />}
+                    {selectedTabId == Tabs.CityFonts && <FontsTab />}
+                    {selectedTabId == Tabs.CityAtlases && <CityAtlasesTab />}
+                    {selectedTabId == Tabs.PrefabTemplatesReplacements && <PrefabTemplatesReplacementsTab />}
+                </div>
             </TabNav>
         </Panel>
-    </div >;
+    </div>;
 }
 
