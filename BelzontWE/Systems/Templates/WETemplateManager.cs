@@ -2,6 +2,7 @@
 using Belzont.Serialization;
 using Belzont.Utils;
 using BelzontWE.Sprites;
+using Colossal.Entities;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.Common;
@@ -435,6 +436,7 @@ namespace BelzontWE
                                 templateRef = guid,
                                 childEntity = childEntity
                             });
+
                             continue;
                         }
                     }
@@ -686,7 +688,7 @@ namespace BelzontWE
 
         #region Prefab Layout
         public void MarkPrefabsDirty() => isPrefabListDirty = true;
-        private readonly Dictionary<string, long> PrefabNameToIndex = new();
+        private readonly Dictionary<string, HashSet<long>> PrefabNameToIndex = new();
         private bool isPrefabListDirty = true;
 
         public int CanBePrefabLayout(WETextDataXmlTree data) => CanBePrefabLayout(data, true);
@@ -764,7 +766,16 @@ namespace BelzontWE
             foreach (var prefab in prefabs)
             {
                 var data = EntityManager.GetComponentData<PrefabData>(entities[prefab]);
-                PrefabNameToIndex[prefab.name] = data.m_Index;
+                if (!PrefabNameToIndex.ContainsKey(prefab.name)) PrefabNameToIndex[prefab.name] = new();
+                PrefabNameToIndex[prefab.name].Add(data.m_Index);
+                if (EntityManager.TryGetBuffer<PlaceholderObjectElement>(entities[prefab], true, out var buff))
+                {
+                    for (int j = 0; j < buff.Length; j++)
+                    {
+                        var otherData = EntityManager.GetComponentData<PrefabData>(buff[j].m_Object);
+                        PrefabNameToIndex[prefab.name].Add(otherData.m_Index);
+                    }
+                }
             }
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 20, textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.prefabIndexesLoaded");
             yield return LoadTemplatesFromFolder(20, 80f);
@@ -832,11 +843,7 @@ namespace BelzontWE
                 });
             }
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + totalStepPrefabTemplates), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingComplete");
-            m_endFrameBarrier.CreateCommandBuffer().AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty, EntityQueryCaptureMode.AtPlayback);
-            if (modName is not null)
-            {
-                yield return LoadModSubtemplates((int)(offsetPercentage + totalStepPrefabTemplates), totalStepFull * .3f, modName);
-            }
+            m_endFrameBarrier.CreateCommandBuffer().AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty, EntityQueryCaptureMode.AtPlayback);          
         }
 
         private IEnumerator LoadPrefabFileTemplate(int offsetPercentage, float totalStep, (string, string, string)[] files, Dictionary<string, LocalizedString> errorsList, int i)
@@ -853,7 +860,7 @@ namespace BelzontWE
                     });
             yield return 0;
             var prefabName = Path.GetFileName(fileItem)[..^(PREFAB_LAYOUT_EXTENSION.Length + 1)];
-            if (!PrefabNameToIndex.TryGetValue(prefabName, out var idx))
+            if (!PrefabNameToIndex.TryGetValue(prefabName, out var idxArray))
             {
                 if (modId is null)
                 {
@@ -882,14 +889,16 @@ namespace BelzontWE
                 {
                     ExtractReplaceableContent(tree, effectiveModId);
                 }
-
-                if (PrefabTemplates.ContainsKey(idx))
+                foreach (var idx in idxArray)
                 {
-                    PrefabTemplates[idx].MergeChildren(tree);
-                }
-                else
-                {
-                    PrefabTemplates[idx] = tree;
+                    if (PrefabTemplates.ContainsKey(idx))
+                    {
+                        PrefabTemplates[idx].MergeChildren(tree);
+                    }
+                    else
+                    {
+                        PrefabTemplates[idx] = tree;
+                    }
                 }
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {tree} from {fileItem[SAVED_PREFABS_FOLDER.Length..]}");
             }
@@ -1199,7 +1208,8 @@ namespace BelzontWE
 
             if (m_modsTemplatesFolder.TryGetValue(modId, out var folder) && folder.rootFolder == folderTemplatesSource) return;
             m_modsTemplatesFolder[modId] = (modName, modId, folderTemplatesSource);
-            GameManager.instance.StartCoroutine(LoadTemplatesFromFolder(0, 100, modId));
+            GameManager.instance.StartCoroutine(LoadModSubtemplates(0, 100, modId)); 
+            MarkPrefabsDirty();
         }
 
         public FixedString128Bytes[] GetTemplateAvailableKeys() => RegisteredTemplates.Keys.Union(ModsSubTemplates.SelectMany(x => x.Value.Keys.Select(y => new FixedString128Bytes($"{x.Key}:{y}")))).ToArray();

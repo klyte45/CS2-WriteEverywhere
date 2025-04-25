@@ -88,7 +88,7 @@ namespace BelzontWE.Sprites
         private Dictionary<FixedString32Bytes, WETextureAtlas> CityAtlases { get; } = new();
         private Dictionary<string, WETextureAtlas> ModAtlases { get; } = new();
 
-        private Dictionary<string, ModInfo> RegisteredMods { get; } = new();
+        private Dictionary<string, (ModInfo info, Action registerCallback)> RegisteredMods { get; } = new();
 
         #region Getters
 
@@ -101,22 +101,31 @@ namespace BelzontWE.Sprites
         public bool TryGetAtlas(string atlasName, out WETextureAtlas atlas) => CityAtlases.TryGetValue(atlasName, out atlas) || LocalAtlases.TryGetValue(atlasName, out atlas) || ModAtlases.TryGetValue(atlasName, out atlas);
 
         public BasicRenderInformation GetFromAvailableAtlases(string atlasName, FixedString32Bytes spriteName, bool fallbackOnInvalid = false)
-            => spriteName.Trim().Length == 0 || atlasName.IsNullOrWhitespace()
-                ? fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage)
-                    : null
-                : atlasName.Contains(":")
-                    ? ContainsSprite(ModAtlases, atlasName, spriteName, out var cachedInfo) ? cachedInfo
-                        : fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage)
-                        : null
-                : ContainsSprite(CityAtlases, atlasName, spriteName, out cachedInfo) ? cachedInfo
-                : ContainsSprite(LocalAtlases, atlasName, spriteName, out cachedInfo) ? cachedInfo
-                : fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage)
-                : null;
+        {
+            BasicRenderInformation fallbackBri = null;
+            return spriteName.Trim().Length == 0 || atlasName.IsNullOrWhitespace()
+                        ? fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage)
+                            : null
+                        : atlasName.Contains(":")
+                            ? ContainsSprite(ModAtlases, atlasName, spriteName, out var cachedInfo, ref fallbackBri) ? cachedInfo
+                                : fallbackBri
+                                ?? (fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage) : null)
+                        : ContainsSprite(CityAtlases, atlasName, spriteName, out cachedInfo, ref fallbackBri) ? cachedInfo
+                        : ContainsSprite(LocalAtlases, atlasName, spriteName, out cachedInfo, ref fallbackBri) ? cachedInfo
+                        : fallbackBri
+                        ?? (fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage) : null);
+        }
 
-        private bool ContainsSprite<T>(Dictionary<T, WETextureAtlas> dictionary, T atlasName, FixedString32Bytes spriteName, out BasicRenderInformation cachedInfo)
+        private bool ContainsSprite<T>(Dictionary<T, WETextureAtlas> dictionary, T atlasName, FixedString32Bytes spriteName, out BasicRenderInformation cachedInfo, ref BasicRenderInformation fallback)
         {
             cachedInfo = null;
-            return dictionary.TryGetValue(atlasName, out var resultDicCache) && resultDicCache.TryGetValue(spriteName, out cachedInfo) && (cachedInfo == null || cachedInfo.Main);
+            var isValidAtlas = dictionary.TryGetValue(atlasName, out var resultDicCache);
+            var result = isValidAtlas && resultDicCache.TryGetValue(spriteName, out cachedInfo) && cachedInfo != null && cachedInfo.Main;
+            if (!result && fallback == null && isValidAtlas && resultDicCache.TryGetValue("_FALLBACK", out var fallbackItem) && fallbackItem != null && fallbackItem.Main)
+            {
+                fallback = fallbackItem;
+            }
+            return result;
         }
 
         public BasicRenderInformation GetSlideFromAvailable(string atlasName, Func<int, int> idxFunc, bool fallbackOnInvalid = false)
@@ -132,8 +141,8 @@ namespace BelzontWE.Sprites
 
         #region Loading
 
-        private Coroutine currentJobRunning;
-        public void LoadImagesFromLocalFolders() => currentJobRunning ??= GameManager.instance.StartCoroutine(LoadImagesFromLocalFoldersCoroutine());
+        private Coroutine localSpritesJobRunning;
+        public void LoadImagesFromLocalFolders() => localSpritesJobRunning ??= GameManager.instance.StartCoroutine(LoadImagesFromLocalFoldersCoroutine());
         public IEnumerator LoadImagesFromLocalFoldersCoroutine()
         {
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 0);
@@ -183,7 +192,7 @@ namespace BelzontWE.Sprites
             if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded atlases: {string.Join(", ", LocalAtlases.Select(x => x.Key))}");
 
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 100, textI18n: "generatingAtlasesCache.complete");
-            currentJobRunning = null;
+            localSpritesJobRunning = null;
         }
         internal void UnregisterModAtlas(Assembly modId, string atlasName)
         {
@@ -198,8 +207,22 @@ namespace BelzontWE.Sprites
 
         internal void RegisterModAtlas(Assembly modId, string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
         {
-            RegisteredMods[WEModIntegrationUtility.GetModIdentifier(modId)] = ModManagementUtils.GetModDataFromMainAssembly(modId);
-            RegisterAtlas(ModAtlases, WEModIntegrationUtility.GetModAccessName(modId, atlasName), spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset);
+            RegisteredMods[WEModIntegrationUtility.GetModIdentifier(modId)] = (ModManagementUtils.GetModDataFromMainAssembly(modId), () => RegisterAtlas(ModAtlases, WEModIntegrationUtility.GetModAccessName(modId, atlasName), spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset));
+            RegisteredMods[WEModIntegrationUtility.GetModIdentifier(modId)].registerCallback();
+        }
+
+        private Coroutine modSpritesJobRunning;
+        public void LoadImagesFromMods() => modSpritesJobRunning ??= GameManager.instance.StartCoroutine(LoadImagesFromModsCoroutine());
+        public IEnumerator LoadImagesFromModsCoroutine()
+        {
+            yield return 0;
+            ClearAtlasDict(ModAtlases);
+            foreach (var mod in RegisteredMods.Values)
+            {
+                mod.registerCallback();
+                yield return 0;
+            }
+            modSpritesJobRunning = null;
         }
 
 
@@ -237,7 +260,7 @@ namespace BelzontWE.Sprites
             }
         }
 
-        private void ClearAtlasDict(Dictionary<FixedString32Bytes, WETextureAtlas> atlasDict)
+        private void ClearAtlasDict<T>(Dictionary<T, WETextureAtlas> atlasDict)
         {
             var values = atlasDict.Values.ToArray();
             for (int i = 0; i < values.Length; i++)
@@ -428,7 +451,7 @@ namespace BelzontWE.Sprites
 
         internal record struct ModAtlasRegistry(string ModId, string ModName, string[] Atlases) { }
         internal ModAtlasRegistry[] ListModAtlases() => RegisteredMods
-            .Select(x => new ModAtlasRegistry(WEModIntegrationUtility.GetModIdentifier(x.Value.asset.assembly), x.Value.asset.mod.displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
+            .Select(x => new ModAtlasRegistry(WEModIntegrationUtility.GetModIdentifier(x.Value.info.asset.assembly), x.Value.info.asset.mod.displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
 
 
         [BurstCompile]

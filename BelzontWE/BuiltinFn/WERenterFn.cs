@@ -17,7 +17,3 @@ namespace BelzontWE.Builtin
         public static TradeCost GetTradeCost4(Entity reference) => World.DefaultGameObjectInjectionWorld.EntityManager.TryGetBuffer<TradeCost>(reference, true, out var costs) && costs.Length > 4 ? costs[4] : default;
     }
 }
-//&BelzontWE.Builtin.WEBuildingFn;GetBuildingMainRenter/Game.Companies.CompanyData;m_Brand/Game.Prefabs.BrandData;m_ColorSet.m_Channel0
-//&Color32;get_cyan
-
-//&WEBuildingFn;GetBuildingMainRenter/Game.Companies.CompanyData;m_Brand/Game.Prefabs.BrandData;m_ColorSet.m_Channel0

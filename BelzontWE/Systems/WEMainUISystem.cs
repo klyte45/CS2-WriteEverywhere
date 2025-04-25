@@ -6,7 +6,6 @@ using Game.UI;
 using Game.UI.Editor;
 using Game.UI.InGame;
 using System;
-using System.Linq;
 using Unity.Entities;
 
 namespace BelzontWE

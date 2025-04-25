@@ -1,5 +1,6 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
+using BelzontWE.Sprites;
 using Colossal;
 using Colossal.IO.AssetDatabase;
 using Game.Input;
@@ -10,7 +11,6 @@ using Game.UI.Widgets;
 using System;
 using System.Globalization;
 using System.Linq;
-using BelzontWE.Sprites;
 
 namespace BelzontWE
 {
@@ -128,17 +128,32 @@ namespace BelzontWE
             set => RemoteProcess.OpenFolder(WEAtlasesLibrary.IMAGES_FOLDER);
         }
         [SettingsUIButton]
-        [SettingsUISection(kSourcesTab, kSpritesSection)]
+        [SettingsUISection(kSourcesTab, kSpritesSection, "A")]
         public bool SpritesFolderRefresh
         {
             set => WEAtlasesLibrary.Instance?.LoadImagesFromLocalFolders();
         }
+
+        //[SettingsUIButton]
+        //[SettingsUISection(kSourcesTab, kSpritesSection, "A")]
+        //public bool ModulesSpritesFolderRefresh
+        //{
+        //    set => WEAtlasesLibrary.Instance?.LoadImagesFromMods();
+        //}
+
         [SettingsUIButton]
         [SettingsUISection(kSourcesTab, kLayoutDefaultSection)]
         public bool PrefabLayoutsRefresh
         {
             set => WETemplateManager.Instance?.MarkPrefabsDirty();
         }
+
+        //[SettingsUIButton]
+        //[SettingsUISection(kSourcesTab, kLayoutDefaultSection)]
+        //public bool ModulesSublayoutsRefresh
+        //{
+        //    set => WETemplateManager.Instance?.ReloadSubtemplates();
+        //}
 
         [SettingsUISection(kSourcesTab, kFormattingSection)]
         [SettingsUITextInput]
