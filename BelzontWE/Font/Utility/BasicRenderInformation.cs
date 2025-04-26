@@ -59,7 +59,7 @@ namespace BelzontWE.Font.Utility
         public static BasicRenderInformation Fill(BasicRenderInformationJob brij, Texture main)
         {
             if (brij.Invalid)
-            {                
+            {
                 return null;
             }
             var bri = new BasicRenderInformation(brij.originalText.ToString(), brij.vertices.ToArray(), brij.triangles.ToArray(), brij.uv1.ToArray(),
@@ -152,7 +152,7 @@ namespace BelzontWE.Font.Utility
         public bool m_isError = false;
 
 
-        public override string ToString() => $"BRI [r={m_refText};v={m_vertices?.Length};sz={m_sizeMetersUnscaled}]";
+        public override string ToString() => $"BRI [r={m_refText};v={m_vertices?.Length};sz={m_sizeMetersUnscaled};{(m_isError ? "ERR" : "")}]";
 
         internal long GetSize() => GetMeshSize();
 

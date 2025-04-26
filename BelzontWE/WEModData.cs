@@ -127,19 +127,17 @@ namespace BelzontWE
         {
             set => RemoteProcess.OpenFolder(WEAtlasesLibrary.IMAGES_FOLDER);
         }
-        [SettingsUIButton]
-        [SettingsUISection(kSourcesTab, kSpritesSection, "A")]
-        public bool SpritesFolderRefresh
-        {
-            set => WEAtlasesLibrary.Instance?.LoadImagesFromLocalFolders();
-        }
 
-        //[SettingsUIButton]
-        //[SettingsUISection(kSourcesTab, kSpritesSection, "A")]
-        //public bool ModulesSpritesFolderRefresh
-        //{
-        //    set => WEAtlasesLibrary.Instance?.LoadImagesFromMods();
-        //}
+        [SettingsUIButton]
+        [SettingsUISection(kSourcesTab, kSpritesSection)]
+        public bool SpritesRefresh
+        {
+            set
+            {
+                WEAtlasesLibrary.Instance?.LoadImagesFromMods();
+                WEAtlasesLibrary.Instance?.LoadImagesFromLocalFolders();
+            }
+        }
 
         [SettingsUIButton]
         [SettingsUISection(kSourcesTab, kLayoutDefaultSection)]
@@ -148,12 +146,12 @@ namespace BelzontWE
             set => WETemplateManager.Instance?.MarkPrefabsDirty();
         }
 
-        //[SettingsUIButton]
-        //[SettingsUISection(kSourcesTab, kLayoutDefaultSection)]
-        //public bool ModulesSublayoutsRefresh
-        //{
-        //    set => WETemplateManager.Instance?.ReloadSubtemplates();
-        //}
+        [SettingsUIButton]
+        [SettingsUISection(kSourcesTab, kLayoutDefaultSection)]
+        public bool ModulesSublayoutsRefresh
+        {
+            set => WETemplateManager.Instance?.ReloadSubtemplates();
+        }
 
         [SettingsUISection(kSourcesTab, kFormattingSection)]
         [SettingsUITextInput]

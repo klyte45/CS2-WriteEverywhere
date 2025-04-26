@@ -17,7 +17,6 @@ namespace BelzontWE.Bridge
     [Obsolete("Don't reference methods on this class directly. Always use reverse patch to access them, and don't use this mod DLL as hard dependency of your own mod.", true)]
     public static class ImageManagementBridge
     {
-        private const string LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX = "generatingAtlasesCacheMod";
 
         public static string GetImageAtlasVersion() => BasicIMod.FullVersion;
 
@@ -33,7 +32,7 @@ namespace BelzontWE.Bridge
             var modIdentifier = modData.asset.identifier;
             var displayName = modData.asset.mod.displayName;
             var targetAtlasName = WEModIntegrationUtility.GetModAccessName(mainAssembly, atlasName);
-            var notifGroup = $"{LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX}:{targetAtlasName}";
+            var notifGroup = $"{WEAtlasesLibrary.LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX}:{targetAtlasName}";
             Dictionary<string, ILocElement> args = new()
             {
                 ["atlasName"] = LocalizedString.Value(atlasName),
@@ -47,21 +46,9 @@ namespace BelzontWE.Bridge
                 if (!Regex.IsMatch(atlasName, "[a-z_A-Z0-9]{3,}")) throw new ArgumentException("Should have at least 3 characters, alphanumeric or underscore only.", "atlasName");
                 if (targetAtlasName.Length > 60) throw new ArgumentException($"Should have at most {60 + targetAtlasName.Length - atlasName.Length} characters, alphanumeric or underscore only.", "atlasName");
                 if (CheckImageAtlasExists(mainAssembly, atlasName)) throw new DuplicateNameException("Atlas already exists!");
+                WEAtlasesLibrary.Instance.LoadImagesToAtlas(mainAssembly, atlasName, imagePaths, modIdentifier, displayName, notifGroup, args);
 
-                var spritesToAdd = new List<Layout.WEImageInfo>();
-                var errors = new List<string>();
-                WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, ref errors);
-                if (errors.Count > 0)
-                {
-                    throw new Exception($"Some error were found when trying to create atlas '{atlasName}' for mod identified by '{modIdentifier}' ({displayName}), aborting:\n- {string.Join("\n- ", errors)}");
-                }
-                if (spritesToAdd.Count == 0)
-                {
-                    throw new Exception($"There are no images to load. Check with the developer from the ");
-                }
-                WEAtlasesLibrary.Instance.RegisterModAtlas(mainAssembly, atlasName, spritesToAdd, notifGroup, "generatingAtlasesCacheMod.loading", args, args, LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX);
-
-                NotificationHelper.NotifyProgress(notifGroup, 100, textI18n: "generatingAtlasesCacheMod.complete", titleI18n: LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, argsText: args, argsTitle: args);
+                NotificationHelper.NotifyProgress(notifGroup, 100, textI18n: "generatingAtlasesCacheMod.complete", titleI18n: WEAtlasesLibrary.LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, argsText: args, argsTitle: args);
             }
             catch (Exception e)
             {
@@ -74,7 +61,7 @@ namespace BelzontWE.Bridge
                     var dialog = new MessageDialog(title, message, details, true, confirmAction);
                     GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, (x) => NotificationHelper.RemoveNotification(notifGroup));
                 }
-                NotificationHelper.NotifyWithCallback(notifGroup, ProgressState.Failed, onNotifClick, titleI18n: LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, argsText: args, argsTitle: args, textI18n: "generatingAtlasesCacheMod.error");
+                NotificationHelper.NotifyWithCallback(notifGroup, ProgressState.Failed, onNotifClick, titleI18n: WEAtlasesLibrary.LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, argsText: args, argsTitle: args, textI18n: "generatingAtlasesCacheMod.error");
                 LogUtils.DoWarnLog("Error with WE integrable mod:", e);
             }
             yield return targetAtlasName;

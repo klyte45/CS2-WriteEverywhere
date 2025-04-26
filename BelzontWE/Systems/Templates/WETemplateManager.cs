@@ -141,7 +141,7 @@ namespace BelzontWE
                 m_atlasesReplacements.Clear();
                 m_fontsReplacements.Clear();
             }
-            ModReplacementDataVersion = 2;
+            SpritesAndLayoutsDataVersion = 2;
             m_templatesDirty = true;
         }
 
@@ -682,12 +682,13 @@ namespace BelzontWE
             RegisteredTemplates.Clear();
             m_atlasesReplacements.Clear();
             m_fontsReplacements.Clear();
-            ModReplacementDataVersion = 2;
+            SpritesAndLayoutsDataVersion = 2;
             return Dependency;
         }
 
         #region Prefab Layout
         public void MarkPrefabsDirty() => isPrefabListDirty = true;
+        public void MarkTemplatesDirty() => m_templatesDirty = true;
         private readonly Dictionary<string, HashSet<long>> PrefabNameToIndex = new();
         private bool isPrefabListDirty = true;
 
@@ -843,7 +844,7 @@ namespace BelzontWE
                 });
             }
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + totalStepPrefabTemplates), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingComplete");
-            m_endFrameBarrier.CreateCommandBuffer().AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty, EntityQueryCaptureMode.AtPlayback);          
+            m_endFrameBarrier.CreateCommandBuffer().AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty, EntityQueryCaptureMode.AtPlayback);
         }
 
         private IEnumerator LoadPrefabFileTemplate(int offsetPercentage, float totalStep, (string, string, string)[] files, Dictionary<string, LocalizedString> errorsList, int i)
@@ -956,25 +957,23 @@ namespace BelzontWE
         {
             yield return 0;
             var mods = ModsSubTemplates.Keys.ToArray();
+            if (mods.Length == 0) yield break;
             var eachItemPart = 1f / mods.Length;
             for (int i = 0; i < mods.Length; i++)
             {
                 string modId = mods[i];
-                yield return LoadModSubtemplates(i * eachItemPart, eachItemPart, modId, true);
+                GameManager.instance.StartCoroutine(LoadModSubtemplates_Item(0, 100, modId, true));
             }
             m_templatesDirty = true;
             reloadingSubtemplatesCoroutine = null;
         }
 
 
-        private IEnumerator LoadModSubtemplates(float offsetPercentage, float totalStep, string modId, bool isStandalone = false)
+        private IEnumerator LoadModSubtemplates_Item(float offsetPercentage, float totalStep, string modId, bool isStandalone = false)
         {
-            var groupId = isStandalone ? LOADING_SUBTEMPLATES_NOTIFICATION_ID : LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID;
+            var groupId = isStandalone ? $"{LOADING_SUBTEMPLATES_NOTIFICATION_ID}:{modId}" : LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID;
 
-            NotificationHelper.NotifyProgress(groupId, Mathf.RoundToInt(offsetPercentage + (.01f * totalStep)), titleI18n: LOADING_SUBTEMPLATES_NOTIFICATION_ID);
-            yield return 0;
-
-            NotificationHelper.NotifyProgress(groupId, Mathf.RoundToInt(offsetPercentage + (.11f * totalStep)), textI18n: $"{LOADING_SUBTEMPLATES_NOTIFICATION_ID}.searchingForFiles");
+            NotificationHelper.NotifyProgress(groupId, Mathf.RoundToInt(offsetPercentage + (.11f * totalStep)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.searchingForFiles");
             yield return 0;
             var files = Directory.GetFiles(m_modsTemplatesFolder[modId].rootFolder, $"*.{SIMPLE_LAYOUT_EXTENSION}", SearchOption.TopDirectoryOnly)
                 .Select(y => (y, $"{m_modsTemplatesFolder[modId].name}: {y[m_modsTemplatesFolder[modId].rootFolder.Length..]}"))
@@ -998,7 +997,7 @@ namespace BelzontWE
                     var fileItem = fileItemFull.Item1;
                     var displayName = fileItemFull.Item2;
                     NotificationHelper.NotifyProgress(groupId, Mathf.RoundToInt(offsetPercentage + ((.11f + (.89f * ((i + 1f) / files.Length))) * totalStep)),
-                            textI18n: $"{groupId}.loadingLayoutFile", argsText: new()
+                            textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingLayoutFile", argsText: new()
                             {
                                 ["fileName"] = LocalizedString.Value(displayName),
                                 ["progress"] = LocalizedString.Value($"{i}/{files.Length}")
@@ -1061,57 +1060,8 @@ namespace BelzontWE
 
         #endregion
         #region City Templates
-        public int CanBeTransformedToTemplate(Entity e)
-        {
-            //if (!EntityManager.TryGetComponent<WETextDataMesh>(e, out var weData))
-            //{
-            //    LogUtils.DoInfoLog($"Failed validation to transform to City Template: No text data found");
-            //    return 1;
-            //}
-
-            ////if (weData.TextType != WESimulationTextType.Text && weData.TextType != WESimulationTextType.Image && weData.TextType != WESimulationTextType.WhiteTexture)
-            ////{
-            ////    LogUtils.DoInfoLog($"Failed validation to transform to City Template: Only white textures, text and image items are allowed in a city template");
-            ////    return 2;
-            ////}
-            //if (EntityManager.TryGetBuffer<WESubTextRef>(e, true, out var subRef))
-            //{
-            //    for (int i = 0; i < subRef.Length; i++)
-            //    {
-            //        if (CanBeTransformedToTemplate(subRef[i].m_weTextData) != 0)
-            //        {
-            //            LogUtils.DoInfoLog($"Failed validation to transform to City Template: Item #{i} failed validation");
-            //            return 3;
-            //        }
-            //    }
-            //}
-            return 0;
-        }
-        public int CanBeTransformedToTemplate(WETextDataXmlTree treeStruct)
-        {
-            //var weData = treeStruct.self;
-            ////if (weData.textMesh is null && weData.imageMesh is null && weData.whiteMesh is null)
-            ////{
-            ////    LogUtils.DoInfoLog($"Failed validation to transform to City Template: Only white textures, text and image items are allowed in a city template");
-            ////    return 2;
-            ////}
-            //for (int i = 0; i < treeStruct.children?.Length; i++)
-            //{
-            //    if (CanBeTransformedToTemplate(treeStruct.children[i]) != 0)
-            //    {
-            //        LogUtils.DoInfoLog($"Failed validation to transform to City Template: Item #{i} failed validation");
-            //        return 3;
-            //    }
-            //}
-            return 0;
-        }
         public bool SaveCityTemplate(string name, Entity e)
         {
-            if (CanBeTransformedToTemplate(e) != 0)
-            {
-                LogUtils.DoInfoLog($"Failed validating layout '{name}': it failed while verifying if it could be transformed to template, check previous lines for details.");
-                return false;
-            }
             var templateEntity = WETextDataXmlTree.FromEntity(e, EntityManager);
             CommonSaveAsTemplate(name, templateEntity);
             if (BasicIMod.DebugMode) LogUtils.DoLog($"Saved {e} as WETextDataTree {templateEntity.Guid} @ {name}");
@@ -1119,11 +1069,6 @@ namespace BelzontWE
         }
         public bool SaveCityTemplate(string name, WETextDataXmlTree templateEntity)
         {
-            if (CanBeTransformedToTemplate(templateEntity) != 0)
-            {
-                LogUtils.DoInfoLog($"Failed validating layout '{name}': it failed while verifying if it could be transformed to template, check previous lines for details.");
-                return false;
-            }
             CommonSaveAsTemplate(name, templateEntity);
             if (BasicIMod.DebugMode) LogUtils.DoLog($"Saved {templateEntity.Guid} as WETextDataTree @ {name}");
             return true;
@@ -1196,7 +1141,7 @@ namespace BelzontWE
         private readonly Dictionary<string, Dictionary<string, string>> m_atlasesReplacements = new();
         private readonly Dictionary<string, Dictionary<string, string>> m_fontsReplacements = new();
         private readonly Dictionary<string, Dictionary<string, string>> m_subtemplatesReplacements = new();
-        public ushort ModReplacementDataVersion { get; private set; } = 0;
+        public ushort SpritesAndLayoutsDataVersion { get; private set; } = 0;
 
         private Dictionary<string, (string name, string id, string rootFolder)> m_modsTemplatesFolder = new();
 
@@ -1208,7 +1153,7 @@ namespace BelzontWE
 
             if (m_modsTemplatesFolder.TryGetValue(modId, out var folder) && folder.rootFolder == folderTemplatesSource) return;
             m_modsTemplatesFolder[modId] = (modName, modId, folderTemplatesSource);
-            GameManager.instance.StartCoroutine(LoadModSubtemplates(0, 100, modId)); 
+            GameManager.instance.StartCoroutine(LoadModSubtemplates_Item(0, 100, modId));
             MarkPrefabsDirty();
         }
 
@@ -1316,10 +1261,7 @@ namespace BelzontWE
                 }
                 if (m_atlasesMapped[modId].Contains(original))
                 {
-                    unchecked
-                    {
-                        ModReplacementDataVersion++;
-                    }
+                    IncreaseSpritesAndLayoutsDataVersion();
                     if (target.TrimToNull() is null)
                     {
                         atlases.Remove(original);
@@ -1332,6 +1274,14 @@ namespace BelzontWE
 
         }
 
+        internal void IncreaseSpritesAndLayoutsDataVersion()
+        {
+            unchecked
+            {
+                SpritesAndLayoutsDataVersion++;
+            }
+        }
+
         internal string SetModFontReplacement(string modId, string original, string target)
         {
             if (m_fontsMapped.TryGetValue(modId, out var mapping) && mapping.Contains(original))
@@ -1340,10 +1290,7 @@ namespace BelzontWE
                 {
                     fonts = m_fontsReplacements[modId] = new();
                 }
-                unchecked
-                {
-                    ModReplacementDataVersion++;
-                }
+                IncreaseSpritesAndLayoutsDataVersion();
                 if (target.TrimToNull() is null)
                 {
                     fonts.Remove(original);
@@ -1362,10 +1309,7 @@ namespace BelzontWE
                 {
                     subtemplates = m_subtemplatesReplacements[modId] = new();
                 }
-                unchecked
-                {
-                    ModReplacementDataVersion++;
-                }
+                IncreaseSpritesAndLayoutsDataVersion();
                 if (target.TrimToNull() is null)
                 {
                     subtemplates.Remove(original);
@@ -1402,10 +1346,7 @@ namespace BelzontWE
                 m_atlasesReplacements.AddRange(m_atlasesMapped.Keys.Select(x => (content.Mods.Where(y => y.modId == x).FirstOrDefault()) ?? new() { modId = x }).ToDictionary(x => x.modId, x => x.atlases ?? new()));
                 m_fontsReplacements.AddRange(m_fontsMapped.Keys.Select(x => (content.Mods.Where(y => y.modId == x).FirstOrDefault()) ?? new() { modId = x }).ToDictionary(x => x.modId, x => x.fonts ?? new()));
                 m_subtemplatesReplacements.AddRange(m_subtemplatesMapped.Keys.Select(x => (content.Mods.Where(y => y.modId == x).FirstOrDefault()) ?? new() { modId = x }).ToDictionary(x => x.modId, x => x.subtemplates ?? new()));
-                unchecked
-                {
-                    ModReplacementDataVersion++;
-                }
+                IncreaseSpritesAndLayoutsDataVersion();
             }
             catch
             {

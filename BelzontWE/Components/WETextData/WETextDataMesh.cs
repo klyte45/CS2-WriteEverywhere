@@ -123,25 +123,29 @@ namespace BelzontWE
             switch (textType)
             {
                 case WESimulationTextType.Text:
-                    if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
+                    if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.SpritesAndLayoutsDataVersion)
                     {
-                        lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
+                        lastUpdateModReplacements = WETemplateManager.Instance.SpritesAndLayoutsDataVersion;
                         fontName = WETemplateManager.Instance.GetFontFor(originalName.ToString(), fontName, ref result);
                     }
                     result |= valueData.UpdateEffectiveValue(em, geometryEntity, vars);
                     break;
                 case WESimulationTextType.Image:
-                    if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
+                    if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.SpritesAndLayoutsDataVersion)
                     {
-                        lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
+                        lastUpdateModReplacements = WETemplateManager.Instance.SpritesAndLayoutsDataVersion;
                         atlas = WETemplateManager.Instance.GetAtlasFor(originalName.ToString(), atlas, ref result);
+                        if (HasBRI && RenderInformation.m_isError)
+                        {
+                            result = true;
+                        }
                     }
                     result |= valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString(), vars);
                     break;
                 case WESimulationTextType.Placeholder:
-                    if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.ModReplacementDataVersion)
+                    if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.SpritesAndLayoutsDataVersion)
                     {
-                        lastUpdateModReplacements = WETemplateManager.Instance.ModReplacementDataVersion;
+                        lastUpdateModReplacements = WETemplateManager.Instance.SpritesAndLayoutsDataVersion;
                         valueData.DefaultValue = WETemplateManager.Instance.GetTemplateFor(originalName.ToString(), valueData.DefaultValue, ref result).ToString();
                     }
                     result |= valueData.UpdateEffectiveValue(em, geometryEntity, vars);

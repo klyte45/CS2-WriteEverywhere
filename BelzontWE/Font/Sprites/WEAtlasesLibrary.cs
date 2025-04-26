@@ -31,6 +31,7 @@ namespace BelzontWE.Sprites
 {
     public partial class WEAtlasesLibrary : GameSystemBase, IBelzontSerializableSingleton<WEAtlasesLibrary>
     {
+        internal const string LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX = "generatingAtlasesCacheMod";
         public static string IMAGES_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "imageAtlases");
         public static string ATLAS_EXPORT_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "exportedAtlases");
         private const string GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID = "generatingAtlasesCache";
@@ -88,7 +89,7 @@ namespace BelzontWE.Sprites
         private Dictionary<FixedString32Bytes, WETextureAtlas> CityAtlases { get; } = new();
         private Dictionary<string, WETextureAtlas> ModAtlases { get; } = new();
 
-        private Dictionary<string, (ModInfo info, Action registerCallback)> RegisteredMods { get; } = new();
+        private Dictionary<string, (ModInfo info, Dictionary<string, Action> registerCallback)> RegisteredModsAtlases { get; } = new();
 
         #region Getters
 
@@ -96,7 +97,12 @@ namespace BelzontWE.Sprites
 
         public string[] ListAvailableAtlasImages(string atlasName) => !atlasName.IsNullOrWhitespace() && (CityAtlases.TryGetValue(atlasName, out var arr) || LocalAtlases.TryGetValue(atlasName, out arr) || ModAtlases.TryGetValue(atlasName, out arr)) ? arr.Keys.Select(x => x.ToString()).ToArray() : new string[0];
 
-        internal BasicRenderInformation GetFromLocalAtlases(WEImages image) => GetFromAvailableAtlases(INTERNAL_ATLAS_NAME, image.ToString());
+        internal BasicRenderInformation GetFromLocalAtlases(WEImages image)
+        {
+            var sprite = GetFromAvailableAtlases(INTERNAL_ATLAS_NAME, image.ToString());
+            sprite.m_isError = image != WEImages.FrameBorder;
+            return sprite;
+        }
 
         public bool TryGetAtlas(string atlasName, out WETextureAtlas atlas) => CityAtlases.TryGetValue(atlasName, out atlas) || LocalAtlases.TryGetValue(atlasName, out atlas) || ModAtlases.TryGetValue(atlasName, out atlas);
 
@@ -145,6 +151,7 @@ namespace BelzontWE.Sprites
         public void LoadImagesFromLocalFolders() => localSpritesJobRunning ??= GameManager.instance.StartCoroutine(LoadImagesFromLocalFoldersCoroutine());
         public IEnumerator LoadImagesFromLocalFoldersCoroutine()
         {
+            if (modSpritesJobRunning != null) yield return 0;
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 0);
             yield return 0;
             ClearAtlasDict(LocalAtlases);
@@ -205,24 +212,47 @@ namespace BelzontWE.Sprites
             ModAtlases.Remove(key);
         }
 
-        internal void RegisterModAtlas(Assembly modId, string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
+        internal void LoadImagesToAtlas(Assembly mainAssembly, string atlasName, string[] imagePaths, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args)
         {
-            RegisteredMods[WEModIntegrationUtility.GetModIdentifier(modId)] = (ModManagementUtils.GetModDataFromMainAssembly(modId), () => RegisterAtlas(ModAtlases, WEModIntegrationUtility.GetModAccessName(modId, atlasName), spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset));
-            RegisteredMods[WEModIntegrationUtility.GetModIdentifier(modId)].registerCallback();
+            var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
+            actionQueue.Enqueue(() =>
+            {
+                void RegisterCallback()
+                {
+                    var spritesToAdd = new List<WEImageInfo>();
+                    var errors = new List<string>();
+                    WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, ref errors);
+                    if (errors.Count > 0)
+                    {
+                        throw new Exception($"Some error were found when trying to create atlas '{atlasName}' for mod identified by '{modIdentifier}' ({displayName}), aborting:\n- {string.Join("\n- ", errors)}");
+                    }
+                    if (spritesToAdd.Count == 0)
+                    {
+                        throw new Exception($"There are no images to load. Check with the developer from the module for a fix");
+                    }
+                    RegisterAtlas(ModAtlases, WEModIntegrationUtility.GetModAccessName(mainAssembly, atlasName), spritesToAdd, notifGroup, "generatingAtlasesCacheMod.loading", args, args, LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, 100, 0);
+                }
+                if (!RegisteredModsAtlases.ContainsKey(modId)) RegisteredModsAtlases[modId] = (ModManagementUtils.GetModDataFromMainAssembly(mainAssembly), new());
+                RegisteredModsAtlases[modId].registerCallback[atlasName] = RegisterCallback;
+                RegisteredModsAtlases[modId].registerCallback[atlasName]();
+            });
         }
 
         private Coroutine modSpritesJobRunning;
         public void LoadImagesFromMods() => modSpritesJobRunning ??= GameManager.instance.StartCoroutine(LoadImagesFromModsCoroutine());
         public IEnumerator LoadImagesFromModsCoroutine()
         {
-            yield return 0;
             ClearAtlasDict(ModAtlases);
-            foreach (var mod in RegisteredMods.Values)
+            foreach (var mod in RegisteredModsAtlases.Values)
             {
-                mod.registerCallback();
-                yield return 0;
+                foreach (var atlasCallback in mod.registerCallback.Values)
+                {
+                    atlasCallback();
+                    yield return 0;
+                }
             }
             modSpritesJobRunning = null;
+            WETemplateManager.Instance.IncreaseSpritesAndLayoutsDataVersion();
         }
 
 
@@ -255,6 +285,7 @@ namespace BelzontWE.Sprites
                         NotificationHelper.NotifyProgress(notificationGroupId, Mathf.RoundToInt(progressOffset + (loopCompleteSizeProgress * ((j + 1f) / spritesToAdd.Count))), argsTitle: argsTitle, textI18n: notificationI18n, argsText: argsNotif, titleI18n: notificationTitlei18n);
                     }
                 }
+                NotificationHelper.NotifyProgress(notificationGroupId, Mathf.RoundToInt(progressOffset + loopCompleteSizeProgress), argsTitle: argsTitle, textI18n: notificationI18n, argsText: argsNotif, titleI18n: notificationTitlei18n);
                 targetDict[atlasName].Apply();
                 if (BasicIMod.TraceMode && atlasName is string s) targetDict[atlasName]._SaveDebug(s);
             }
@@ -450,7 +481,7 @@ namespace BelzontWE.Sprites
         public int GetAtlasImageSize(string name) => TryGetAtlas(name, out var atlas) ? atlas.Main.width : -1;
 
         internal record struct ModAtlasRegistry(string ModId, string ModName, string[] Atlases) { }
-        internal ModAtlasRegistry[] ListModAtlases() => RegisteredMods
+        internal ModAtlasRegistry[] ListModAtlases() => RegisteredModsAtlases
             .Select(x => new ModAtlasRegistry(WEModIntegrationUtility.GetModIdentifier(x.Value.info.asset.assembly), x.Value.info.asset.mod.displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
 
 
