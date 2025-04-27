@@ -1,4 +1,13 @@
-# v0.3.0r0 (13-APR-25)
+# v0.3.1r0 (27-APR-25)
+- ADDED EDITOR SUPPORT! Now custom maps can pack custom assets, fonts and layouts to be distributed, it's also valid for WE Modules settings. 
+  - Example of usage: Add the car plates custom design using the WE Module for vehicle plates positions, then the players can get the layout by default!
+- ADDED SUPPORT FOR FALLBACK IMAGES ON ATLASES! Use the `_Fallback.png` inage file to show an image when an image with some given name isn't available at atlases - it could be a transparent image!
+- Smarter default layout application: When setting up a layout to a spawner object prop (like the gas station prices pylons), any variation from that prefab will also inherit the layout setted up
+- WE MODULES MAKERS: Reloading sprites now also reload images from all WE Modules currently active
+- WE MODULES MAKERS: Added button to reload subtemplates from WE Modules currently loaded
+- Minor UI fixes
+
+## FROM v0.3.0r0 (13-APR-25)
 - Added support to template placeholder arrays! It may be useful when making dynamic content (like reading lines passing at a station)
   - Limited to 256 instances, 100 items per axis row (only will render the first 256 of them)
   - Quantity of instances may be controlled manually or using formulae; values < 0 will fill the entire array size while any other number will be read literally (up to 256)
