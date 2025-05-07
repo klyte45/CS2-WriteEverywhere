@@ -82,13 +82,13 @@ namespace BelzontWE
                     PopulateVars(entity, ref variables);
                     if (m_weTemplateForPrefabLookup.TryGetComponent(entity, out var prefabWeLayout))
                     {
-                        DrawTree(entity, prefabWeLayout.childEntity, baseMatrix, unfilteredChunkIndex, ref variables, 0);
+                        DrawTree(entity, prefabWeLayout.childEntity, baseMatrix, unfilteredChunkIndex, variables, 0);
                     }
                     if (m_weSubRefLookup.TryGetBuffer(entity, out var subLayout))
                     {
                         for (int j = 0; j < subLayout.Length; j++)
                         {
-                            DrawTree(entity, subLayout[j].m_weTextData, baseMatrix, unfilteredChunkIndex, ref variables, 0);
+                            DrawTree(entity, subLayout[j].m_weTextData, baseMatrix, unfilteredChunkIndex, variables, 0);
                         }
 
                     }
@@ -109,7 +109,7 @@ namespace BelzontWE
                 }
             }
 
-            private void DrawTree(Entity geometryEntity, Entity nextEntity, Matrix4x4 prevMatrix, int unfilteredChunkIndex, ref FixedString512Bytes variables, int nthCall, bool parentIsPlaceholder = false)
+            private void DrawTree(Entity geometryEntity, Entity nextEntity, Matrix4x4 prevMatrix, int unfilteredChunkIndex, FixedString512Bytes variables, int nthCall, bool parentIsPlaceholder = false)
             {
                 if (nthCall >= 16) return;
                 if (!m_weMeshLookup.TryGetComponent(nextEntity, out var mesh))
@@ -144,7 +144,7 @@ namespace BelzontWE
                             prevMatrix *= Matrix4x4.TRS(new Vector3(0, 0, .001f), default, Vector3.one);
                             for (int j = 0; j < subLayout2.Length; j++)
                             {
-                                DrawTree(geometryEntity, subLayout2[j].m_weTextData, prevMatrix, unfilteredChunkIndex, ref variables, nthCall + 1);
+                                DrawTree(geometryEntity, subLayout2[j].m_weTextData, prevMatrix, unfilteredChunkIndex, variables, nthCall + 1);
                             }
                         }
                         return;
@@ -188,7 +188,7 @@ namespace BelzontWE
                                     layoutVars.Append(VARIABLE_KV_SEPARATOR);
                                     layoutVars.Append(i);
                                     layoutVars.Append(VARIABLE_ITEM_SEPARATOR);
-                                    DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one), unfilteredChunkIndex, ref layoutVars, nthCall + 1, true);
+                                    DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one), unfilteredChunkIndex, layoutVars, nthCall + 1, true);
                                 }
                             }
                         }
@@ -224,7 +224,7 @@ namespace BelzontWE
                                 var itemMatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, material.Shader == WEShader.Decal ? .002f : .001f)), transform.offsetRotation, Vector3.one);
                                 for (int j = 0; j < subLayoutWt.Length; j++)
                                 {
-                                    DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, unfilteredChunkIndex, ref variables, nthCall + 1);
+                                    DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, unfilteredChunkIndex, variables, nthCall + 1);
                                 }
                             }
                         }
@@ -298,7 +298,7 @@ namespace BelzontWE
                                 var itemMatrix = prevMatrix * Matrix4x4.TRS(refPos + (float3)Matrix4x4.Rotate(refRot).MultiplyPoint(new float3(0, 0, material.Shader == WEShader.Decal ? .002f : .001f)), refRot, Vector3.one);
                                 for (int j = 0; j < subLayout.Length; j++)
                                 {
-                                    DrawTree(geometryEntity, subLayout[j].m_weTextData, itemMatrix, unfilteredChunkIndex, ref variables, nthCall + 1);
+                                    DrawTree(geometryEntity, subLayout[j].m_weTextData, itemMatrix, unfilteredChunkIndex, variables, nthCall + 1);
                                 }
                             }
                         }

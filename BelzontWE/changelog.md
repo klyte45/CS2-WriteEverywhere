@@ -1,4 +1,9 @@
-# v0.3.1r0 (27-APR-25)
+# v0.3.1r1 (07-MAY-25)
+
+- Fixed variable leaks
+- Added bridge methods to allow accessing the localization settings from WE in other mods
+
+## FROM v0.3.1r0 (27-APR-25)
 - ADDED EDITOR SUPPORT! Now custom maps can pack custom assets, fonts and layouts to be distributed, it's also valid for WE Modules settings. 
   - Example of usage: Add the car plates custom design using the WE Module for vehicle plates positions, then the players can get the layout by default!
 - ADDED SUPPORT FOR FALLBACK IMAGES ON ATLASES! Use the `_Fallback.png` inage file to show an image when an image with some given name isn't available at atlases - it could be a transparent image!

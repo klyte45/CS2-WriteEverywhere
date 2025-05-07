@@ -17,7 +17,7 @@ namespace BelzontWE.Builtin
 
         private static readonly string[] orders = new[] { "", "k", "M", "G", "T", "P", "E" };
 
-        private static string DoIntReduction(float src, int maxDigits)
+        internal static string DoIntReduction(float src, int maxDigits)
         {
             var order = 0;
             var floatReduced = DoIntReduction(src, maxDigits, ref order);
