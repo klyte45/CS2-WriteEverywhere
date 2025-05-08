@@ -168,7 +168,7 @@ namespace BelzontWE.Sprites
                 NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * i / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
                 yield return 0;
                 var spritesToAdd = new List<WEImageInfo>();
-                WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, ref errors);
+                WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, errors);
                 RegisterLocalAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25);
             }
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
@@ -208,20 +208,37 @@ namespace BelzontWE.Sprites
             {
                 var item = ModAtlases[key];
                 actionQueue.Enqueue(() => item?.Dispose());
+                ModAtlases.Remove(key);
             }
-            ModAtlases.Remove(key);
+            if (RegisteredModsAtlases.TryGetValue(WEModIntegrationUtility.GetModIdentifier(modId), out var registrers) && registrers.registerCallback.ContainsKey(atlasName))
+            {
+                registrers.registerCallback.Remove(atlasName);
+            }
         }
 
         internal void LoadImagesToAtlas(Assembly mainAssembly, string atlasName, string[] imagePaths, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args)
         {
             var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
+            EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, errors));
+        }
+
+        internal void LoadImagesAsDynamicAtlas(Assembly mainAssembly, string atlasName,
+            Func<(string Name, byte[] Main, byte[] ControlMask, byte[] MaskMap, byte[] Normal, byte[] Emissive, string XmlInfo)[]> producer,
+            string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args)
+        {
+            var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
+            EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(producer(), spritesToAdd, errors));
+        }
+
+        private void EnqueueModAtlasLoader(Assembly mainAssembly, string atlasName, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args, string modId, Action<List<WEImageInfo>, List<string>> loaderEnqueue)
+        {
             actionQueue.Enqueue(() =>
             {
                 void RegisterCallback()
                 {
                     var spritesToAdd = new List<WEImageInfo>();
                     var errors = new List<string>();
-                    WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, ref errors);
+                    loaderEnqueue(spritesToAdd, errors);
                     if (errors.Count > 0)
                     {
                         throw new Exception($"Some error were found when trying to create atlas '{atlasName}' for mod identified by '{modIdentifier}' ({displayName}), aborting:\n- {string.Join("\n- ", errors)}");

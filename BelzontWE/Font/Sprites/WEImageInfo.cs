@@ -1,5 +1,6 @@
 ﻿using Belzont.Utils;
 using BelzontWE.Sprites;
+using Colossal.OdinSerializer.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -38,6 +39,50 @@ namespace BelzontWE.Layout
             if (MaskMap) GameObject.Destroy(MaskMap);
             if (Normal) GameObject.Destroy(Normal);
             if (Emissive) GameObject.Destroy(Emissive);
+        }
+
+        public static WEImageInfo CreateFromTuple(List<string> errors, (
+            string Name,
+            byte[] Main,
+            byte[] ControlMask,
+            byte[] MaskMap,
+            byte[] Normal,
+            byte[] Emissive,
+            string XmlInfo) data)
+        {
+            if (data.Main == null) return null;
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            //WEImageInfoXml xmlInfo = null;
+            //if (!data.XmlInfo.IsNullOrWhitespace())
+            //{
+            //    xmlInfo = XmlUtils.DefaultXmlDeserialize<WEImageInfoXml>(data.XmlInfo);
+            //}
+            if (tex.LoadImage(data.Main))
+            {
+                if (tex.height <= MAX_SIZE_IMAGE_IMPORT && tex.width <= MAX_SIZE_IMAGE_IMPORT)
+                {
+                    return new WEImageInfo()
+                    {
+                        Name = data.Name,
+                        Main = tex,
+                        ControlMask = WEAtlasLoadingUtils.TryLoadTexture(data.ControlMask, tex.width, tex.height),
+                        Emissive = WEAtlasLoadingUtils.TryLoadTexture(data.Emissive, tex.width, tex.height),
+                        MaskMap = WEAtlasLoadingUtils.TryLoadTexture(data.MaskMap, tex.width, tex.height),
+                        Normal = WEAtlasLoadingUtils.TryLoadTexture(data.Normal, tex.width, tex.height),
+                    };
+                }
+                else
+                {
+                    errors.Add($"{data.Name}: IMAGE TOO LARGE (max: {MAX_SIZE_IMAGE_IMPORT}x{MAX_SIZE_IMAGE_IMPORT}, have: {tex.width}x{tex.height})");
+                    GameObject.Destroy(tex);
+                }
+            }
+            else
+            {
+                errors.Add($"{Path.GetFileName(data.Name)}: FAILED LOADING IMAGE");
+                GameObject.Destroy(tex);
+            }
+            return null;
         }
 
         public static WEImageInfo CreateFromBaseImageFile(List<string> errors, string imgFile)
