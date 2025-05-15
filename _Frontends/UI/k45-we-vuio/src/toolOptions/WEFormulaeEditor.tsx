@@ -237,8 +237,10 @@ const WEMathOperatorBlock = (data: WEMathOperationDesc & { i: number }) => {
     return <>
         <div className="k45_we_formulaeEditor_mathOpContainer">
             <div className={["mathOp", "op" + WEFormulaeMathOperation[data.operation.value__]].join(" ")}>
-                {data.value}
-                {data.enforceType.value__ != EnforceType.None && <Tooltip tooltip={translate("formulaeEditor.mathOp.force." + EnforceType[data.enforceType.value__])}><div className={"enforceType_" + EnforceType[data.enforceType.value__]} /></Tooltip>}
+                {data.operation.value__ == WEFormulaeMathOperation.NOT ? <>&nbsp;</> : <>
+                    {data.value}
+                    {data.enforceType.value__ != EnforceType.None && <Tooltip tooltip={translate("formulaeEditor.mathOp.force." + EnforceType[data.enforceType.value__])}><div className={"enforceType_" + EnforceType[data.enforceType.value__]} /></Tooltip>}
+                </>}
             </div>
             <WEReturnType>{data.isDecimalResult ? "Single" : "Int32"}</WEReturnType>
         </div>

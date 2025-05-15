@@ -7,7 +7,15 @@
             ADD,
             SUBTRACT,
             MULTIPLY,
-            DIVIDE
+            DIVIDE,
+            MODULUS,
+            EQUALS,
+            GREATER,
+            LESSER,
+            AND,
+            OR,
+            XOR,
+            NOT
         }
         public enum EnforceType
         {

@@ -236,6 +236,38 @@
                         background-image: url("../images/math_divide.svg");
                     }
 
+                    &.opMODULUS {
+                        background-image: url("../images/math_modulus.svg");
+                    }
+
+                    &.opEQUALS {
+                        background-image: url("../images/math_equals.svg");
+                    }
+
+                    &.opGREATER {
+                        background-image: url("../images/math_greater.svg");
+                    }
+
+                    &.opLESSER {
+                        background-image: url("../images/math_lesser.svg");
+                    }
+
+                    &.opAND {
+                        background-image: url("../images/math_and.svg");
+                    }
+
+                    &.opOR {
+                        background-image: url("../images/math_or.svg");
+                    }
+
+                    &.opXOR {
+                        background-image: url("../images/math_xor.svg");
+                    }
+
+                    &.opNOT {
+                        background-image: url("../images/math_not.svg");
+                    }
+
                     .enforceType_Float {
                         height: 10rem;
                         width: 10rem;

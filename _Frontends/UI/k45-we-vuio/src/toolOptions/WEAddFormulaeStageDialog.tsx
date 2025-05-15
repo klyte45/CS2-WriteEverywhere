@@ -194,12 +194,15 @@ const MathOperatorSelect = ({ operator, setOperator, operand, setOperand, forceD
                 autoFocus={false}
             />
         </EditorRow>
-        <EditorRow label={T_mathOperationValue}>
-            <FloatInput className={editorItemTheme.input} onChange={(x) => setOperand(x)} value={operand} />
-        </EditorRow>
-        <EditorRow label={T_forceDecimalType}>
-            <CheckboxInput className={editorItemTheme.toggle} onChange={(x) => setForceDecimal(x)} checked={forceDecimal} />
-        </EditorRow>
+        {operator != WEFormulaeMathOperation.NOT && <>
+            <EditorRow label={T_mathOperationValue}>
+                <FloatInput className={editorItemTheme.input} onChange={(x) => setOperand(x)} value={operand} />
+            </EditorRow>
+            <EditorRow label={T_forceDecimalType}>
+                <CheckboxInput className={editorItemTheme.toggle} onChange={(x) => setForceDecimal(x)} checked={forceDecimal} />
+            </EditorRow>
+        </>
+        }
     </>;
 }
 

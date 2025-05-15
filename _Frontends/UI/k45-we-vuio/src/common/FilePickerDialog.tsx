@@ -70,7 +70,7 @@ const BaseFilePickerDialog = ({ onConfirm: callback, dialogTitle: title, dialogP
     const [currentData, setCurrentData] = useState([] as DataProvider);
     const [isEditingPath, setIsEditingPath] = useState(false);
 
-    var refInput = useRef(null as any as HTMLDivElement);
+    const refInput = useRef(null as any as HTMLDivElement);
 
     useEffect(() => {
         FileService.generateDataProvider(currentFolder, allowedExtensions).then(setCurrentData);
@@ -79,7 +79,7 @@ const BaseFilePickerDialog = ({ onConfirm: callback, dialogTitle: title, dialogP
 
     useEffect(() => {
         if (isEditingPath && refInput.current) {
-            var input = [...(refInput.current?.children ?? [])].find(x => x.tagName == "INPUT") as HTMLInputElement;
+            const input = [...(refInput.current?.children ?? [])].find(x => x.tagName == "INPUT") as HTMLInputElement;
             if (input) {
                 setCurrentFolderTyping(currentFolder)
                 input.focus()

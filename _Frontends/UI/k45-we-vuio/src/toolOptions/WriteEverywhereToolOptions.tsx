@@ -47,7 +47,7 @@ export const WriteEverywhereToolOptions: ModuleRegistryExtend = (Component: any)
     return () => {
         const toolActive = useValue(tool.activeTool$).id == "K45_WE_WEWorldPickerTool";
 
-        var result = Component();
+        const result = Component();
         if (toolActive) {
             result.props.children ??= []
             result.props.children.unshift(<WEWorldPickerToolPanel />);

@@ -238,7 +238,7 @@ export const FormulaeEditorRowColor = ({ showAlpha, label, formulaeField, formul
             document.removeEventListener('mousedown', handleClickOutside, true);
         };
     }, []);
-    var VanillaColorUtils = VanillaFnResolver.instance.color;
+    const VanillaColorUtils = VanillaFnResolver.instance.color;
     const [prevHue, setPrevHue] = useState(0)
     const colorHsv = useMemo(() => {
         const n = VanillaColorUtils.rgbaToHsva(valueBinding.value, prevHue);

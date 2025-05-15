@@ -93,7 +93,7 @@ export const CityAtlasesTab = (props: Props) => {
 
     const exportTemplateCallback = async (fileName?: string) => {
         if (!fileName || !selectedAtlas) return;
-        var filepath = selectedAtlas.includes(":") ? await TextureAtlasService.exportModAtlas(selectedAtlas, fileName) : await TextureAtlasService.exportCityAtlas(selectedAtlas, fileName);
+        const filepath = selectedAtlas.includes(":") ? await TextureAtlasService.exportModAtlas(selectedAtlas, fileName) : await TextureAtlasService.exportCityAtlas(selectedAtlas, fileName);
         setLastExportedAtlasFolder(filepath)
         setCurrentModal(Modals.SUCCESS_EXPORTING_TEMPLATE);
     }

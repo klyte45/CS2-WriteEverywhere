@@ -405,12 +405,43 @@ namespace BelzontWE
             '-' => OpCodes.Sub,
             '*' => OpCodes.Mul,
             '÷' => OpCodes.Div,
+            '%' => OpCodes.Rem,
+            '=' => OpCodes.Ceq,
+            '>' => OpCodes.Cgt,
+            '<' => OpCodes.Clt,
+            '∧' => OpCodes.And,
+            '∨' => OpCodes.Or,
+            '⊕' => OpCodes.Xor,
+            '¬' => OpCodes.Not,
             _ => OpCodes.Nop,
         };
 
         private static bool SetupMathOperands(ref Type currentType, string targetValue, OpCode operation, ILGenerator generator)
         {
             var currentOperand = Type.GetTypeCode(currentType);
+
+            if (operation == OpCodes.Not)
+            {
+                switch (currentOperand)
+                {
+                    case TypeCode.Byte:
+                    case TypeCode.SByte:
+                    case TypeCode.UInt16:
+                    case TypeCode.UInt32:
+                    case TypeCode.UInt64:
+                    case TypeCode.Int16:
+                    case TypeCode.Int32:
+                    case TypeCode.Int64:
+                    case TypeCode.Double:
+                    case TypeCode.Decimal:
+                    case TypeCode.Single:
+                        generator.Emit(operation);
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+
             if (targetValue.EndsWith("f"))
             {
                 targetValue = targetValue[..^1];
@@ -434,6 +465,8 @@ namespace BelzontWE
                 generator.Emit(OpCodes.Conv_R4);
                 currentOperand = TypeCode.Single;
             }
+
+            var isCmpOperator = operation == OpCodes.Ceq || operation == OpCodes.Cgt || operation == OpCodes.Clt;
             switch (currentOperand)
             {
                 case TypeCode.Byte:
@@ -473,7 +506,7 @@ namespace BelzontWE
                         if (!ulong.TryParse(targetValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueConv)) return false;
                         generator.Emit(OpCodes.Ldc_I8, valueConv);
                         generator.Emit(operation);
-                        currentType = typeof(long);
+                        currentType = isCmpOperator ? typeof(int) : typeof(long);
                         return true;
                     }
                 case TypeCode.Int16:
@@ -481,7 +514,7 @@ namespace BelzontWE
                         if (!short.TryParse(targetValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueConv)) return false;
                         generator.Emit(OpCodes.Ldc_I4_S, valueConv);
                         generator.Emit(operation);
-                        currentType = typeof(int);
+                        currentType = isCmpOperator ? typeof(int) : typeof(int);
                         return true;
                     }
                 case TypeCode.Int32:
@@ -497,7 +530,7 @@ namespace BelzontWE
                         if (!long.TryParse(targetValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueConv)) return false;
                         generator.Emit(OpCodes.Ldc_I8, valueConv);
                         generator.Emit(operation);
-                        currentType = typeof(long);
+                        currentType = isCmpOperator ? typeof(int) : typeof(long);
                         return true;
                     }
                 case TypeCode.Double:
@@ -506,7 +539,7 @@ namespace BelzontWE
                         if (!double.TryParse(targetValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var valueConv)) return false;
                         generator.Emit(OpCodes.Ldc_R8, valueConv);
                         generator.Emit(operation);
-                        currentType = typeof(double);
+                        currentType = isCmpOperator ? typeof(int) : typeof(double);
                         return true;
                     }
                 case TypeCode.Single:
@@ -514,7 +547,7 @@ namespace BelzontWE
                         if (!float.TryParse(targetValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var valueConv)) return false;
                         generator.Emit(OpCodes.Ldc_R4, valueConv);
                         generator.Emit(operation);
-                        currentType = typeof(float);
+                        currentType = isCmpOperator ? typeof(int) : typeof(float);
                         return true;
                     }
                 default:

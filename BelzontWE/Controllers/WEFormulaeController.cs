@@ -194,7 +194,15 @@ namespace BelzontWE
             ["*"] = WETypeMathOperationDesc.WEFormulaeMathOperation.MULTIPLY,
             ["÷"] = WETypeMathOperationDesc.WEFormulaeMathOperation.DIVIDE,
             ["+"] = WETypeMathOperationDesc.WEFormulaeMathOperation.ADD,
-            ["-"] = WETypeMathOperationDesc.WEFormulaeMathOperation.SUBTRACT
+            ["-"] = WETypeMathOperationDesc.WEFormulaeMathOperation.SUBTRACT,
+            ["%"] = WETypeMathOperationDesc.WEFormulaeMathOperation.MODULUS,
+            ["="] = WETypeMathOperationDesc.WEFormulaeMathOperation.EQUALS,
+            [">"] = WETypeMathOperationDesc.WEFormulaeMathOperation.GREATER,
+            ["<"] = WETypeMathOperationDesc.WEFormulaeMathOperation.LESSER,
+            ["∧"] = WETypeMathOperationDesc.WEFormulaeMathOperation.AND,
+            ["∨"] = WETypeMathOperationDesc.WEFormulaeMathOperation.OR,
+            ["⊕"] = WETypeMathOperationDesc.WEFormulaeMathOperation.XOR,
+            ["¬"] = WETypeMathOperationDesc.WEFormulaeMathOperation.NOT,
         };
 
         private static bool IterateFieldPath(List<object> result, ref Type currentType, string[] fieldPath)

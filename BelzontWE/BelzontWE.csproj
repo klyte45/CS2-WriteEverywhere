@@ -4,7 +4,6 @@
     <OutputType>Library</OutputType>
     <TargetFramework>net472</TargetFramework>
     <Configurations>Debug;Release</Configurations>
-    <LangVersion>10.0</LangVersion>
     <RootNamespace>BelzontWE</RootNamespace> 
     <Bursted Condition="'$(Configuration)'=='Release'">true</Bursted>
     <Bursted Condition="'$(Configuration)'=='Debug'">true</Bursted>

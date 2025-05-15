@@ -44,7 +44,15 @@ export enum WEFormulaeMathOperation {
     ADD,
     SUBTRACT,
     MULTIPLY,
-    DIVIDE
+    DIVIDE,
+    MODULUS,
+    EQUALS,
+    GREATER,
+    LESSER,
+    AND,
+    OR,
+    XOR,
+    NOT
 }
 
 export enum EnforceType {
@@ -55,20 +63,31 @@ export enum EnforceType {
 
 export function toFormulae(op: WEMathOperationDesc) {
     let result = "";
+
     switch (op.operation.value__) {
         case WEFormulaeMathOperation.ADD: result += "+"; break;
         case WEFormulaeMathOperation.SUBTRACT: result += "-"; break;
         case WEFormulaeMathOperation.MULTIPLY: result += "*"; break;
         case WEFormulaeMathOperation.DIVIDE: result += "÷"; break;
+        case WEFormulaeMathOperation.MODULUS: result += "%"; break;
+        case WEFormulaeMathOperation.EQUALS: result += "="; break;
+        case WEFormulaeMathOperation.GREATER: result += ">"; break;
+        case WEFormulaeMathOperation.LESSER: result += "<"; break;
+        case WEFormulaeMathOperation.AND: result += "∧"; break;
+        case WEFormulaeMathOperation.OR: result += "∨"; break;
+        case WEFormulaeMathOperation.XOR: result += "⊕"; break;
+        case WEFormulaeMathOperation.NOT: result += "¬"; break;
     }
-    result += op.value.toString().replace(".", ",")
-    switch (op.enforceType.value__) {
-        case EnforceType.Double:
-            result += "d";
-            break;
-        case EnforceType.Float:
-            result += "f";
-            break;
+    if (op.operation.value__ != WEFormulaeMathOperation.NOT) {
+        result += op.value.toString().replace(".", ",")
+        switch (op.enforceType.value__) {
+            case EnforceType.Double:
+                result += "d";
+                break;
+            case EnforceType.Float:
+                result += "f";
+                break;
+        }
     }
     return result;
 }

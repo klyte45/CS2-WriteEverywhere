@@ -99,7 +99,7 @@ export const CityLayoutsTab = (props: Props) => {
 
     const exportTemplateCallback = async (fileName?: string) => {
         if (!fileName || !selectedTemplate) return;
-        var filepath = await LayoutsService.exportCityLayoutAsXml(selectedTemplate, fileName);
+        const filepath = await LayoutsService.exportCityLayoutAsXml(selectedTemplate, fileName);
         setLastXmlExportedLayoutName(filepath)
         setCurrentModal(Modals.SUCCESS_EXPORTING_TEMPLATE);
     }

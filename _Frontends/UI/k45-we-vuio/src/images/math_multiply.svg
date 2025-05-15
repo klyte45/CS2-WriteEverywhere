@@ -1,5 +1,4 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="110 110 100 100" width="100" height="100">
-<g stroke-width="20" stroke="#00804E">
-<path d="m127,127 66,66m0-66-66,66"/>
-</g></svg>
+    <path stroke-width="20" stroke="#519872" d="m127,127 66,66m0-66-66,66"/>
+</svg>
