@@ -64,6 +64,7 @@ namespace BelzontWE
         private ProxyAction m_ToggleLockCameraRotation;
         private ToolOutputBarrier m_ToolOutputBarrier;
         private WEWorldPickerController m_Controller;
+        private WETextDataMeshController m_MeshDataController;
         private WETextDataTransformController m_TransformController;
         private WETextDataMaterialController m_MaterialController;
 
@@ -107,6 +108,7 @@ namespace BelzontWE
             m_CameraZoomAction = InputManager.instance.FindAction("Camera", "Zoom");
             m_ToolOutputBarrier = World.GetOrCreateSystemManaged<ToolOutputBarrier>();
             m_Controller = World.GetOrCreateSystemManaged<WEWorldPickerController>();
+            m_MeshDataController = World.GetOrCreateSystemManaged<WETextDataMeshController>();
             m_cameraSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
             m_TransformController = World.GetOrCreateSystemManaged<WETextDataTransformController>();
             m_MaterialController = World.GetOrCreateSystemManaged<WETextDataMaterialController>();
@@ -237,7 +239,7 @@ namespace BelzontWE
                     HoveredEntity = Entity.Null;
                 }
             }
-            else
+            else if (m_MeshDataController.TextSourceType.Value != (int)WESimulationTextType.MatrixTransform)
             {
                 if (m_increasePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Max(m_Controller.MouseSensibility.Value - 1, 0));
                 if (m_reducePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Min(m_Controller.MouseSensibility.Value + 1, precisionIdx.Length - 1));

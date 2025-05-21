@@ -10,7 +10,7 @@ import { WEAddFormulaeStageDialog } from "./WEAddFormulaeStageDialog";
 
 type Props = {
     formulaeStr: MultiUIValueBinding<string>,
-    formulaeType: 'string' | 'number' | 'color',
+    formulaeType: 'string' | 'number' | 'color' | 'float3',
     lastCompileStatus: MultiUIValueBinding<number>
 }
 
@@ -19,11 +19,13 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
     const T_finalPipelineAlwaysStringInfo = translate("formulaeEditor.finalPipelineAlwaysStringInfo"); //The final text will always have type String
     const T_finalPipelineAlwaysColorInfo = translate("formulaeEditor.finalPipelineAlwaysColorInfo"); //The final text will always have type String
     const T_finalPipelineAlwaysFloatInfo = translate("formulaeEditor.finalPipelineAlwaysFloatInfo"); //The final text will always have type String
+    const T_finalPipelineAlwaysFloat3Info = translate("formulaeEditor.finalPipelineAlwaysFloat3Info"); //The final text will always have type String
     const T_implicitConversionWarningString = translate("formulaeEditor.implicitConversionWarningString"); //Implicit conversion to String
     const T_implicitConversionWarningColor = translate("formulaeEditor.implicitConversionWarningColor"); //Implicit conversion to String
     const T_implicitConversionWarningFloat = translate("formulaeEditor.implicitConversionWarningFloat"); //Implicit conversion to String
     const T_implicitConversionWarningColorFail = translate("formulaeEditor.implicitConversionWarningColorFail"); //Implicit conversion to String
     const T_implicitConversionWarningFloatFail = translate("formulaeEditor.implicitConversionWarningFloatFail"); //Implicit conversion to String
+    const T_implicitConversionWarningFloat3Fail = translate("formulaeEditor.implicitConversionWarningFloat3Fail"); //Implicit conversion to String
     const T_addStageEnd = translate("formulaeEditor.addStageEnd"); //Get component
     const T_removeLastStage = translate("formulaeEditor.removeLastStage"); //Get component
     const T_editorFootnote = translate("formulaeEditor.editorFootnote"); //Get component
@@ -34,6 +36,8 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
             default:
             case 'string':
                 return T_implicitConversionWarningString;
+            case 'float3':
+                return T_implicitConversionWarningFloat3Fail;
             case 'color':
                 return lastCompileStatus.value == 0 ? T_implicitConversionWarningColor : T_implicitConversionWarningColorFail;
             case 'number':
@@ -49,7 +53,9 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
                 case 'color':
                     return "UnityEngine.Color";
                 case 'number':
-                    return "System.Float"
+                    return "System.Float";
+                case 'float3':
+                    return "UnityEngine.float3"
             }
         }, [formulaeType, lastCompileStatus])
     const getAlwaysConversionText = useCallback(
@@ -62,6 +68,8 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
                     return T_finalPipelineAlwaysColorInfo;
                 case 'number':
                     return T_finalPipelineAlwaysFloatInfo
+                case 'float3':
+                    return T_finalPipelineAlwaysFloat3Info;
             }
         }, [formulaeType, lastCompileStatus])
 
@@ -128,7 +136,7 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
 
     const [addingItem, setAddingItem] = useState(false)
 
-    const valueToString = (x: number | string | UIColorRGBA | null | undefined) => {
+    const valueToString = (x: number | string | UIColorRGBA | number[] | null | undefined) => {
         if (!x && x !== 0) return "<EMPTY>";
         switch (typeof x) {
             case "number":
@@ -136,7 +144,10 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
             case "string":
                 return x;
             case "object":
-                return "#" + VanillaColorUtils.formatHexColor(x) + Math.floor(x.a * 255).toString(16).padStart(2, '0').toUpperCase()
+                if (Array.isArray(x))
+                    return `[${x[0].toFixed(3)},${x[1].toFixed(3)},${x[2].toFixed(3)}]`
+                else
+                    return "#" + VanillaColorUtils.formatHexColor(x) + Math.floor(x.a * 255).toString(16).padStart(2, '0').toUpperCase()
             default:
                 return "???"
         }

@@ -37,7 +37,7 @@ namespace BelzontWE
     }
     public class WETextDataXml : ISerializable
     {
-        private const int CURRENT_VERSION = 1;
+        private const int CURRENT_VERSION = 2;
         [XmlAttribute] public string itemName;
 
         [XmlElement] public TransformXml transform;
@@ -45,15 +45,10 @@ namespace BelzontWE
         [XmlElement][DefaultValue(null)] public MeshDataImageXml imageMesh;
         [XmlElement][DefaultValue(null)] public MeshDataPlaceholderXml layoutMesh;
         [XmlElement][DefaultValue(null)] public MeshDataWhiteTextureXml whiteMesh;
+        [XmlElement][DefaultValue(null)] public MeshDataScalerXml scaler;
         [XmlElement] public DefaultStyleXml defaultStyle;
         [XmlElement] public GlassStyleXml glassStyle;
         [XmlElement] public DecalStyleXml decalStyle;
-
-        internal WESimulationTextType EffectiveTextType => textMesh?.textType
-            ?? imageMesh?.textType
-            ?? layoutMesh?.textType
-            ?? whiteMesh?.textType
-            ?? WESimulationTextType.Archetype;
 
         public bool ShouldSerializetextMesh() => textMesh != null;
         public bool ShouldSerializeimageMesh() => imageMesh != null;
@@ -62,6 +57,7 @@ namespace BelzontWE
         public bool ShouldSerializedefaultStyle() => layoutMesh is null && defaultStyle != null;
         public bool ShouldSerializeglassStyle() => layoutMesh is null && glassStyle != null;
         public bool ShouldSerializedecalStyle() => layoutMesh is null && decalStyle != null;
+        public bool ShouldSerializescaler() => scaler != null;
 
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
@@ -75,6 +71,7 @@ namespace BelzontWE
             writer.WriteNullCheck(defaultStyle);
             writer.WriteNullCheck(glassStyle);
             writer.WriteNullCheck(decalStyle);
+            writer.WriteNullCheck(scaler);
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -96,6 +93,10 @@ namespace BelzontWE
             if (version >= 1)
             {
                 reader.ReadNullCheck(out decalStyle);
+            }
+            if (version >= 2)
+            {
+                reader.ReadNullCheck(out scaler);
             }
 
         }
@@ -230,6 +231,34 @@ namespace BelzontWE
                     LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
                     return;
                 }
+            }
+        }
+
+        public class MeshDataScalerXml : ISerializable
+        {
+            private const int CURRENT_VERSION = 0;
+            [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.MatrixTransform;
+            [XmlElement] public FormulaeFloat3Xml scale;
+            [XmlElement] public FormulaeFloat3Xml offsetPosition;
+            [XmlElement] public FormulaeFloat3Xml offsetRotation;
+            public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+            {
+                writer.Write(CURRENT_VERSION);
+                writer.WriteNullCheck(offsetPosition);
+                writer.WriteNullCheck(offsetRotation);
+                writer.WriteNullCheck(scale);
+            }
+            public void Deserialize<TReader>(TReader reader) where TReader : IReader
+            {
+                reader.Read(out int version);
+                if (version > CURRENT_VERSION)
+                {
+                    LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                    return;
+                }
+                reader.ReadNullCheck(out offsetPosition);
+                reader.ReadNullCheck(out offsetRotation);
+                reader.ReadNullCheck(out scale);
             }
         }
         public class MeshDataTextXml : ISerializable
@@ -487,6 +516,31 @@ namespace BelzontWE
                     return;
                 }
                 reader.Read(out defaultValue);
+                reader.Read(out formulae);
+            }
+        }
+        public class FormulaeFloat3Xml : ISerializable
+        {
+            private const int CURRENT_VERSION = 0;
+            public Vector3Xml defaultValue;
+            [XmlAttribute] public string formulae;
+            public bool ShouldSerializeformulae() => !formulae.IsNullOrWhitespace();
+            public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+            {
+                writer.Write(CURRENT_VERSION);
+                writer.Write((float3)defaultValue);
+                writer.Write(formulae ?? "");
+            }
+            public void Deserialize<TReader>(TReader reader) where TReader : IReader
+            {
+                reader.Read(out int version);
+                if (version > CURRENT_VERSION)
+                {
+                    LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                    return;
+                }
+                reader.Read(out float3 defaultValue);
+                this.defaultValue = (Vector3Xml)defaultValue;
                 reader.Read(out formulae);
             }
         }

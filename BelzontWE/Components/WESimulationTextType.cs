@@ -7,5 +7,6 @@
         Placeholder = 2,
         Archetype = 3,
         WhiteTexture = 4,
+        MatrixTransform = 5
     }
 }

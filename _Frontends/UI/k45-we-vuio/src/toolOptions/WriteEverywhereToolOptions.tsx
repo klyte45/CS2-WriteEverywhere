@@ -15,6 +15,7 @@ import { WEDebugWindow } from "./WEDebugWindow";
 import { ObjectTyped } from "object-typed";
 import { WELayoutVariablesView } from "./WELayoutVariablesView";
 import { WEInstancingView } from "./WEInstancingView";
+import { WESimulationTextType } from "services/WEFormulaeElement";
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
 
@@ -144,93 +145,94 @@ const WEWorldPickerToolPanel = () => {
         WorldPickerService.instance.currentFormulaeModule,
     ])
     const getCurrentEditingFormulaeType = useCallback(() => {
-        switch (typeof currentEditingFormulaeDefaultValue()?.value) {
+        const value = currentEditingFormulaeDefaultValue()?.value;
+        switch (typeof value) {
             case 'number': return "number";
             case 'string': return "string";
-            case 'object': return "color";
+            case 'object': {
+                if (Array.isArray(value)) return "float3"
+                return "color";
+            }
             default: return null;
         }
     }, [currentEditingFormulaeDefaultValue()])
 
+    const isMatrixTransform = WorldPickerService.instance.bindingList.mesh.TextSourceType.value == WESimulationTextType.MatrixTransform;
 
     return !wps.CurrentEntity.value?.Index ?
         <VanillaComponentResolver.instance.Section title={L_selectItem} children={[]} /> :
         <>
+            {currentItemIsValid && !isMatrixTransform && <>
+                <VectorSectionEditable title={L_itemName}
+                    valueGetter={() => [main.CurrentItemName.value]}
+                    valueGetterFormatted={() => [main.CurrentItemName.value]}
+                    onValueChanged={(i, x) => {
+                        main.CurrentItemName.set(x);
+                    }} />
 
-            {currentItemIsValid &&
-                <>
-                    <VectorSectionEditable title={L_itemName}
-                        valueGetter={() => [main.CurrentItemName.value]}
-                        valueGetterFormatted={() => [main.CurrentItemName.value]}
-                        onValueChanged={(i, x) => {
-                            main.CurrentItemName.set(x);
-                        }} />
-
-                    <AmountValueSection
-                        widthContent={120}
-                        valueGetter={() => `${decimalsFormat(precisions[wps.MouseSensibility.value])} m  | ${decimalsFormat(precisions[wps.MouseSensibility.value] * 10)}°`}
-                        title={L_mousePrecision}
-                        up={{
-                            tooltip: T_mousePrecision_up,
-                            onSelect: () => wps.MouseSensibility.set(wps.MouseSensibility.value - 1),
-                            disabledFn: () => wps.MouseSensibility.value <= 0
-                        }}
-                        down={{
-                            tooltip: T_mousePrecision_down,
-                            onSelect: () => wps.MouseSensibility.set(wps.MouseSensibility.value + 1),
-                            disabledFn: () => wps.MouseSensibility.value >= precisions.length - 1
-                        }}
-                    />
-                    <VanillaComponentResolver.instance.Section title={L_editingPlane}>
-                        {material.ShaderType.value == 2 && <>
-                            <VanillaComponentResolver.instance.ToolButton selected={wps.ShowProjectionCube.value} onSelect={() => wps.ShowProjectionCube.set(!wps.ShowProjectionCube.value)} src={i_ProjectionCube} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ProjectionCube}></VanillaComponentResolver.instance.ToolButton>
-                            <div style={{ width: "10rem" }}></div>
-                        </>}
-                        <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 0} onSelect={() => wps.CurrentPlaneMode.set(0)} src={i_XYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XY}></VanillaComponentResolver.instance.ToolButton>
-                        <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 1} onSelect={() => wps.CurrentPlaneMode.set(1)} src={i_ZYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_ZY}></VanillaComponentResolver.instance.ToolButton>
-                        <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 2} onSelect={() => wps.CurrentPlaneMode.set(2)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XZ}></VanillaComponentResolver.instance.ToolButton>
+                <AmountValueSection
+                    widthContent={120}
+                    valueGetter={() => `${decimalsFormat(precisions[wps.MouseSensibility.value])} m  | ${decimalsFormat(precisions[wps.MouseSensibility.value] * 10)}°`}
+                    title={L_mousePrecision}
+                    up={{
+                        tooltip: T_mousePrecision_up,
+                        onSelect: () => wps.MouseSensibility.set(wps.MouseSensibility.value - 1),
+                        disabledFn: () => wps.MouseSensibility.value <= 0
+                    }}
+                    down={{
+                        tooltip: T_mousePrecision_down,
+                        onSelect: () => wps.MouseSensibility.set(wps.MouseSensibility.value + 1),
+                        disabledFn: () => wps.MouseSensibility.value >= precisions.length - 1
+                    }}
+                />
+                <VanillaComponentResolver.instance.Section title={L_editingPlane}>
+                    {material.ShaderType.value == 2 && <>
+                        <VanillaComponentResolver.instance.ToolButton selected={wps.ShowProjectionCube.value} onSelect={() => wps.ShowProjectionCube.set(!wps.ShowProjectionCube.value)} src={i_ProjectionCube} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ProjectionCube}></VanillaComponentResolver.instance.ToolButton>
                         <div style={{ width: "10rem" }}></div>
-                        <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentMoveMode.value > 0} onSelect={() => wps.CurrentMoveMode.set((wps.CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[wps.CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[wps.CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
-                        <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
-                    </VanillaComponentResolver.instance.Section>
-                    <VanillaComponentResolver.instance.Section title={L_pivot}>
-                        {ObjectTyped.values(WEPlacementPivot)
-                            .filter(x => typeof x == "number")
-                            .map(x => <>
-                                <VanillaComponentResolver.instance.ToolButton
-                                    key={x}
-                                    tooltip={descriptionPivotPosition[x]}
-                                    selected={transform.Pivot.value == x}
-                                    onSelect={() => transform.Pivot.set(x)}
-                                    src={transform.Pivot.value == x ? i_selectedPivot : i_unselectedPivot}
-                                    focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
-                                    className={VanillaComponentResolver.instance.toolButtonTheme.button} />
-                                {(x & 3) == 2 ? <div style={{ flexBasis: "100%" }} /> : <></>}
-                            </>)
-                        }
+                    </>}
+                    <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 0} onSelect={() => wps.CurrentPlaneMode.set(0)} src={i_XYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XY}></VanillaComponentResolver.instance.ToolButton>
+                    <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 1} onSelect={() => wps.CurrentPlaneMode.set(1)} src={i_ZYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_ZY}></VanillaComponentResolver.instance.ToolButton>
+                    <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 2} onSelect={() => wps.CurrentPlaneMode.set(2)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XZ}></VanillaComponentResolver.instance.ToolButton>
+                    <div style={{ width: "10rem" }}></div>
+                    <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentMoveMode.value > 0} onSelect={() => wps.CurrentMoveMode.set((wps.CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[wps.CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[wps.CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
+                    <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
+                </VanillaComponentResolver.instance.Section>
+                <VanillaComponentResolver.instance.Section title={L_pivot}>
+                    {ObjectTyped.values(WEPlacementPivot)
+                        .filter(x => typeof x == "number")
+                        .map(x => <>
+                            <VanillaComponentResolver.instance.ToolButton
+                                key={x}
+                                tooltip={descriptionPivotPosition[x]}
+                                selected={transform.Pivot.value == x}
+                                onSelect={() => transform.Pivot.set(x)}
+                                src={transform.Pivot.value == x ? i_selectedPivot : i_unselectedPivot}
+                                focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
+                                className={VanillaComponentResolver.instance.toolButtonTheme.button} />
+                            {(x & 3) == 2 ? <div style={{ flexBasis: "100%" }} /> : <></>}
+                        </>)
+                    }
 
-                    </VanillaComponentResolver.instance.Section>
-                    <VectorSectionEditable title={L_position}
-                        valueGetter={() => transform.CurrentPosition.value?.map(x => x.toFixed(3))}
-                        valueGetterFormatted={() => transform.CurrentPosition.value?.map(x => decimalsFormat(x) + "m")}
-                        onValueChanged={(i, x) => {
-                            const newVal = transform.CurrentPosition.value;
-                            newVal[i] = parseFloat(x);
-                            if (isNaN(newVal[i])) return;
-                            transform.CurrentPosition.set(newVal);
-                        }} />
-                    <VectorSectionEditable title={L_rotation}
-                        valueGetter={() => transform.CurrentRotation.value?.map(x => x.toFixed(3))}
-                        valueGetterFormatted={() => transform.CurrentRotation.value?.map(x => decimalsFormat(x) + "°")}
-                        onValueChanged={(i, x) => {
-                            const newVal = transform.CurrentRotation.value;
-                            newVal[i] = parseFloat(x);
-                            if (isNaN(newVal[i])) return;
-                            transform.CurrentRotation.set(newVal);
-                        }} />
-                </>}
-
-
+                </VanillaComponentResolver.instance.Section>
+                <VectorSectionEditable title={L_position}
+                    valueGetter={() => transform.CurrentPosition.value?.map(x => x.toFixed(3))}
+                    valueGetterFormatted={() => transform.CurrentPosition.value?.map(x => decimalsFormat(x) + "m")}
+                    onValueChanged={(i, x) => {
+                        const newVal = transform.CurrentPosition.value;
+                        newVal[i] = parseFloat(x);
+                        if (isNaN(newVal[i])) return;
+                        transform.CurrentPosition.set(newVal);
+                    }} />
+                <VectorSectionEditable title={L_rotation}
+                    valueGetter={() => transform.CurrentRotation.value?.map(x => x.toFixed(3))}
+                    valueGetterFormatted={() => transform.CurrentRotation.value?.map(x => decimalsFormat(x) + "°")}
+                    onValueChanged={(i, x) => {
+                        const newVal = transform.CurrentRotation.value;
+                        newVal[i] = parseFloat(x);
+                        if (isNaN(newVal[i])) return;
+                        transform.CurrentRotation.set(newVal);
+                    }} />
+            </>}
             <VanillaComponentResolver.instance.Section title={L_actions} >
                 <>
                     {currentItemIsValid && <>
@@ -241,14 +243,15 @@ const WEWorldPickerToolPanel = () => {
                         }
                         <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayInstancingWindow(!displayInstancingWindow)} selected={displayInstancingWindow} src={i_InstancingBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_InstancingBtn} />
                         <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayVariablesWindow(!displayVariablesWindow)} selected={displayVariablesWindow} src={i_VariablesBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_VariablesBtn} />
-                        <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayShaderWindow(!displayShaderWindow)} selected={displayShaderWindow} src={i_ShaderBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ShaderBtn} />
-                        <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
-                        <div style={{ width: "10rem" }}></div>
-                    </>
-                    }
+                        {!isMatrixTransform && <>
+                            <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayShaderWindow(!displayShaderWindow)} selected={displayShaderWindow} src={i_ShaderBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ShaderBtn} />
+                            <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
+                            <div style={{ width: "10rem" }}></div>
+                        </>}
+                    </>}
                     <VanillaComponentResolver.instance.ToolButton onSelect={() => wps.CurrentEntity.set(null)} src={i_UnselectCurrentIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_picker} />
                 </>
-            </VanillaComponentResolver.instance.Section >
+            </VanillaComponentResolver.instance.Section>
             {currentItemIsValid && displayAppearenceWindow && <WETextAppearenceSettings />}
             {currentItemIsValid && displayShaderWindow && <WETextShaderProperties />}
             {currentItemIsValid && displayVariablesWindow && <WELayoutVariablesView />}

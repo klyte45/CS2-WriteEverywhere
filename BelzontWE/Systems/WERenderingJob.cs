@@ -138,6 +138,27 @@ namespace BelzontWE
                 PopulateVars(nextEntity, ref variables);
                 switch (mesh.TextType)
                 {
+                    case WESimulationTextType.MatrixTransform:
+                        if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayoutSc))
+                        {
+                            var matrix = prevMatrix * Matrix4x4.TRS(mesh.OffsetPositionFormulae.EffectiveValue, Quaternion.Euler(mesh.OffsetRotationFormulae.EffectiveValue), mesh.ScaleFormulae.EffectiveValue);
+                            availToDraw.Enqueue(new WERenderData
+                            {
+                                transform = transform,
+                                textDataEntity = nextEntity,
+                                geometryEntity = geometryEntity,
+                                main = m_weMainLookup[nextEntity],
+                                material = m_weMaterialLookup[nextEntity],
+                                mesh = m_weMeshLookup[nextEntity],
+                                transformMatrix = matrix,
+                                variables = variables
+                            });
+                            for (int j = 0; j < subLayoutSc.Length; j++)
+                            {
+                                DrawTree(geometryEntity, subLayoutSc[j].m_weTextData, matrix, unfilteredChunkIndex, variables, nthCall + 1);
+                            }
+                        }
+                        break;
                     case WESimulationTextType.Archetype:
                         if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout2))
                         {

@@ -7,7 +7,6 @@ using Game.Common;
 using Game.Prefabs;
 using Game.Rendering;
 using Game.SceneFlow;
-using Game.Tools;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
@@ -68,7 +67,6 @@ namespace BelzontWE
                     },
                     None = new ComponentType[]
                     {
-                        ComponentType.ReadOnly<Temp>(),
                         ComponentType.ReadOnly<Deleted>(),
                         ComponentType.ReadOnly<WEPlaceholderToBeProcessedInMain>(),
                     }
@@ -83,7 +81,6 @@ namespace BelzontWE
                     },
                     None = new ComponentType[]
                     {
-                        ComponentType.ReadOnly<Temp>(),
                         ComponentType.ReadOnly<Deleted>(),
                         ComponentType.ReadOnly<WETemplateForPrefabEmpty>(),
                         ComponentType.ReadOnly<WEPlaceholderToBeProcessedInMain>(),
@@ -184,13 +181,16 @@ namespace BelzontWE
                             }
                             break;
                         case WESimulationTextType.Placeholder:
-                            if (mesh.TextType == WESimulationTextType.Placeholder && mesh.IsTemplateDirty())
+                            if (mesh.IsTemplateDirty())
                             {
                                 mesh.ClearTemplateDirty();
                                 cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
                                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - {mesh.originalName}\nTEMPLATE DIRTY");
                             }
                             doRender = m_pickerTool.IsSelected;
+                            break;
+                        case WESimulationTextType.MatrixTransform:
+                            doRender = false;
                             break;
                     }
                     if (doRender)

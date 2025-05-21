@@ -43,6 +43,9 @@ namespace BelzontWE.Utils
                     case WESimulationTextType.WhiteTexture:
                         result.whiteMesh = weMesh.ToWhiteTextureXml();
                         break;
+                    case WESimulationTextType.MatrixTransform:
+                        result.scaler = weMesh.ToScalerXml();
+                        break;
                 }
             }
             result.transform = em.TryGetComponent<WETextDataTransform>(e, out var weTransf) ? weTransf.ToXml() : default;
@@ -85,6 +88,7 @@ namespace BelzontWE.Utils
                 ?? xml.imageMesh?.ToComponent()
                 ?? xml.layoutMesh?.ToComponent()
                 ?? xml.whiteMesh?.ToComponent()
+                ?? xml.scaler?.ToComponent()
                 ?? new() { TextType = WESimulationTextType.Archetype };
 
         }
@@ -189,6 +193,24 @@ namespace BelzontWE.Utils
                 TextType = value.textType
             };
 
+        public static WETextDataXml.MeshDataScalerXml ToScalerXml(this WETextDataMesh value)
+            => new()
+            {
+                scale = value.ScaleFormulae.ToXml(),
+                offsetPosition = value.OffsetPositionFormulae.ToXml(),
+                offsetRotation = value.OffsetRotationFormulae.ToXml(),
+            };
+        public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataScalerXml value)
+            => new()
+            {
+                ScaleFormulae = value?.scale.ToComponent() ?? new WETextDataValueFloat3
+                {
+                    defaultValue = new float3(1, 1, 1)
+                },
+                OffsetPositionFormulae = value?.offsetPosition.ToComponent() ?? new WETextDataValueFloat3(),
+                OffsetRotationFormulae = value?.scale.ToComponent() ?? new WETextDataValueFloat3(),
+                TextType = value.textType
+            };
 
 
 
@@ -201,6 +223,11 @@ namespace BelzontWE.Utils
         public static WETextDataXml.FormulaeFloatXml ToXml(this WETextDataValueFloat value) => new()
         {
             defaultValue = value.defaultValue,
+            formulae = value.Formulae
+        };
+        public static WETextDataXml.FormulaeFloat3Xml ToXml(this WETextDataValueFloat3 value) => new()
+        {
+            defaultValue = (Vector3Xml)value.defaultValue,
             formulae = value.Formulae
         };
         public static WETextDataXml.FormulaeIntXml ToXml(this WETextDataValueInt value) => new()
@@ -225,6 +252,11 @@ namespace BelzontWE.Utils
             Formulae = value.formulae
         };
         public static WETextDataValueFloat ToComponent(this WETextDataXml.FormulaeFloatXml value) => value is null ? default : new()
+        {
+            defaultValue = value.defaultValue,
+            Formulae = value.formulae
+        };
+        public static WETextDataValueFloat3 ToComponent(this WETextDataXml.FormulaeFloat3Xml value) => value is null ? default : new()
         {
             defaultValue = value.defaultValue,
             Formulae = value.formulae

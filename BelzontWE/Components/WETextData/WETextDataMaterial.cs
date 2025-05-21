@@ -2,7 +2,6 @@
 using BelzontWE.Utils;
 using Colossal.Mathematics;
 using System;
-using System.Linq;
 using System.Runtime.InteropServices;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -119,7 +118,7 @@ namespace BelzontWE
                 return false;
             }
             nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
-          
+
             var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[varsStr]];
             return dirty |= color.UpdateEffectiveValue(em, geometryEntity, vars)
               | emissiveColor.UpdateEffectiveValue(em, geometryEntity, vars)
@@ -226,6 +225,11 @@ namespace BelzontWE
 
         public bool GetOwnMaterial(ref WETextDataMesh mesh, Bounds2 uvBounds, out Material result)
         {
+            if (mesh.TextType == WESimulationTextType.MatrixTransform)
+            {
+                result = default;
+                return true;
+            }
             var bri = (mesh.TextType) switch
             {
                 WESimulationTextType.Text or WESimulationTextType.Image => mesh.RenderInformation,

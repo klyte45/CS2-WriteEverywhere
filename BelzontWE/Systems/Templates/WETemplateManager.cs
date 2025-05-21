@@ -224,7 +224,6 @@ namespace BelzontWE
                         None = new ComponentType[]
                         {
                             ComponentType.ReadOnly<WEWaitingRendering>(),
-                            ComponentType.ReadOnly<Temp>(),
                             ComponentType.ReadOnly<Deleted>(),
                         }
                     }
@@ -247,7 +246,6 @@ namespace BelzontWE
                             ComponentType.ReadOnly<WETemplateForPrefabEmpty>(),
                             ComponentType.ReadOnly<WETemplateForPrefabDirty>(),
                             ComponentType.ReadOnly<WETemplateForPrefab>(),
-                            ComponentType.ReadOnly<Temp>(),
                             ComponentType.ReadOnly<Deleted>(),
                         }
                     }
@@ -268,7 +266,6 @@ namespace BelzontWE
                                 },
                             None = new ComponentType[]
                             {
-                                ComponentType.ReadOnly<Temp>(),
                                 ComponentType.ReadOnly<Deleted>(),
                             }
                         }
@@ -284,7 +281,6 @@ namespace BelzontWE
                                 },
                             None = new ComponentType[]
                             {
-                                ComponentType.ReadOnly<Temp>(),
                                 ComponentType.ReadOnly<Deleted>(),
                                 ComponentType.ReadOnly<WEWaitingRendering>(),
                             }
@@ -303,7 +299,6 @@ namespace BelzontWE
                         {
                             ComponentType.ReadOnly<WETemplateForPrefabDirty>(),
                             ComponentType.ReadOnly<WETemplateDirtyInstancing>(),
-                            ComponentType.ReadOnly<Temp>(),
                             ComponentType.ReadOnly<Deleted>(),
                         }
                     }
@@ -339,7 +334,6 @@ namespace BelzontWE
                         },
                         None = new ComponentType[]
                         {
-                            ComponentType.ReadOnly<Temp>(),
                             ComponentType.ReadOnly<Deleted>(),
                         }
                     }
@@ -355,7 +349,6 @@ namespace BelzontWE
                         },
                         None = new ComponentType[]
                         {
-                            ComponentType.ReadOnly<Temp>(),
                             ComponentType.ReadOnly<Deleted>(),
                             ComponentType.ReadOnly<WETemplateForPrefab>(),
                         }

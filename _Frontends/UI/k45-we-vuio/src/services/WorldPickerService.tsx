@@ -93,6 +93,18 @@ const WETextDataMeshController = {
     ValueTextFormulaeStr: MultiUIValueBinding<string>,
     ValueTextFormulaeCompileResult: MultiUIValueBinding<number>,
     ValueTextFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
+    Scaler: MultiUIValueBinding<number[]>,
+    ScalerFormulaeStr: MultiUIValueBinding<string>,
+    ScalerFormulaeCompileResult: MultiUIValueBinding<number>,
+    ScalerFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
+    OffsetPosition: MultiUIValueBinding<number[]>,
+    OffsetPositionFormulaeStr: MultiUIValueBinding<string>,
+    OffsetPositionFormulaeCompileResult: MultiUIValueBinding<number>,
+    OffsetPositionFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
+    OffsetRotation: MultiUIValueBinding<number[]>,
+    OffsetRotationFormulaeStr: MultiUIValueBinding<string>,
+    OffsetRotationFormulaeCompileResult: MultiUIValueBinding<number>,
+    OffsetRotationFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
 }
 const WETextDataMaterialController = {
     _prefix: "k45::we.dataMaterial",
@@ -311,7 +323,7 @@ export class WorldPickerService {
         this.refreshFnRegistered.map(x => x())
     }
 
-    getCurrentEditingFormulaeValueField(): MultiUIValueBinding<number | UIColorRGBA | string> | null {
+    getCurrentEditingFormulaeValueField(): MultiUIValueBinding<number | UIColorRGBA | string | number[]> | null {
         return this.currentFormulaeField && this.currentFormulaeModule ? this.bindingList[this.currentFormulaeModule][this.currentFormulaeField] : null
     }
     getCurrentEditingFormulaeFieldTitle(): string {

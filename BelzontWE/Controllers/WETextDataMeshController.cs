@@ -3,7 +3,9 @@ using Colossal.Entities;
 using System;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 
+using static BelzontWE.WEFormulaeHelper;
 namespace BelzontWE
 {
     public partial class WETextDataMeshController : WETextDataBaseController
@@ -18,6 +20,26 @@ namespace BelzontWE
         public MultiUIValueBinding<int> ValueTextFormulaeCompileResult { get; private set; }
         public MultiUIValueBinding<string[]> ValueTextFormulaeCompileResultErrorArgs { get; private set; }
 
+
+        public MultiUIValueBinding<float3, float[]> Scaler { get; private set; }
+        public MultiUIValueBinding<string> ScalerFormulaeStr { get; private set; }
+        public MultiUIValueBinding<int> ScalerFormulaeCompileResult { get; private set; }
+        public MultiUIValueBinding<string[]> ScalerFormulaeCompileResultErrorArgs { get; private set; }
+
+
+
+        public MultiUIValueBinding<float3, float[]> OffsetPosition { get; private set; }
+        public MultiUIValueBinding<string> OffsetPositionFormulaeStr { get; private set; }
+        public MultiUIValueBinding<int> OffsetPositionFormulaeCompileResult { get; private set; }
+        public MultiUIValueBinding<string[]> OffsetPositionFormulaeCompileResultErrorArgs { get; private set; }
+
+
+        public MultiUIValueBinding<float3, float[]> OffsetRotation { get; private set; }
+        public MultiUIValueBinding<string> OffsetRotationFormulaeStr { get; private set; }
+        public MultiUIValueBinding<int> OffsetRotationFormulaeCompileResult { get; private set; }
+        public MultiUIValueBinding<string[]> OffsetRotationFormulaeCompileResultErrorArgs { get; private set; }
+
+
         protected override void DoInitValueBindings(Action<string, object[]> EventCaller, Action<string, Delegate> CallBinder)
         {
             MaxWidth = new(default, $"{PREFIX}{nameof(MaxWidth)}", EventCaller, CallBinder);
@@ -30,11 +52,36 @@ namespace BelzontWE
             ValueTextFormulaeCompileResult = new(default, $"{PREFIX}{nameof(ValueTextFormulaeCompileResult)}", EventCaller, CallBinder);
             ValueTextFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(ValueTextFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
 
+            Scaler = new(default, $"{PREFIX}{nameof(Scaler)}", EventCaller, CallBinder, (x, _) => new float[] { x.x, x.y, x.z }, (x, _) => x.Length == 3 ? new float3(x[0], x[1], x[2]) : default);
+            ScalerFormulaeStr = new(default, $"{PREFIX}{nameof(ScalerFormulaeStr)}", EventCaller, CallBinder);
+            ScalerFormulaeCompileResult = new(default, $"{PREFIX}{nameof(ScalerFormulaeCompileResult)}", EventCaller, CallBinder);
+            ScalerFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(ScalerFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
+
+
+            OffsetPosition = new(default, $"{PREFIX}{nameof(OffsetPosition)}", EventCaller, CallBinder, (x, _) => new float[] { x.x, x.y, x.z }, (x, _) => x.Length == 3 ? new float3(x[0], x[1], x[2]) : default);
+            OffsetPositionFormulaeStr = new(default, $"{PREFIX}{nameof(OffsetPositionFormulaeStr)}", EventCaller, CallBinder);
+            OffsetPositionFormulaeCompileResult = new(default, $"{PREFIX}{nameof(OffsetPositionFormulaeCompileResult)}", EventCaller, CallBinder);
+            OffsetPositionFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(OffsetPositionFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
+
+
+            OffsetRotation = new(default, $"{PREFIX}{nameof(OffsetRotation)}", EventCaller, CallBinder, (x, _) => new float[] { x.x, x.y, x.z }, (x, _) => x.Length == 3 ? new float3(x[0], x[1], x[2]) : default);
+            OffsetRotationFormulaeStr = new(default, $"{PREFIX}{nameof(OffsetRotationFormulaeStr)}", EventCaller, CallBinder);
+            OffsetRotationFormulaeCompileResult = new(default, $"{PREFIX}{nameof(OffsetRotationFormulaeCompileResult)}", EventCaller, CallBinder);
+            OffsetRotationFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(OffsetRotationFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
+
+            Scaler.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float3, WETextDataMesh>(x, (x, currentItem) => { currentItem.ScaleFormulae.defaultValue = x; return currentItem; });
+            SetupOnFormulaeChangedAction(PickerController, (ref WETextDataMesh data, string newFormulae, out string[] errorArgs) => data.ScaleFormulae.SetFormulae(newFormulae, out errorArgs), ScalerFormulaeStr, ScalerFormulaeCompileResult, ScalerFormulaeCompileResultErrorArgs);
+
+            OffsetPosition.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float3, WETextDataMesh>(x, (x, currentItem) => { currentItem.OffsetPositionFormulae.defaultValue = x; return currentItem; });
+            SetupOnFormulaeChangedAction(PickerController, (ref WETextDataMesh data, string newFormulae, out string[] errorArgs) => data.OffsetPositionFormulae.SetFormulae(newFormulae, out errorArgs), OffsetPositionFormulaeStr, OffsetPositionFormulaeCompileResult, OffsetPositionFormulaeCompileResultErrorArgs);
+
+            OffsetRotation.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float3, WETextDataMesh>(x, (x, currentItem) => { currentItem.OffsetRotationFormulae.defaultValue = x; return currentItem; });
+            SetupOnFormulaeChangedAction(PickerController, (ref WETextDataMesh data, string newFormulae, out string[] errorArgs) => data.OffsetRotationFormulae.SetFormulae(newFormulae, out errorArgs), OffsetRotationFormulaeStr, OffsetRotationFormulaeCompileResult, OffsetRotationFormulaeCompileResultErrorArgs);
 
             ValueText.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Text = x.Truncate(500); return currentItem; });
             MaxWidth.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float, WETextDataMesh>(x, (x, currentItem) => { currentItem.MaxWidthMeters = x; return currentItem; });
             SelectedFont.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.FontName = FontServer.Instance.TryGetFont(x, out var data) ? data.Name : default(FixedString32Bytes); return currentItem; });
-            ValueTextFormulaeStr.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { ValueTextFormulaeCompileResult.Value = currentItem.SetFormulae(ValueTextFormulaeStr.Value, out var cmpErr); ValueTextFormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
+            ValueTextFormulaeStr.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { ValueTextFormulaeCompileResult.Value = currentItem.SetFormulae(x, out var cmpErr); ValueTextFormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
             TextSourceType.OnScreenValueChanged += (x) => PickerController.EnqueueModification<int, WETextDataMesh>(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; PickerController.ReloadTreeDelayed(); return currentItem; });
             ImageAtlasName.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
 
@@ -49,6 +96,12 @@ namespace BelzontWE
             ValueTextFormulaeStr.Value = mesh.ValueData.Formulae;
             TextSourceType.Value = (int)mesh.TextType;
             ImageAtlasName.Value = mesh.Atlas.ToString();
+            Scaler.Value = mesh.ScaleFormulae.defaultValue;
+            ResetScreenFormulaeValue(mesh.ScaleFormulae.Formulae, ScalerFormulaeStr, ScalerFormulaeCompileResult, ScalerFormulaeCompileResultErrorArgs);
+            OffsetPosition.Value = mesh.OffsetPositionFormulae.defaultValue;
+            ResetScreenFormulaeValue(mesh.OffsetPositionFormulae.Formulae, OffsetPositionFormulaeStr, OffsetPositionFormulaeCompileResult, OffsetPositionFormulaeCompileResultErrorArgs);
+            OffsetRotation.Value = mesh.OffsetRotationFormulae.defaultValue;
+            ResetScreenFormulaeValue(mesh.OffsetRotationFormulae.Formulae, OffsetRotationFormulaeStr, OffsetRotationFormulaeCompileResult, OffsetRotationFormulaeCompileResultErrorArgs);
         }
     }
 }

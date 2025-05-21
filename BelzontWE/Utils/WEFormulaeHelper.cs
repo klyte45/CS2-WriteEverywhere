@@ -13,6 +13,7 @@ using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace BelzontWE
@@ -20,7 +21,7 @@ namespace BelzontWE
     public static class WEFormulaeHelper
     {
         public delegate T FormulaeFn<T>(EntityManager em, Entity e, Dictionary<string, string> vars);
-
+        public static float3 NaNfloat3 => new(float.NaN, float.NaN, float.NaN);
         private interface IBaseCache
         {
             byte ResultCode { get; }
@@ -67,11 +68,13 @@ namespace BelzontWE
         private static readonly Dictionary<string, BaseCache<float>> cachedFnsFloat = new();
         private static readonly Dictionary<string, BaseCache<int>> cachedFnsInt = new();
         private static readonly Dictionary<string, BaseCache<Color>> cachedFnsColor = new();
+        private static readonly Dictionary<string, BaseCache<float3>> cachedFnsFloat3 = new();
         private static readonly Dictionary<string, BaseCache<IList<Entity>>> cachedFnsEntityArray = new();
 
         public static FormulaeFn<string> GetCachedStringFn(string formulae) => cachedFnsString.TryGetValue(formulae, out var cached) ? cached.Fn : null;
         public static FormulaeFn<float> GetCachedFloatFn(string formulae) => cachedFnsFloat.TryGetValue(formulae, out var cached) ? cached.Fn : null;
         public static FormulaeFn<int> GetCachedIntFn(string formulae) => cachedFnsInt.TryGetValue(formulae, out var cached) ? cached.Fn : null;
+        public static FormulaeFn<float3> GetCachedFloat3Fn(string formulae) => cachedFnsFloat3.TryGetValue(formulae, out var cached) ? cached.Fn : null;
         public static FormulaeFn<Color> GetCachedColorFn(string formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached.Fn : null;
         public static FormulaeFn<IList<Entity>> GetCachedEntityArrayFn(string formulae) => cachedFnsEntityArray.TryGetValue(formulae, out var cached) ? cached.Fn : null;
 
@@ -80,10 +83,11 @@ namespace BelzontWE
             IDictionary refDic = typeof(T) == typeof(string) ? cachedFnsString
                 : typeof(T) == typeof(int) ? cachedFnsInt
                 : typeof(T) == typeof(float) ? cachedFnsFloat
+                : typeof(T) == typeof(float3) ? cachedFnsFloat3
                 : typeof(T) == typeof(Color) ? cachedFnsColor
                 : typeof(T) == typeof(IList<Entity>) ? (IDictionary)cachedFnsEntityArray
                 : typeof(T) == typeof(Entity) ? null
-                : throw new InvalidCastException("Formulae only support types float, string, UnityEngine.Color or list of Entities");
+                : throw new InvalidCastException("Formulae only support types float, int, float3, string, UnityEngine.Color or list of Entities");
             resultFormulaeStr = default;
             resultFormulaeFn = default;
             if (newFormulae512.Trim() == default)
@@ -205,13 +209,17 @@ namespace BelzontWE
                         {
                             iLGenerator.Emit(OpCodes.Ldc_R4, float.NaN);
                         }
-                        if (typeof(T) == typeof(int))
+                        else if (typeof(T) == typeof(int))
                         {
                             iLGenerator.Emit(OpCodes.Ldc_I4, int.MinValue);
                         }
                         else if (typeof(T) == typeof(Color))
                         {
                             iLGenerator.Emit(OpCodes.Call, typeof(Color).GetProperty("magenta", RedirectorUtils.allFlags).GetMethod);
+                        }
+                        else if (typeof(T) == typeof(float3))
+                        {
+                            iLGenerator.Emit(OpCodes.Call, typeof(WEFormulaeHelper).GetProperty(nameof(NaNfloat3), RedirectorUtils.allFlags).GetMethod);
                         }
                         result = 255;
                     }
@@ -366,6 +374,10 @@ namespace BelzontWE
                 else if (typeof(T) == typeof(Entity))
                 {
                     iLGenerator.Emit(OpCodes.Call, typeof(Entity).GetProperty(nameof(Entity.Null), RedirectorUtils.allFlags).GetMethod);
+                }
+                else if (typeof(T) == typeof(float3))
+                {
+                    iLGenerator.Emit(OpCodes.Call, typeof(WEFormulaeHelper).GetProperty(nameof(NaNfloat3), RedirectorUtils.allFlags).GetMethod);
                 }
             }
             iLGenerator.Emit(OpCodes.Ret);

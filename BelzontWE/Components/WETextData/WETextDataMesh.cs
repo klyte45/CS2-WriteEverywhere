@@ -2,7 +2,6 @@
 using Colossal.Entities;
 using Colossal.Mathematics;
 using System;
-using System.Linq;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
@@ -38,6 +37,9 @@ namespace BelzontWE
                 }
             }
         }
+        public WETextDataValueFloat3 OffsetPositionFormulae;
+        public WETextDataValueFloat3 OffsetRotationFormulae;
+        public WETextDataValueFloat3 ScaleFormulae;
         public FixedString64Bytes Atlas { readonly get => atlas; set { atlas = value; templateDirty = dirty = true; } }
         public FixedString64Bytes FontName { readonly get => fontName; set { fontName = value; templateDirty = dirty = true; } }
         public WETextDataValueString ValueData { readonly get => valueData; set => valueData = value; }
@@ -66,6 +68,10 @@ namespace BelzontWE
                 {
                     DefaultValue = "NEW TEXT"
                 },
+                ScaleFormulae = new()
+                {
+                    defaultValue = new float3(1, 1, 1)
+                }
             };
 
         public readonly bool IsDirty() => dirty;
@@ -152,6 +158,11 @@ namespace BelzontWE
                     break;
                 case WESimulationTextType.WhiteTexture:
                     templateDirty = dirty = false;
+                    return true;
+                case WESimulationTextType.MatrixTransform:
+                    OffsetPositionFormulae.UpdateEffectiveValue(em, geometryEntity, vars);
+                    OffsetRotationFormulae.UpdateEffectiveValue(em, geometryEntity, vars);
+                    ScaleFormulae.UpdateEffectiveValue(em, geometryEntity, vars);
                     return true;
                 default:
                     return true;
