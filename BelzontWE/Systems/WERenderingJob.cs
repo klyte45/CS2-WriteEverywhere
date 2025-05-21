@@ -264,9 +264,14 @@ namespace BelzontWE
                                 {
                                     scale.x /= mesh.BriWidthMetersUnscaled;
                                 }
-                                if (mesh.TextType == WESimulationTextType.Text && mesh.MaxWidthMeters > 0 && mesh.BriWidthMetersUnscaled * scale.x > mesh.MaxWidthMeters)
+                                if (mesh.TextType == WESimulationTextType.Text && mesh.MaxWidthMeters.EffectiveValue > 0 && mesh.BriWidthMetersUnscaled * scale.x > mesh.MaxWidthMeters.EffectiveValue)
                                 {
-                                    scale.x = mesh.MaxWidthMeters / mesh.BriWidthMetersUnscaled;
+                                    var ratio = mesh.MaxWidthMeters.EffectiveValue / mesh.BriWidthMetersUnscaled;
+                                    scale.x = ratio;
+                                    if (mesh.RescaleHeightOnTextOverflow)
+                                    {
+                                        scale.y = ratio;
+                                    }
                                 }
                             }
                             var refPos = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform.offsetPosition, transform.PivotAsFloat3, scale);

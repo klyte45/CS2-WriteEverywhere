@@ -12,13 +12,21 @@ namespace BelzontWE
     {
         private const string PREFIX = "dataMesh.";
         public MultiUIValueBinding<string> ValueText { get; private set; }
-        public MultiUIValueBinding<float> MaxWidth { get; private set; }
         public MultiUIValueBinding<string> SelectedFont { get; private set; }
         public MultiUIValueBinding<int> TextSourceType { get; private set; }
         public MultiUIValueBinding<string> ImageAtlasName { get; private set; }
+        public MultiUIValueBinding<bool> RescaleHeightOnTextOverflow { get; private set; }
+
+
         public MultiUIValueBinding<string> ValueTextFormulaeStr { get; private set; }
         public MultiUIValueBinding<int> ValueTextFormulaeCompileResult { get; private set; }
         public MultiUIValueBinding<string[]> ValueTextFormulaeCompileResultErrorArgs { get; private set; }
+
+        public MultiUIValueBinding<float> MaxWidth { get; private set; }
+        public MultiUIValueBinding<string> MaxWidthFormulaeStr { get; private set; }
+        public MultiUIValueBinding<int> MaxWidthFormulaeCompileResult { get; private set; }
+        public MultiUIValueBinding<string[]> MaxWidthFormulaeCompileResultErrorArgs { get; private set; }
+
 
 
         public MultiUIValueBinding<float3, float[]> Scaler { get; private set; }
@@ -42,15 +50,22 @@ namespace BelzontWE
 
         protected override void DoInitValueBindings(Action<string, object[]> EventCaller, Action<string, Delegate> CallBinder)
         {
-            MaxWidth = new(default, $"{PREFIX}{nameof(MaxWidth)}", EventCaller, CallBinder);
             ValueText = new(default, $"{PREFIX}{nameof(ValueText)}", EventCaller, CallBinder);
             SelectedFont = new(default, $"{PREFIX}{nameof(SelectedFont)}", EventCaller, CallBinder);
             TextSourceType = new(default, $"{PREFIX}{nameof(TextSourceType)}", EventCaller, CallBinder);
             ImageAtlasName = new(default, $"{PREFIX}{nameof(ImageAtlasName)}", EventCaller, CallBinder);
+            RescaleHeightOnTextOverflow = new(default, $"{PREFIX}{nameof(RescaleHeightOnTextOverflow)}", EventCaller, CallBinder);
 
             ValueTextFormulaeStr = new(default, $"{PREFIX}{nameof(ValueTextFormulaeStr)}", EventCaller, CallBinder);
             ValueTextFormulaeCompileResult = new(default, $"{PREFIX}{nameof(ValueTextFormulaeCompileResult)}", EventCaller, CallBinder);
             ValueTextFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(ValueTextFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
+
+
+            MaxWidth = new(default, $"{PREFIX}{nameof(MaxWidth)}", EventCaller, CallBinder);
+            MaxWidthFormulaeStr = new(default, $"{PREFIX}{nameof(MaxWidthFormulaeStr)}", EventCaller, CallBinder);
+            MaxWidthFormulaeCompileResult = new(default, $"{PREFIX}{nameof(MaxWidthFormulaeCompileResult)}", EventCaller, CallBinder);
+            MaxWidthFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(MaxWidthFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
+
 
             Scaler = new(default, $"{PREFIX}{nameof(Scaler)}", EventCaller, CallBinder, (x, _) => new float[] { x.x, x.y, x.z }, (x, _) => x.Length == 3 ? new float3(x[0], x[1], x[2]) : default);
             ScalerFormulaeStr = new(default, $"{PREFIX}{nameof(ScalerFormulaeStr)}", EventCaller, CallBinder);
@@ -79,11 +94,16 @@ namespace BelzontWE
             SetupOnFormulaeChangedAction(PickerController, (ref WETextDataMesh data, string newFormulae, out string[] errorArgs) => data.OffsetRotationFormulae.SetFormulae(newFormulae, out errorArgs), OffsetRotationFormulaeStr, OffsetRotationFormulaeCompileResult, OffsetRotationFormulaeCompileResultErrorArgs);
 
             ValueText.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Text = x.Truncate(500); return currentItem; });
-            MaxWidth.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float, WETextDataMesh>(x, (x, currentItem) => { currentItem.MaxWidthMeters = x; return currentItem; });
+
+            MaxWidth.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float, WETextDataMesh>(x, (x, currentItem) => { currentItem.MaxWidthMeters.defaultValue = x; return currentItem; });
+            SetupOnFormulaeChangedAction(PickerController, (ref WETextDataMesh data, string newFormulae, out string[] errorArgs) => data.MaxWidthMeters.SetFormulae(newFormulae, out errorArgs), MaxWidthFormulaeStr, MaxWidthFormulaeCompileResult, MaxWidthFormulaeCompileResultErrorArgs);
+
+
             SelectedFont.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.FontName = FontServer.Instance.TryGetFont(x, out var data) ? data.Name : default(FixedString32Bytes); return currentItem; });
             ValueTextFormulaeStr.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { ValueTextFormulaeCompileResult.Value = currentItem.SetFormulae(x, out var cmpErr); ValueTextFormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
             TextSourceType.OnScreenValueChanged += (x) => PickerController.EnqueueModification<int, WETextDataMesh>(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; PickerController.ReloadTreeDelayed(); return currentItem; });
             ImageAtlasName.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
+            RescaleHeightOnTextOverflow.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMesh>(x, (x, currentItem) => { currentItem.RescaleHeightOnTextOverflow = x; return currentItem; });
 
         }
 
@@ -91,11 +111,15 @@ namespace BelzontWE
         {
             EntityManager.TryGetComponent<WETextDataMesh>(entity, out var mesh);
             ValueText.Value = mesh.ValueData.DefaultValue;
-            MaxWidth.Value = mesh.MaxWidthMeters;
             SelectedFont.Value = FontServer.Instance.TryGetFont(mesh.FontName, out var fsd) ? fsd.Name : "";
             ValueTextFormulaeStr.Value = mesh.ValueData.Formulae;
             TextSourceType.Value = (int)mesh.TextType;
             ImageAtlasName.Value = mesh.Atlas.ToString();
+            RescaleHeightOnTextOverflow.Value = mesh.RescaleHeightOnTextOverflow;
+
+            MaxWidth.Value = mesh.MaxWidthMeters.defaultValue;
+            ResetScreenFormulaeValue(mesh.MaxWidthMeters.Formulae, MaxWidthFormulaeStr, MaxWidthFormulaeCompileResult, MaxWidthFormulaeCompileResultErrorArgs);
+
             Scaler.Value = mesh.ScaleFormulae.defaultValue;
             ResetScreenFormulaeValue(mesh.ScaleFormulae.Formulae, ScalerFormulaeStr, ScalerFormulaeCompileResult, ScalerFormulaeCompileResultErrorArgs);
             OffsetPosition.Value = mesh.OffsetPositionFormulae.defaultValue;

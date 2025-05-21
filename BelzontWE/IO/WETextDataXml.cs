@@ -2,6 +2,7 @@
 using Belzont.Utils;
 using Colossal.OdinSerializer.Utilities;
 using Colossal.Serialization.Entities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -263,17 +264,20 @@ namespace BelzontWE
         }
         public class MeshDataTextXml : ISerializable
         {
-            private const int CURRENT_VERSION = 0;
+            private const int CURRENT_VERSION = 1;
             [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.Text;
             [XmlAttribute] public string fontName;
+            [XmlAttribute][DefaultValue(false)] public bool rescaleHeightOnTextOverflow;
             [XmlElement] public FormulaeStringXml text;
-            [XmlAttribute][DefaultValue(0f)] public float maxWidthMeters;
+            [Obsolete][XmlAttribute][DefaultValue(0f)] public float maxWidthMeters;
+            [XmlElement] public FormulaeFloatXml MaxWidthMeters;
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
                 writer.Write(CURRENT_VERSION);
                 writer.Write(fontName ?? "");
                 writer.WriteNullCheck(text);
-                writer.Write(maxWidthMeters);
+                writer.WriteNullCheck(MaxWidthMeters);
+                writer.Write(rescaleHeightOnTextOverflow);
             }
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
             {
@@ -285,7 +289,19 @@ namespace BelzontWE
                 }
                 reader.Read(out fontName);
                 reader.ReadNullCheck(out text);
-                reader.Read(out maxWidthMeters);
+                if (version == 0)
+                {
+                    reader.Read(out float maxWidthMeters);
+                    MaxWidthMeters = new FormulaeFloatXml
+                    {
+                        defaultValue = maxWidthMeters
+                    };
+                }
+                else
+                {
+                    reader.ReadNullCheck(out MaxWidthMeters);
+                    reader.Read(out rescaleHeightOnTextOverflow);
+                }
             }
         }
         public class MeshDataImageXml : ISerializable

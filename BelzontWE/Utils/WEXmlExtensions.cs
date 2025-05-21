@@ -146,7 +146,8 @@ namespace BelzontWE.Utils
             => new()
             {
                 fontName = value.FontName.ToString(),
-                maxWidthMeters = value.MaxWidthMeters,
+                MaxWidthMeters = value.MaxWidthMeters.ToXml(),
+                rescaleHeightOnTextOverflow = value.RescaleHeightOnTextOverflow,
                 text = value.ValueData.ToXml()
             };
         public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataTextXml value)
@@ -154,9 +155,10 @@ namespace BelzontWE.Utils
             {
                 FontName = value.fontName ?? "",
                 originalName = $"{value.fontName}",
-                MaxWidthMeters = value.maxWidthMeters,
+                MaxWidthMeters = value.MaxWidthMeters?.ToComponent() ?? default,
                 ValueData = value.text?.ToComponent() ?? default,
-                TextType = value.textType
+                TextType = value.textType,
+                RescaleHeightOnTextOverflow = value.rescaleHeightOnTextOverflow
             };
         public static WETextDataXml.MeshDataImageXml ToImageMeshXml(this WETextDataMesh value)
             => new()
@@ -208,7 +210,7 @@ namespace BelzontWE.Utils
                     defaultValue = new float3(1, 1, 1)
                 },
                 OffsetPositionFormulae = value?.offsetPosition.ToComponent() ?? new WETextDataValueFloat3(),
-                OffsetRotationFormulae = value?.scale.ToComponent() ?? new WETextDataValueFloat3(),
+                OffsetRotationFormulae = value?.offsetRotation.ToComponent() ?? new WETextDataValueFloat3(),
                 TextType = value.textType
             };
 

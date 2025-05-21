@@ -46,7 +46,8 @@ namespace BelzontWE
         public int MinLod { get; set; }
         public float3 LodReferenceScale { get; set; }
         public int LastLod { get; set; }
-        public float MaxWidthMeters { get; set; }
+        public WETextDataValueFloat MaxWidthMeters;
+        public bool RescaleHeightOnTextOverflow { get; set; }
 
         public Bounds3 Bounds { get; private set; }
         public bool HasBRI => basicRenderInformation.IsAllocated;
@@ -134,7 +135,7 @@ namespace BelzontWE
                         lastUpdateModReplacements = WETemplateManager.Instance.SpritesAndLayoutsDataVersion;
                         fontName = WETemplateManager.Instance.GetFontFor(originalName.ToString(), fontName, ref result);
                     }
-                    result |= valueData.UpdateEffectiveValue(em, geometryEntity, vars);
+                    result |= valueData.UpdateEffectiveValue(em, geometryEntity, vars) | MaxWidthMeters.UpdateEffectiveValue(em, geometryEntity, vars);
                     break;
                 case WESimulationTextType.Image:
                     if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.SpritesAndLayoutsDataVersion)

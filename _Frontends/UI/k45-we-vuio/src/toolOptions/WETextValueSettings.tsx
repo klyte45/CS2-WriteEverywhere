@@ -7,7 +7,7 @@ import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
 import i_formulae from "../images/Function.svg";
 import "../style/floatingPanels.scss";
-import { FormulaeEditRow } from "../common/FormulaeEditRow";
+import { FormulaeEditorRowFloat, FormulaeEditRow } from "../common/FormulaeEditRow";
 import { ObjectTyped } from "object-typed";
 import { FocusDisabled } from "cs2/input";
 
@@ -21,6 +21,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const T_atlas = translate("textValueSettings.atlas"); //
     const T_image = translate("textValueSettings.image"); //
     const T_useAbsoluteSize = translate("textValueSettings.useAbsoluteSize"); //
+    const T_resizeHeightOnTextOverflow = translate("textValueSettings.resizeHeightOnTextOverflow"); //
     const T_heightWidthCm = translate("textValueSettings.heightWidthCm"); //
     const T_HeightCm = translate("textValueSettings.heightCm"); //
     const T_widthDistortion = translate("textValueSettings.widthDistortion"); //
@@ -67,7 +68,6 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     const [height, setHeight] = useState(transform.CurrentScale.value[1]);
     const [widthDistortion, setWidthDistortion] = useState(transform.CurrentScale.value[0] / transform.CurrentScale.value[1]);
-    const [maxWidth, setMaxWidth] = useState(mesh.MaxWidth.value * 100);
 
 
     const [decalAreaThickness, setDecalAreaThickness] = useState(transform.CurrentScale.value[2]);
@@ -80,7 +80,6 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     }, [transform.CurrentScale.value, picker.CurrentSubEntity.value])
 
 
-    useEffect(() => { setMaxWidth(mesh.MaxWidth.value * 100) }, [mesh.MaxWidth.value])
     useEffect(() => { setUsingFormulae(!!mesh.ValueTextFormulaeStr.value); }, [picker.CurrentSubEntity.value])
 
     useEffect(() => { setFixedTextTyping(mesh.ValueText.value); }, [mesh.ValueText.value, picker.CurrentSubEntity.value])
@@ -101,7 +100,6 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
         transform.CurrentScale.set(scale);
     }
 
-    const saveMaxWidth = (value: number) => mesh.MaxWidth.set(value > 0 ? value * .01 : 0)
     const saveDecalThickness = (value: number) => {
         setDecalAreaThickness(value);
         transform.CurrentScale.set([transform.CurrentScale.value[0], transform.CurrentScale.value[1], value]);
@@ -139,7 +137,10 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
                 {material.ShaderType.value == 2 && <FloatInputField label={T_decalAreaThickness} min={.001} max={100} value={decalAreaThickness} onChange={saveDecalThickness} onChangeEnd={() => saveDecalThickness(decalAreaThickness)} />}
                 {mesh.TextSourceType.value == WESimulationTextType.Text && <>
-                    <FloatInputField label={T_maxWidth} min={.0} max={1000000} value={maxWidth} onChange={setMaxWidth} onChangeEnd={() => saveMaxWidth(maxWidth)} />
+                    <FormulaeEditRow formulaeField="MaxWidth" formulaeModule={formulaeModule} label={T_maxWidth}
+                        defaultInputField={<FloatInputStandalone className={editorStyle.input} min={.0} max={1000000} value={mesh.MaxWidth.value} onChange={x => mesh.MaxWidth.set(x)} />}
+                    />
+                    <ToggleField label={T_resizeHeightOnTextOverflow} value={mesh.RescaleHeightOnTextOverflow.value} onChange={(x) => mesh.RescaleHeightOnTextOverflow.set(x)} />
                     <EditorItemRow label={T_fontFieldTitle} styleContent={{ paddingLeft: "34rem" }}>
                         <DropdownField
                             value={mesh.SelectedFont.value}
