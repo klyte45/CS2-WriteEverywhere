@@ -631,6 +631,18 @@ namespace BelzontWE
                         currentComponentType = targetProperty.GetMethod.ReturnType;
                         continue;
                     }
+                    else if (currentComponentType.GetMethod(field, MEMBER_FLAGS, null, new Type[] { typeof(Dictionary<string, string>) }, null) is MethodInfo targetMethod2 && targetMethod2.ReturnType != typeof(void))
+                    {
+                        if (currentComponentType.IsValueType && (targetMethod2.IsVirtual || currentComponentType.IsGenericType))
+                        {
+                            iLGenerator.Emit(OpCodes.Constrained, currentComponentType);
+                        }
+                        iLGenerator.Emit(OpCodes.Ldarg_2);
+
+                        iLGenerator.EmitCall(targetMethod2.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, targetMethod2, null);
+                        currentComponentType = targetMethod2.ReturnType;
+                        continue;
+                    }
                     else if (currentComponentType.GetMethod(field, MEMBER_FLAGS, null, new Type[0], null) is MethodInfo targetMethod && targetMethod.ReturnType != typeof(void))
                     {
                         if (currentComponentType.IsValueType && (targetMethod.IsVirtual || currentComponentType.IsGenericType))

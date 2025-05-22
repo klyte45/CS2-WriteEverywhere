@@ -44,7 +44,7 @@ namespace BelzontWE.Utils
                         result.whiteMesh = weMesh.ToWhiteTextureXml();
                         break;
                     case WESimulationTextType.MatrixTransform:
-                        result.scaler = weMesh.ToScalerXml();
+                        result.matrixTransform = weMesh.ToScalerXml();
                         break;
                 }
             }
@@ -88,7 +88,7 @@ namespace BelzontWE.Utils
                 ?? xml.imageMesh?.ToComponent()
                 ?? xml.layoutMesh?.ToComponent()
                 ?? xml.whiteMesh?.ToComponent()
-                ?? xml.scaler?.ToComponent()
+                ?? xml.matrixTransform?.ToComponent()
                 ?? new() { TextType = WESimulationTextType.Archetype };
 
         }
@@ -195,14 +195,14 @@ namespace BelzontWE.Utils
                 TextType = value.textType
             };
 
-        public static WETextDataXml.MeshDataScalerXml ToScalerXml(this WETextDataMesh value)
+        public static WETextDataXml.MeshDataMatrixTransformXml ToScalerXml(this WETextDataMesh value)
             => new()
             {
                 scale = value.ScaleFormulae.ToXml(),
                 offsetPosition = value.OffsetPositionFormulae.ToXml(),
                 offsetRotation = value.OffsetRotationFormulae.ToXml(),
             };
-        public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataScalerXml value)
+        public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataMatrixTransformXml value)
             => new()
             {
                 ScaleFormulae = value?.scale.ToComponent() ?? new WETextDataValueFloat3

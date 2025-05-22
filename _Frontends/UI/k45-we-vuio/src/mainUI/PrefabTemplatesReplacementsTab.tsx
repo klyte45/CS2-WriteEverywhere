@@ -20,7 +20,12 @@ enum SubTab {
     ATLASES = "ATLASES",
     SUBTEMPLATES = "SUBTEMPLATES"
 }
-type SelectableEntriesRecord = Record<string, { modName: string, itemList: string[] }>
+type ModEntryOptions = {
+    modName: string;
+    itemList: string[];
+};
+
+type SelectableEntriesRecord = Record<string, ModEntryOptions>
 
 export const PrefabTemplatesReplacementsTab = (props: Props) => {
     const i_saveItem = "coui://uil/Standard/DiskSave.svg";
@@ -58,7 +63,7 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
     const [selectedMod, setSelectedMod] = useState(null as string | null)
     const [fontList, setFontList] = useState<SelectableEntriesRecord>({})
     const [atlasList, setAtlasList] = useState<SelectableEntriesRecord>({})
-    const [templatesList, setTemplatesList] = useState<SelectableEntriesRecord>({})
+    const [selectableTemplatesList, setSelectableTemplatesList] = useState<SelectableEntriesRecord>({})
     const [modLayoutReplacementFolder, setModLayoutReplacementFolder] = useState("");
     const [extensionsImport, setExtensionsImport] = useState("")
     const [alertToDisplay, setAlertToDisplay] = useState(undefined as string | undefined)
@@ -102,9 +107,9 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
             LayoutsService.listCityTemplates(),
             LayoutsService.listModSubtemplates()
         ]).then(([x, y]) => {
-            setTemplatesList({
+            setSelectableTemplatesList({
                 "": { modName: T_currentCitySource, itemList: Object.keys(x).sort((a, b) => a.localeCompare(b)) },
-                ...ObjectTyped.fromEntries(y.map(z => [z.ModId, { modName: z.ModName, itemList: z.Subtemplates.sort((a, b) => a.localeCompare(b)) }]))
+                ...ObjectTyped.fromEntries(y.map(z => [z.ModId, { modName: z.ModName, itemList: z.Subtemplates.filter(x => !x.includes(":___")).sort((a, b) => a.localeCompare(b)) }] as [string, ModEntryOptions]).filter(x => x[1].itemList.length))
             });
         });
         LayoutsService.getLocationSavedReplacements().then(setModLayoutReplacementFolder)
@@ -168,7 +173,7 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
                 case SubTab.SUBTEMPLATES:
                     setCurrentItemObj(modsReplacementData[selectedMod].subtemplates ?? {})
                     setCurrentTitle(T_subtemplatesToReplace)
-                    setCurrentOptionList(templatesList)
+                    setCurrentOptionList(selectableTemplatesList)
                     break;
             }
         }
@@ -302,7 +307,7 @@ const RowData = ({
             <DropdownField
                 disabled={currentSelectionList.length == 0}
                 value={effectiveValue.join(":")}
-                items={currentSelectionList.map(x => ({ displayName: { __Type: LocElementType.String, value: !x ? "--DEFAULT--" : x.split(":").reverse()[0]}, value: x }))}
+                items={currentSelectionList.map(x => ({ displayName: { __Type: LocElementType.String, value: !x ? "--DEFAULT--" : x.split(":").reverse()[0].replace(/^__/g, "") }, value: x }))}
                 onChange={(y) => setValue(itemKey, y)}
                 autoFocus={false}
             />

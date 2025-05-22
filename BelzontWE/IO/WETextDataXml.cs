@@ -46,7 +46,7 @@ namespace BelzontWE
         [XmlElement][DefaultValue(null)] public MeshDataImageXml imageMesh;
         [XmlElement][DefaultValue(null)] public MeshDataPlaceholderXml layoutMesh;
         [XmlElement][DefaultValue(null)] public MeshDataWhiteTextureXml whiteMesh;
-        [XmlElement][DefaultValue(null)] public MeshDataScalerXml scaler;
+        [XmlElement][DefaultValue(null)] public MeshDataMatrixTransformXml matrixTransform;
         [XmlElement] public DefaultStyleXml defaultStyle;
         [XmlElement] public GlassStyleXml glassStyle;
         [XmlElement] public DecalStyleXml decalStyle;
@@ -55,11 +55,10 @@ namespace BelzontWE
         public bool ShouldSerializeimageMesh() => imageMesh != null;
         public bool ShouldSerializelayoutMesh() => layoutMesh != null;
         public bool ShouldSerializewhiteMesh() => whiteMesh != null;
-        public bool ShouldSerializedefaultStyle() => layoutMesh is null && defaultStyle != null;
-        public bool ShouldSerializeglassStyle() => layoutMesh is null && glassStyle != null;
-        public bool ShouldSerializedecalStyle() => layoutMesh is null && decalStyle != null;
-        public bool ShouldSerializescaler() => scaler != null;
-
+        public bool ShouldSerializedefaultStyle() => matrixTransform is null && layoutMesh is null && defaultStyle != null;
+        public bool ShouldSerializeglassStyle() => matrixTransform is null && layoutMesh is null && glassStyle != null;
+        public bool ShouldSerializedecalStyle() => matrixTransform is null && layoutMesh is null && decalStyle != null;
+        public bool ShouldSerializescaler() => matrixTransform != null;
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
             writer.Write(CURRENT_VERSION);
@@ -72,7 +71,7 @@ namespace BelzontWE
             writer.WriteNullCheck(defaultStyle);
             writer.WriteNullCheck(glassStyle);
             writer.WriteNullCheck(decalStyle);
-            writer.WriteNullCheck(scaler);
+            writer.WriteNullCheck(matrixTransform);
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -97,7 +96,7 @@ namespace BelzontWE
             }
             if (version >= 2)
             {
-                reader.ReadNullCheck(out scaler);
+                reader.ReadNullCheck(out matrixTransform);
             }
 
         }
@@ -235,13 +234,18 @@ namespace BelzontWE
             }
         }
 
-        public class MeshDataScalerXml : ISerializable
+        public class MeshDataMatrixTransformXml : ISerializable
         {
             private const int CURRENT_VERSION = 0;
             [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.MatrixTransform;
-            [XmlElement] public FormulaeFloat3Xml scale;
+            [XmlElement] public FormulaeFloat3Xml scale = new() { defaultValue = (Vector3Xml)new Vector3(1, 1, 1) };
             [XmlElement] public FormulaeFloat3Xml offsetPosition;
             [XmlElement] public FormulaeFloat3Xml offsetRotation;
+
+            public bool ShouldSerializescale() => scale.defaultValue != Vector3.one || scale.ShouldSerializeformulae();
+            public bool ShouldSerializeoffsetPosition() => offsetPosition != null && (offsetPosition.ShouldSerializedefaultValue() || offsetPosition.ShouldSerializeformulae());
+            public bool ShouldSerializeoffsetRotation() => offsetRotation != null && (offsetRotation.ShouldSerializedefaultValue() || offsetRotation.ShouldSerializeformulae());
+
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
                 writer.Write(CURRENT_VERSION);
@@ -538,9 +542,10 @@ namespace BelzontWE
         public class FormulaeFloat3Xml : ISerializable
         {
             private const int CURRENT_VERSION = 0;
-            public Vector3Xml defaultValue;
+            public Vector3Xml defaultValue = new();
             [XmlAttribute] public string formulae;
             public bool ShouldSerializeformulae() => !formulae.IsNullOrWhitespace();
+            public bool ShouldSerializedefaultValue() => (Vector3)(defaultValue) != Vector3.zero;
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
                 writer.Write(CURRENT_VERSION);

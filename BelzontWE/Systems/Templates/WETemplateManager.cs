@@ -1237,11 +1237,17 @@ namespace BelzontWE
 
         private static Dictionary<string, string> MergeDictionaries(string modId, Dictionary<string, HashSet<string>> mapped, Dictionary<string, Dictionary<string, string>> replacements)
         {
-            return mapped.TryGetValue(modId, out var mappedSet)
-                ? replacements.TryGetValue(modId, out var replacementDict)
+            if (mapped.TryGetValue(modId, out var mappedSet))
+            {
+                mappedSet.RemoveWhere(x => x.StartsWith("__"));
+                return replacements.TryGetValue(modId, out var replacementDict)
                     ? mappedSet.ToDictionary(x => x, x => replacementDict.TryGetValue(x, out var data) ? data : null)
-                    : mappedSet.ToDictionary(x => x, x => (string)null)
-                : new();
+                    : mappedSet.ToDictionary(x => x, x => (string)null);
+            }
+            else
+            {
+                return new();
+            }
         }
 
         internal string SetModAtlasReplacement(string modId, string original, string target)

@@ -162,14 +162,13 @@ const WEWorldPickerToolPanel = () => {
     return !wps.CurrentEntity.value?.Index ?
         <VanillaComponentResolver.instance.Section title={L_selectItem} children={[]} /> :
         <>
+            {currentItemIsValid && <VectorSectionEditable title={L_itemName}
+                valueGetter={() => [main.CurrentItemName.value]}
+                valueGetterFormatted={() => [main.CurrentItemName.value]}
+                onValueChanged={(i, x) => {
+                    main.CurrentItemName.set(x);
+                }} />}
             {currentItemIsValid && !isMatrixTransform && <>
-                <VectorSectionEditable title={L_itemName}
-                    valueGetter={() => [main.CurrentItemName.value]}
-                    valueGetterFormatted={() => [main.CurrentItemName.value]}
-                    onValueChanged={(i, x) => {
-                        main.CurrentItemName.set(x);
-                    }} />
-
                 <AmountValueSection
                     widthContent={120}
                     valueGetter={() => `${decimalsFormat(precisions[wps.MouseSensibility.value])} m  | ${decimalsFormat(precisions[wps.MouseSensibility.value] * 10)}°`}
@@ -252,8 +251,8 @@ const WEWorldPickerToolPanel = () => {
                     <VanillaComponentResolver.instance.ToolButton onSelect={() => wps.CurrentEntity.set(null)} src={i_UnselectCurrentIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_picker} />
                 </>
             </VanillaComponentResolver.instance.Section>
-            {currentItemIsValid && displayAppearenceWindow && <WETextAppearenceSettings />}
-            {currentItemIsValid && displayShaderWindow && <WETextShaderProperties />}
+            {currentItemIsValid && !isMatrixTransform && displayAppearenceWindow && <WETextAppearenceSettings />}
+            {currentItemIsValid && !isMatrixTransform && displayShaderWindow && <WETextShaderProperties />}
             {currentItemIsValid && displayVariablesWindow && <WELayoutVariablesView />}
             {currentItemIsValid && displayInstancingWindow && <WEInstancingView />}
             {currentItemIsValid && <WETextValueSettings />}

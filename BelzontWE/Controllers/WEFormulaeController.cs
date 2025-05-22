@@ -69,7 +69,12 @@ namespace BelzontWE
         {
             var type = Type.GetType($"{typeFullName}, {assemblyName}");
             return type?.GetMembers(WEFormulaeHelper.MEMBER_FLAGS).Where(x =>
-            (x is PropertyInfo pi && pi.GetMethod?.GetParameters().Length == 0) || x is FieldInfo || (x is MethodInfo mi && mi.GetParameters().Length == 0 && mi.ReturnType != typeof(void) && !mi.Name.StartsWith("get_"))
+            (x is PropertyInfo pi && pi.GetMethod?.GetParameters().Length == 0)
+            || x is FieldInfo
+            || (x is MethodInfo mi
+                && mi.GetParameters() is ParameterInfo[] p
+                && (p.Length == 0 || (p.Length == 1 && p[0].ParameterType == typeof(Dictionary<string, string>) && !p[0].ParameterType.IsByRefLike))
+            && mi.ReturnType != typeof(void) && !mi.Name.StartsWith("get_"))
             ).Select(x => WETypeMemberDesc.FromMemberInfo(x)).ToArray();
         }
 
@@ -264,6 +269,12 @@ namespace BelzontWE
                 {
                     currentType = targetProperty.GetMethod.ReturnType;
                     result.Add(WETypeMemberDesc.FromMemberInfo(targetProperty));
+                    continue;
+                }
+                else if (currentType.GetMethod(field, ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly, null, new Type[] {typeof(Dictionary<string,string>)}, null) is MethodInfo targetMethod2 && targetMethod2.ReturnType != typeof(void))
+                {
+                    currentType = targetMethod2.ReturnType;
+                    result.Add(WETypeMemberDesc.FromMemberInfo(targetMethod2));
                     continue;
                 }
                 else if (currentType.GetMethod(field, ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly, null, new Type[0], null) is MethodInfo targetMethod && targetMethod.ReturnType != typeof(void))
