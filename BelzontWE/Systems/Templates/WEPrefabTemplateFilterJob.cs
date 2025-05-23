@@ -3,6 +3,8 @@ using System;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
+using Game.Tools;
+
 
 
 #if BURST
@@ -91,6 +93,8 @@ namespace BelzontWE
             public ComponentLookup<PrefabData> m_prefabDataLkp;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
             public NativeHashMap<long, Colossal.Hash128> m_indexesWithLayout;
+            internal ComponentLookup<Temp> m_tempLkp;
+
             public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
                 var entities = chunk.GetNativeArray(m_EntityType);
@@ -99,6 +103,11 @@ namespace BelzontWE
                 for (int i = 0; i < checkCount; i++)
                 {
                     var entity = entities[i];
+                    if (m_tempLkp.TryGetComponent(entity, out var temp) && temp.m_Original != Entity.Null)
+                    {
+                        m_CommandBuffer.AddComponent<WETemplateForPrefabEmpty>(unfilteredChunkIndex, entity);
+                        return;
+                    }
                     var prefabRef = prefabRefs[i];
                     if (m_prefabDataLkp.TryGetComponent(prefabRef.m_Prefab, out var prefabData))
                     {

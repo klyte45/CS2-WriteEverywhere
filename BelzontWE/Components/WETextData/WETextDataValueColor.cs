@@ -1,4 +1,5 @@
-﻿using Belzont.Utils;
+﻿using Belzont.Interfaces;
+using Belzont.Utils;
 using Colossal.OdinSerializer.Utilities;
 using System;
 using System.Collections.Generic;
@@ -67,7 +68,7 @@ namespace BelzontWE
             }
             catch (Exception e)
             {
-                LogUtils.DoLog($"Error running formulae @{geometryEntity}: {e}");
+                if (BasicIMod.DebugMode) LogUtils.DoLog($"Error running formulae @{geometryEntity}: {e}");
                 EffectiveValue = Color.magenta;
             }
             return loadedFnNow || EffectiveValue != oldVal;

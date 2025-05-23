@@ -1,5 +1,6 @@
 ﻿using Belzont.Utils;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Unity.Entities;
@@ -9,6 +10,7 @@ namespace BelzontWE.Bridge
     [Obsolete("Don't reference methods on this class directly. Always use reverse patch to access them, and don't use this mod DLL as hard dependency of your own mod.", true)]
     public static class TemplatesManagementBridge
     {
+        private static WETemplateManager templateManager;
         public static bool RegisterCustomTemplates(Assembly mainAssembly, string rootFolderLayouts)
         {
             if (!Directory.Exists(rootFolderLayouts)) return false;
@@ -23,6 +25,12 @@ namespace BelzontWE.Bridge
             WETemplateManager.Instance.RegisterLoadableTemplatesFolder(mainAssembly, new() { ModName = modData.mod.displayName, Location = rootFolder });
         }
 
-        public static void ForceReloadLayouts() => World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<WETemplateManager>().MarkPrefabsDirty();
+        public static void ForceReloadLayouts() => (templateManager ??= World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<WETemplateManager>()).MarkPrefabsDirty();
+
+        public static Dictionary<string, string> GetMetadatasFromReplacement(Assembly mainAssembly, string layoutName)
+        {
+            templateManager ??= World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<WETemplateManager>();
+            return templateManager.GetMetadatasFromReplacement(mainAssembly, layoutName);
+        }
     }
 }

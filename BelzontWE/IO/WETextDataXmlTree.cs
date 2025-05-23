@@ -26,6 +26,9 @@ namespace BelzontWE
         [XmlElement("variable")]
         public WETemplateVariable[] variables = new WETemplateVariable[0];
 
+        [XmlElement("metadata")]
+        public WEXmlMetadata[] metadatas = new WEXmlMetadata[0];
+
         public bool ShouldSerializechildren() => self.layoutMesh is null;
 
         internal string ModSource { get; set; }

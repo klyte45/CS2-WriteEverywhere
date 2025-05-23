@@ -468,11 +468,7 @@ namespace BelzontWE
 
                     var dataToBeProcessed = dataToBeProcessedArray[i];
                     m_DataTransformLkp.TryGetComponent(e, out var transformData);
-
-                    WETextDataXmlTree targetTemplate = null;
-                    bool hasTemplate = dataToBeProcessed.layoutName.ToString().Split(":", 2) is string[] modEntryName && modEntryName.Length == 2
-                        ? ModsSubTemplates.TryGetValue(modEntryName[0], out var modTemplates) && modTemplates.TryGetValue(modEntryName[1], out targetTemplate)
-                        : RegisteredTemplates.TryGetValue(dataToBeProcessed.layoutName, out targetTemplate);
+                    bool hasTemplate = TryGetTargetTemplate(dataToBeProcessed.layoutName, out WETextDataXmlTree targetTemplate);
 
                     for (int j = 0; j < buff.Length; j++)
                     {
@@ -527,6 +523,14 @@ namespace BelzontWE
                     cmd.RemoveComponent<WEPlaceholderToBeProcessedInMain>(e);
                 }
             }
+        }
+
+        private bool TryGetTargetTemplate(FixedString128Bytes layoutName, out WETextDataXmlTree targetTemplate)
+        {
+            targetTemplate = null;
+            return layoutName.ToString().Split(":", 2) is string[] modEntryName && modEntryName.Length == 2
+                                      ? ModsSubTemplates.TryGetValue(modEntryName[0], out var modTemplates) && modTemplates.TryGetValue(modEntryName[1], out targetTemplate)
+                                      : RegisteredTemplates.TryGetValue(layoutName, out targetTemplate);
         }
 
         private static void GetSpacingAndOffset(uint remaining, uint rowCount, uint rowCapacity, WEPlacementAlignment axisAlignment, ref float3 spacing, out float3 offset)
@@ -602,6 +606,7 @@ namespace BelzontWE
                     }
                     Dependency = new WEPrefabTemplateFilterJob
                     {
+                        m_tempLkp = GetComponentLookup<Temp>(true),
                         m_EntityType = GetEntityTypeHandle(),
                         m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>(true),
                         m_prefabDataLkp = GetComponentLookup<PrefabData>(true),
@@ -1353,6 +1358,21 @@ namespace BelzontWE
             }
 
             return true;
+        }
+
+        internal Dictionary<string, string> GetMetadatasFromReplacement(Assembly mainAssembly, string originalLayoutName)
+        {
+            var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
+            if (m_subtemplatesMapped.TryGetValue(modId, out var mappings) && mappings.Contains(originalLayoutName))
+            {
+                bool haveChanges = false;
+                var targetTemplateName = GetTemplateFor(WEModIntegrationUtility.GetModAccessName(mainAssembly, originalLayoutName), "", ref haveChanges);
+                if (TryGetTargetTemplate(targetTemplateName, out WETextDataXmlTree targetTemplate))
+                {
+                    return targetTemplate.metadatas.Where(x => x.dll == modId).GroupBy(x => x.refName).ToDictionary(x => x.Key, x => x.First().content);
+                }
+            }
+            return null;
         }
 
         #endregion
