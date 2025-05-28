@@ -564,7 +564,7 @@ namespace BelzontWE
 
         protected override void OnUpdate()
         {
-            if (GameManager.instance.isLoading || GameManager.instance.isGameLoading || IsLoadingLayouts) return;
+            if (GameManager.instance.isGameLoading || IsLoadingLayouts) return;
 
             if (m_executionQueue.Count > 0)
             {
