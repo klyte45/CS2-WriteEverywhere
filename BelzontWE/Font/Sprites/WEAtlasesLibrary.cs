@@ -173,15 +173,15 @@ namespace BelzontWE.Sprites
             }
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
             yield return 0;
-            LocalAtlases[INTERNAL_ATLAS_NAME] = new(2048);
+            LocalAtlases[INTERNAL_ATLAS_NAME] = new(21);
             foreach (var img in Enum.GetValues(typeof(WEImages)).Cast<WEImages>())
             {
                 var Texture = KResourceLoader.LoadTextureMod(img.ToString());
                 while (LocalAtlases[INTERNAL_ATLAS_NAME].Insert(img.ToString(), Texture) == 2)
                 {
-                    var currentSize = LocalAtlases[INTERNAL_ATLAS_NAME].Width;
-                    if (currentSize > 8196) break;
-                    var newAtlas = new WETextureAtlas(currentSize * 2);
+                    var currentSize = LocalAtlases[INTERNAL_ATLAS_NAME].Size;
+                    if (currentSize >= 28) break;
+                    var newAtlas = new WETextureAtlas(currentSize + 1);
                     newAtlas.InsertAll(LocalAtlases[INTERNAL_ATLAS_NAME]);
                     LocalAtlases[INTERNAL_ATLAS_NAME].Dispose();
                     LocalAtlases[INTERNAL_ATLAS_NAME] = newAtlas;
@@ -282,15 +282,15 @@ namespace BelzontWE.Sprites
         {
             if (spritesToAdd.Count > 0)
             {
-                targetDict[atlasName] = new(512);
+                targetDict[atlasName] = new(18);
                 for (int j = 0; j < spritesToAdd.Count; j++)
                 {
                     WEImageInfo entry = spritesToAdd[j];
                     while (targetDict[atlasName].Insert(entry) == 2)
                     {
-                        var currentSize = targetDict[atlasName].Width;
-                        if (currentSize > 8196) break;
-                        var newAtlas = new WETextureAtlas(currentSize * 2);
+                        var currentSize = targetDict[atlasName].Size;
+                        if (currentSize >= 28) break;
+                        var newAtlas = new WETextureAtlas(currentSize + 1);
                         newAtlas.InsertAll(targetDict[atlasName]);
                         targetDict[atlasName].Dispose();
                         targetDict[atlasName] = newAtlas;
@@ -332,7 +332,7 @@ namespace BelzontWE.Sprites
             {
                 return false;
             }
-            CityAtlases[newName] = new WETextureAtlas(atlas.Width, true);
+            CityAtlases[newName] = new WETextureAtlas(atlas.Size, willSerialize: true);
             CityAtlases[newName].InsertAll(atlas);
             return true;
         }
@@ -495,7 +495,7 @@ namespace BelzontWE.Sprites
         }
         public bool AtlasExistsInSavegame(string name) => name != null && CityAtlases.ContainsKey(name);
 
-        public int GetAtlasImageSize(string name) => TryGetAtlas(name, out var atlas) ? atlas.Main.width : -1;
+        public float[] GetAtlasImageSize(string name) => TryGetAtlas(name, out var atlas) ? new float[] { atlas.Width, atlas.Height } : new float[0];
 
         internal record struct ModAtlasRegistry(string ModId, string ModName, string[] Atlases) { }
         internal ModAtlasRegistry[] ListModAtlases() => RegisteredModsAtlases

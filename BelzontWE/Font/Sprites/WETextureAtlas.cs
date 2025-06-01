@@ -17,9 +17,11 @@ namespace BelzontWE.Font
 {
     public class WETextureAtlas : IDisposable, ISerializable
     {
-        public const uint CURRENT_VERSION = 1;
-        public int Width => width;
-        public int Height => height;
+        public const uint CURRENT_VERSION = 2;
+        public int Width { get; private set; }
+        public int Height { get; private set; }
+        public int Size { get; private set; }
+
         public Dictionary<FixedString32Bytes, WESpriteInfo> Sprites { get; } = new();
         public Texture2D Main { get; set; }
         public Texture2D Emissive { get; set; }
@@ -37,32 +39,34 @@ namespace BelzontWE.Font
         public IEnumerable<FixedString32Bytes> Keys => Sprites.Keys;
 
         private MaxRectsBinPack rectsPack;
-        private int width;
-        private int height;
 
         internal WETextureAtlas()
         {
             WillSerialize = true;
         }
-        public WETextureAtlas(int size, bool willSerialize = false) : this(width: size, height: size, willSerialize: willSerialize) { }
 
-        public WETextureAtlas(int width, int height, HeuristicMethod method = HeuristicMethod.RectBestShortSideFit, bool willSerialize = false)
+        public WETextureAtlas(int size, HeuristicMethod method = HeuristicMethod.RectBestShortSideFit, bool willSerialize = false)
         {
-            this.width = width;
-            this.height = height;
-            Main = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            Emissive = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            Control = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            Mask = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            Normal = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            var pixelsToSet = new Color[width * height];
+            if (size < 18 || size > 28)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size), "Size must be between 18 (512x512) and 28 (16384x16384, inclusive). This is to ensure the atlas is not too small or too large for practical use.");
+            }
+            Size = size;
+            Width = 1 << Mathf.FloorToInt(size / 2f);
+            Height = 1 << Mathf.CeilToInt(size / 2f);
+            Main = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+            Emissive = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+            Control = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+            Mask = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+            Normal = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+            var pixelsToSet = new Color[Width * Height];
             Main.SetPixels(pixelsToSet);
             Emissive.SetPixels(pixelsToSet);
             Control.SetPixels(pixelsToSet);
             Mask.SetPixels(pixelsToSet);
             Normal.SetPixels(pixelsToSet.Select(x => new Color(.5f, .5f, 1f)).ToArray());
             Method = method;
-            rectsPack = new MaxRectsBinPack(width, height, false);
+            rectsPack = new MaxRectsBinPack(Width, Height, false);
             WillSerialize = willSerialize;
         }
 
@@ -229,6 +233,7 @@ namespace BelzontWE.Font
             writer.Write(rectsPack);
             writer.Write(Width);
             writer.Write(Height);
+            writer.Write(Size);
             foreach (var tex in m_serializationOrder)
             {
                 var mainTexBytes = new NativeArray<byte>(tex, Allocator.Temp);
@@ -265,8 +270,19 @@ namespace BelzontWE.Font
             Method = (HeuristicMethod)method;
             rectsPack = new MaxRectsBinPack();
             reader.Read(rectsPack);
-            reader.Read(out width);
-            reader.Read(out height);
+            reader.Read(out int width);
+            Width = width;
+            reader.Read(out int height);
+            Height = height;
+            if (version >= 2)
+            {
+                reader.Read(out int size);
+                Size = size;
+            }
+            else
+            {
+                Size = Convert.ToString(Width - 1, 2).Length + Convert.ToString(Height - 1, 2).Length;
+            }
             var bytesArrays = new ImageLoadInfo[5];
             for (int i = 0; i < bytesArrays.Length; i++)
             {
@@ -288,11 +304,11 @@ namespace BelzontWE.Font
             imageLoadAction = () =>
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Loading texture atlas '{name}'!");
-                if (Main) GameObject.Destroy(Main); Main = new Texture2D(width, height, TextureFormat.RGBA32, false); Main.LoadImage(bytesArrays[0].pngData);
-                if (Emissive) GameObject.Destroy(Emissive); Emissive = new Texture2D(width, height, TextureFormat.RGBA32, false); Emissive.LoadImage(bytesArrays[1].pngData);
-                if (Control) GameObject.Destroy(Control); Control = new Texture2D(width, height, TextureFormat.RGBA32, false); Control.LoadImage(bytesArrays[2].pngData);
-                if (Mask) GameObject.Destroy(Mask); Mask = new Texture2D(width, height, TextureFormat.RGBA32, false); Mask.LoadImage(bytesArrays[3].pngData);
-                if (Normal) GameObject.Destroy(Normal); Normal = new Texture2D(width, height, TextureFormat.RGBA32, false); Normal.LoadImage(bytesArrays[4].pngData);
+                if (Main) GameObject.Destroy(Main); Main = new Texture2D(Width, Height, TextureFormat.RGBA32, false); Main.LoadImage(bytesArrays[0].pngData);
+                if (Emissive) GameObject.Destroy(Emissive); Emissive = new Texture2D(Width, Height, TextureFormat.RGBA32, false); Emissive.LoadImage(bytesArrays[1].pngData);
+                if (Control) GameObject.Destroy(Control); Control = new Texture2D(Width, Height, TextureFormat.RGBA32, false); Control.LoadImage(bytesArrays[2].pngData);
+                if (Mask) GameObject.Destroy(Mask); Mask = new Texture2D(Width, Height, TextureFormat.RGBA32, false); Mask.LoadImage(bytesArrays[3].pngData);
+                if (Normal) GameObject.Destroy(Normal); Normal = new Texture2D(Width, Height, TextureFormat.RGBA32, false); Normal.LoadImage(bytesArrays[4].pngData);
                 foreach (var sprite in Sprites)
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Calculating BRI for sprite {name}.{sprite.Key}");

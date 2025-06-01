@@ -88,7 +88,7 @@ export const CityAtlasesTab = (props: Props) => {
         { key: T_usages, value: formatInteger(selectedTemplateDetails.usages) },
         { key: T_source, value: atlasList[selectedAtlas!] ? T_sourceSaveGame : T_sourceLibraryFolder },
         { key: T_imageCount, value: formatInteger(selectedTemplateDetails.imageCount) },
-        { key: T_textureSize, value: formatInteger(selectedTemplateDetails.textureSize) }
+        { key: T_textureSize, value: formatInteger(selectedTemplateDetails.textureSize[0]) + " x " + formatInteger(selectedTemplateDetails.textureSize[1]) }
     ] : undefined
 
     const exportTemplateCallback = async (fileName?: string) => {

@@ -18,7 +18,7 @@ export type AtlasCityDetailResponse = {
     isFromSavegame: boolean
     usages: number;
     imageCount: number
-    textureSize: number
+    textureSize: [number, number]
 }
 
 export type ModAtlasRegistry = {

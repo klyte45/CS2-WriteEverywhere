@@ -58,7 +58,7 @@ namespace BelzontWE
                     usages = m_AtlasLibrary.GetAtlasUsageCount(name),
                     isFromSavegame = m_AtlasLibrary.AtlasExistsInSavegame(name),
                     imageCount = m_AtlasLibrary.ListAvailableAtlasImages(name).Length,
-                    textureSize = m_AtlasLibrary.GetAtlasImageSize(name),
+                    textureSize = m_AtlasLibrary.GetAtlasImageSize(name)
                 };
         private class AtlasCityDetailResponse
         {
@@ -66,7 +66,7 @@ namespace BelzontWE
             public bool isFromSavegame;
             public int usages;
             public int imageCount;
-            public int textureSize;
+            public float[] textureSize;
         }
         protected override void OnUpdate()
         {
