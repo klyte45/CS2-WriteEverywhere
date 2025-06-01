@@ -273,7 +273,23 @@ namespace BelzontWE
             [XmlAttribute] public string fontName;
             [XmlAttribute][DefaultValue(false)] public bool rescaleHeightOnTextOverflow;
             [XmlElement] public FormulaeStringXml text;
-            [Obsolete][XmlAttribute][DefaultValue(0f)] public float maxWidthMeters;
+            [XmlAttribute("maxWidthMeters")]
+            [DefaultValue(default(float))]
+            public float maxWidthMeters
+            {
+                set
+                {
+                    if (MaxWidthMeters == null)
+                    {
+                        MaxWidthMeters = new FormulaeFloatXml { defaultValue = value };
+                    }
+                    else
+                    {
+                        MaxWidthMeters.defaultValue = value;
+                    }
+                }
+                get => default;
+            }
             [XmlElement] public FormulaeFloatXml MaxWidthMeters;
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
