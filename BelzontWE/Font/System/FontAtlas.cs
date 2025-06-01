@@ -14,6 +14,9 @@ namespace BelzontWE.Font
         public FontAtlasNode[] Nodes { get; private set; }
         public Texture2D Texture { get; set; }
         public uint Version { get; private set; }
+
+        public bool IsPendingApply { get; private set; }
+
         public FontAtlas(int w, int h, int count)
         {
             Width = w;
@@ -206,14 +209,22 @@ namespace BelzontWE.Font
             {
                 Texture = new Texture2D(Width, Height, TextureFormat.ARGB32, false);
                 Texture.SetPixels(new Color[Width * Height].Select(x => Color.clear).ToArray());
-                Texture.Apply();
                 wasRecreated = true;
             }
 
             Texture.SetPixels(Mathf.RoundToInt(glyph.x), Mathf.RoundToInt(glyph.y), Mathf.RoundToInt(glyph.width), Mathf.RoundToInt(glyph.height), colorBuffer, 0);
-            Texture.Apply();
+            IsPendingApply = true;
             Version++;
             return wasRecreated;
+        }
+
+        public void Apply()
+        {
+            if (IsPendingApply)
+            {
+                Texture.Apply();
+                IsPendingApply = false;
+            }
         }
 
         public Color[] GetGlyphColors(FontGlyph glyph)

@@ -72,6 +72,7 @@ namespace BelzontWE
             Instance = this;
             DefaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY, true);
             m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
+
             dictPtr = GCHandle.Alloc(LoadedFonts);
 
         }
@@ -172,15 +173,16 @@ namespace BelzontWE
             }
             EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
             var keysToDispose = new List<FixedString64Bytes>();
+            var i = 0;
             foreach (var (key, data) in LoadedFonts)
             {
-                if (!UpdateFontSystem(data))
+                if (!UpdateFontSystem(data, UnityEngine.Time.frameCount % 60 == ++i % 60))
                 {
                     data.Dispose();
                     keysToDispose.Add(key);
                 }
             }
-            UpdateFontSystem(DefaultFont);
+            UpdateFontSystem(DefaultFont, UnityEngine.Time.frameCount % 60 == ++i % 60);
             requiresUpdateParameter = false;
             if (keysToDispose.Count > 0)
             {
@@ -193,7 +195,7 @@ namespace BelzontWE
             Dependency.Complete();
         }
 
-        private bool UpdateFontSystem(FontSystemData data)
+        private bool UpdateFontSystem(FontSystemData data, bool updateAtlases)
         {
             try
             {
@@ -203,6 +205,7 @@ namespace BelzontWE
                     data.FontSystem.Reset();
                 }
                 Dependency = data.FontSystem.RunJobs(Dependency);
+                if (updateAtlases) data.FontSystem.CurrentAtlas.Apply();
                 return true;
             }
             catch (Exception e)
