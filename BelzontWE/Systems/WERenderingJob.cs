@@ -46,6 +46,7 @@ namespace BelzontWE
             public ComponentLookup<WETextDataTransform> m_weTransformLookup;
 
             private static readonly Bounds3 whiteTextureBounds = new(new(-.5f, -.5f, 0), new(.5f, .5f, 0));
+            private static readonly Bounds3 whiteCubeBounds = new(new(-.5f, -.5f, -.5f), new(.5f, .5f, .5f));
 
             public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -214,6 +215,41 @@ namespace BelzontWE
                             }
                         }
                         break;
+                    case WESimulationTextType.WhiteCube:
+                        {
+                            var material = m_weMaterialLookup[nextEntity];
+                            var effRot = (Quaternion)transform.offsetRotation;
+                            var effectiveOffsetPosition = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform);
+
+                            var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(transform.scale.xyz);
+                            var lumMultiplier = GetEmissiveMultiplier(ref material);
+                            int lod = CalculateLod(whiteCubeBounds * lumMultiplier, ref mesh, ref transform, ref WTmatrix, out int minLod, ref this);
+                            if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
+                            {
+
+                                availToDraw.Enqueue(new WERenderData
+                                {
+                                    transform = transform,
+                                    textDataEntity = nextEntity,
+                                    geometryEntity = geometryEntity,
+                                    main = m_weMainLookup[nextEntity],
+                                    material = material,
+                                    mesh = m_weMeshLookup[nextEntity],
+                                    transformMatrix = WTmatrix,
+                                    variables = variables
+                                });
+                            }
+
+                            if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayoutWt))
+                            {
+                                var itemMatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, mesh.childrenRefersToFrontFace ? (transform.scale.z * .5f) + .001f : .001f)), transform.offsetRotation, Vector3.one);
+                                for (int j = 0; j < subLayoutWt.Length; j++)
+                                {
+                                    DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, unfilteredChunkIndex, variables, nthCall + 1);
+                                }
+                            }
+                        }
+                        return;
                     case WESimulationTextType.WhiteTexture:
                         {
                             var material = m_weMaterialLookup[nextEntity];

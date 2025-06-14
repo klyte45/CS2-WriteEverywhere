@@ -2,7 +2,6 @@
 using Belzont.Utils;
 using Colossal.OdinSerializer.Utilities;
 using Colossal.Serialization.Entities;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -38,7 +37,7 @@ namespace BelzontWE
     }
     public class WETextDataXml : ISerializable
     {
-        private const int CURRENT_VERSION = 2;
+        private const int CURRENT_VERSION = 3;
         [XmlAttribute] public string itemName;
 
         [XmlElement] public TransformXml transform;
@@ -46,6 +45,7 @@ namespace BelzontWE
         [XmlElement][DefaultValue(null)] public MeshDataImageXml imageMesh;
         [XmlElement][DefaultValue(null)] public MeshDataPlaceholderXml layoutMesh;
         [XmlElement][DefaultValue(null)] public MeshDataWhiteTextureXml whiteMesh;
+        [XmlElement][DefaultValue(null)] public MeshDataWhiteCubeXml whiteCubeMesh;
         [XmlElement][DefaultValue(null)] public MeshDataMatrixTransformXml matrixTransform;
         [XmlElement] public DefaultStyleXml defaultStyle;
         [XmlElement] public GlassStyleXml glassStyle;
@@ -55,6 +55,7 @@ namespace BelzontWE
         public bool ShouldSerializeimageMesh() => imageMesh != null;
         public bool ShouldSerializelayoutMesh() => layoutMesh != null;
         public bool ShouldSerializewhiteMesh() => whiteMesh != null;
+        public bool ShouldSerializewhiteCubeMesh() => whiteCubeMesh != null;
         public bool ShouldSerializedefaultStyle() => matrixTransform is null && layoutMesh is null && defaultStyle != null;
         public bool ShouldSerializeglassStyle() => matrixTransform is null && layoutMesh is null && glassStyle != null;
         public bool ShouldSerializedecalStyle() => matrixTransform is null && layoutMesh is null && decalStyle != null;
@@ -72,6 +73,7 @@ namespace BelzontWE
             writer.WriteNullCheck(glassStyle);
             writer.WriteNullCheck(decalStyle);
             writer.WriteNullCheck(matrixTransform);
+            writer.WriteNullCheck(whiteCubeMesh);
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -97,6 +99,10 @@ namespace BelzontWE
             if (version >= 2)
             {
                 reader.ReadNullCheck(out matrixTransform);
+            }
+            if (version >= 3)
+            {
+                reader.ReadNullCheck(out whiteCubeMesh);
             }
 
         }
@@ -231,6 +237,28 @@ namespace BelzontWE
                     LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
                     return;
                 }
+            }
+        }
+        public class MeshDataWhiteCubeXml : ISerializable
+        {
+            private const int CURRENT_VERSION = 0;
+            [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.WhiteCube;
+            [XmlAttribute][DefaultValue(false)] public bool childrenRefersToFrontFace = false;
+
+            public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+            {
+                writer.Write(CURRENT_VERSION);
+                writer.Write(childrenRefersToFrontFace);
+            }
+            public void Deserialize<TReader>(TReader reader) where TReader : IReader
+            {
+                reader.Read(out int version);
+                if (version > CURRENT_VERSION)
+                {
+                    LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                    return;
+                }
+                reader.Read(out childrenRefersToFrontFace);
             }
         }
 

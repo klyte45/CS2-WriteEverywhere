@@ -43,6 +43,9 @@ namespace BelzontWE.Utils
                     case WESimulationTextType.WhiteTexture:
                         result.whiteMesh = weMesh.ToWhiteTextureXml();
                         break;
+                    case WESimulationTextType.WhiteCube:
+                        result.whiteCubeMesh = weMesh.ToWhiteCubeXml();
+                        break;
                     case WESimulationTextType.MatrixTransform:
                         result.matrixTransform = weMesh.ToScalerXml();
                         break;
@@ -89,6 +92,7 @@ namespace BelzontWE.Utils
                 ?? xml.layoutMesh?.ToComponent()
                 ?? xml.whiteMesh?.ToComponent()
                 ?? xml.matrixTransform?.ToComponent()
+                ?? xml.whiteCubeMesh?.ToComponent()
                 ?? new() { TextType = WESimulationTextType.Archetype };
 
         }
@@ -193,6 +197,17 @@ namespace BelzontWE.Utils
             => value is null ? default : new()
             {
                 TextType = value.textType
+            };
+
+        public static WETextDataXml.MeshDataWhiteCubeXml ToWhiteCubeXml(this WETextDataMesh value)
+            => new() {
+                childrenRefersToFrontFace = value.childrenRefersToFrontFace
+            };
+        public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataWhiteCubeXml value)
+            => value is null ? default : new()
+            {
+                TextType = value.textType,
+                childrenRefersToFrontFace = value.childrenRefersToFrontFace
             };
 
         public static WETextDataXml.MeshDataMatrixTransformXml ToScalerXml(this WETextDataMesh value)

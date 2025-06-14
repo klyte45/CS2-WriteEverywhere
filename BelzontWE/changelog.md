@@ -1,7 +1,11 @@
-# v0.3.2r1 (14-JUN-25)
+# v0.3.2r2 (14-JUN-25)
+
+- Added a new layout node type: White Cube. It's same as White Texture, but 3D (with depth). It also have an option to move the reference of next node to the front face - visually equals to White Texture.
+
+## FROM v0.3.2r1 (14-JUN-25)
 
 - Now delaying the prefab layouts loading to prevent unnecessary loading when WE modules weren't finished loading.
-- Hiddening debug messages when debug mode is not active.
+- Hiding some debug messages when debug mode is not active.
 
 ## FROM v0.3.2r0 (11-JUN-25)
 

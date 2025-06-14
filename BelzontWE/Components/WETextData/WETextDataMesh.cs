@@ -23,6 +23,7 @@ namespace BelzontWE
         private bool dirty;
         private bool templateDirty;
         private int nextUpdateFrame;
+        public bool childrenRefersToFrontFace;
 
         public WESimulationTextType TextType
         {
@@ -31,7 +32,7 @@ namespace BelzontWE
                 textType = value;
                 dirty = true;
                 templateDirty = true;
-                if (value == WESimulationTextType.Placeholder || value == WESimulationTextType.WhiteTexture)
+                if (value == WESimulationTextType.Placeholder || value == WESimulationTextType.WhiteTexture || value == WESimulationTextType.WhiteCube)
                 {
                     ResetBri();
                 }
@@ -158,6 +159,7 @@ namespace BelzontWE
                     result |= valueData.UpdateEffectiveValue(em, geometryEntity, vars);
                     break;
                 case WESimulationTextType.WhiteTexture:
+                case WESimulationTextType.WhiteCube:
                     templateDirty = dirty = false;
                     return true;
                 case WESimulationTextType.MatrixTransform:

@@ -124,7 +124,7 @@ namespace BelzontWE.Font.Utility
             }
         }
         [XmlIgnore]
-        private Mesh MeshCube
+        internal Mesh MeshCube
         {
             get
             {

@@ -22,7 +22,9 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const T_image = translate("textValueSettings.image"); //
     const T_useAbsoluteSize = translate("textValueSettings.useAbsoluteSize"); //
     const T_resizeHeightOnTextOverflow = translate("textValueSettings.resizeHeightOnTextOverflow"); //
+    const T_childrenRefersToFrontFace = translate("textValueSettings.childrenRefersToFrontFace"); //
     const T_heightWidthCm = translate("textValueSettings.heightWidthCm"); //
+    const T_dimensionsCm = translate("textValueSettings.dimensions"); //
     const T_HeightCm = translate("textValueSettings.heightCm"); //
     const T_widthDistortion = translate("textValueSettings.widthDistortion"); //
     const T_maxWidth = translate("textValueSettings.maxWidth"); //     
@@ -56,6 +58,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const ToggleField = VanillaWidgets.instance.ToggleField;
     const FloatInputField = VanillaWidgets.instance.FloatInputField;
     const Float2InputField = VanillaWidgets.instance.Float2InputField;
+    const Float3InputField = VanillaWidgets.instance.Float3InputField;
     const FloatInputStandalone = VanillaWidgets.instance.FloatInputStandalone;
     const editorStyle = VanillaWidgets.instance.editorItemModule;
 
@@ -110,6 +113,8 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const alwaysBeAbsolute = [WESimulationTextType.Placeholder, WESimulationTextType.WhiteTexture].includes(mesh.TextSourceType.value);
     const alwaysBeRelative = mesh.TextSourceType.value == WESimulationTextType.Text;
     const mayBeAbsolute = mesh.TextSourceType.value == WESimulationTextType.Image;
+    const is3dEditor = mesh.TextSourceType.value == WESimulationTextType.WhiteCube;
+
 
     const formulaeModule = "mesh";
     const formulaeField = "ValueText";
@@ -123,19 +128,34 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                 <EditorItemRow label={T_contentType}>
                     <NumberDropdownField
                         value={mesh.TextSourceType.value}
-                        items={[0, 1, 2, 4, 5].map(x => { return { displayName: { __Type: LocElementType.String, value: translate(`textValueSettings.contentType.${x}`) }, value: x } })}
+                        items={[0, 1, 2, 4, 5, 6].map(x => { return { displayName: { __Type: LocElementType.String, value: translate(`textValueSettings.contentType.${x}`) }, value: x } })}
                         onChange={(x) => mesh.TextSourceType.set(x)}
                         style={{ flexGrow: 1, width: "inherit" }}
                     />
                 </EditorItemRow>
-                {mayBeAbsolute && <ToggleField label={T_useAbsoluteSize} value={transform.UseAbsoluteSizeEditing.value} onChange={(x) => transform.UseAbsoluteSizeEditing.set(x)} />}
-                {(alwaysBeRelative || (!transform.UseAbsoluteSizeEditing.value && mayBeAbsolute)) && <>
+                {!is3dEditor && mayBeAbsolute && <ToggleField label={T_useAbsoluteSize} value={transform.UseAbsoluteSizeEditing.value} onChange={(x) => transform.UseAbsoluteSizeEditing.set(x)} />}
+                {!is3dEditor && (alwaysBeRelative || (!transform.UseAbsoluteSizeEditing.value && mayBeAbsolute)) && <>
                     <FloatInputField label={T_HeightCm} min={.001} max={10000000} value={height * 100} onChange={(x) => saveHeight(x * .01)} onChangeEnd={() => saveHeight(height)} />
                     <FloatInputField label={T_widthDistortion} min={.001} max={1000000} value={widthDistortion} onChange={setWidthDistortion} onChangeEnd={() => saveWidthDistortion(widthDistortion)} />
                 </>}
-                {(alwaysBeAbsolute || (transform.UseAbsoluteSizeEditing.value && mayBeAbsolute)) && <Float2InputField label={T_heightWidthCm} value={{ x: transform.CurrentScale.value[0] * 100, y: transform.CurrentScale.value[1] * 100 }} onChange={(x) => transform.CurrentScale.set([x.x * .01, x.y * .01, decalAreaThickness])} />}
+                {
+                    (alwaysBeAbsolute || (transform.UseAbsoluteSizeEditing.value && mayBeAbsolute)) && <Float2InputField
+                        label={T_heightWidthCm}
+                        value={{ x: transform.CurrentScale.value[0] * 100, y: transform.CurrentScale.value[1] * 100 }}
+                        onChange={(x) => transform.CurrentScale.set([x.x * .01, x.y * .01, decalAreaThickness])} />
+                }
+                {
+                    is3dEditor && <Float3InputField
+                        label={T_dimensionsCm}
+                        value={{ x: transform.CurrentScale.value[0] * 100, y: transform.CurrentScale.value[1] * 100, z: transform.CurrentScale.value[2] * 100 }}
+                        onChange={(x) => transform.CurrentScale.set([x.x * .01, x.y * .01, x.z * .01])} />
+                }
 
-                {material.ShaderType.value == 2 && <FloatInputField label={T_decalAreaThickness} min={.001} max={100} value={decalAreaThickness} onChange={saveDecalThickness} onChangeEnd={() => saveDecalThickness(decalAreaThickness)} />}
+                {!is3dEditor && material.ShaderType.value == 2 && <FloatInputField label={T_decalAreaThickness} min={.001} max={100} value={decalAreaThickness} onChange={saveDecalThickness} onChangeEnd={() => saveDecalThickness(decalAreaThickness)} />}
+                {
+                    mesh.TextSourceType.value == WESimulationTextType.WhiteCube &&
+                    <ToggleField label={T_childrenRefersToFrontFace} value={mesh.ChildrenRefersToFrontFace.value} onChange={(x) => mesh.ChildrenRefersToFrontFace.set(x)} />                 
+                }
                 {mesh.TextSourceType.value == WESimulationTextType.Text && <>
                     <FormulaeEditRow formulaeField="MaxWidth" formulaeModule={formulaeModule} label={T_maxWidth}
                         defaultInputField={<FloatInputStandalone className={editorStyle.input} min={.0} max={1000000} value={mesh.MaxWidth.value} onChange={x => mesh.MaxWidth.set(x)} />}

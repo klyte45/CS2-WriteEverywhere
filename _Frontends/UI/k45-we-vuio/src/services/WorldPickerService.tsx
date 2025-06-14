@@ -91,6 +91,7 @@ const WETextDataMeshController = {
     MaxWidthFormulaeCompileResult: MultiUIValueBinding<number>,
     MaxWidthFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
     RescaleHeightOnTextOverflow: MultiUIValueBinding<boolean>,
+    ChildrenRefersToFrontFace: MultiUIValueBinding<boolean>,
     SelectedFont: MultiUIValueBinding<string>,
     TextSourceType: MultiUIValueBinding<number>,
     ImageAtlasName: MultiUIValueBinding<string>,

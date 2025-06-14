@@ -716,9 +716,9 @@ namespace BelzontWE
             }
             else
             {
-                if (self.layoutMesh is null && self.imageMesh is null && self.textMesh is null && self.whiteMesh is null)
+                if (self.layoutMesh is null && self.imageMesh is null && self.textMesh is null && self.whiteMesh is null && self.whiteCubeMesh is null)
                 {
-                    LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: All children must have type 'Placeholder', 'WhiteTexture', 'Image' or 'Text'.");
+                    LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: All children must have type 'Placeholder', 'WhiteTexture', 'WhiteCube', 'Image' or 'Text'.");
                     return 4;
                 }
                 ;

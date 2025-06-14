@@ -33,6 +33,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const i_typeImage = "coui://uil/Standard/Image.svg";
     const i_typePlaceholder = "coui://uil/Standard/RotateAngleRelative.svg";
     const i_typeWhiteTexture = "coui://uil/Standard/SingleRhombus.svg";
+    const i_typeWhiteCube = "coui://uil/Standard/BoxSide.svg";
     const i_typeMatrixTransform = "coui://uil/Standard/ArrowsMoveAll.svg";
     const i_bookmarkMods = "coui://uil/Standard/Puzzle.svg";
 
@@ -142,6 +143,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 return i_typeWhiteTexture;
             case WESimulationTextType.MatrixTransform:
                 return i_typeMatrixTransform;
+            case WESimulationTextType.WhiteCube:
+                return i_typeWhiteCube;
         }
     }
 

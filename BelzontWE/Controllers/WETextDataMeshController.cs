@@ -16,6 +16,7 @@ namespace BelzontWE
         public MultiUIValueBinding<int> TextSourceType { get; private set; }
         public MultiUIValueBinding<string> ImageAtlasName { get; private set; }
         public MultiUIValueBinding<bool> RescaleHeightOnTextOverflow { get; private set; }
+        public MultiUIValueBinding<bool> ChildrenRefersToFrontFace { get; private set; }
 
 
         public MultiUIValueBinding<string> ValueTextFormulaeStr { get; private set; }
@@ -55,6 +56,7 @@ namespace BelzontWE
             TextSourceType = new(default, $"{PREFIX}{nameof(TextSourceType)}", EventCaller, CallBinder);
             ImageAtlasName = new(default, $"{PREFIX}{nameof(ImageAtlasName)}", EventCaller, CallBinder);
             RescaleHeightOnTextOverflow = new(default, $"{PREFIX}{nameof(RescaleHeightOnTextOverflow)}", EventCaller, CallBinder);
+            ChildrenRefersToFrontFace = new(default, $"{PREFIX}{nameof(ChildrenRefersToFrontFace)}", EventCaller, CallBinder);
 
             ValueTextFormulaeStr = new(default, $"{PREFIX}{nameof(ValueTextFormulaeStr)}", EventCaller, CallBinder);
             ValueTextFormulaeCompileResult = new(default, $"{PREFIX}{nameof(ValueTextFormulaeCompileResult)}", EventCaller, CallBinder);
@@ -104,6 +106,7 @@ namespace BelzontWE
             TextSourceType.OnScreenValueChanged += (x) => PickerController.EnqueueModification<int, WETextDataMesh>(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; PickerController.ReloadTreeDelayed(); return currentItem; });
             ImageAtlasName.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
             RescaleHeightOnTextOverflow.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMesh>(x, (x, currentItem) => { currentItem.RescaleHeightOnTextOverflow = x; return currentItem; });
+            ChildrenRefersToFrontFace.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMesh>(x, (x, currentItem) => { currentItem.childrenRefersToFrontFace = x; return currentItem; });
 
         }
 
@@ -116,6 +119,7 @@ namespace BelzontWE
             TextSourceType.Value = (int)mesh.TextType;
             ImageAtlasName.Value = mesh.Atlas.ToString();
             RescaleHeightOnTextOverflow.Value = mesh.RescaleHeightOnTextOverflow;
+            ChildrenRefersToFrontFace.Value = mesh.childrenRefersToFrontFace;
 
             MaxWidth.Value = mesh.MaxWidthMeters.defaultValue;
             ResetScreenFormulaeValue(mesh.MaxWidthMeters.Formulae, MaxWidthFormulaeStr, MaxWidthFormulaeCompileResult, MaxWidthFormulaeCompileResultErrorArgs);
