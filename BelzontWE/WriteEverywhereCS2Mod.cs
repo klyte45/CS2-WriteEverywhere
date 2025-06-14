@@ -6,6 +6,7 @@ using Game;
 using Game.Modding;
 using Game.UI.InGame;
 using Unity.Entities;
+using UnityEngine;
 
 namespace BelzontWE
 {
@@ -41,8 +42,11 @@ namespace BelzontWE
             LogUtils.DoInfoLog("WETextDataMaterial = " + sizeof(WETextDataMaterial));
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<GamePanelUISystem>().SetDefaultArgs(new WEMainPanel());
             LogUtils.DoInfoLog($"Registered panel: {typeof(WEMainPanel).FullName}");
+            initFrame = Time.frameCount;
         }
 
+        internal static int initFrame = 0;
+        internal static bool IsInitializationComplete => Time.frameCount - initFrame >= 120;
 
         public override BasicModData CreateSettingsFile()
         {

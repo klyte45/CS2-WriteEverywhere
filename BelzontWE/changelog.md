@@ -1,4 +1,9 @@
-# v0.3.2r0 (11-JUN-25)
+# v0.3.2r1 (14-JUN-25)
+
+- Now delaying the prefab layouts loading to prevent unnecessary loading when WE modules weren't finished loading.
+- Hiddening debug messages when debug mode is not active.
+
+## FROM v0.3.2r0 (11-JUN-25)
 
 - Fixes 1.3 patch
 - Added support to load image from modules passing byte arrays

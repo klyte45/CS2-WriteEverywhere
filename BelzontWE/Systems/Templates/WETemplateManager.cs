@@ -564,7 +564,7 @@ namespace BelzontWE
 
         protected override void OnUpdate()
         {
-            if (GameManager.instance.isGameLoading || IsLoadingLayouts) return;
+            if (GameManager.instance.isGameLoading || IsLoadingLayouts || !WriteEverywhereCS2Mod.IsInitializationComplete) return;
 
             if (m_executionQueue.Count > 0)
             {
@@ -873,7 +873,7 @@ namespace BelzontWE
                 else
                 {
 
-                    LogUtils.DoLog($"No prefab loaded with name: {prefabName}, but it's from a mod. This is harmless. Skipping...");
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"No prefab loaded with name: {prefabName}, but it's from a mod. This is harmless. Skipping...");
                 }
                 yield break;
             }
