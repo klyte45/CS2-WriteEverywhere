@@ -1,13 +1,18 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
 using Colossal.Entities;
+using Game.Buildings;
 using Game.Common;
+using Game.Objects;
+using Game.Prefabs;
 using Game.SceneFlow;
+using Game.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Entities;
 using UnityEngine;
+using SubObject = Game.Objects.SubObject;
 
 namespace BelzontWE
 {
@@ -19,6 +24,8 @@ namespace BelzontWE
         private Action<string, object[]> m_eventCaller;
         private Action<string, Delegate> m_callBinder;
         private WETextDataBaseController[] m_baseControllers;
+        private NameSystem m_nameSystem;
+        private PrefabSystem m_prefabSystem;
 
         public void SetupCallBinder(Action<string, Delegate> callBinder)
         {
@@ -32,7 +39,82 @@ namespace BelzontWE
             callBinder($"{PREFIX}cloneAsChild", CloneAsChild);
             callBinder($"{PREFIX}dumpBris", DumpBris);
             callBinder($"{PREFIX}debugAvailable", DebugAvailable);
+            callBinder($"{PREFIX}getBuildingTree", GetBuildingTree);
             if (m_eventCaller != null) InitValueBindings();
+        }
+
+        private struct BuildingTreeWe
+        {
+            public enum NodeType
+            {
+                UNKNOWN,
+                ROOT,
+                UPGRADE,
+                ATTACHMENT,
+                SUBOBJECT,
+            }
+
+            public Entity entity;
+            public string name;
+            public string prefabName;
+            public NodeType nodeType;
+            public List<BuildingTreeWe> children;
+            public BuildingTreeWe(Entity e, string n, string prefabName, NodeType type)
+            {
+                entity = e;
+                name = n;
+                children = new();
+                nodeType = type;
+                this.prefabName = prefabName;
+            }
+        }
+
+        private BuildingTreeWe GetBuildingTree(Entity startElement)
+        {
+            var element = startElement;
+        startLoop:
+            while (EntityManager.TryGetComponent<Owner>(element, out var owner))
+            {
+                element = owner.m_Owner;
+            }
+            if (EntityManager.TryGetComponent<Attached>(element, out var attached))
+            {
+                element = attached.m_Parent;
+                goto startLoop;
+            }
+            HashSet<Entity> control = new HashSet<Entity>();
+            var iterationResult = IterateElementTree(element, BuildingTreeWe.NodeType.ROOT, control);
+            if (!control.Contains(startElement))
+            {
+                control.Clear();
+                return IterateElementTree(startElement, BuildingTreeWe.NodeType.ROOT, control);
+            }
+            return iterationResult;
+        }
+
+        private BuildingTreeWe IterateElementTree(Entity element, BuildingTreeWe.NodeType nodeType, HashSet<Entity> control)
+        {
+            control.Add(element);
+            var prefabName = EntityManager.TryGetComponent(element, out PrefabRef prefabRef) ? m_prefabSystem.GetPrefabName(prefabRef) : default;
+            var result = new BuildingTreeWe(element, m_nameSystem.GetName(element).Translate(), prefabName, nodeType);
+            if (EntityManager.TryGetBuffer<InstalledUpgrade>(element, true, out var buffer))
+            {
+                foreach (var upgrade in buffer)
+                {
+                    if (!control.Contains(upgrade.m_Upgrade))
+                        result.children.Add(IterateElementTree(upgrade.m_Upgrade, BuildingTreeWe.NodeType.UPGRADE, control));
+                }
+            }
+            //if (EntityManager.TryGetBuffer<SubObject>(element, true, out var objBuffer))
+            //{
+            //    foreach (var subObject in objBuffer)
+            //    {
+            //        if (!control.Contains(subObject.m_SubObject))
+            //            result.children.Add(IterateElementTree(subObject.m_SubObject, EntityManager.HasComponent<Attached>(subObject.m_SubObject) ? BuildingTreeWe.NodeType.ATTACHMENT : BuildingTreeWe.NodeType.SUBOBJECT, control));
+            //    }
+            //}
+            //result.children = result.children.OrderBy(x => x.nodeType).ToList();
+            return result;
         }
 
         private bool DebugAvailable()
@@ -179,6 +261,17 @@ namespace BelzontWE
                 FontList.Value = FontServer.Instance.GetLoadedFontsNames();
                 FontList.UpdateUIs();
             };
+            CurrentEntity.OnScreenValueChanged += (x) =>
+            {
+                m_executionQueue.Enqueue(() =>
+                {
+                    CurrentEntity.Value = x;
+                    CurrentSubEntity.Value = Entity.Null;
+                    OnCurrentItemChanged();
+                });
+
+            };
+
 
             m_initialized = true;
         }
@@ -358,6 +451,8 @@ namespace BelzontWE
         protected override void OnCreate()
         {
             m_EndBarrier = World.GetExistingSystemManaged<ModificationEndBarrier>();
+            m_nameSystem = World.GetExistingSystemManaged<NameSystem>();
+            m_prefabSystem = World.GetExistingSystemManaged<PrefabSystem>();
             GameManager.instance.userInterface.view.Listener.BindingsReleased += () => m_initialized = false;
         }
 

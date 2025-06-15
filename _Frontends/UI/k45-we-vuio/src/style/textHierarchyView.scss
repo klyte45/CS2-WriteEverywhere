@@ -1,0 +1,68 @@
+.buildingHierarchyItem {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    padding: 2rem;
+
+    &.isSelected {
+        background-color: var(--accentColorDark);
+
+        div.label,
+        div.prefabNameContextMenu {
+            color: var(--menuControl1--pressed);
+        }
+    }
+
+    img {
+        width: 20rem;
+        height: 20rem;
+        margin-right: 3rem;
+    }
+
+    div.label {
+        coh-font-fit-mode: shrink;
+        coh-font-fit-min-size: 5rem;
+        flex-grow: 1;
+        flex-shrink: 1;
+    }
+
+    div.prefabNameContextMenu {
+        font-size: var(--fontSizeXS);
+        color: var(--textColorDim);
+        coh-font-fit-mode: shrink;
+        coh-font-fit-min-size: 5rem;
+        max-width: 50%;
+
+    }
+}
+
+.k45_we_hierarchyViewportTitle {
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    border-bottom-style: solid;
+    border-bottom-width:  var(--stroke1) ;
+    border-bottom-color: rgba(255, 255, 255, 0.15);
+    padding: 5rem;
+    height: 50rem;
+
+    .k45_we_itemTitle {
+        font-size: var(--fontSizeL);
+        color: var(--accentColorDark);
+        flex-grow: 1;
+        flex-shrink: 1;
+        coh-font-fit-mode: shrink;
+        coh-font-fit-min-size: 5rem;
+    }
+
+    .k45_we_prefabName {
+        font-size: var(--fontSizeXS);
+        color: var(--textColorDim);
+        coh-font-fit-mode: shrink;
+        coh-font-fit-min-size: 5rem;
+        max-width: 33%;
+        text-align: right;
+    }
+}

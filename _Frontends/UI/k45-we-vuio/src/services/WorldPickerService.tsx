@@ -1,8 +1,9 @@
 import { Entity, MultiUIValueBinding, UIColorRGBA } from "@klyte45/vuio-commons";
-import { WEComponentTypeDesc, WEStaticMethodDesc, WETextItemResume } from "./WEFormulaeElement";
+import { EnumWrapper, WEComponentTypeDesc, WEStaticMethodDesc, WETextItemResume } from "./WEFormulaeElement";
 import { ObjectTyped } from "object-typed";
 import { translate } from "utils/translate";
 import engine from "cohtml/cohtml";
+import { EnumField } from "cs2/bindings";
 
 type number3 = [number, number, number]
 
@@ -362,4 +363,24 @@ export class WorldPickerService {
     static async currentIsDecal(): Promise<boolean> {
         return await engine.call("k45::we.dataMaterial.isDecalMesh");
     }
+    static async getBuildingTree(entity: Entity): Promise<BuildingTreeWe> {
+        return await engine.call("k45::we.wpicker.getBuildingTree", entity);
+    }
+}
+
+export enum NodeType {
+    UNKNOWN,
+    ROOT,
+    UPGRADE,
+    ATTACHMENT,
+    SUBOBJECT,
+}
+
+
+export interface BuildingTreeWe {
+    entity: Entity;
+    name: string;
+    prefabName: string;
+    nodeType: EnumWrapper<NodeType>;
+    children: BuildingTreeWe[];
 }

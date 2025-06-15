@@ -5,7 +5,7 @@ import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 import "style/contextMenu.scss"
 
 export type ContextButtonMenuItemArray = ({
-    label: string,
+    label: ReactNode,
     action: () => any,
     disabled?: boolean
 } | null)[]
@@ -20,7 +20,8 @@ export enum ContextMenuExpansion {
 export type ContextMenuButtonProps = {
     menuTitle?: ReactNode,
     menuItems: ContextButtonMenuItemArray,
-    menuDirection?: ContextMenuExpansion
+    menuDirection?: ContextMenuExpansion,
+    maxHeight?: number
 } & Omit<PropsToolButton, "onClick" | "onSelect" | "selected">
 export const ContextMenuButton = (props: ContextMenuButtonProps) => {
     const btnRef = useRef(null as any as HTMLDivElement);
@@ -104,7 +105,7 @@ export const ContextMenuButton = (props: ContextMenuButtonProps) => {
         {menuOpen && <Portal>
             <div className="k45_comm_contextMenu" style={menuCss} ref={menuRef}>
                 {props.menuTitle && <div className="k45_comm_contextMenu_title">{props.menuTitle}</div>}
-                <ScrollPanel>
+                <ScrollPanel style={{ maxHeight: props.maxHeight ?? "300rem" }}>
                     {props.menuItems.map(x => x ? <button className={classNames("k45_comm_contextMenu_item", x.disabled ? "disabled" : "")} onClick={() => { setMenuOpen(false); x.action() }} disabled={x.disabled}>{x.label}</button> : <div className="k45_comm_contextMenu_separator" />)}
                 </ScrollPanel>
             </div>

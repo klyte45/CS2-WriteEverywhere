@@ -1,20 +1,21 @@
-import { Entity, HierarchyViewport, LocElementType, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { Entity, LocElementType, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { ContextButtonMenuItemArray, ContextMenuButton } from "common/ContextMenuButton";
 import { DropdownDialog } from "common/DropdownDialog";
 import { FilePickerDialog } from "common/FilePickerDialog";
 import { StringInputDialog } from "common/StringInputDialog";
 import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
-import { ConfirmationDialog, Dropdown, Panel, Portal } from "cs2/ui";
+import { ConfirmationDialog, Panel, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
 import { FileService } from "services/FileService";
 import { LayoutsService } from "services/LayoutsService";
 import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeElement";
-import { WorldPickerService } from "services/WorldPickerService";
-import { translate } from "utils/translate";
-import i_cut from "../images/Scissors.svg"
-import { K45HierarchyMenu, K45HierarchyViewport } from "./K45HierarchyMenu";
+import { BuildingTreeWe, NodeType, WorldPickerService } from "services/WorldPickerService";
 import { ModFolder } from "utils/ModFolder";
-
+import { translate } from "utils/translate";
+import i_cut from "../images/Scissors.svg";
+import { K45HierarchyMenu, K45HierarchyViewport } from "./K45HierarchyMenu";
+import useAsyncMemo from "@klyte45/vuio-commons/src/utils/useAsyncMemo";
+import '../style/textHierarchyView.scss';
 
 
 
@@ -38,6 +39,21 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const i_bookmarkMods = "coui://uil/Standard/Puzzle.svg";
 
 
+    const i_buildingModuleSelect = "coui://uil/Standard/HouseSmallSubElements.svg";
+    const i_nodeType_Root = "coui://uil/Standard/UniqueBuilding.svg";
+    const i_nodeType_Upgrade = "coui://uil/Standard/StarFilledSmallOutlined.svg";
+    const i_nodeType_Attached = "coui://uil/Standard/BusShelter.svg";
+    const i_nodeType_Subobject = "coui://uil/Standard/PropCommercial.svg";
+    const i_nodeType_Unknown = "coui://uil/Standard/ExclamationMark.svg";
+
+    const nodeTypeIcons = {
+        [NodeType.ROOT]: i_nodeType_Root,
+        [NodeType.UPGRADE]: i_nodeType_Upgrade,
+        [NodeType.ATTACHMENT]: i_nodeType_Attached,
+        [NodeType.SUBOBJECT]: i_nodeType_Subobject,
+        [NodeType.UNKNOWN]: i_nodeType_Unknown
+    }
+
     const wps = WorldPickerService.instance.bindingList.picker;
     const T_title = translate("textHierarchyWindow.title"); //"Appearance Settings"
     const T_cut = translate("textHierarchyWindow.cut"); //"Appearance Settings"
@@ -55,6 +71,9 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const T_addEmptyChild = translate("textHierarchyWindow.addEmptyChild"); //"Appearance Settings"
     const T_addEmptyRoot = translate("textHierarchyWindow.addEmptyRoot"); //"Appearance Settings"
 
+
+
+    const T_buildingModuleSelect = translate("textHierarchyWindow.buildingModuleSelect"); //"Appearance Settings"
 
     const T_exportSave = translate("textHierarchyWindow.exportOrSave"); //"Appearance Settings"
     const T_exportLayoutXml = translate("textHierarchyWindow.exportLayoutXml"); //"Appearance Settings"
@@ -216,6 +235,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
 
     const [cityLayoutsAvailable, setCityLayoutsAvailable] = useState([] as string[])
 
+
     const [loadingFromCity, setLoadingFromCity] = useState(false)
     const onLoadFromCity = async (x?: string) => {
         if (!x) return;
@@ -293,8 +313,46 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         { label: T_loadFromCityTemplateAsSibling, disabled: !currentParentNode, action: () => { setRelativeParentToLoad(currentParentNode!); setLoadingFromCity(true) } },
     ]
 
+
+    const currentBuildingTree = useAsyncMemo(async () => {
+        function filterData(children: BuildingTreeWe[]): BuildingTreeWe[] {
+            return children.filter(x => [NodeType.UPGRADE, NodeType.ATTACHMENT].includes(x.nodeType.value__)).map(x => {
+                const newChildren = filterData(x.children);
+                return {
+                    ...x,
+                    children: newChildren,
+                };
+            });
+        }
+        const data = await WorldPickerService.getBuildingTree(wps.CurrentEntity.value!);
+        data.children = filterData(data.children);
+        const generateOptions = (x: BuildingTreeWe, level: number): ContextButtonMenuItemArray => {
+            const childrenMenus = x.children.flatMap(y => generateOptions(y, level + 1))
+            const isSelected = wps.CurrentEntity.value?.Index == x.entity.Index;
+            return [{
+                label: <div className={["buildingHierarchyItem", isSelected ? "isSelected" : ""].join(" ")}>
+                    <img src={nodeTypeIcons[x.nodeType.value__]} style={{ marginRight: (level * 8 + 4) + "rem" }} />
+                    <div className="label">{x.name}</div>
+                    <div className="prefabNameContextMenu">{x.prefabName}</div>
+                </div>,
+                action: () => {
+                    wps.CurrentEntity.set(x.entity);
+                },
+                disabled: isSelected
+            }].concat(childrenMenus as []);
+        }
+        return {
+            selectedItem: [data].flatMap(x => [x, ...x.children]).find(x => x.entity.Index == wps.CurrentEntity.value?.Index),
+            menuData: generateOptions(data, 0)
+        };
+    }, [wps.CurrentEntity.value])
+
     return <Portal>
         <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
+            <div className="k45_we_hierarchyViewportTitle">
+                <div className="k45_we_itemTitle">{currentBuildingTree?.selectedItem?.name}</div>
+                <div className="k45_we_prefabName">{currentBuildingTree?.selectedItem?.prefabName}</div>
+            </div>
             <ScrollView style={{ height: "400rem" }}>
                 <HierarchyMenu
                     viewport={viewport}
@@ -305,6 +363,10 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             <EditorItemRow>
                 <ContextMenuButton src={i_addItem} tooltip={T_addItem} focusKey={FocusDisabled} className={buttonClass} menuItems={addNodeMenu} menuTitle={T_addItem} />
                 <div style={{ flexGrow: 1 }}></div>
+                {currentBuildingTree && currentBuildingTree.menuData.length > 1 && <>
+                    <ContextMenuButton src={i_buildingModuleSelect} tooltip={T_buildingModuleSelect} focusKey={FocusDisabled} className={buttonClass} menuItems={currentBuildingTree.menuData} menuTitle={T_buildingModuleSelect} />
+                    <div style={{ flexGrow: 2 }}></div>
+                </>}
                 <ContextMenuButton disabled={!wps.CurrentSubEntity.value?.Index} src={i_exportLayout} tooltip={T_exportSave} focusKey={FocusDisabled} className={buttonClass} menuItems={saveNodeMenu} menuTitle={T_exportSave} />
                 <ContextMenuButton src={i_importLayout} tooltip={T_importOrLoad} focusKey={FocusDisabled} className={buttonClass} menuItems={loadNodeMenu} menuTitle={T_importOrLoad} />
                 <div style={{ flexGrow: 1 }}></div>
@@ -325,7 +387,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         />
         <FilePickerDialog dialogTitle={T_loadingFromXmlDialogTitle} dialogPromptText={T_loadingFromXmlDialogPromptText} isActive={loadingFromXml} setIsActive={setLoadingFromXml} actionOnSuccess={onLoadFromXml} allowedExtensions={extensionsImport} initialFolder={layoutFolder}
             bookmarksTitle={T_templateFromMods} bookmarksIcon={i_bookmarkMods}
-            bookmarks={modsLayoutsFolder.sort((a,b)=>a.ModName.localeCompare(b.ModName)).map(x => {
+            bookmarks={modsLayoutsFolder.sort((a, b) => a.ModName.localeCompare(b.ModName)).map(x => {
                 return {
                     name: x.ModName,
                     targetPath: x.Location

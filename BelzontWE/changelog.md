@@ -1,4 +1,9 @@
-# v0.3.2r2 (14-JUN-25)
+# v0.3.2r3 (15-JUN-25)
+
+- Added a title line with the self name and the prefab name of current editing layout in the hierarchy view.
+- Added new button on bottom bar of hierarchy view allowing to select between upgrades of current building.
+
+## FROM v0.3.2r2 (14-JUN-25)
 
 - Added a new layout node type: White Cube. It's same as White Texture, but 3D (with depth). It also have an option to move the reference of next node to the front face - visually equals to White Texture.
 
