@@ -1,4 +1,9 @@
-# v0.3.2r3 (15-JUN-25)
+# v0.3.2r4 (16-JUN-25)
+
+- Fixed deserialization error when using glass shader on a layout node saved along city.
+- Now properly saving decal flags for glass shaders saved along city.
+
+## FROM v0.3.2r3 (15-JUN-25)
 
 - Added a title line with the self name and the prefab name of current editing layout in the hierarchy view.
 - Added new button on bottom bar of hierarchy view allowing to select between upgrades of current building.

@@ -495,7 +495,7 @@ namespace BelzontWE
         }
         public class GlassStyleXml : ISerializable
         {
-            private const int CURRENT_VERSION = 0;
+            private const int CURRENT_VERSION = 1;
             [XmlIgnore] public WEShader shader => WEShader.Glass;
             [XmlAttribute][DefaultValue(WETextDataMaterial.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextDataMaterial.DEFAULT_DECAL_FLAGS;
             [XmlElement] public FormulaeColorRgbaXml color = new() { defaultValue = Color.clear };
@@ -508,6 +508,7 @@ namespace BelzontWE
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
                 writer.Write(CURRENT_VERSION);
+                writer.Write(decalFlags);
                 writer.WriteNullCheck(color);
                 writer.WriteNullCheck(glassColor);
                 writer.WriteNullCheck(glassRefraction);
@@ -524,7 +525,10 @@ namespace BelzontWE
                     LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
                     return;
                 }
-                reader.Read(out decalFlags);
+                if (version == 1)
+                {
+                    reader.Read(out decalFlags);
+                }
                 reader.ReadNullCheck(out color);
                 reader.ReadNullCheck(out glassColor);
                 reader.ReadNullCheck(out glassRefraction);
