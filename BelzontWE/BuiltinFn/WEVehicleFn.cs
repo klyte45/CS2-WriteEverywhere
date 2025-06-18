@@ -1,7 +1,6 @@
 ﻿using Colossal.Entities;
 using Game.Common;
 using Game.Objects;
-using Game.Routes;
 using Game.Simulation;
 using Game.Vehicles;
 using System;
@@ -24,11 +23,9 @@ namespace BelzontWE.Builtin
                         !em.TryGetComponent<Owner>(entity, out var owner) ? "<?NO TARGET?>"
                         : WEUtitlitiesFn.GetEntityName(owner.m_Owner)
                 : target.m_Target == Entity.Null ? "Cities Skylines II"
-                : !em.TryGetComponent<Connected>(target.m_Target, out var connected)
-                    ? !em.TryGetComponent(entity, out owner)
-                        ? WEUtitlitiesFn.GetEntityName(target.m_Target)
-                        : WEUtitlitiesFn.GetEntityName(owner.m_Owner)
-                : WEUtitlitiesFn.GetEntityName(connected.m_Connected);
+                : WERouteFn.GetWaypointStaticDestinationName(entity) is string destinationName ? destinationName
+                : !em.TryGetComponent(entity, out owner) ? WEUtitlitiesFn.GetEntityName(target.m_Target)
+                : WEUtitlitiesFn.GetEntityName(owner.m_Owner);
         };
 
         private static CitySystem citySys;

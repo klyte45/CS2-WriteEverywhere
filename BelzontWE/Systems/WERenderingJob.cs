@@ -257,7 +257,7 @@ namespace BelzontWE
                             var effRot = isDecal ? ((Quaternion)transform.offsetRotation) * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)transform.offsetRotation;
                             var effectiveOffsetPosition = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform);
 
-                            var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? transform.scale.xzy : new float3(transform.scale.xy, 1));
+                            var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? transform.scale.xzy : new float3(transform.scale.xy, math.sign(transform.scale.z)));
                             var lumMultiplier = GetEmissiveMultiplier(ref material);
                             int lod = CalculateLod(whiteTextureBounds * lumMultiplier, ref mesh, ref transform, ref WTmatrix, out int minLod, ref this);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
@@ -315,7 +315,7 @@ namespace BelzontWE
                             var material = m_weMaterialLookup[nextEntity];
                             var isDecal = material.CheckIsDecal(mesh);
                             var effRot = parentIsPlaceholder ? default : isDecal ? refRot * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)refRot;
-                            var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? (scale.xzy * new float3(mesh.TextType == WESimulationTextType.Image ? mesh.BriWidthMetersUnscaled : 1, 1, 1)) : new float3(scale.xy, 1));
+                            var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? (scale.xzy * new float3(mesh.TextType == WESimulationTextType.Image ? mesh.BriWidthMetersUnscaled : 1, 1, 1)) : new float3(scale.xy, math.sign(scale.z)));
                             var zeroedBounds = (Vector3)(mesh.Bounds.min - mesh.Bounds.max) == default;
                             var invalidBri = (mesh.EffectiveText.Length >= 0 && zeroedBounds);
                             if (mesh.HasBRI || invalidBri)

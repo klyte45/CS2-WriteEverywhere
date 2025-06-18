@@ -33,6 +33,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const T_offsetPosition = translate("textValueSettings.offsetPosition"); //
     const T_offsetRotation = translate("textValueSettings.offsetRotation"); //
     const T_scaleByAxis = translate("textValueSettings.scaleByAxis"); //
+    const T_flipZ = translate("textValueSettings.flipZ"); //
 
     const mesh = WorldPickerService.instance.bindingList.mesh;
     const material = WorldPickerService.instance.bindingList.material;
@@ -73,13 +74,13 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const [widthDistortion, setWidthDistortion] = useState(transform.CurrentScale.value[0] / transform.CurrentScale.value[1]);
 
 
-    const [decalAreaThickness, setDecalAreaThickness] = useState(transform.CurrentScale.value[2]);
+    const [decalAreaThickness, setDecalAreaThickness] = useState(Math.abs(transform.CurrentScale.value[2]));
 
 
     useEffect(() => {
         setHeight(transform.CurrentScale.value[1]);
         setWidthDistortion(transform.CurrentScale.value[0] / transform.CurrentScale.value[1]);
-        setDecalAreaThickness(transform.CurrentScale.value[2])
+        setDecalAreaThickness(Math.abs(transform.CurrentScale.value[2]))
     }, [transform.CurrentScale.value, picker.CurrentSubEntity.value])
 
 
@@ -105,7 +106,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     const saveDecalThickness = (value: number) => {
         setDecalAreaThickness(value);
-        transform.CurrentScale.set([transform.CurrentScale.value[0], transform.CurrentScale.value[1], value]);
+        transform.CurrentScale.set([transform.CurrentScale.value[0], transform.CurrentScale.value[1], Math.sign(transform.CurrentScale.value[2] + .001) * value]);
     }
 
     const defaultPosition = props.initialPosition ?? { x: 1 - 400 / window.innerWidth, y: 1 - 180 / window.innerHeight }
@@ -142,19 +143,19 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                     (alwaysBeAbsolute || (transform.UseAbsoluteSizeEditing.value && mayBeAbsolute)) && <Float2InputField
                         label={T_heightWidthCm}
                         value={{ x: transform.CurrentScale.value[0] * 100, y: transform.CurrentScale.value[1] * 100 }}
-                        onChange={(x) => transform.CurrentScale.set([x.x * .01, x.y * .01, decalAreaThickness])} />
+                        onChange={(x) => transform.CurrentScale.set([x.x * .01, x.y * .01, Math.sign(transform.CurrentScale.value[2]) * decalAreaThickness])} />
                 }
                 {
                     is3dEditor && <Float3InputField
                         label={T_dimensionsCm}
-                        value={{ x: transform.CurrentScale.value[0] * 100, y: transform.CurrentScale.value[1] * 100, z: transform.CurrentScale.value[2] * 100 }}
-                        onChange={(x) => transform.CurrentScale.set([x.x * .01, x.y * .01, x.z * .01])} />
+                        value={{ x: transform.CurrentScale.value[0] * 100, y: transform.CurrentScale.value[1] * 100, z: Math.abs(transform.CurrentScale.value[2]) * 100 }}
+                        onChange={(x) => transform.CurrentScale.set([x.x * .01, x.y * .01, Math.sign(transform.CurrentScale.value[2]) * x.z * .01])} />
                 }
 
                 {!is3dEditor && material.ShaderType.value == 2 && <FloatInputField label={T_decalAreaThickness} min={.001} max={100} value={decalAreaThickness} onChange={saveDecalThickness} onChangeEnd={() => saveDecalThickness(decalAreaThickness)} />}
                 {
                     mesh.TextSourceType.value == WESimulationTextType.WhiteCube &&
-                    <ToggleField label={T_childrenRefersToFrontFace} value={mesh.ChildrenRefersToFrontFace.value} onChange={(x) => mesh.ChildrenRefersToFrontFace.set(x)} />                 
+                    <ToggleField label={T_childrenRefersToFrontFace} value={mesh.ChildrenRefersToFrontFace.value} onChange={(x) => mesh.ChildrenRefersToFrontFace.set(x)} />
                 }
                 {mesh.TextSourceType.value == WESimulationTextType.Text && <>
                     <FormulaeEditRow formulaeField="MaxWidth" formulaeModule={formulaeModule} label={T_maxWidth}
@@ -209,6 +210,9 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                             />
                         </EditorItemRow>
                     </>}
+                {mesh.TextSourceType.value != WESimulationTextType.MatrixTransform && <>
+                    <ToggleField label={T_flipZ} value={transform.CurrentScale.value[2] < 0} onChange={(x) => transform.CurrentScale.set([transform.CurrentScale.value[0], transform.CurrentScale.value[1], -transform.CurrentScale.value[2]])} />
+                </>}
                 {mesh.TextSourceType.value == WESimulationTextType.MatrixTransform &&
                     <>
                         <FormulaeEditRow formulaeField={formulaeFieldOffsetPosition} formulaeModule={formulaeModule} label={T_offsetPosition} defaultInputField={

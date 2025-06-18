@@ -1,4 +1,9 @@
-# v0.3.2r4 (16-JUN-25)
+# v0.3.2.5 (18-JUN-25)
+
+- Added option to flip Z axis orientation - useful to create backfaces for planes/images
+- Adding more route-related functions
+
+## FROM v0.3.2r4 (16-JUN-25)
 
 - Fixed deserialization error when using glass shader on a layout node saved along city.
 - Now properly saving decal flags for glass shaders saved along city.
