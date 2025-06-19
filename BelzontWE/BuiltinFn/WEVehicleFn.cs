@@ -55,6 +55,7 @@ namespace BelzontWE.Builtin
                 : WERouteFn.GetTransportLineNumber(ownerRoute.m_Owner);
         };
         public static Func<Entity, string> GetSerialNumber_binding = (entity) => (entity.Index % 100000).ToString().PadLeft(5, '0');
+        public static Func<Entity, string> GetConvoyId_binding = (entity) => GetVehiclePlate_binding(World.DefaultGameObjectInjectionWorld.EntityManager.TryGetComponent(entity, out Controller c) ? c.m_Controller : entity);
         public static Func<Entity, string> GetVehiclePlateLine1_binding = (entity) => { var plate = GetVehiclePlate(entity); return plate[..(plate.Length / 2)]; };
         public static Func<Entity, string> GetVehiclePlateLine2_binding = (entity) => { var plate = GetVehiclePlate(entity); return plate[(plate.Length / 2)..]; };
 
@@ -65,6 +66,7 @@ namespace BelzontWE.Builtin
         public static string GetVehiclePlateLine2(Entity vehicleRef) => GetVehiclePlateLine2_binding?.Invoke(vehicleRef) ?? "<???>";
         public static string GetTransportLineNumber(Entity reference) => GetTargetTransportLineNumber_binding?.Invoke(reference) ?? "<!>";
         public static string GetSerialNumber(Entity reference) => GetSerialNumber_binding?.Invoke(reference) ?? "<???>";
+        public static string GetConvoyId(Entity vehicleRef) => GetConvoyId_binding?.Invoke(vehicleRef) ?? "<???>";
     }
 
 }

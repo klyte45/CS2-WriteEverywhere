@@ -1,4 +1,10 @@
-# v0.3.2.5 (18-JUN-25)
+# v0.3.2.8 (19-JUN-25)
+
+- Fixing a major issue that was causing weird shadows from behind the image meshes (special thanks: Sully)
+- Fixing unable to setup ZFlip if the z axis scale got to zero somehow
+- Added function to get convoy id
+
+## FROM v0.3.2.5 (18-JUN-25)
 
 - Added option to flip Z axis orientation - useful to create backfaces for planes/images
 - Adding more route-related functions

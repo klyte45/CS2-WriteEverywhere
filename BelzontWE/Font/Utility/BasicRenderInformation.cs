@@ -118,7 +118,7 @@ namespace BelzontWE.Font.Utility
                     };
                     m_mesh.RecalculateBounds();
                     m_mesh.RecalculateNormals();
-                    m_mesh.RecalculateTangents();
+                    m_mesh.tangents = m_vertices.Select(x => Vector4.zero).ToArray();
                 }
                 return m_mesh;
             }

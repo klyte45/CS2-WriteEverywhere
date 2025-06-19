@@ -228,7 +228,7 @@ namespace BelzontWE
                             if (ìsPlaceholder) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
                             else material.GetOwnMaterial(ref mesh, bri.BoundsUV, out ownMaterial);
                             var geomMesh = mesh.TextType == WESimulationTextType.WhiteCube ? bri.MeshCube : bri.GetMesh(item.material.Shader);
-                            Graphics.DrawMesh(geomMesh, item.transformMatrix, ownMaterial, 0, null, 0);
+                            Graphics.DrawMesh(geomMesh, item.transformMatrix, ownMaterial, 0, null, 0, null, ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
                             if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)
                             {
                                 if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! DRAWING Extra mesh");

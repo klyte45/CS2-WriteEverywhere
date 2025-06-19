@@ -106,7 +106,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
 
     const saveDecalThickness = (value: number) => {
         setDecalAreaThickness(value);
-        transform.CurrentScale.set([transform.CurrentScale.value[0], transform.CurrentScale.value[1], Math.sign(transform.CurrentScale.value[2] + .001) * value]);
+        transform.CurrentScale.set([transform.CurrentScale.value[0], transform.CurrentScale.value[1], (Math.sign(transform.CurrentScale.value[2] + .001) || 1) * value]);
     }
 
     const defaultPosition = props.initialPosition ?? { x: 1 - 400 / window.innerWidth, y: 1 - 180 / window.innerHeight }
@@ -143,13 +143,13 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                     (alwaysBeAbsolute || (transform.UseAbsoluteSizeEditing.value && mayBeAbsolute)) && <Float2InputField
                         label={T_heightWidthCm}
                         value={{ x: transform.CurrentScale.value[0] * 100, y: transform.CurrentScale.value[1] * 100 }}
-                        onChange={(x) => transform.CurrentScale.set([x.x * .01, x.y * .01, Math.sign(transform.CurrentScale.value[2]) * decalAreaThickness])} />
+                        onChange={(x) => transform.CurrentScale.set([x.x * .01, x.y * .01, (Math.sign(transform.CurrentScale.value[2]) || 1) * decalAreaThickness])} />
                 }
                 {
                     is3dEditor && <Float3InputField
                         label={T_dimensionsCm}
                         value={{ x: transform.CurrentScale.value[0] * 100, y: transform.CurrentScale.value[1] * 100, z: Math.abs(transform.CurrentScale.value[2]) * 100 }}
-                        onChange={(x) => transform.CurrentScale.set([x.x * .01, x.y * .01, Math.sign(transform.CurrentScale.value[2]) * x.z * .01])} />
+                        onChange={(x) => transform.CurrentScale.set([x.x * .01, x.y * .01, (Math.sign(transform.CurrentScale.value[2]) || 1) * x.z * .01])} />
                 }
 
                 {!is3dEditor && material.ShaderType.value == 2 && <FloatInputField label={T_decalAreaThickness} min={.001} max={100} value={decalAreaThickness} onChange={saveDecalThickness} onChangeEnd={() => saveDecalThickness(decalAreaThickness)} />}
