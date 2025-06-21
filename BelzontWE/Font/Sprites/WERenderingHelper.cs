@@ -85,25 +85,25 @@ namespace BelzontWE
             return GenerateBri(refName, imageInfo.Main, imageInfo.Normal, imageInfo.ControlMask, imageInfo.Emissive, imageInfo.MaskMap);
         }
 
-        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[] cubeVertices, out int[] cubeTris, out Vector2[] uvCube)
+        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[][] cubeSubmeshVertices, out int[][] cubeTris, out Vector2[][] uvCube)
         {
             var verticesGroup = originalVertices.Select((x, i) => (x, i)).GroupBy(x => x.i / 4);
-            cubeVertices = verticesGroup.Select(x =>
+            cubeSubmeshVertices = verticesGroup.Select(x =>
             {
                 var list = x.Select(x => x.x).ToList();
                 return (minx: list.Min(x => x.x), maxx: list.Max(x => x.x), miny: list.Min(x => x.y), maxy: list.Max(x => x.y));
             })
-                .SelectMany(x =>
-                    kVerticesPositionsCube.Select((y, j) => new Vector3(y.x < 0 ? x.minx : x.maxx, y.y * -.5f, y.z < 0 ? x.miny : x.maxy)))
+                .Select(x =>
+                    kVerticesPositionsCube.Select((y, j) => new Vector3(y.x < 0 ? x.minx : x.maxx, y.y * -.5f, y.z < 0 ? x.miny : x.maxy)).ToArray())
                 .ToArray();
-            cubeTris = verticesGroup.SelectMany((_, i) => kTriangleIndicesCube.Select(x => x + (i * 24))).ToArray();
+            cubeTris = verticesGroup.Select((_, i) => kTriangleIndicesCube.Select(x => x + (i * 24)).ToArray()).ToArray();
 
             uvCube = originalUv.Select((x, i) => (x, i)).GroupBy(x => x.i / 4).Select(x =>
             {
                 var list = x.Select(x => x.x).ToList();
                 return (minx: list.Min(x => x.x), maxx: list.Max(x => x.x), miny: list.Min(x => x.y), maxy: list.Max(x => x.y));
             })
-                .SelectMany(x => kUvCube.Select((y, j) => new Vector2(y.x < 0 ? x.minx : x.maxx, y.y < 0 ? x.miny : x.maxy)))
+                .Select(x => kUvCube.Select((y, j) => new Vector2(y.x < 0.5f ? x.minx : x.maxx, y.y < 0.5f ? x.miny : x.maxy)).ToArray())
                 .ToArray();
         }
 

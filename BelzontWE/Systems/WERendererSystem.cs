@@ -40,6 +40,8 @@ namespace BelzontWE
         internal const char VARIABLE_ITEM_SEPARATOR = '↓';
         internal const char VARIABLE_KV_SEPARATOR = '→';
 
+        public uint DrawCallsLastFrame { get; private set; } = 0;
+
         private uint FrameCounter { get; set; } = 0;
 #if BURST
         [Preserve]
@@ -130,6 +132,7 @@ namespace BelzontWE
         {
             FrameCounter++;
             EntityCommandBuffer cmd;
+            DrawCallsLastFrame = 0;
             if (availToDraw.Count > 0)
             {
                 if (dumpNextFrame) LogUtils.DoLog($"Drawing Items: E {m_renderQueueEntities.CalculateEntityCount()} | C {m_renderQueueEntities.CalculateChunkCount()}");
@@ -227,15 +230,19 @@ namespace BelzontWE
                             Material ownMaterial;
                             if (ìsPlaceholder) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
                             else material.GetOwnMaterial(ref mesh, bri.BoundsUV, out ownMaterial);
-                            var geomMesh = mesh.TextType == WESimulationTextType.WhiteCube ? bri.MeshCube : bri.GetMesh(item.material.Shader);
-                            Graphics.DrawMesh(geomMesh, item.transformMatrix, ownMaterial, 0, null, 0, null, ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
-                            if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)
+                            var meshCount = mesh.TextType == WESimulationTextType.WhiteCube ? 1 : bri.MeshCount(item.material.Shader);
+                            for (int i = 0; i < meshCount; i++)
                             {
-                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! DRAWING Extra mesh");
-                                Graphics.DrawMesh(geomMesh, item.transformMatrix, WEAtlasesLibrary.DefaultMaterialSemiTransparent(), 0, null, 0, null, false, false);
+                                var geomMesh = mesh.TextType == WESimulationTextType.WhiteCube ? bri.MeshCube[0] : bri.GetMesh(item.material.Shader, i);
+                                Graphics.DrawMesh(geomMesh, item.transformMatrix, ownMaterial, 0, null, 0, bri.GetPropertyBlock(item.material.Shader, i), ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
+                                if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)
+                                {
+                                    if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! DRAWING Extra mesh");
+                                    Graphics.DrawMesh(geomMesh, item.transformMatrix, WEAtlasesLibrary.DefaultMaterialSemiTransparent(), 0, null, 0, null, false, false);
+                                }
+                                DrawCallsLastFrame++;
+                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {mesh.RenderInformation?.m_refText} | {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
                             }
-
-                            if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {mesh.RenderInformation?.m_refText} | {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
                         }
                     }
                     //      if (!WETemplateManager.Instance.IsAnyGarbagePending)
