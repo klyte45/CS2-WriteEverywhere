@@ -401,7 +401,7 @@ namespace BelzontWE.Font
         {
             if (!m_textCache.ContainsKey(""))
             {
-                m_textCache[""] = new BasicRenderInformation("", new Vector3[0], new int[0], new Vector2[0], new Vector3[0], new int[0], new Vector2[0], null);
+                m_textCache[""] = new BasicRenderInformation("", new Vector3[0], new int[0], new Vector2[0], null);
             }
             if (itemsQueue.Count >= queueConsumptionFrame || framesBuffering++ > 60)
             {

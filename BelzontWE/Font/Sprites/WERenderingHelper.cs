@@ -47,20 +47,27 @@ namespace BelzontWE
 
 
         public static readonly int[] kTriangleIndices = new int[]    {
-            0,3,1,3,2,1
+            0,3,1,
+            3,2,1
         };
         public static
 #if !DEBUG
     readonly
 #endif
             int[] kTriangleIndicesCube = new int[]    {
-            1,0,3,0,1,2,
-            5,4,7,4,5,6,
-            9,8,11,8,9,10,
-            13,12,15,12,13,14,
-            17,16,19,16,17,18,
-            21,20,23,20,21,22
-        };
+                   0,                      1,   3,
+                   1,                      0,   2,
+                   4,                      5,   7,
+                   5,                      4,   6,
+                   8,                       9,   11,
+                   9,                       8,   10,
+                    12,                       13,    15,
+                    13,                       12,    14,
+                    16,                       17,    19,
+                    17,                       16,    18,
+                    20,                       21,    23,
+                    21,                       20,    22,
+            };
 
         public static readonly Vector3[] kVerticesPositionsCube =
         {
@@ -78,6 +85,28 @@ namespace BelzontWE
             return GenerateBri(refName, imageInfo.Main, imageInfo.Normal, imageInfo.ControlMask, imageInfo.Emissive, imageInfo.MaskMap);
         }
 
+        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[] cubeVertices, out int[] cubeTris, out Vector2[] uvCube)
+        {
+            var verticesGroup = originalVertices.Select((x, i) => (x, i)).GroupBy(x => x.i / 4);
+            cubeVertices = verticesGroup.Select(x =>
+            {
+                var list = x.Select(x => x.x).ToList();
+                return (minx: list.Min(x => x.x), maxx: list.Max(x => x.x), miny: list.Min(x => x.y), maxy: list.Max(x => x.y));
+            })
+                .SelectMany(x =>
+                    kVerticesPositionsCube.Select((y, j) => new Vector3(y.x < 0 ? x.minx : x.maxx, y.y * -.5f, y.z < 0 ? x.miny : x.maxy)))
+                .ToArray();
+            cubeTris = verticesGroup.SelectMany((_, i) => kTriangleIndicesCube.Select(x => x + (i * 24))).ToArray();
+
+            uvCube = originalUv.Select((x, i) => (x, i)).GroupBy(x => x.i / 4).Select(x =>
+            {
+                var list = x.Select(x => x.x).ToList();
+                return (minx: list.Min(x => x.x), maxx: list.Max(x => x.x), miny: list.Min(x => x.y), maxy: list.Max(x => x.y));
+            })
+                .SelectMany(x => kUvCube.Select((y, j) => new Vector2(y.x < 0 ? x.minx : x.maxx, y.y < 0 ? x.miny : x.maxy)))
+                .ToArray();
+        }
+
         public static BasicRenderInformation GenerateBri(FixedString32Bytes refName, Texture main, Texture normal, Texture control, Texture emissive, Texture mask)
         {
             var proportion = main.width / (float)main.height;
@@ -85,7 +114,7 @@ namespace BelzontWE
                 new[]
                     {
                         new Vector3(-.5f * proportion, -.5f, 0f),
-                        new Vector3(-.5f * proportion, .5f, 0f),
+                        new Vector3(-.5f * proportion,  .5f ,0f),
                         new Vector3(.5f * proportion, .5f, 0f),
                         new Vector3(.5f * proportion, -.5f, 0f),
                     },
@@ -97,9 +126,6 @@ namespace BelzontWE
                         new Vector2(0, 0),
                     },
                 triangles: kTriangleIndices,
-                verticesCube: kVerticesPositionsCube.Select(x => new Vector3(.5f * x.x, .5f * x.y, .5f * x.z)).ToArray(),
-                uvCube: kUvCube,
-                trianglesCube: kTriangleIndicesCube,
                  main: main,
                  normal: normal,
                  control: control,
@@ -188,9 +214,9 @@ namespace BelzontWE
                                 min
                             },
                         triangles: kTriangleIndices,
-                        verticesCube: kVerticesPositionsCube.Select(x => new Vector3(.5f * x.x, .5f * x.y, .5f * x.z)).ToArray(),
-                        uvCube: kUvCube,
-                        trianglesCube: kTriangleIndicesCube,
+                        //verticesCube: kVerticesPositionsCube.Select(x => new Vector3(.5f * x.x, .5f * x.y, .5f * x.z)).ToArray(),
+                        //uvCube: kUvCube,
+                        //trianglesCube: kTriangleIndicesCube,
                         main: textureAtlas.Main,
                         normal: spriteInfo.HasNormal ? textureAtlas.Normal : null,
                         control: spriteInfo.HasControl ? textureAtlas.Control : null,

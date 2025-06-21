@@ -220,7 +220,7 @@ namespace BelzontWE
                 if (text.Trim() == "")
                 {
                     weCustomData = weCustomData.UpdateBRI(new BasicRenderInformation("", new UnityEngine.Vector3[0], new int[0], new UnityEngine.Vector2[0],
-                        new UnityEngine.Vector3[0], new int[0], new UnityEngine.Vector2[0], null), "");
+                        null), "");
                     return true;
                 }
                 var font = fontDict.TryGetValue(weCustomData.FontName, out var fsd) ? fsd : FontServer.Instance.DefaultFont;

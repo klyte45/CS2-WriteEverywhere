@@ -15,7 +15,6 @@ namespace BelzontWE.Font.Utility
         public static readonly BasicRenderInformation LOADING_PLACEHOLDER = new(PLACEHOLDER_REFTEXT, null, null, null, null, null, null, Texture2D.whiteTexture);
         public BasicRenderInformation(string refText,
             Vector3[] vertices, int[] triangles, Vector2[] uv,
-            Vector3[] verticesCube, int[] trianglesCube, Vector2[] uvCube,
             Texture main, Texture normal = null, Texture control = null, Texture emissive = null, Texture mask = null)
         {
             m_refText = refText ?? throw new ArgumentNullException("refText");
@@ -38,17 +37,17 @@ namespace BelzontWE.Font.Utility
             {
                 LogUtils.DoWarnLog($"m_vertices.Length = {m_vertices?.Length} | m_triangles: [{string.Join(",", m_triangles ?? new int[0])}]");
             }
-            if (verticesCube != null && (trianglesCube?.All(x => x < verticesCube.Length) ?? false))
-            {
-                m_verticesCube = verticesCube;
-                m_trianglesCube = trianglesCube;
-                m_uvCube = uvCube;
-                m_boundsCube = vertices.Length == 0 ? default : new Bounds3(vertices.Aggregate((x, y) => Vector3.Min(x, y)), vertices.Aggregate((x, y) => Vector3.Max(x, y)));
-            }
-            else if (triangles != null && vertices != null)
-            {
-                LogUtils.DoWarnLog($"m_verticesCube.Length = {m_verticesCube?.Length} | m_trianglesCube: [{string.Join(",", m_trianglesCube ?? new int[0])}]");
-            }
+            //if (verticesCube != null && (trianglesCube?.All(x => x < verticesCube.Length) ?? false))
+            //{
+            //    m_verticesCube = verticesCube;
+            //    m_trianglesCube = trianglesCube;
+            //    m_uvCube = uvCube;
+            //    m_boundsCube = vertices.Length == 0 ? default : new Bounds3(vertices.Aggregate((x, y) => Vector3.Min(x, y)), vertices.Aggregate((x, y) => Vector3.Max(x, y)));
+            //}
+            //else if (triangles != null && vertices != null)
+            //{
+            //    LogUtils.DoWarnLog($"m_verticesCube.Length = {m_verticesCube?.Length} | m_trianglesCube: [{string.Join(",", m_trianglesCube ?? new int[0])}]");
+            //}
             Main = main;
             Normal = normal;
             Emissive = emissive;
@@ -63,11 +62,12 @@ namespace BelzontWE.Font.Utility
                 return null;
             }
             var bri = new BasicRenderInformation(brij.originalText.ToString(), brij.vertices.ToArray(), brij.triangles.ToArray(), brij.uv1.ToArray(),
-                brij.verticesCube.ToArray(), brij.trianglesCube.ToArray(), brij.uv1Cube.ToArray(), main);
+                // brij.verticesCube.ToArray(), brij.trianglesCube.ToArray(), brij.uv1Cube.ToArray(),
+                main);
             if (bri.Mesh == null) return null;
 
             bri.m_colors32 = brij.colors.ToArray();
-            bri.m_colors32Cube = brij.colorsCube.ToArray();
+            //   bri.m_colors32Cube = brij.colorsCube.ToArray();
 
             bri.m_sizeMetersUnscaled = bri.Mesh.bounds.size;
             //   if (BasicIMod.DebugMode) LogUtils.DoLog($"MESH: {m_mesh} {m_mesh.vertices[0]} {m_mesh.vertices[1]}...  {m_mesh.tangents[0]} {m_mesh.tangents[1]}...  {m_mesh.normals[0]} {m_mesh.normals[1]}... {m_mesh.vertices.Length} {m_mesh.triangles.Length} {m_sizeMetersUnscaled}m");
@@ -82,10 +82,10 @@ namespace BelzontWE.Font.Utility
         public readonly Bounds3 m_bounds;
 
 
-        private readonly Vector3[] m_verticesCube;
-        private readonly int[] m_trianglesCube;
-        private Color32[] m_colors32Cube;
-        private readonly Vector2[] m_uvCube;
+        //private readonly Vector3[] m_verticesCube;
+        //private readonly int[] m_trianglesCube;
+        //private Color32[] m_colors32Cube;
+        //private readonly Vector2[] m_uvCube;
         public readonly Bounds3 m_boundsCube;
 
         private Mesh m_mesh;
@@ -128,18 +128,18 @@ namespace BelzontWE.Font.Utility
         {
             get
             {
-                if (m_meshCube is null && m_verticesCube?.Length > 0)
+                if (m_meshCube is null && m_vertices?.Length > 0)
                 {
+                    WERenderingHelper.DecalCubeFromPlanes(m_vertices, m_uv, out var m_verticesCube, out var m_trianglesCube, out var m_uvCube);
                     m_meshCube = new Mesh
                     {
                         vertices = m_verticesCube,
                         triangles = m_trianglesCube,
-                        colors32 = m_colors32Cube,
                         uv = m_uvCube,
                     };
                     m_meshCube.RecalculateBounds();
                     m_meshCube.RecalculateNormals();
-                    m_meshCube.RecalculateTangents();
+                    m_meshCube.tangents = m_verticesCube.Select(x => Vector4.zero).ToArray();
                 }
                 return m_meshCube;
             }
@@ -200,10 +200,10 @@ namespace BelzontWE.Font.Utility
         public NativeArray<Vector2> uv1;
 
 
-        public NativeArray<Color32> colorsCube;
-        public NativeArray<Vector3> verticesCube;
-        public NativeArray<int> trianglesCube;
-        public NativeArray<Vector2> uv1Cube;
+        //public NativeArray<Color32> colorsCube;
+        //public NativeArray<Vector3> verticesCube;
+        //public NativeArray<int> trianglesCube;
+        //public NativeArray<Vector2> uv1Cube;
 
         public RangeVector m_YAxisOverflows;
         public RangeVector m_fontBaseLimits;

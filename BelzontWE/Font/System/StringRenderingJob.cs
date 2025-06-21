@@ -161,10 +161,10 @@ namespace BelzontWE.Font
                     result.uv1 = new(uvs.ToArray(), Allocator.Persistent);
                     result.triangles = new(triangles.ToArray(), Allocator.Persistent);
 
-                    result.verticesCube = new NativeArray<Vector3>(AlignVertices(verticesCube), Allocator.Persistent);
-                    result.colorsCube = new NativeArray<Color32>(colorsCube.ToArray(), Allocator.Persistent);
-                    result.uv1Cube = new(uvsCube.ToArray(), Allocator.Persistent);
-                    result.trianglesCube = new(trianglesCube.ToArray(), Allocator.Persistent);
+                    //result.verticesCube = new NativeArray<Vector3>(AlignVertices(verticesCube), Allocator.Persistent);
+                    //result.colorsCube = new NativeArray<Color32>(colorsCube.ToArray(), Allocator.Persistent);
+                    //result.uv1Cube = new(uvsCube.ToArray(), Allocator.Persistent);
+                    //result.trianglesCube = new(trianglesCube.ToArray(), Allocator.Persistent);
 
 
                     result.m_fontBaseLimits = new RangeVector { min = fsdTarget.Font.Descent, max = fsdTarget.Font.Ascent };
