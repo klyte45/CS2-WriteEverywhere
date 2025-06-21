@@ -247,14 +247,15 @@ namespace BelzontWE
             {
                 switch (mesh.TextType)
                 {
-                    case WESimulationTextType.Text:
+                    case WESimulationTextType.WhiteCube:
                         if (shader == WEShader.Decal)
                         {
                             shader = WEShader.Default;
                             World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<WEWorldPickerController>().ForceReload();
                         }
-                        goto case WESimulationTextType.Image;
+                        break;
                     case WESimulationTextType.Image:
+                    case WESimulationTextType.Text:
                         if (!bri.IsValid())
                         {
                             mesh.ResetBri();
@@ -300,7 +301,7 @@ namespace BelzontWE
             result = material;
             return requireUpdate;
         }
-        public readonly bool CheckIsDecal(WETextDataMesh mesh) => Shader == WEShader.Decal && (mesh.TextType) switch { WESimulationTextType.Text or WESimulationTextType.Placeholder => false, _ => true };
+        public readonly bool CheckIsDecal(WETextDataMesh mesh) => Shader == WEShader.Decal && (mesh.TextType) switch { WESimulationTextType.WhiteCube or WESimulationTextType.Placeholder => false, _ => true };
 
         public WETextDataXml.DefaultStyleXml ToDefaultXml()
             => new()

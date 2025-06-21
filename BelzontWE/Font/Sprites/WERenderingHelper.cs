@@ -3,6 +3,7 @@ using BelzontWE.Font;
 using BelzontWE.Font.Utility;
 using BelzontWE.Layout;
 using BelzontWE.Sprites;
+using Colossal.Mathematics;
 using System.Linq;
 using Unity.Collections;
 using Unity.Mathematics;
@@ -55,18 +56,18 @@ namespace BelzontWE
     readonly
 #endif
             int[] kTriangleIndicesCube = new int[]    {
-                   0,                      1,   3,
-                   1,                      0,   2,
-                   4,                      5,   7,
-                   5,                      4,   6,
-                   8,                       9,   11,
-                   9,                       8,   10,
-                    12,                       13,    15,
-                    13,                       12,    14,
-                    16,                       17,    19,
-                    17,                       16,    18,
-                    20,                       21,    23,
-                    21,                       20,    22,
+                0, 1, 3,
+                1, 0, 2,
+                4, 5, 7,
+                5, 4, 6,
+                8, 9, 11,
+                9, 8, 10,
+                12, 13,15,
+                13, 12,14,
+                16, 17,19,
+                17, 16,18,
+                20, 21,23,
+                21, 20,22,
             };
 
         public static readonly Vector3[] kVerticesPositionsCube =
@@ -85,18 +86,20 @@ namespace BelzontWE
             return GenerateBri(refName, imageInfo.Main, imageInfo.Normal, imageInfo.ControlMask, imageInfo.Emissive, imageInfo.MaskMap);
         }
 
-        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[][] cubeSubmeshVertices, out int[][] cubeTris, out Vector2[][] uvCube)
+        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[][] cubeSubmeshVertices, out int[][] cubeTris, out Vector2[][] uvCube, out Vector3[] cubeOffsets)
         {
-            var verticesGroup = originalVertices.Select((x, i) => (x, i)).GroupBy(x => x.i / 4);
-            cubeSubmeshVertices = verticesGroup.Select(x =>
+            var verticesGroup = originalVertices.Select((x, i) => (x, i)).GroupBy(x => x.i / 4).Select(x =>
             {
                 var list = x.Select(x => x.x).ToList();
-                return (minx: list.Min(x => x.x), maxx: list.Max(x => x.x), miny: list.Min(x => x.y), maxy: list.Max(x => x.y));
-            })
+                return new Bounds2(new float2(list.Min(x => x.x), list.Min(x => x.y)), new float2(list.Max(x => x.x), list.Max(x => x.y)));
+            });
+            cubeSubmeshVertices = verticesGroup
                 .Select(x =>
-                    kVerticesPositionsCube.Select((y, j) => new Vector3(y.x < 0 ? x.minx : x.maxx, y.y * -.5f, y.z < 0 ? x.miny : x.maxy)).ToArray())
+                    kVerticesPositionsCube.Select((y, j) => new Vector3(y.x < 0 ? x.min.x : x.max.x, y.y * -.5f, y.z < 0 ? x.min.y : x.max.y) - (Vector3)new float3(x.Center(), 0).xzy).ToArray())
                 .ToArray();
-            cubeTris = verticesGroup.Select((_, i) => kTriangleIndicesCube.Select(x => x + (i * 24)).ToArray()).ToArray();
+            cubeOffsets = verticesGroup.Select(x => (Vector3)new float3(-x.Center(), 0)).ToArray();
+
+            cubeTris = verticesGroup.Select((_, i) => kTriangleIndicesCube).ToArray();
 
             uvCube = originalUv.Select((x, i) => (x, i)).GroupBy(x => x.i / 4).Select(x =>
             {
@@ -130,7 +133,8 @@ namespace BelzontWE
                  normal: normal,
                  control: control,
                  emissive: emissive,
-                 mask: mask
+                 mask: mask,
+                 invertUv: default
                 )
             {
                 m_sizeMetersUnscaled = new Vector2(proportion, 1),
@@ -217,6 +221,7 @@ namespace BelzontWE
                         //verticesCube: kVerticesPositionsCube.Select(x => new Vector3(.5f * x.x, .5f * x.y, .5f * x.z)).ToArray(),
                         //uvCube: kUvCube,
                         //trianglesCube: kTriangleIndicesCube,
+                        invertUv: default,
                         main: textureAtlas.Main,
                         normal: spriteInfo.HasNormal ? textureAtlas.Normal : null,
                         control: spriteInfo.HasControl ? textureAtlas.Control : null,

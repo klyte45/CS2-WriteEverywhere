@@ -108,7 +108,7 @@ namespace BelzontWE.Font
             {
                 if (!m_textCache.TryGetValue("", out bri))
                 {
-                    bri = new BasicRenderInformation(str, null, null, null, null, null, null, null);
+                    bri = new BasicRenderInformation(str, null, null, null, default, null, null, null, null);
                     m_textCache.TryAdd("", bri);
                     return bri;
                 }
@@ -395,13 +395,14 @@ namespace BelzontWE.Font
             while (enumerator.MoveNext())
             {
                 yield return enumerator.Current;
-            };
+            }
+            ;
         }
         public JobHandle RunJobs(JobHandle dependency)
         {
             if (!m_textCache.ContainsKey(""))
             {
-                m_textCache[""] = new BasicRenderInformation("", new Vector3[0], new int[0], new Vector2[0], null);
+                m_textCache[""] = new BasicRenderInformation("", new Vector3[0], new int[0], new Vector2[0], default, null);
             }
             if (itemsQueue.Count >= queueConsumptionFrame || framesBuffering++ > 60)
             {

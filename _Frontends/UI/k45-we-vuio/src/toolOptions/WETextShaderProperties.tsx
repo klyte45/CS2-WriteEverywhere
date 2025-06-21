@@ -33,7 +33,7 @@ export const WETextShaderProperties = (props: { initialPosition?: { x: number, y
     const EditorItemRow = VanillaWidgets.instance.EditorItemRow;
     const DropdownField = VanillaWidgets.instance.DropdownField<number>();
 
-    const availableShadersIdx = [WESimulationTextType.Text, WESimulationTextType.WhiteCube].includes(mesh.TextSourceType.value) ? [0, 1] : [0, 1, 2];
+    const availableShadersIdx = [WESimulationTextType.WhiteCube].includes(mesh.TextSourceType.value) ? [0, 1] : [0, 1, 2];
     const isDecalShader = material.ShaderType.value == 2;
 
     const [buildIdx, setBuild] = useState(0);

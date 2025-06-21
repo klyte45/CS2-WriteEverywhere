@@ -55,6 +55,7 @@ namespace BelzontWE.Font
             {
                 var result = new BasicRenderInformationJob
                 {
+                    invertUv = new Unity.Mathematics.bool2(false, true),
                     AtlasVersion = ~0u,
                     originalText = strOr,
                     m_YAxisOverflows = new RangeVector { min = float.MaxValue, max = float.MinValue }

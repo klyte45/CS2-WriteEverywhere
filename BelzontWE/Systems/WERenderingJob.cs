@@ -315,7 +315,8 @@ namespace BelzontWE
                             var material = m_weMaterialLookup[nextEntity];
                             var isDecal = material.CheckIsDecal(mesh);
                             var effRot = parentIsPlaceholder ? default : isDecal ? refRot * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)refRot;
-                            var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? (scale.xzy * new float3(mesh.TextType == WESimulationTextType.Image ? mesh.BriWidthMetersUnscaled : 1, 1, 1)) : new float3(scale.xy, math.sign(scale.z)));
+                            var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one)
+                                * Matrix4x4.Scale(isDecal ? (scale.xzy * new float3(mesh.TextType == WESimulationTextType.Image ? mesh.BriWidthMetersUnscaled : 1, 1, 1)) : new float3(scale.xy, math.sign(scale.z)));
                             var zeroedBounds = (Vector3)(mesh.Bounds.min - mesh.Bounds.max) == default;
                             var invalidBri = (mesh.EffectiveText.Length >= 0 && zeroedBounds);
                             if (mesh.HasBRI || invalidBri)

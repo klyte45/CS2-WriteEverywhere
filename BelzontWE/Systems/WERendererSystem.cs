@@ -234,11 +234,12 @@ namespace BelzontWE
                             for (int i = 0; i < meshCount; i++)
                             {
                                 var geomMesh = mesh.TextType == WESimulationTextType.WhiteCube ? bri.MeshCube[0] : bri.GetMesh(item.material.Shader, i);
-                                Graphics.DrawMesh(geomMesh, item.transformMatrix, ownMaterial, 0, null, 0, bri.GetPropertyBlock(item.material.Shader, i), ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
+                                var effectiveMatrix = item.transformMatrix * Matrix4x4.Translate(bri.GetMeshTranslation(item.material.Shader, i));
+                                Graphics.DrawMesh(geomMesh, effectiveMatrix, ownMaterial, 0, null, 0, bri.GetPropertyBlock(item.material.Shader, i), ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
                                 if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)
                                 {
                                     if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! DRAWING Extra mesh");
-                                    Graphics.DrawMesh(geomMesh, item.transformMatrix, WEAtlasesLibrary.DefaultMaterialSemiTransparent(), 0, null, 0, null, false, false);
+                                    Graphics.DrawMesh(geomMesh, effectiveMatrix, WEAtlasesLibrary.DefaultMaterialSemiTransparent(), 0, null, 0, null, false, false);
                                 }
                                 DrawCallsLastFrame++;
                                 if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {mesh.RenderInformation?.m_refText} | {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
