@@ -1,4 +1,9 @@
-# v0.3.2.8 (19-JUN-25)
+# v0.3.2.9 (21-JUN-25)
+
+- Allowing matrix transform nodes to be used as children for prefab default templates.
+- Added more integration functions
+
+## FROM v0.3.2.8 (19-JUN-25)
 
 - Fixing a major issue that was causing weird shadows from behind the image meshes (special thanks: Sully)
 - Fixing unable to setup ZFlip if the z axis scale got to zero somehow
