@@ -1,15 +1,19 @@
-# v0.3.2.9 (21-JUN-25)
+# v0.3.2r10 (26-JUN-25)
+
+- Fixing issue related to serializing illegit components from WE each time the game get saved
+
+## FROM v0.3.2r9 (21-JUN-25)
 
 - Allowing matrix transform nodes to be used as children for prefab default templates.
 - Added more integration functions
 
-## FROM v0.3.2.8 (19-JUN-25)
+## FROM v0.3.2r8 (19-JUN-25)
 
 - Fixing a major issue that was causing weird shadows from behind the image meshes (special thanks: Sully)
 - Fixing unable to setup ZFlip if the z axis scale got to zero somehow
 - Added function to get convoy id
 
-## FROM v0.3.2.5 (18-JUN-25)
+## FROM v0.3.2r5 (18-JUN-25)
 
 - Added option to flip Z axis orientation - useful to create backfaces for planes/images
 - Adding more route-related functions
