@@ -1,4 +1,5 @@
-﻿using Unity.Entities;
+﻿using Unity.Collections;
+using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -18,7 +19,6 @@ namespace BelzontWE
         private WETextDataValueFloat mustDrawFn;
         private WETextDataValueInt instanceCount;
 
-        private int nextUpdateFrame;
 
         public readonly bool MustDraw => !useFormulaeToCheckIfDraw || mustDrawFn.EffectiveValue > 0;
         public string MustDrawFormulae => mustDrawFn.Formulae;
@@ -145,23 +145,16 @@ namespace BelzontWE
 
 
         public int SetFormulaeMustDraw(string value, out string[] cmpErr) => mustDrawFn.SetFormulae(value, out cmpErr);
-        public int SetFormulaeInstanceCount(string value, out string[] cmpErr) => instanceCount.SetFormulae(value, out cmpErr);
+        public int SetFormulaeInstanceCount(string value, out string[] cmpErr) => instanceCount.SetFormulae(value, out cmpErr); 
 
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr, bool updateCounter)
+        public void UpdateFormulae(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr, bool updateCounter)
         {
-            if ((!updateCounter && !useFormulaeToCheckIfDraw) || nextUpdateFrame > Time.frameCount)
-            {
-                return false;
-            }
-            nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
-
             var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[varsStr]];
-            var changed = (useFormulaeToCheckIfDraw && mustDrawFn.UpdateEffectiveValue(em, geometryEntity, vars));
+            if (useFormulaeToCheckIfDraw) mustDrawFn.UpdateEffectiveValue(em, geometryEntity, vars);
             if (updateCounter)
             {
-                changed |= instanceCount.UpdateEffectiveValue(em, geometryEntity, vars);
+                instanceCount.UpdateEffectiveValue(em, geometryEntity, vars);
             }
-            return changed;
         }
 
         public static WETextDataTransform CreateDefault(Entity target, Entity? parent = null)

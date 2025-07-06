@@ -24,9 +24,11 @@ using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 
 #if BURST
@@ -57,6 +59,7 @@ namespace BelzontWE
         private EntityQuery m_entitiesToBeUpdatedInMain;
         private EntityQuery m_prefabArchetypesToBeUpdatedInMain;
         private EntityQuery m_componentsToDispose;
+        private EntityQuery m_textDataDirtyQuery;
         private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
         private bool m_templatesDirty;
@@ -383,6 +386,26 @@ namespace BelzontWE
                     }
             });
 
+            m_textDataDirtyQuery = GetEntityQuery(new EntityQueryDesc[]
+            {
+                    new ()
+                    {
+                        All = new ComponentType[]
+                        {
+                            ComponentType.ReadWrite<WETextDataMain>(),
+                            ComponentType.ReadWrite<WETextDataMaterial>(),
+                            ComponentType.ReadWrite<WETextDataTransform>(),
+                            ComponentType.ReadWrite<WETextDataMesh>(),
+                            ComponentType.ReadOnly<WETextDataDirtyFormulae>(),
+                            ComponentType.ReadOnly<WETextComponentValid>(),
+                        },
+                        None = new ComponentType[]
+                        {
+                            ComponentType.ReadOnly<WEWaitingRendering>(),
+                            ComponentType.ReadOnly<Deleted>(),
+                        }
+                    }
+            });
             WEAtlasesLibrary.GetWhiteTextureBRI();
         }
 
@@ -658,6 +681,23 @@ namespace BelzontWE
                     }
                     chunks.Dispose();
                 }
+                else if (!m_textDataDirtyQuery.IsEmpty)
+                {
+                    new WEUpdateFormulaesJob
+                    {
+                        m_MainDataHdl = GetComponentTypeHandle<WETextDataMain>(true),
+                        m_MaterialDataHdl = GetComponentTypeHandle<WETextDataMaterial>(true),
+                        m_TransformDataHdl = GetComponentTypeHandle<WETextDataTransform>(true),
+                        m_MeshDataHdl = GetComponentTypeHandle<WETextDataMesh>(true),
+                        m_DirtyFormulaeHdl = GetComponentTypeHandle<WETextDataDirtyFormulae>(true),
+                        m_EntityType = GetEntityTypeHandle(),
+                        m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+                        em = EntityManager,
+                        nextUpdateFrame = UnityEngine.Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal,
+                        intervalUpdate = WEModData.InstanceWE.FramesCheckUpdateVal
+                    }.Schedule(m_textDataDirtyQuery, Dependency).Complete();
+                    m_endFrameBarrier.CreateCommandBuffer().RemoveComponent<WETextDataDirtyFormulae>(m_textDataDirtyQuery, EntityQueryCaptureMode.AtPlayback);
+                }
             }
             if (!m_componentsToDispose.IsEmpty)
             {
@@ -673,6 +713,48 @@ namespace BelzontWE
                 }.Schedule(m_componentsToDispose, Dependency);
             }
             Dependency.Complete();
+        }
+
+        private struct WEUpdateFormulaesJob : IJobChunk
+        {
+            public ComponentTypeHandle<WETextDataMain> m_MainDataHdl;
+            public ComponentTypeHandle<WETextDataMaterial> m_MaterialDataHdl;
+            public ComponentTypeHandle<WETextDataTransform> m_TransformDataHdl;
+            public ComponentTypeHandle<WETextDataMesh> m_MeshDataHdl;
+            public ComponentTypeHandle<WETextDataDirtyFormulae> m_DirtyFormulaeHdl;
+            public EntityTypeHandle m_EntityType;
+            public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
+            public EntityManager em;
+            public int nextUpdateFrame;
+            internal int intervalUpdate;
+
+            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+            {
+                var entities = chunk.GetNativeArray(m_EntityType);
+                var mainData = chunk.GetNativeArray(ref m_MainDataHdl);
+                var materialData = chunk.GetNativeArray(ref m_MaterialDataHdl);
+                var transformData = chunk.GetNativeArray(ref m_TransformDataHdl);
+                var meshData = chunk.GetNativeArray(ref m_MeshDataHdl);
+                var dirtyFormulae = chunk.GetNativeArray(ref m_DirtyFormulaeHdl);
+                for (int i = 0; i < entities.Length; i++)
+                {
+                    var main = mainData[i];
+                    var material = materialData[i];
+                    var transform = transformData[i];
+                    var mesh = meshData[i];
+                    var dirtyData = dirtyFormulae[i];
+
+
+                    material.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
+                    transform.UpdateFormulae(em, dirtyData.geometry, dirtyData.vars, true);
+                    mesh.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
+                    main.nextUpdateFrame = nextUpdateFrame + (i % intervalUpdate);
+                    mainData[i] = main;
+                    materialData[i] = material;
+                    transformData[i] = transform;
+                    meshData[i] = mesh;
+                }
+            }
         }
 
         public JobHandle SetDefaults(Context context)

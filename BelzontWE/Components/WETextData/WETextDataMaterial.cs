@@ -3,6 +3,7 @@ using BelzontWE.Utils;
 using Colossal.Mathematics;
 using System;
 using System.Runtime.InteropServices;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -34,7 +35,6 @@ namespace BelzontWE
         private bool dirty;
         private GCHandle ownMaterial;
         private Colossal.Hash128 ownMaterialGuid;
-        private int nextUpdateFrame;
 
         private bool affectSmoothness;
         private bool affectAO;
@@ -111,14 +111,8 @@ namespace BelzontWE
         public int SetFormulaeColorMask2(string value, out string[] cmpErr) => colorMask2.SetFormulae(value, out cmpErr);
         public int SetFormulaeColorMask3(string value, out string[] cmpErr) => colorMask3.SetFormulae(value, out cmpErr);
 
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr)
         {
-            if (nextUpdateFrame > Time.frameCount)
-            {
-                return false;
-            }
-            nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
-
             var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[varsStr]];
             return dirty |= color.UpdateEffectiveValue(em, geometryEntity, vars)
               | emissiveColor.UpdateEffectiveValue(em, geometryEntity, vars)

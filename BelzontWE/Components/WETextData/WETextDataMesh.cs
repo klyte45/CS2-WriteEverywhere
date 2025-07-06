@@ -22,7 +22,6 @@ namespace BelzontWE
         private WETextDataValueString valueData;
         private bool dirty;
         private bool templateDirty;
-        private int nextUpdateFrame;
         public bool childrenRefersToFrontFace;
 
         public WESimulationTextType TextType
@@ -108,24 +107,20 @@ namespace BelzontWE
 
         public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity)
         {
-            UpdateFormulaes(em, targetEntity, "", true);
+            UpdateFormulaes(em, targetEntity, default, true);
             FontServer.Instance.EnsureFont(fontName);
             return this;
-        }
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, string varsStr, bool force = false)
+        }        
+
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr, bool force = false)
         {
-            if (!force && nextUpdateFrame > Time.frameCount)
-            {
-                return false;
-            }
-            if (HasBRI && (basicRenderInformation.Target is not BasicRenderInformation bri))
+            if (HasBRI && (basicRenderInformation.Target is not BasicRenderInformation))
             {
                 basicRenderInformation.Free();
                 basicRenderInformation = default;
                 dirty = true;
                 return true;
             }
-            nextUpdateFrame = Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal;
             bool result = false;
             var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[varsStr]];
             switch (textType)

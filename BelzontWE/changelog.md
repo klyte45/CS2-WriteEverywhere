@@ -1,4 +1,8 @@
-# v0.3.2r10 (26-JUN-25)
+# v0.3.2r11 (06-JUL-25)
+
+- New formulae calculation method, reducing game lagging while moving the camera (specially when rendering the layout for the first time)
+
+## FROM v0.3.2r10 (26-JUN-25)
 
 - Fixing issue related to serializing illegit components from WE each time the game get saved
 

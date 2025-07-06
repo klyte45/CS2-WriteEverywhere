@@ -141,26 +141,16 @@ namespace BelzontWE
                     ref var material = ref item.material;
                     ref var mesh = ref item.mesh;
 
+                    if (!EntityManager.HasComponent<WETextDataDirtyFormulae>(item.textDataEntity))
+                    {
+                        main.CheckDirtyFormulae(item.geometryEntity, item.textDataEntity, item.variables, cmd);
+                    }
+
+                    if (main.nextUpdateFrame == 0) continue;
 
                     bool ìsPlaceholder = false;
                     bool doRender = true;
-                    var vars = item.variables.ToString();
 
-                    var canMultiply = mesh.TextType == WESimulationTextType.Placeholder;
-                    var changed = transform.UpdateFormulaes(EntityManager, item.geometryEntity, vars, canMultiply);
-                    if (canMultiply && changed)
-                    {
-                        EntityManager.AddComponent<WETemplateDirtyInstancing>(item.textDataEntity);
-                        if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
-                        continue;
-                    }
-                    if (item.transformMatrix == default)
-                    {
-                        if (changed && EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
-                        continue;
-                    }
-                    mesh.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
-                    material.UpdateFormulaes(EntityManager, item.geometryEntity, vars);
 
                     if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
                         && m_pickerController.CurrentSubEntity.Value == item.textDataEntity

@@ -1,6 +1,7 @@
 ﻿using Colossal.Entities;
 using Unity.Collections;
 using Unity.Entities;
+using UnityEngine;
 
 namespace BelzontWE
 {
@@ -10,6 +11,7 @@ namespace BelzontWE
         private FixedString32Bytes itemName;
         private Entity targetEntity;
         private Entity parentEntity;
+        public int nextUpdateFrame;
 
         public FixedString32Bytes ItemName { get => itemName; set => itemName = value; }
         public Entity TargetEntity { get => targetEntity; set => targetEntity = value; }
@@ -30,6 +32,17 @@ namespace BelzontWE
             }
             ParentEntity = e;
             return true;
+        }
+        public void CheckDirtyFormulae(Entity geometry, Entity textData, FixedString512Bytes vars, EntityCommandBuffer cmdBuffer)
+        {
+            if (nextUpdateFrame <= Time.frameCount)
+            {
+                cmdBuffer.AddComponent(textData, new WETextDataDirtyFormulae
+                {
+                    vars = vars,
+                    geometry = geometry,
+                });
+            }
         }
     }
 }
