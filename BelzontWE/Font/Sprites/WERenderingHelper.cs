@@ -85,13 +85,13 @@ namespace BelzontWE
             return GenerateBri(refName, imageInfo.Main, imageInfo.Normal, imageInfo.ControlMask, imageInfo.Emissive, imageInfo.MaskMap);
         }
 
-        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[] cubeVertices, out int[] cubeTris, out Vector2[] uvCube)
+        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[] cubeVertices, out int[] cubeTris, out Vector2[] uvCube, float xDivider)
         {
             var verticesGroup = originalVertices.Select((x, i) => (x, i)).GroupBy(x => x.i / 4);
             cubeVertices = verticesGroup.Select(x =>
             {
                 var list = x.Select(x => x.x).ToList();
-                return (minx: list.Min(x => x.x), maxx: list.Max(x => x.x), miny: list.Min(x => x.y), maxy: list.Max(x => x.y));
+                return (minx: list.Min(x => x.x) / xDivider, maxx: list.Max(x => x.x) / xDivider, miny: list.Min(x => x.y), maxy: list.Max(x => x.y));
             })
                 .SelectMany(x =>
                     kVerticesPositionsCube.Select((y, j) => new Vector3(y.x < 0 ? x.minx : x.maxx, y.y * -.5f, y.z < 0 ? x.miny : x.maxy)))

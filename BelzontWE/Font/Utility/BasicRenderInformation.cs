@@ -130,7 +130,7 @@ namespace BelzontWE.Font.Utility
             {
                 if (m_meshCube is null && m_vertices?.Length > 0)
                 {
-                    WERenderingHelper.DecalCubeFromPlanes(m_vertices, m_uv, out var m_verticesCube, out var m_trianglesCube, out var m_uvCube);
+                    WERenderingHelper.DecalCubeFromPlanes(m_vertices, m_uv, out var m_verticesCube, out var m_trianglesCube, out var m_uvCube, m_sizeMetersUnscaled.x);
                     m_meshCube = new Mesh
                     {
                         vertices = m_verticesCube,

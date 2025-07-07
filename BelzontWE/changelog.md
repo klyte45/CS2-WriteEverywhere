@@ -1,4 +1,9 @@
-# v0.3.2r11 (06-JUL-25)
+# v0.3.2r12 (07-JUL-25)
+
+- Fixed non-square image decals being wrongly sized
+- Fixed instances count not being updated with formulas
+
+## FROM v0.3.2r11 (06-JUL-25)
 
 - New formulae calculation method, reducing game lagging while moving the camera (specially when rendering the layout for the first time)
 

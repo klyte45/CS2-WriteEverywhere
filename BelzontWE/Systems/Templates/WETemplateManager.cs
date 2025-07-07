@@ -24,11 +24,9 @@ using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 
 #if BURST
@@ -746,13 +744,18 @@ namespace BelzontWE
 
 
                     material.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
-                    transform.UpdateFormulae(em, dirtyData.geometry, dirtyData.vars, true);
+                    var canMultiply = mesh.TextType == WESimulationTextType.Placeholder;
+                    var transformChanged = transform.UpdateFormulae(em, dirtyData.geometry, dirtyData.vars, canMultiply);                
                     mesh.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
                     main.nextUpdateFrame = nextUpdateFrame + (i % intervalUpdate);
                     mainData[i] = main;
                     materialData[i] = material;
                     transformData[i] = transform;
                     meshData[i] = mesh;
+                    if (canMultiply && transformChanged)
+                    {
+                        m_CommandBuffer.AddComponent<WETemplateDirtyInstancing>(unfilteredChunkIndex, entities[i]);
+                    }
                 }
             }
         }

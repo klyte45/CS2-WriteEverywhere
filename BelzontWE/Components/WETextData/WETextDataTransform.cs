@@ -1,7 +1,6 @@
 ﻿using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
-using UnityEngine;
 
 namespace BelzontWE
 {
@@ -145,16 +144,17 @@ namespace BelzontWE
 
 
         public int SetFormulaeMustDraw(string value, out string[] cmpErr) => mustDrawFn.SetFormulae(value, out cmpErr);
-        public int SetFormulaeInstanceCount(string value, out string[] cmpErr) => instanceCount.SetFormulae(value, out cmpErr); 
+        public int SetFormulaeInstanceCount(string value, out string[] cmpErr) => instanceCount.SetFormulae(value, out cmpErr);
 
-        public void UpdateFormulae(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr, bool updateCounter)
+        public bool UpdateFormulae(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr, bool updateCounter)
         {
             var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[varsStr]];
-            if (useFormulaeToCheckIfDraw) mustDrawFn.UpdateEffectiveValue(em, geometryEntity, vars);
+            var changed = useFormulaeToCheckIfDraw && mustDrawFn.UpdateEffectiveValue(em, geometryEntity, vars);
             if (updateCounter)
             {
-                instanceCount.UpdateEffectiveValue(em, geometryEntity, vars);
+                changed |= instanceCount.UpdateEffectiveValue(em, geometryEntity, vars);
             }
+            return changed;
         }
 
         public static WETextDataTransform CreateDefault(Entity target, Entity? parent = null)
