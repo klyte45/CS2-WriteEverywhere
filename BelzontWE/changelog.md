@@ -1,4 +1,8 @@
-# v0.3.2r12 (07-JUL-25)
+# v0.3.2r13 (09-JUL-25)
+- Added support to Traditional Chinese language (Thanks to **Source Design**, from forums)
+- Fixed an issue that prevented additional languages to work on WE options section at options menu
+
+## FROM v0.3.2r12 (07-JUL-25)
 
 - Fixed non-square image decals being wrongly sized
 - Fixed instances count not being updated with formulas
