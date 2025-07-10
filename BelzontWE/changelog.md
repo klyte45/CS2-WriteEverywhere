@@ -1,4 +1,7 @@
-# v0.3.2r13 (09-JUL-25)
+# v0.3.2r14 (10-JUL-25)
+- Fixing wrong behavior when getting a vehicle destination name while it not belongs to a transport line nor using this mod along XTM
+
+## FROM v0.3.2r13 (09-JUL-25)
 - Added support to Traditional Chinese language (Thanks to **Source Design**, from forums)
 - Fixed an issue that prevented additional languages to work on WE options section at options menu
 

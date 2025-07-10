@@ -23,8 +23,7 @@ namespace BelzontWE.Builtin
                         !em.TryGetComponent<Owner>(entity, out var owner) ? "<?NO TARGET?>"
                         : WEUtitlitiesFn.GetEntityName(owner.m_Owner)
                 : target.m_Target == Entity.Null ? "Cities Skylines II"
-                : WERouteFn.GetWaypointStaticDestinationName(entity) is string destinationName ? destinationName
-                : !em.TryGetComponent(entity, out owner) ? WEUtitlitiesFn.GetEntityName(target.m_Target)
+                : !em.TryGetComponent(entity, out owner) ? WEUtitlitiesFn.GetEntityName(target.m_Target)                
                 : WEUtitlitiesFn.GetEntityName(owner.m_Owner);
         };
 
