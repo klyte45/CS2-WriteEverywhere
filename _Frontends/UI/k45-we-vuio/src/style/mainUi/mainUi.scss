@@ -1,7 +1,9 @@
-.k45_we_mainPanel {
-    pointer-events: none;
+body>.k45_we_mainPanel {
     z-index: -1;
+    pointer-events: none;
+}
 
+.k45_we_mainPanel {
     >div {
         width: 1400rem;
         height: 600rem;

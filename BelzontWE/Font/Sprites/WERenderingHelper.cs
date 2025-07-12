@@ -80,7 +80,7 @@ namespace BelzontWE
         };
         public static readonly Vector2[] kUvCube = kVerticesPositionsCube.Select(x => new Vector2(x.x <= 0 ? 0 : 1, x.z <= 0 ? 0 : 1)).ToArray();
 
-        public static BasicRenderInformation GenerateBri(FixedString32Bytes refName, WEImageInfo imageInfo)
+        public static IBasicRenderInformation GenerateBri(FixedString32Bytes refName, WEImageInfo imageInfo)
         {
             return GenerateBri(refName, imageInfo.Main, imageInfo.Normal, imageInfo.ControlMask, imageInfo.Emissive, imageInfo.MaskMap);
         }
@@ -107,10 +107,10 @@ namespace BelzontWE
                 .ToArray();
         }
 
-        public static BasicRenderInformation GenerateBri(FixedString32Bytes refName, Texture main, Texture normal, Texture control, Texture emissive, Texture mask)
+        public static IBasicRenderInformation GenerateBri(FixedString32Bytes refName, Texture main, Texture normal, Texture control, Texture emissive, Texture mask)
         {
             var proportion = main.width / (float)main.height;
-            var bri = new BasicRenderInformation(refName.ToString(),
+            var bri = new PrimitiveRenderInformation(refName.ToString(),
                 new[]
                     {
                         new Vector3(-.5f * proportion, -.5f, 0f),
@@ -138,7 +138,7 @@ namespace BelzontWE
             return bri;
         }
 
-        public static Material GenerateMaterial(BasicRenderInformation bri, WEShader shader)
+        public static Material GenerateMaterial(IBasicRenderInformation bri, WEShader shader)
         {
             var material = CreateDefaultFontMaterial(shader);
             if (material is null) return null;
@@ -193,12 +193,12 @@ namespace BelzontWE
             return material;
         }
 
-        internal static BasicRenderInformation GenerateBri(WETextureAtlas textureAtlas, WESpriteInfo spriteInfo)
+        internal static IBasicRenderInformation GenerateBri(WETextureAtlas textureAtlas, WESpriteInfo spriteInfo)
         {
             var proportion = spriteInfo.Region.size.x / spriteInfo.Region.size.y;
             var min = new Vector2(spriteInfo.Region.position.x / textureAtlas.Width, spriteInfo.Region.position.y / textureAtlas.Height);
             var max = min + new Vector2(spriteInfo.Region.size.x / textureAtlas.Width, spriteInfo.Region.size.y / textureAtlas.Height);
-            var bri = new BasicRenderInformation(spriteInfo.Name,
+            var bri = new PrimitiveRenderInformation(spriteInfo.Name,
                         new[]
                             {
                                 new Vector3(-.5f * proportion, -.5f, 0f),

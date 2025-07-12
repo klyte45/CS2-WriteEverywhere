@@ -327,7 +327,7 @@ namespace BelzontWE.Font
         #endregion
         public bool ContainsKey(FixedString32Bytes spriteName) => Sprites.ContainsKey(spriteName);
 
-        public bool TryGetValue(FixedString32Bytes spriteName, out BasicRenderInformation cachedInfo)
+        public bool TryGetValue(FixedString32Bytes spriteName, out IBasicRenderInformation cachedInfo)
         {
             if (Sprites.TryGetValue(spriteName, out var value))
             {

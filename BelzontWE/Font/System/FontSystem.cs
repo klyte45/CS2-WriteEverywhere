@@ -36,7 +36,7 @@ namespace BelzontWE.Font
         private Vector2Int _size;
         public int FontHeight => FontServer.QualitySize;
 
-        private readonly Dictionary<string, BasicRenderInformation> m_textCache = new();
+        private readonly Dictionary<string, IBasicRenderInformation> m_textCache = new();
 
         public Color Color;
         public readonly int Blur;
@@ -100,15 +100,15 @@ namespace BelzontWE.Font
             }
         }
 
-        public BasicRenderInformation DrawText(string str)
+        public IBasicRenderInformation DrawText(string str)
         {
             if (GameManager.instance.isGameLoading) return null;
-            BasicRenderInformation bri;
+            IBasicRenderInformation bri;
             if (string.IsNullOrWhiteSpace(str))
             {
                 if (!m_textCache.TryGetValue("", out bri))
                 {
-                    bri = new BasicRenderInformation(str, null, null, null, null, null, null, null);
+                    bri = new PrimitiveRenderInformation(str, null, null, null, null, null, null, null);
                     m_textCache.TryAdd("", bri);
                     return bri;
                 }
@@ -116,11 +116,11 @@ namespace BelzontWE.Font
             }
             if (m_textCache.TryGetValue(str, out bri) && bri != null)
             {
-                return bri == BasicRenderInformation.LOADING_PLACEHOLDER ? null : bri;
+                return bri == PrimitiveRenderInformation.LOADING_PLACEHOLDER ? null : bri;
             }
             else
             {
-                var result = m_textCache[str] = BasicRenderInformation.LOADING_PLACEHOLDER;
+                var result = m_textCache[str] = PrimitiveRenderInformation.LOADING_PLACEHOLDER;
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Enqueued String: {str} ({Data.Name}) {result}");
                 itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = str });
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"itemsQueue: {itemsQueue.Count}");
@@ -348,7 +348,7 @@ namespace BelzontWE.Font
                 itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
                 return;
             }
-            BasicRenderInformation result = BasicRenderInformation.Fill(brij, CurrentAtlas.Texture);
+            var result = PrimitiveRenderInformation.Fill(brij, CurrentAtlas.Texture);
             if (result is null)
             {
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] removing {originalText} ");
@@ -357,7 +357,7 @@ namespace BelzontWE.Font
             }
             else if (m_textCache.TryGetValue(originalText, out var currentVal))
             {
-                if ((currentVal == null || currentVal == BasicRenderInformation.LOADING_PLACEHOLDER))
+                if ((currentVal == null || currentVal == PrimitiveRenderInformation.LOADING_PLACEHOLDER))
                 {
                     if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] SET UP to val '{originalText}'");
                     m_textCache[originalText] = result;
@@ -401,7 +401,7 @@ namespace BelzontWE.Font
         {
             if (!m_textCache.ContainsKey(""))
             {
-                m_textCache[""] = new BasicRenderInformation("", new Vector3[0], new int[0], new Vector2[0], null);
+                m_textCache[""] = new PrimitiveRenderInformation("", new Vector3[0], new int[0], new Vector2[0], null);
             }
             if (itemsQueue.Count >= queueConsumptionFrame || framesBuffering++ > 60)
             {

@@ -1,6 +1,8 @@
 ﻿#if DEBUG
 using Belzont.Interfaces;
 using Belzont.Utils;
+using BelzontWE.IO;
+using BelzontWE.Sprites;
 using Colossal.Entities;
 using Colossal.Mathematics;
 using System;
@@ -17,6 +19,7 @@ namespace BelzontWE.Controllers
     {
         private const string PREFIX = "debug.";
         private Action<string, object[]> eventCaller;
+        public static CustomMeshRenderInformation testingMesh;
 
 
         public static uint Overlay { get; private set; }
@@ -29,6 +32,7 @@ namespace BelzontWE.Controllers
             eventCaller($"{PREFIX}getShader", GetShader);
             eventCaller($"{PREFIX}listCurrentMaterialSettings", ListCurrentMaterialSettings);
             eventCaller($"{PREFIX}setCurrentMaterialSettings", SetCurrentMaterialSettings);
+            eventCaller($"{PREFIX}createSpecialMeshBRI", CreateSpecialMeshBRI);
         }
 
         public class PropertyDescriptor
@@ -39,6 +43,25 @@ namespace BelzontWE.Controllers
             public string Description { get; set; }
             public string Type { get; set; }
             public string Value { get; set; }
+        }
+
+        private void CreateSpecialMeshBRI(Entity targetEntity, string meshLocation)
+        {
+            if (!EntityManager.TryGetComponent<WETextDataMesh>(targetEntity, out var meshData)) return;
+            try
+            {
+                var parsedMesh = ObjImporter.ImportFromObj(meshLocation);
+                WEAtlasesLibrary.Instance.TryGetAtlas(meshData.Atlas.ToString(), out var atlasInfo);
+                var spriteInfo = atlasInfo.Sprites[meshData.Text];
+                var dimensions = new float2(atlasInfo.Width, atlasInfo.Height);
+                testingMesh = new CustomMeshRenderInformation(parsedMesh, (float2)spriteInfo.Region.min / dimensions, (float2)spriteInfo.Region.max / dimensions, atlasInfo.Main, atlasInfo.Normal, atlasInfo.Control, atlasInfo.Emissive, atlasInfo.Mask);
+                EntityManager.SetComponentData(targetEntity, meshData.UpdateBRI(testingMesh, null));
+            }
+            catch (Exception e)
+            {
+                LogUtils.DoErrorLog($"Error trying to set custom BRI: {e.Message}\n{e}");
+            }
+
         }
 
         private List<PropertyDescriptor> ListCurrentMaterialSettings(Entity targetEntity)

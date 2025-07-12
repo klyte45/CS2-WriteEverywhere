@@ -267,19 +267,19 @@ namespace BelzontWE
                 switch (shader)
                 {
                     case WEShader.Default:
-                        if (!bri.m_isError)
+                        if (!bri.IsError)
                         {
                             UpdateDefaultMaterial(material, mesh.TextType);
                         }
                         break;
                     case WEShader.Glass:
-                        if (!bri.m_isError)
+                        if (!bri.IsError)
                         {
                             UpdateGlassMaterial(material);
                         }
                         break;
                     case WEShader.Decal:
-                        if (!bri.m_isError)
+                        if (!bri.IsError)
                         {
                             UpdateDecalMaterial(material, mesh.TextType, uvBounds);
                         }

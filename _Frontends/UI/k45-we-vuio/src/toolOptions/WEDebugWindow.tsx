@@ -5,6 +5,7 @@ import { DebugService, ShaderPropertyType, WEDebugPropertyDescriptor } from "ser
 import { WorldPickerService } from "services/WorldPickerService";
 import "../style/floatingPanels.scss";
 import "../style/formulaeEditorField.scss";
+import { FocusDisabled } from "cs2/input";
 
 
 export const WEDebugWindow = (props: { initialPosition?: { x: number, y: number } }) => {
@@ -51,8 +52,11 @@ export const WEDebugWindow = (props: { initialPosition?: { x: number, y: number 
                 }
             </Scrollable>
             <EditorItemRow label="" >
-                <Button onClick={() => { console.log(currentMaterialSettings) }}>Dump to console</Button>
-                <Button onClick={() => { DebugService.listShader().then(console.log) }}>Dump shaders available</Button>
+                <FocusDisabled>
+                    <Button className="btn neutralBtn" onClick={() => { console.log(currentMaterialSettings) }}>Dump to console</Button>
+                    <Button className="btn neutralBtn" onClick={() => { DebugService.listShader().then(console.log) }}>Dump shaders available</Button>
+                    <Button className="btn negativeBtn" onClick={() => { DebugService.createSpecialMeshBRI(wps.CurrentSubEntity.value!) }}>Import mesh!!!</Button>
+                </FocusDisabled>
             </EditorItemRow>
         </Panel>
     </Portal>;

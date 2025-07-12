@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
-using UnityEngine;
 
 namespace BelzontWE
 {
@@ -79,7 +78,7 @@ namespace BelzontWE
         public readonly bool IsTemplateDirty() => templateDirty;
         public void ClearTemplateDirty() => templateDirty = false;
 
-        public WETextDataMesh UpdateBRI(BasicRenderInformation bri, string text)
+        public WETextDataMesh UpdateBRI(IBasicRenderInformation ibri, string text)
         {
             if (ValueData.IsEmpty)
             {
@@ -87,22 +86,36 @@ namespace BelzontWE
                 dirty = false;
                 return this;
             }
-            if (bri.m_sizeMetersUnscaled.x < 0 && !bri.m_isError && bri.m_refText != "") return this;
-            if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
-            basicRenderInformation = default;
-            basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
-            Bounds = bri.m_bounds;
-            BriWidthMetersUnscaled = bri.m_sizeMetersUnscaled.x;
-            LastErrorStr = bri.m_isError ? (FixedString512Bytes)text : default;
-            dirty = false;
-            MinLod = 0;
-            return this;
+            if (ibri is PrimitiveRenderInformation bri)
+            {
+                if (bri.m_sizeMetersUnscaled.x < 0 && !bri.IsError && bri.m_refText != "") return this;
+                if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
+                basicRenderInformation = default;
+                basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
+                Bounds = bri.Bounds;
+                BriWidthMetersUnscaled = bri.m_sizeMetersUnscaled.x;
+                LastErrorStr = bri.IsError ? (FixedString512Bytes)text : default;
+                dirty = false;
+                MinLod = 0;
+                return this;
+            }
+            else
+            {
+                if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
+                basicRenderInformation = GCHandle.Alloc(ibri, GCHandleType.Normal);
+                Bounds = ibri.Bounds;
+                BriWidthMetersUnscaled = 1;
+                LastErrorStr = default;
+                dirty = false;
+                return this;
+            }
         }
 
         public void Dispose()
         {
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             basicRenderInformation = default;
+
         }
 
         public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity)
@@ -110,11 +123,11 @@ namespace BelzontWE
             UpdateFormulaes(em, targetEntity, default, true);
             FontServer.Instance.EnsureFont(fontName);
             return this;
-        }        
+        }
 
         public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr, bool force = false)
         {
-            if (HasBRI && (basicRenderInformation.Target is not BasicRenderInformation))
+            if (HasBRI && (basicRenderInformation.Target is not IBasicRenderInformation))
             {
                 basicRenderInformation.Free();
                 basicRenderInformation = default;
@@ -138,12 +151,12 @@ namespace BelzontWE
                     {
                         lastUpdateModReplacements = WETemplateManager.Instance.SpritesAndLayoutsDataVersion;
                         atlas = WETemplateManager.Instance.GetAtlasFor(originalName.ToString(), atlas, ref result);
-                        if (HasBRI && RenderInformation.m_isError)
+                        if (HasBRI && RenderInformation.IsError)
                         {
                             result = true;
                         }
                     }
-                    result |= valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.m_isError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString(), vars);
+                    result |= valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.IsError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString(), vars);
                     break;
                 case WESimulationTextType.Placeholder:
                     if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.SpritesAndLayoutsDataVersion)
@@ -180,11 +193,11 @@ namespace BelzontWE
         }
 
 
-        public BasicRenderInformation RenderInformation
+        public IBasicRenderInformation RenderInformation
         {
             get
             {
-                if (basicRenderInformation.IsAllocated && basicRenderInformation.Target is BasicRenderInformation bri && bri.IsValid())
+                if (basicRenderInformation.IsAllocated && basicRenderInformation.Target is IBasicRenderInformation bri && bri.IsValid())
                 {
                     return bri;
                 }

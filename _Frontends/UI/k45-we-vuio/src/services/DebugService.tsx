@@ -27,4 +27,6 @@ export class DebugService {
     static async getShader(entity: Entity): Promise<string> { return await engine.call("k45::we.debug.getShader", entity); }
     static async listCurrentMaterialSettings(entity: Entity): Promise<WEDebugPropertyDescriptor[]> { return await engine.call("k45::we.debug.listCurrentMaterialSettings", entity); }
     static async setCurrentMaterialSettings(entity: Entity, propertyIdxStr: string, value: string): Promise<string> { return await engine.call("k45::we.debug.setCurrentMaterialSettings", entity, propertyIdxStr, value); }
+    static async createSpecialMeshBRI(entity: Entity): Promise<string> { return await engine.call("k45::we.debug.createSpecialMeshBRI", entity, ""); }
+
 }

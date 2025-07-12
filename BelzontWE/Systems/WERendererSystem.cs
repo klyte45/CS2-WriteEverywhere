@@ -186,7 +186,7 @@ namespace BelzontWE
                     }
                     if (doRender)
                     {
-                        BasicRenderInformation bri;
+                        IBasicRenderInformation bri;
                         if ((bri = mesh.RenderInformation) == null)
                         {
                             switch (mesh.TextType)
@@ -212,12 +212,12 @@ namespace BelzontWE
                                     break;
                             }
                         }
-                        if (doRender && bri.m_refText != "")
+                        if (doRender && (bri is not PrimitiveRenderInformation brii || brii.m_refText != ""))
                         {
                             Material ownMaterial;
                             if (ìsPlaceholder) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
                             else material.GetOwnMaterial(ref mesh, bri.BoundsUV, out ownMaterial);
-                            var geomMesh = mesh.TextType == WESimulationTextType.WhiteCube ? bri.MeshCube : bri.GetMesh(item.material.Shader);
+                            var geomMesh = bri is PrimitiveRenderInformation bri2 && mesh.TextType == WESimulationTextType.WhiteCube ? bri2.MeshCube : bri.GetMesh(item.material.Shader);
                             Graphics.DrawMesh(geomMesh, item.transformMatrix, ownMaterial, 0, null, 0, null, ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
                             if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)
                             {
@@ -225,7 +225,7 @@ namespace BelzontWE
                                 Graphics.DrawMesh(geomMesh, item.transformMatrix, WEAtlasesLibrary.DefaultMaterialSemiTransparent(), 0, null, 0, null, false, false);
                             }
 
-                            if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {mesh.RenderInformation?.m_refText} | {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
+                            if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {mesh.RenderInformation} | {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
                         }
                     }
                     //      if (!WETemplateManager.Instance.IsAnyGarbagePending)

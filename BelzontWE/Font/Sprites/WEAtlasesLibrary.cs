@@ -97,18 +97,18 @@ namespace BelzontWE.Sprites
 
         public string[] ListAvailableAtlasImages(string atlasName) => !atlasName.IsNullOrWhitespace() && (CityAtlases.TryGetValue(atlasName, out var arr) || LocalAtlases.TryGetValue(atlasName, out arr) || ModAtlases.TryGetValue(atlasName, out arr)) ? arr.Keys.Select(x => x.ToString()).ToArray() : new string[0];
 
-        internal BasicRenderInformation GetFromLocalAtlases(WEImages image)
+        internal IBasicRenderInformation GetFromLocalAtlases(WEImages image)
         {
             var sprite = GetFromAvailableAtlases(INTERNAL_ATLAS_NAME, image.ToString());
-            sprite.m_isError = image != WEImages.FrameBorder;
+            sprite.IsError = image != WEImages.FrameBorder;
             return sprite;
         }
 
         public bool TryGetAtlas(string atlasName, out WETextureAtlas atlas) => CityAtlases.TryGetValue(atlasName, out atlas) || LocalAtlases.TryGetValue(atlasName, out atlas) || ModAtlases.TryGetValue(atlasName, out atlas);
 
-        public BasicRenderInformation GetFromAvailableAtlases(string atlasName, FixedString32Bytes spriteName, bool fallbackOnInvalid = false)
+        public IBasicRenderInformation GetFromAvailableAtlases(string atlasName, FixedString32Bytes spriteName, bool fallbackOnInvalid = false)
         {
-            BasicRenderInformation fallbackBri = null;
+            IBasicRenderInformation fallbackBri = null;
             return spriteName.Trim().Length == 0 || atlasName.IsNullOrWhitespace()
                         ? fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage)
                             : null
@@ -122,7 +122,7 @@ namespace BelzontWE.Sprites
                         ?? (fallbackOnInvalid ? GetFromLocalAtlases(WEImages.FrameParamsInvalidImage) : null);
         }
 
-        private bool ContainsSprite<T>(Dictionary<T, WETextureAtlas> dictionary, T atlasName, FixedString32Bytes spriteName, out BasicRenderInformation cachedInfo, ref BasicRenderInformation fallback)
+        private bool ContainsSprite<T>(Dictionary<T, WETextureAtlas> dictionary, T atlasName, FixedString32Bytes spriteName, out IBasicRenderInformation cachedInfo, ref IBasicRenderInformation fallback)
         {
             cachedInfo = null;
             var isValidAtlas = dictionary.TryGetValue(atlasName, out var resultDicCache);
@@ -133,15 +133,6 @@ namespace BelzontWE.Sprites
             }
             return result;
         }
-
-        public BasicRenderInformation GetSlideFromAvailable(string atlasName, Func<int, int> idxFunc, bool fallbackOnInvalid = false)
-            => !CityAtlases.TryGetValue(atlasName, out var atlas) && !LocalAtlases.TryGetValue(atlasName, out atlas)
-                ? fallbackOnInvalid
-                    ? GetFromLocalAtlases(WEImages.FrameParamsInvalidFolder)
-                    : null
-                : GameManager.instance.gameMode == GameMode.Editor
-                    ? GetFromLocalAtlases(WEImages.FrameBorder)
-                    : GetFromAvailableAtlases(atlasName, atlas.Keys.ElementAt(idxFunc(atlas.Count - 1) + 1), fallbackOnInvalid);
 
         #endregion
 
@@ -382,8 +373,8 @@ namespace BelzontWE.Sprites
 #else
         private
 #endif
-           static BasicRenderInformation m_bgTexture;
-        public static BasicRenderInformation GetWhiteTextureBRI()
+           static IBasicRenderInformation m_bgTexture;
+        public static IBasicRenderInformation GetWhiteTextureBRI()
         {
             m_bgTexture ??= WERenderingHelper.GenerateBri("\0whiteTexture\0", new WEImageInfo() { Main = Texture2D.whiteTexture });
             return m_bgTexture;

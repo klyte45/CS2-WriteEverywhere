@@ -219,7 +219,7 @@ namespace BelzontWE
                 if (m_templateUpdaterLkp.HasBuffer(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
                 if (text.Trim() == "")
                 {
-                    weCustomData = weCustomData.UpdateBRI(new BasicRenderInformation("", new UnityEngine.Vector3[0], new int[0], new UnityEngine.Vector2[0],
+                    weCustomData = weCustomData.UpdateBRI(new PrimitiveRenderInformation("", new UnityEngine.Vector3[0], new int[0], new UnityEngine.Vector2[0],
                         null), "");
                     return true;
                 }
@@ -230,7 +230,7 @@ namespace BelzontWE
                     return false;
                 }
                 var bri = font.FontSystem.DrawText(text);
-                if (bri == null || bri == BasicRenderInformation.LOADING_PLACEHOLDER)
+                if (bri == null || bri == PrimitiveRenderInformation.LOADING_PLACEHOLDER)
                 {
                     if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"BRI STILL NULL!!! ({text})");
                     return false;
