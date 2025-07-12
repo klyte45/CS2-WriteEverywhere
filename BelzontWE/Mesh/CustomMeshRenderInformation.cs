@@ -31,7 +31,7 @@ namespace BelzontWE
 
             mesh = Mesh.Instantiate(targetMesh) ?? throw new ArgumentNullException(nameof(targetMesh));
             mesh.uv = targetMesh.uv2.Select(x => (Vector2)(math.lerp(minUv, maxUv, math.clamp(x, Vector2.zero, Vector2.one)))).ToArray();
-            
+
             Bounds = new Bounds3(targetMesh.bounds.min, targetMesh.bounds.max);
         }
 
@@ -52,6 +52,7 @@ namespace BelzontWE
 
         public void Dispose()
         {
+            GameObject.Destroy(mesh);
         }
     }
 }

@@ -26,6 +26,7 @@ namespace BelzontWE
 
             updateSystem.UpdateAt<FontServer>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WEAtlasesLibrary>(SystemUpdatePhase.Rendering);
+            updateSystem.UpdateAt<WECustomMeshLibrary>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateManager>(SystemUpdatePhase.Rendering);
 
             updateSystem.UpdateAt<WEPreRendererSystem>(SystemUpdatePhase.MainLoop);

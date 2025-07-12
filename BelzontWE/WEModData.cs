@@ -15,7 +15,7 @@ using System.Linq;
 namespace BelzontWE
 {
     [FileLocation("K45_WE_settings")]
-    [SettingsUIShowGroupName(kLogSection, kFontsSection, kSpritesSection,
+    [SettingsUIShowGroupName(kLogSection, kFontsSection, kSpritesSection, kMeshesSection,
          kToolControlsSection, kItemEditing, kViewPerspectiveSection)]
     [SettingsUIMouseAction(kActionApplyMouse, ActionType.Button, false, false, new string[] { "K45_WE.Tool" })]
     [SettingsUIMouseAction(kActionCancelMouse, ActionType.Button, false, false, new string[] { "K45_WE.Tool" })]
@@ -40,6 +40,7 @@ namespace BelzontWE
         const string kFontsSection = "Font";
         const string kKeybindingSection = "Keybinding";
         const string kSpritesSection = "Sprites";
+        const string kMeshesSection = "Meshes";
         const string kLayoutDefaultSection = "LayoutDefaults";
         const string kFormattingSection = "Formatting";
         const string kSourcesTab = "SourcesTab";
@@ -138,6 +139,24 @@ namespace BelzontWE
                 WEAtlasesLibrary.Instance?.LoadImagesFromLocalFolders();
             }
         }
+
+        [SettingsUIButton]
+        [SettingsUISection(kSourcesTab, kMeshesSection)]
+        public bool MeshesFolder
+        {
+            set => RemoteProcess.OpenFolder(WECustomMeshLibrary.MESHES_FOLDER);
+        }
+
+        [SettingsUIButton]
+        [SettingsUISection(kSourcesTab, kMeshesSection)]
+        public bool MeshesRefresh
+        {
+            set
+            {
+                WECustomMeshLibrary.Instance?.LoadMeshesFromLocalFolders();
+            }
+        }
+
 
         [SettingsUIButton]
         [SettingsUISection(kSourcesTab, kLayoutDefaultSection)]

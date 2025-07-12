@@ -2,7 +2,6 @@ using Belzont.Interfaces;
 using Belzont.Serialization;
 using Belzont.Utils;
 using BelzontWE.Font;
-using BelzontWE.Font.Utility;
 using BelzontWE.Layout;
 using Colossal.IO.AssetDatabase;
 using Colossal.OdinSerializer.Utilities;
@@ -59,8 +58,7 @@ namespace BelzontWE.Sprites
                         {
                             ComponentType.ReadOnly<WEWaitingRendering>(),
                             ComponentType.ReadOnly<Temp>(),
-                            ComponentType.ReadOnly<Deleted>(),
-        }
+                            ComponentType.ReadOnly<Deleted>(),        }
                     }
               });
         }

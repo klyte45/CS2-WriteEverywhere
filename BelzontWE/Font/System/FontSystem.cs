@@ -153,7 +153,14 @@ namespace BelzontWE.Font
                 2
         };
 
-        public void ResetCache() => m_textCache.Clear();
+        public void ResetCache()
+        {
+            foreach (var entry in m_textCache)
+            {
+                entry.Value.Dispose();
+            }
+            m_textCache.Clear();
+        }
 
         public void Reset()
         {
@@ -395,7 +402,8 @@ namespace BelzontWE.Font
             while (enumerator.MoveNext())
             {
                 yield return enumerator.Current;
-            };
+            }
+            ;
         }
         public JobHandle RunJobs(JobHandle dependency)
         {

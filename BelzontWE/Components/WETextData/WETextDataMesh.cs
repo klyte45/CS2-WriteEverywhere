@@ -102,7 +102,7 @@ namespace BelzontWE
             else
             {
                 if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
-                basicRenderInformation = GCHandle.Alloc(ibri, GCHandleType.Normal);
+                basicRenderInformation = GCHandle.Alloc(ibri, GCHandleType.Weak);
                 Bounds = ibri.Bounds;
                 BriWidthMetersUnscaled = 1;
                 LastErrorStr = default;

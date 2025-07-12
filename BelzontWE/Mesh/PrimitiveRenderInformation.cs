@@ -163,11 +163,8 @@ namespace BelzontWE.Font.Utility
 
         public void Dispose()
         {
-            if (Main) GameObject.Destroy(Main);
-            if (Normal) GameObject.Destroy(Normal);
-            if (Emissive) GameObject.Destroy(Emissive);
-            if (Control) GameObject.Destroy(Control);
-            if (Mask) GameObject.Destroy(Mask);
+            if (Mesh) GameObject.Destroy(Mesh);
+            if (MeshCube) GameObject.Destroy(MeshCube);
         }
     }
 
