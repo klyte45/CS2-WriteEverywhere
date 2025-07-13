@@ -29,10 +29,10 @@ namespace BelzontWE.Builtin
         {
             timeSystem ??= World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<TimeSystem>();
             var time = timeSystem.GetCurrentDateTime();
-            time.AddMonths(time.Day - time.Month);
+            time = time.AddMonths(time.Day - time.Month);
             var formatter = WEModData.InstanceWE.FormatCulture.DateTimeFormat;
 
-            var format = vars.TryGetValue("dateFormat", out var dateFormat) ? dateFormat : formatter.YearMonthPattern;
+            var format = vars.TryGetValue("dateFormat", out var dateFormat) ? dateFormat : $"MMM{formatter.DateSeparator}yyyy";
 
             return time.ToString(format, formatter);
 

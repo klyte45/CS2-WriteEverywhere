@@ -154,17 +154,21 @@ namespace BelzontWE
 
         private Dictionary<string, Dictionary<string, string>> DeserializeReplacementData(string data)
         {
+            if (BasicIMod.DebugMode)
+            {
+                LogUtils.DoLog($"Deserializing replacement data: {data}");
+            }
             return data.Split(L1_ITEM_SEPARATOR)
-                .Where(x => x.Contains(L1_KV_SEPARATOR))
-                .Select(x => x.Split(L1_KV_SEPARATOR))
-                .ToDictionary(
-                    x => x[0],
-                    x => x[1]
-                        .Split(L2_ITEM_SEPARATOR)
-                        .Where(y => y.Contains(L2_KV_SEPARATOR))
-                        .Select(y => y.Split(L2_KV_SEPARATOR))
-                        .ToDictionary(y => y[0], y => y[1])
-                );
+            .Where(x => x.Contains(L1_KV_SEPARATOR))
+            .Select(x => x.Split(L1_KV_SEPARATOR))
+            .ToDictionary(
+                x => x[0],
+                x => x[1]
+                    .Split(L2_ITEM_SEPARATOR)
+                    .Where(y => y.Contains(L2_KV_SEPARATOR))
+                    .Select(y => y.Split(L2_KV_SEPARATOR))
+                    .ToDictionary(y => y[0], y => y[1])
+            );
         }
 
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
@@ -192,25 +196,32 @@ namespace BelzontWE
             prefabsWithLayout.Dispose();
 
             string atlasesReplacementData = string.Join(L1_ITEM_SEPARATOR, m_atlasesReplacements
-                .Select(x => (x.Key, x.Value.Where(x => x.Key != x.Value).ToArray()))
+                .Select(x => (x.Key, x.Value.Where(x => x.Value.TrimToNull() != null).ToArray()))
                 .Where(x => x.Item2.Length > 0)
                 .Select(x => $"{x.Key}{L1_KV_SEPARATOR}{string.Join(L2_ITEM_SEPARATOR, x.Item2.Select(y => $"{y.Key}{L2_KV_SEPARATOR}{y.Value}"))}"));
             string fontsReplacementData = string.Join('|', m_fontsReplacements
-                .Select(x => (x.Key, x.Value.Where(x => x.Key != x.Value).ToArray()))
+                .Select(x => (x.Key, x.Value.Where(x => x.Value.TrimToNull() != null).ToArray()))
                 .Where(x => x.Item2.Length > 0)
                 .Select(x => $"{x.Key}{L1_KV_SEPARATOR}{string.Join(L2_ITEM_SEPARATOR, x.Item2.Select(y => $"{y.Key}{L2_KV_SEPARATOR}{y.Value}"))}"));
             string subtemplatesReplacements = string.Join('|', m_subtemplatesReplacements
-                .Select(x => (x.Key, x.Value.Where(x => x.Key != x.Value).ToArray()))
+                .Select(x => (x.Key, x.Value.Where(x => x.Value.TrimToNull() != null).ToArray()))
                 .Where(x => x.Item2.Length > 0)
                 .Select(x => $"{x.Key}{L1_KV_SEPARATOR}{string.Join(L2_ITEM_SEPARATOR, x.Item2.Select(y => $"{y.Key}{L2_KV_SEPARATOR}{y.Value}"))}"));
             writer.Write(atlasesReplacementData);
             writer.Write(fontsReplacementData);
             writer.Write(subtemplatesReplacements);
             string meshesReplacements = string.Join('|', m_meshesReplacements
-                .Select(x => (x.Key, x.Value.Where(x => x.Key != x.Value).ToArray()))
+                .Select(x => (x.Key, x.Value.Where(x => x.Value.TrimToNull() != null).ToArray()))
                 .Where(x => x.Item2.Length > 0)
                 .Select(x => $"{x.Key}{L1_KV_SEPARATOR}{string.Join(L2_ITEM_SEPARATOR, x.Item2.Select(y => $"{y.Key}{L2_KV_SEPARATOR}{y.Value}"))}"));
             writer.Write(meshesReplacements);
+            if (BasicIMod.DebugMode)
+            {
+                LogUtils.DoLog($"ATLASES:\n{atlasesReplacementData.Replace(L1_ITEM_SEPARATOR, "\n").Replace(L1_KV_SEPARATOR, "\n\t").Replace(L2_ITEM_SEPARATOR, "\n\t").Replace(L2_KV_SEPARATOR, "\t=>\t")}");
+                LogUtils.DoLog($"FONTS:\n{fontsReplacementData.Replace(L1_ITEM_SEPARATOR, "\n").Replace(L1_KV_SEPARATOR, "\n\t").Replace(L2_ITEM_SEPARATOR, "\n\t").Replace(L2_KV_SEPARATOR, "\t=>\t")}");
+                LogUtils.DoLog($"SUBTEMPLATES:\n{subtemplatesReplacements.Replace(L1_ITEM_SEPARATOR, "\n").Replace(L1_KV_SEPARATOR, "\n\t").Replace(L2_ITEM_SEPARATOR, "\n\t").Replace(L2_KV_SEPARATOR, "\t=>\t")}");
+                LogUtils.DoLog($"MESHES:\n{atlasesReplacementData.Replace(L1_ITEM_SEPARATOR, "\n").Replace(L1_KV_SEPARATOR, "\n\t").Replace(L2_ITEM_SEPARATOR, "\n\t").Replace(L2_KV_SEPARATOR, "\t=>\t")}");
+            }
         }
         protected override void OnCreate()
         {

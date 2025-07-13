@@ -12,3 +12,5 @@
 - Added time and date functions on the new class `WECalendarFn`
 - Fixed behavior for when a mesh doesn't have emission texture. Instead of a white texture, the main texture will be sent instead as emissive.
 - Fixed meshes leaks. You may notice a slight reduction on game RAM memory usage.
+- Fixed error when reloading all sprites from Options menu
+- Fixed fonts replacements not being saved when the replacement font name matches the original module font name
