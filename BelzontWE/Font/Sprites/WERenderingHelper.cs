@@ -220,7 +220,7 @@ namespace BelzontWE
                         main: textureAtlas.Main,
                         normal: spriteInfo.HasNormal ? textureAtlas.Normal : null,
                         control: spriteInfo.HasControl ? textureAtlas.Control : null,
-                        emissive: spriteInfo.HasEmissive ? textureAtlas.Emissive : null,
+                        emissive: spriteInfo.HasEmissive ? textureAtlas.Emissive : textureAtlas.Main,
                         mask: spriteInfo.HasMask ? textureAtlas.Mask : null
             )
             {

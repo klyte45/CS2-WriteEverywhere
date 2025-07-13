@@ -10,6 +10,8 @@ import "../style/floatingPanels.scss";
 import { FormulaeEditorRowFloat, FormulaeEditRow } from "../common/FormulaeEditRow";
 import { ObjectTyped } from "object-typed";
 import { FocusDisabled } from "cs2/input";
+import { CustomMeshService } from "services/CustomMeshService";
+import { DropdownItem } from "cs2/bindings";
 
 const i_focus = "coui://uil/Standard/Magnifier.svg";
 
@@ -19,6 +21,8 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const T_fixedText = translate("textValueSettings.fixedText"); //
     const T_contentType = translate("textValueSettings.contentType"); //
     const T_atlas = translate("textValueSettings.atlas"); //
+    const T_mesh = translate("textValueSettings.mesh"); //
+    const T_defaultPlane = translate("textValueSettings.defaultPlane"); //
     const T_image = translate("textValueSettings.image"); //
     const T_useAbsoluteSize = translate("textValueSettings.useAbsoluteSize"); //
     const T_resizeHeightOnTextOverflow = translate("textValueSettings.resizeHeightOnTextOverflow"); //
@@ -46,10 +50,18 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     useEffect(() => {
         Promise.all([
             TextureAtlasService.listAvailableLibraries(),
-            TextureAtlasService.listModAtlases()
-        ]).then(([libs, mods]) => {
+            TextureAtlasService.listModAtlases(),
+            CustomMeshService.listAvailableLibraries()
+        ]).then(([libs, mods, customMeshList]) => {
             setAtlases([...Object.keys(libs ?? {}), ...mods.flatMap(x => x.Atlases).sort((a, b) => a.localeCompare(b))])
+            console.log(customMeshList)
+            setMeshes([{ displayName: { __Type: LocElementType.String, value: T_defaultPlane }, value: "" }].concat(Object.entries(customMeshList ?? {})
+                .map(([k, v]) => ({
+                    displayName: { __Type: LocElementType.String, value: k },
+                    value: v
+                }))) as DropdownItem<string>[]);
         })
+
     }, [picker.CurrentSubEntity.value])
 
     const EditorItemRow = VanillaWidgets.instance.EditorItemRow;
@@ -68,6 +80,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const [usingFormulae, setUsingFormulae] = useState(!!mesh.ValueTextFormulaeStr.value);
 
     const [atlases, setAtlases] = useState([] as string[]);
+    const [meshes, setMeshes] = useState([] as DropdownItem<string>[]);
     const [imgOptions, setImgOptions] = useState([] as string[]);
 
     const [height, setHeight] = useState(transform.CurrentScale.value[1]);
@@ -182,6 +195,14 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                         />} />
                 </>}
                 {mesh.TextSourceType.value == WESimulationTextType.Image && <>
+                    <EditorItemRow label={T_mesh}>
+                        <DropdownField
+                            value={mesh.CustomMeshName.value}
+                            items={meshes}
+                            onChange={(x) => mesh.CustomMeshName.set(x)}
+                            style={{ flexGrow: 1, width: "inherit" }}
+                        />
+                    </EditorItemRow>
                     <EditorItemRow label={T_atlas}>
                         <DropdownField
                             value={mesh.ImageAtlasName.value}

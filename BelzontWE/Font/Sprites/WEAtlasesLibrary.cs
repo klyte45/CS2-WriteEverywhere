@@ -98,6 +98,7 @@ namespace BelzontWE.Sprites
         internal IBasicRenderInformation GetFromLocalAtlases(WEImages image)
         {
             var sprite = GetFromAvailableAtlases(INTERNAL_ATLAS_NAME, image.ToString());
+            if (sprite is null) return null;
             sprite.IsError = image != WEImages.FrameBorder;
             return sprite;
         }

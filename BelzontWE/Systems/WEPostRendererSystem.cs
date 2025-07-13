@@ -202,13 +202,18 @@ namespace BelzontWE
             private bool UpdateImageMesh(Entity e, ref WETextDataMesh weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
             {
                 if (m_templateUpdaterLkp.HasBuffer(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
-                var bri = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<WEAtlasesLibrary>().GetFromAvailableAtlases(weCustomData.Atlas.ToString(), text, true);
+                IBasicRenderInformation bri = null;
+                if (!weCustomData.CustomMeshName.IsEmpty)
+                {
+                    bri = WECustomMeshLibrary.Instance.GetMesh(weCustomData.CustomMeshName.ToString(), weCustomData.Atlas.ToString(), text);
+                }
+                bri ??= WEAtlasesLibrary.Instance.GetFromAvailableAtlases(weCustomData.Atlas.ToString(), text, true);
                 if (bri == null)
                 {
                     if (BasicIMod.TraceMode) LogUtils.DoTraceLog("IMAGE BRI STILL NULL!!!");
                     return false;
                 }
-                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Image returned: {bri} {text} (a={weCustomData.Atlas})");
+                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Image returned: {bri} {text} (a={weCustomData.Atlas}, m={weCustomData.CustomMeshName})");
                 weCustomData = weCustomData.UpdateBRI(bri, text);
                 return true;
             }

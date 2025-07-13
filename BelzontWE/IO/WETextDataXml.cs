@@ -107,13 +107,22 @@ namespace BelzontWE
 
         }
 
-        internal void MapFontAtlasesTemplates(string modId, HashSet<string> dictAtlases, HashSet<string> dictFonts, HashSet<string> dictTemplates)
+        internal void MapFontAtlasesTemplates(string modId, HashSet<string> dictAtlases, HashSet<string> dictFonts, HashSet<string> dictTemplates, HashSet<string> dictMeshes)
         {
-            if (imageMesh != null && imageMesh.atlas.TrimToNull() != null && (imageMesh.atlas.StartsWith($"{modId}:") || !imageMesh.atlas.Contains(":")))
+            if (imageMesh != null)
             {
-                var targetAtlas = imageMesh.atlas.Split(":").Last();
-                dictAtlases.Add(targetAtlas);
-                imageMesh.atlas = $"{modId}:{targetAtlas}";
+                if (imageMesh.atlas.TrimToNull() != null && (imageMesh.atlas.StartsWith($"{modId}:") || !imageMesh.atlas.Contains(":")))
+                {
+                    var targetAtlas = imageMesh.atlas.Split(":").Last();
+                    dictAtlases.Add(targetAtlas);
+                    imageMesh.atlas = $"{modId}:{targetAtlas}";
+                }
+                if (imageMesh.mesh.TrimToNull() != null && (imageMesh.mesh.StartsWith($"{modId}:") || !imageMesh.mesh.Contains(":")))
+                {
+                    var targetMesh = imageMesh.mesh.Split(":").Last();
+                    dictMeshes.Add(targetMesh);
+                    imageMesh.mesh = $"{modId}:{targetMesh}";
+                }
             }
             else if (textMesh != null && textMesh.fontName.TrimToNull() != null && (textMesh.fontName.StartsWith($"{modId}:") || !textMesh.fontName.Contains(":")))
             {
@@ -354,15 +363,17 @@ namespace BelzontWE
         }
         public class MeshDataImageXml : ISerializable
         {
-            private const int CURRENT_VERSION = 0;
+            private const int CURRENT_VERSION = 1;
             [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.Image;
             [XmlAttribute] public string atlas;
+            [XmlAttribute][DefaultValue("")] public string mesh = "";
             [XmlElement] public FormulaeStringXml image;
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
                 writer.Write(CURRENT_VERSION);
                 writer.Write(atlas ?? "");
                 writer.WriteNullCheck(image);
+                writer.Write(mesh ?? "");
             }
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
             {
@@ -374,6 +385,14 @@ namespace BelzontWE
                 }
                 reader.Read(out atlas);
                 reader.ReadNullCheck(out image);
+                if (version >= 1)
+                {
+                    reader.Read(out mesh);
+                }
+                else
+                {
+                    mesh = "";
+                }
             }
         }
         public class MeshDataPlaceholderXml : ISerializable

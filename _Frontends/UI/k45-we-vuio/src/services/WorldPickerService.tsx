@@ -87,6 +87,7 @@ const WETextDataTransformController = {
 const WETextDataMeshController = {
     _prefix: "k45::we.dataMesh",
     ValueText: MultiUIValueBinding<string>,
+    CustomMeshName: MultiUIValueBinding<string>,
     MaxWidth: MultiUIValueBinding<number>,
     MaxWidthFormulaeStr: MultiUIValueBinding<string>,
     MaxWidthFormulaeCompileResult: MultiUIValueBinding<number>,

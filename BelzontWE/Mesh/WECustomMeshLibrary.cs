@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using Unity.Mathematics;
 using UnityEngine;
+using static BelzontWE.IO.ObjImporter;
 
 namespace BelzontWE
 {
@@ -30,7 +31,7 @@ namespace BelzontWE
         // Special keys on readonly variables above
         // CURRENT_CITY_KEY - for the current city meshes (must be serialized)
         // LOCAL_LIB_KEY - for the local library meshes
-        private readonly Dictionary<string, Dictionary<string, Mesh>> MeshSources = new();
+        private readonly Dictionary<string, Dictionary<string, WEMeshDescriptor>> MeshSources = new();
 
 
         private readonly Queue<Action> actionQueue = new();
@@ -45,16 +46,27 @@ namespace BelzontWE
         }
         protected override void OnUpdate()
         {
+            while (actionQueue.TryDequeue(out var action))
+            {
+                action();
+            }
         }
 
         public CustomMeshRenderInformation GetMesh(string meshName, string atlasName, string imageName)
         {
-            Mesh targetMesh;
+            WEMeshDescriptor targetMesh;
             if (MeshInstances.TryGetValue(meshName, out var meshDict))
             {
                 if (meshDict.TryGetValue(atlasName + "|" + imageName, out var meshInfo))
                 {
-                    return meshInfo;
+                    if (meshInfo.IsValid())
+                    {
+                        return meshInfo;
+                    }
+                    else
+                    {
+                        actionQueue.Enqueue(() => meshInfo.Dispose());
+                    }
                 }
                 if (!GetEffectiveIds(meshName, out string modId, out string meshId))
                 {
@@ -168,27 +180,30 @@ namespace BelzontWE
             if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded meshes: {string.Join(", ", MeshSources.Select(x => x.Key))}");
 
             NotificationHelper.NotifyProgress(LOADING_LOCAL_MESHES, 100, textI18n: $"{LOADING_LOCAL_MESHES}.complete");
+            CleanupMeshCache(LOCAL_LIB_KEY);
             localMeshesCoroutine = null;
         }
 
         private void CleanupMeshSource(string key)
         {
-            if (MeshSources.TryGetValue(key, out var localLib))
-            {
-                foreach (var meshPair in localLib)
-                {
-                    GameObject.Destroy(meshPair.Value);
-                }
-            }
-            if (MeshInstances.TryGetValue(key, out var currentCityData))
-            {
-                foreach (var meshPair in currentCityData)
-                {
-                    meshPair.Value.Dispose();
-                }
-            }
             MeshSources[key] = new();
-            MeshInstances[key] = new();
+        }
+
+        private void CleanupMeshCache(string key)
+        {
+            var keysToErase
+                = (key == null ? MeshInstances.Keys
+                : key.Contains("\0") ? MeshInstances.Keys.Where(x => !x.Contains(":"))
+                : MeshInstances.Keys.Where(x => x.StartsWith(key + ":"))).ToArray();
+
+            foreach (var keyInstance in keysToErase)
+            {
+                foreach (var entry in MeshInstances[keyInstance])
+                {
+                    entry.Value.Dispose();
+                }
+                MeshInstances.Remove(keyInstance);
+            }
         }
 
         #endregion
@@ -210,23 +225,23 @@ namespace BelzontWE
                 foreach (var meshPair in MeshSources[CURRENT_CITY_KEY])
                 {
                     writer.Write(meshPair.Key); // Mesh ID
-                    writer.Write(meshPair.Value.vertices.Length);
-                    foreach (var vertex in meshPair.Value.vertices)
+                    writer.Write(meshPair.Value.Vertices.Length);
+                    foreach (var vertex in meshPair.Value.Vertices)
                     {
                         writer.Write(vertex);
                     }
-                    writer.Write(meshPair.Value.normals.Length);
-                    foreach (var normal in meshPair.Value.normals)
+                    writer.Write(meshPair.Value.Normals.Length);
+                    foreach (var normal in meshPair.Value.Normals)
                     {
                         writer.Write(normal);
                     }
-                    writer.Write(meshPair.Value.uv2.Length);
-                    foreach (var uv in meshPair.Value.uv2)
+                    writer.Write(meshPair.Value.UVs.Length);
+                    foreach (var uv in meshPair.Value.UVs)
                     {
                         writer.Write(uv);
                     }
-                    writer.Write(meshPair.Value.triangles.Length);
-                    foreach (var triangle in meshPair.Value.triangles)
+                    writer.Write(meshPair.Value.Triangles.Length);
+                    foreach (var triangle in meshPair.Value.Triangles)
                     {
                         writer.Write(triangle);
                     }
@@ -246,38 +261,82 @@ namespace BelzontWE
             for (int i = 0; i < meshesCount; i++)
             {
                 reader.Read(out string meshId);
-                var mesh = new Mesh();
                 reader.Read(out int vertexCount);
-                mesh.vertices = new Vector3[vertexCount];
+                var vertices = new Vector3[vertexCount];
                 for (int j = 0; j < vertexCount; j++)
                 {
                     reader.Read(out float3 vertex);
-                    mesh.vertices[j] = vertex;
+                    vertices[j] = vertex;
                 }
                 reader.Read(out int normalCount);
-                mesh.normals = new Vector3[normalCount];
+                var normals = new Vector3[normalCount];
                 for (int j = 0; j < normalCount; j++)
                 {
                     reader.Read(out float3 normal);
-                    mesh.normals[j] = normal;
+                    normals[j] = normal;
                 }
                 reader.Read(out int uv2Count);
-                mesh.uv2 = new Vector2[uv2Count];
+                var uv2 = new Vector2[uv2Count];
                 for (int j = 0; j < uv2Count; j++)
                 {
                     reader.Read(out float2 uv);
-                    mesh.uv2[j] = uv;
+                    uv2[j] = uv;
                 }
                 reader.Read(out int triangleCount);
-                mesh.triangles = new int[triangleCount];
+                var triangles = new int[triangleCount];
                 for (int j = 0; j < triangleCount; j++)
                 {
                     reader.Read(out int triangle);
-                    mesh.triangles[j] = triangle;
+                    triangles[j] = triangle;
                 }
-                MeshSources[CURRENT_CITY_KEY][meshId] = mesh;
+                MeshSources[CURRENT_CITY_KEY][meshId] = new WEMeshDescriptor(vertices, normals, uv2, triangles);
             }
 
+        }
+
+        internal Dictionary<string, string> ListAvailableMeshes()
+        {
+            return MeshSources.Where(x => x.Key != CURRENT_CITY_KEY && x.Key != LOCAL_LIB_KEY && x.Value.Count > 0).SelectMany(parent => parent.Value.Select(child => ($"{parent}:{child}", $"{parent}:{child}")))
+                .Concat(MeshSources[CURRENT_CITY_KEY].Select(x => (x.Key, x.Key)))
+                .Concat(MeshSources[LOCAL_LIB_KEY].Where(x => !MeshSources[CURRENT_CITY_KEY].ContainsKey(x.Key)).Select(x => (x.Key, x.Key)))
+                .ToDictionary(x => x.Item1, x => x.Item2);
+        }
+
+        internal bool CopyToCity(string v, string newName)
+        {
+            if (!MeshSources[LOCAL_LIB_KEY].TryGetValue(v, out var mesh) || MeshSources[CURRENT_CITY_KEY].ContainsKey(newName))
+            {
+                return false;
+            }
+            MeshSources[CURRENT_CITY_KEY][newName] = new WEMeshDescriptor(mesh);
+
+            CleanCityInstanceForSource(newName);
+            return true;
+        }
+
+        private void CleanCityInstanceForSource(string meshName)
+        {
+            List<string> entriesToRemove = new();
+            foreach (var entry in MeshInstances[CURRENT_CITY_KEY])
+            {
+                if (entry.Key.StartsWith(meshName + "|"))
+                {
+                    entry.Value.Dispose();
+                    entriesToRemove.Add(entry.Key);
+                }
+            }
+            foreach (var key in entriesToRemove)
+            {
+                MeshInstances[CURRENT_CITY_KEY].Remove(key);
+            }
+        }
+
+        internal bool RemoveFromCity(string meshNameToRemove)
+        {
+            if (!MeshSources[CURRENT_CITY_KEY].ContainsKey(meshNameToRemove)) return false;
+            MeshSources[CURRENT_CITY_KEY].Remove(meshNameToRemove);
+            CleanCityInstanceForSource(meshNameToRemove);
+            return true;
         }
         #endregion
     }

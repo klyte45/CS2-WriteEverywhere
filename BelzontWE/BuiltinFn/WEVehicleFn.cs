@@ -23,7 +23,7 @@ namespace BelzontWE.Builtin
                         !em.TryGetComponent<Owner>(entity, out var owner) ? "<?NO TARGET?>"
                         : WEUtitlitiesFn.GetEntityName(owner.m_Owner)
                 : target.m_Target == Entity.Null ? "Cities Skylines II"
-                : !em.TryGetComponent(entity, out owner) ? WEUtitlitiesFn.GetEntityName(target.m_Target)                
+                : !em.TryGetComponent(entity, out owner) ? WEUtitlitiesFn.GetEntityName(target.m_Target)
                 : WEUtitlitiesFn.GetEntityName(owner.m_Owner);
         };
 
@@ -67,5 +67,4 @@ namespace BelzontWE.Builtin
         public static string GetSerialNumber(Entity reference) => GetSerialNumber_binding?.Invoke(reference) ?? "<???>";
         public static string GetConvoyId(Entity vehicleRef) => GetConvoyId_binding?.Invoke(vehicleRef) ?? "<???>";
     }
-
 }

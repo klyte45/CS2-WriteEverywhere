@@ -135,14 +135,14 @@ namespace BelzontWE
             }
         }
 
-        internal void MapFontAtlasesTemplates(string modId, HashSet<string> dictAtlases, HashSet<string> dictFonts, HashSet<string> dictTemplates)
+        internal void MapFontAtlasesTemplates(string modId, HashSet<string> dictAtlases, HashSet<string> dictFonts, HashSet<string> dictTemplates, HashSet<string> dictMeshes)
         {
-            self.MapFontAtlasesTemplates(modId, dictAtlases, dictFonts, dictTemplates);
+            self.MapFontAtlasesTemplates(modId, dictAtlases, dictFonts, dictTemplates, dictMeshes);
             if (children?.Length > 0)
             {
                 foreach (var child in children)
                 {
-                    child.MapFontAtlasesTemplates(modId, dictAtlases, dictFonts, dictTemplates);
+                    child.MapFontAtlasesTemplates(modId, dictAtlases, dictFonts, dictTemplates, dictMeshes);
                 }
             }
         }

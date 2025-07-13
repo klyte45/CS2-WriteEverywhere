@@ -43,7 +43,7 @@ namespace BelzontWE
         public const string LAYOUT_REPLACEMENTS_EXTENSION = "weprefabreplace.xml";
         public static WETemplateManager Instance { get; private set; }
 
-        public const int CURRENT_VERSION = 2;
+        public const int CURRENT_VERSION = 3;
 
         private Dictionary<FixedString128Bytes, WETextDataXmlTree> RegisteredTemplates;
         private PrefabSystem m_prefabSystem;
@@ -122,27 +122,28 @@ namespace BelzontWE
                     LogUtils.DoWarnLog($"IGNORING INSTANCE by exception: '{key}'\n{e}");
                 }
             }
+            m_atlasesReplacements.Clear();
+            m_fontsReplacements.Clear();
+            m_subtemplatesReplacements.Clear();
+            m_meshesReplacements.Clear();
             if (version >= 1)
             {
                 reader.Read(out string atlasesReplacementData);
                 reader.Read(out string fontsReplacementData);
-                m_atlasesReplacements.Clear();
-                m_fontsReplacements.Clear();
-                m_subtemplatesReplacements.Clear();
                 m_atlasesReplacements.AddRange(DeserializeReplacementData(atlasesReplacementData));
                 m_fontsReplacements.AddRange(DeserializeReplacementData(fontsReplacementData));
-                if (version >= 2)
-                {
-                    reader.Read(out string subtemplatesReplacements);
-                    m_subtemplatesReplacements.AddRange(DeserializeReplacementData(subtemplatesReplacements));
-                }
             }
-            else
+            if (version >= 2)
             {
-                m_atlasesReplacements.Clear();
-                m_fontsReplacements.Clear();
+                reader.Read(out string subtemplatesReplacements);
+                m_subtemplatesReplacements.AddRange(DeserializeReplacementData(subtemplatesReplacements));
             }
-            SpritesAndLayoutsDataVersion = 2;
+            if (version >= 3)
+            {
+                reader.Read(out string meshesReplacementData);
+                m_meshesReplacements.AddRange(DeserializeReplacementData(meshesReplacementData));
+            }
+            SpritesAndLayoutsDataVersion = 3;
             m_templatesDirty = true;
         }
 
@@ -205,6 +206,11 @@ namespace BelzontWE
             writer.Write(atlasesReplacementData);
             writer.Write(fontsReplacementData);
             writer.Write(subtemplatesReplacements);
+            string meshesReplacements = string.Join('|', m_meshesReplacements
+                .Select(x => (x.Key, x.Value.Where(x => x.Key != x.Value).ToArray()))
+                .Where(x => x.Item2.Length > 0)
+                .Select(x => $"{x.Key}{L1_KV_SEPARATOR}{string.Join(L2_ITEM_SEPARATOR, x.Item2.Select(y => $"{y.Key}{L2_KV_SEPARATOR}{y.Value}"))}"));
+            writer.Write(meshesReplacements);
         }
         protected override void OnCreate()
         {
@@ -745,7 +751,7 @@ namespace BelzontWE
 
                     material.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
                     var canMultiply = mesh.TextType == WESimulationTextType.Placeholder;
-                    var transformChanged = transform.UpdateFormulae(em, dirtyData.geometry, dirtyData.vars, canMultiply);                
+                    var transformChanged = transform.UpdateFormulae(em, dirtyData.geometry, dirtyData.vars, canMultiply);
                     mesh.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
                     main.nextUpdateFrame = nextUpdateFrame + (i % intervalUpdate);
                     mainData[i] = main;
@@ -1022,7 +1028,11 @@ namespace BelzontWE
             {
                 dictSubTemplates = m_subtemplatesMapped[effectiveModId] = new();
             }
-            tree.MapFontAtlasesTemplates(effectiveModId, dictAtlases, dictFonts, dictSubTemplates);
+            if (!m_meshesMapped.TryGetValue(effectiveModId, out var dictMeshes))
+            {
+                dictMeshes = m_meshesMapped[effectiveModId] = new();
+            }
+            tree.MapFontAtlasesTemplates(effectiveModId, dictAtlases, dictFonts, dictSubTemplates, dictMeshes);
             tree.ModSource = effectiveModId.TrimToNull();
         }
         #endregion
@@ -1221,9 +1231,11 @@ namespace BelzontWE
         private readonly Dictionary<string, HashSet<string>> m_atlasesMapped = new();
         private readonly Dictionary<string, HashSet<string>> m_fontsMapped = new();
         private readonly Dictionary<string, HashSet<string>> m_subtemplatesMapped = new();
+        private readonly Dictionary<string, HashSet<string>> m_meshesMapped = new();
         private readonly Dictionary<string, Dictionary<string, string>> m_atlasesReplacements = new();
         private readonly Dictionary<string, Dictionary<string, string>> m_fontsReplacements = new();
         private readonly Dictionary<string, Dictionary<string, string>> m_subtemplatesReplacements = new();
+        private readonly Dictionary<string, Dictionary<string, string>> m_meshesReplacements = new();
         public ushort SpritesAndLayoutsDataVersion { get; private set; } = 0;
 
         private Dictionary<string, (string name, string id, string rootFolder)> m_modsTemplatesFolder = new();
@@ -1273,7 +1285,6 @@ namespace BelzontWE
             return result;
         }
 
-
         internal FixedString64Bytes GetTemplateFor(string strOriginal, string currentTemplate, ref bool haveChanges)
         {
             if (!strOriginal.Contains(":")) return strOriginal;
@@ -1282,6 +1293,20 @@ namespace BelzontWE
                         ? templateName
                         : strOriginal) ?? "";
             if (result != currentTemplate)
+            {
+                haveChanges |= true;
+            }
+            return result;
+        }
+
+        internal FixedString64Bytes GetMeshFor(string strOriginal, string currentMesh, ref bool haveChanges)
+        {
+            if (!strOriginal.Contains(":")) return strOriginal;
+            var decomposedName = strOriginal.Split(":", 2);
+            FixedString64Bytes result = (m_meshesReplacements.TryGetValue(decomposedName[0], out var templateList) && templateList.TryGetValue(decomposedName[1], out var templateName)
+                        ? templateName
+                        : strOriginal) ?? "";
+            if (result != currentMesh)
             {
                 haveChanges |= true;
             }
@@ -1302,15 +1327,17 @@ namespace BelzontWE
             public StringableXmlDictionary atlases;
             public StringableXmlDictionary fonts;
             public StringableXmlDictionary subtemplates;
+            public StringableXmlDictionary meshes;
 
             public ModReplacementData() { }
-            internal ModReplacementData(string modId, string displayName, Dictionary<string, string> atlases, Dictionary<string, string> fonts, Dictionary<string, string> subtemplates)
+            internal ModReplacementData(string modId, string displayName, Dictionary<string, string> atlases, Dictionary<string, string> fonts, Dictionary<string, string> subtemplates, Dictionary<string, string> meshes)
             {
                 this.modId = modId;
                 this.displayName = displayName;
                 this.atlases = new(); this.atlases.AddRange(atlases);
                 this.fonts = new(); this.fonts.AddRange(fonts);
                 this.subtemplates = new(); this.subtemplates.AddRange(subtemplates);
+                this.meshes = new(); this.meshes.AddRange(meshes);
             }
         }
 
@@ -1322,7 +1349,8 @@ namespace BelzontWE
                 var atlasesReplacements = MergeDictionaries(modId, m_atlasesMapped, m_atlasesReplacements);
                 var fontsReplacements = MergeDictionaries(modId, m_fontsMapped, m_fontsReplacements);
                 var subtemplateReplacements = MergeDictionaries(modId, m_subtemplatesMapped, m_subtemplatesReplacements);
-                return new ModReplacementData(modId, modName, atlasesReplacements, fontsReplacements, subtemplateReplacements);
+                var meshesReplacements = MergeDictionaries(modId, m_meshesMapped, m_meshesReplacements);
+                return new ModReplacementData(modId, modName, atlasesReplacements, fontsReplacements, subtemplateReplacements, meshesReplacements);
             }).ToArray();
 
         private static Dictionary<string, string> MergeDictionaries(string modId, Dictionary<string, HashSet<string>> mapped, Dictionary<string, Dictionary<string, string>> replacements)
@@ -1360,7 +1388,27 @@ namespace BelzontWE
                 }
             }
             return null;
-
+        }
+        internal string SetModMeshReplacement(string modId, string original, string target)
+        {
+            if (m_meshesMapped.ContainsKey(modId))
+            {
+                if (!m_meshesReplacements.TryGetValue(modId, out var mesh))
+                {
+                    mesh = m_meshesReplacements[modId] = new();
+                }
+                if (m_meshesMapped[modId].Contains(original))
+                {
+                    IncreaseSpritesAndLayoutsDataVersion();
+                    if (target.TrimToNull() is null)
+                    {
+                        mesh.Remove(original);
+                        return null;
+                    }
+                    return mesh[original] = target.TrimToNull() ?? original;
+                }
+            }
+            return null;
         }
 
         internal void IncreaseSpritesAndLayoutsDataVersion()

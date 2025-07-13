@@ -15,6 +15,7 @@ namespace BelzontWE
         public MultiUIValueBinding<string> SelectedFont { get; private set; }
         public MultiUIValueBinding<int> TextSourceType { get; private set; }
         public MultiUIValueBinding<string> ImageAtlasName { get; private set; }
+        public MultiUIValueBinding<string> CustomMeshName { get; private set; }
         public MultiUIValueBinding<bool> RescaleHeightOnTextOverflow { get; private set; }
         public MultiUIValueBinding<bool> ChildrenRefersToFrontFace { get; private set; }
 
@@ -55,6 +56,7 @@ namespace BelzontWE
             SelectedFont = new(default, $"{PREFIX}{nameof(SelectedFont)}", EventCaller, CallBinder);
             TextSourceType = new(default, $"{PREFIX}{nameof(TextSourceType)}", EventCaller, CallBinder);
             ImageAtlasName = new(default, $"{PREFIX}{nameof(ImageAtlasName)}", EventCaller, CallBinder);
+            CustomMeshName = new(default, $"{PREFIX}{nameof(CustomMeshName)}", EventCaller, CallBinder);
             RescaleHeightOnTextOverflow = new(default, $"{PREFIX}{nameof(RescaleHeightOnTextOverflow)}", EventCaller, CallBinder);
             ChildrenRefersToFrontFace = new(default, $"{PREFIX}{nameof(ChildrenRefersToFrontFace)}", EventCaller, CallBinder);
 
@@ -107,6 +109,7 @@ namespace BelzontWE
             ImageAtlasName.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
             RescaleHeightOnTextOverflow.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMesh>(x, (x, currentItem) => { currentItem.RescaleHeightOnTextOverflow = x; return currentItem; });
             ChildrenRefersToFrontFace.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMesh>(x, (x, currentItem) => { currentItem.childrenRefersToFrontFace = x; return currentItem; });
+            CustomMeshName.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.CustomMeshName = x ?? ""; return currentItem; });
 
         }
 
@@ -118,6 +121,7 @@ namespace BelzontWE
             ValueTextFormulaeStr.Value = mesh.ValueData.Formulae;
             TextSourceType.Value = (int)mesh.TextType;
             ImageAtlasName.Value = mesh.Atlas.ToString();
+            CustomMeshName.Value = mesh.CustomMeshName.ToString();
             RescaleHeightOnTextOverflow.Value = mesh.RescaleHeightOnTextOverflow;
             ChildrenRefersToFrontFace.Value = mesh.childrenRefersToFrontFace;
 

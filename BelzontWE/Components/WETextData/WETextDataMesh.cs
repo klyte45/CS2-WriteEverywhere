@@ -17,6 +17,7 @@ namespace BelzontWE
         private FixedString64Bytes atlas;
         public FixedString128Bytes originalName;
         private FixedString64Bytes fontName;
+        private FixedString64Bytes customMeshName;
         internal ushort lastUpdateModReplacements;
         private WETextDataValueString valueData;
         private bool dirty;
@@ -41,6 +42,7 @@ namespace BelzontWE
         public WETextDataValueFloat3 ScaleFormulae;
         public FixedString64Bytes Atlas { readonly get => atlas; set { atlas = value; templateDirty = dirty = true; } }
         public FixedString64Bytes FontName { readonly get => fontName; set { fontName = value; templateDirty = dirty = true; } }
+        public FixedString64Bytes CustomMeshName { readonly get => customMeshName; set { customMeshName = value; templateDirty = dirty = true; } }
         public WETextDataValueString ValueData { readonly get => valueData; set => valueData = value; }
         public int MinLod { get; set; }
         public float3 LodReferenceScale { get; set; }
@@ -151,7 +153,7 @@ namespace BelzontWE
                     {
                         lastUpdateModReplacements = WETemplateManager.Instance.SpritesAndLayoutsDataVersion;
                         atlas = WETemplateManager.Instance.GetAtlasFor(originalName.ToString(), atlas, ref result);
-                        if (HasBRI && RenderInformation.IsError)
+                        if (HasBRI && (RenderInformation?.IsError ?? false))
                         {
                             result = true;
                         }

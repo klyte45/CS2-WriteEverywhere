@@ -1,19 +1,46 @@
 ﻿using Belzont.Utils;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using UnityEngine;
 
 namespace BelzontWE.IO
 {
-    internal static class ObjImporter
+    public static class ObjImporter
     {
-        public static Mesh ImportFromObj(string pathToFile)
+        private static CultureInfo convertCulture = new System.Globalization.CultureInfo("en");
+        public class WEMeshDescriptor
         {
-            Mesh mesh = null;
+
+            public readonly Vector3[] Vertices;
+            public readonly Vector3[] Normals;
+            public readonly Vector2[] UVs;
+            public readonly int[] Triangles;
+
+            public WEMeshDescriptor(WEMeshDescriptor mesh)
+            {
+                Vertices = mesh.Vertices.ToArray();
+                Normals = mesh.Normals.ToArray();
+                UVs = mesh.UVs.ToArray();
+                Triangles = mesh.Triangles.ToArray();
+            }
+
+            public WEMeshDescriptor(Vector3[] vertices, Vector3[] normals, Vector2[] uVs, int[] triangles)
+            {
+                Vertices = vertices;
+                Normals = normals;
+                UVs = uVs;
+                Triangles = triangles;
+            }
+        }
+        public static WEMeshDescriptor ImportFromObj(string pathToFile)
+        {
+            WEMeshDescriptor mesh = null;
             try
             {
                 var objData = System.IO.File.ReadAllText(pathToFile);
-                mesh = new Mesh();
+
                 var vertices = new List<Vector3>();
                 var normals = new List<Vector3>();
                 var uvs = new List<Vector2>();
@@ -21,7 +48,7 @@ namespace BelzontWE.IO
 
                 var outputVertices = new List<Vector3>();
                 var outputNormals = new List<Vector3>();
-                var outputUv = new List<Vector2>();                
+                var outputUv = new List<Vector2>();
 
                 var globalToLocalVertexIndex = new Dictionary<string, int>();
 
@@ -34,13 +61,13 @@ namespace BelzontWE.IO
                     switch (parts[0])
                     {
                         case "v":
-                            vertices.Add(new Vector3(float.Parse(parts[1]), float.Parse(parts[2]), float.Parse(parts[3])));
+                            vertices.Add(new Vector3(float.Parse(parts[1], convertCulture), float.Parse(parts[2], convertCulture), float.Parse(parts[3], convertCulture)));
                             break;
                         case "vn":
-                            normals.Add(new Vector3(float.Parse(parts[1]), float.Parse(parts[2]), float.Parse(parts[3])));
+                            normals.Add(new Vector3(float.Parse(parts[1], convertCulture), float.Parse(parts[2], convertCulture), float.Parse(parts[3], convertCulture)));
                             break;
                         case "vt":
-                            uvs.Add(new Vector2(float.Parse(parts[1]), float.Parse(parts[2])));
+                            uvs.Add(new Vector2(float.Parse(parts[1], convertCulture), float.Parse(parts[2], convertCulture)));
                             break;
                         case "s":
                             currentSubmesh = new Mesh();
@@ -92,10 +119,12 @@ namespace BelzontWE.IO
                             break;
                     }
                 }
-                mesh.vertices = outputVertices.ToArray();
-                mesh.uv2 = outputUv.ToArray();
-                mesh.normals = outputNormals.ToArray();
-                mesh.triangles = triangles.ToArray();
+                mesh = new WEMeshDescriptor(
+                    outputVertices.ToArray(),
+                    outputNormals.ToArray(),
+                    outputUv.ToArray(),
+                    triangles.ToArray()
+                );
             }
             catch (Exception ex)
             {
