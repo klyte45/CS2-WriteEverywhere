@@ -128,7 +128,7 @@ namespace BelzontWE.IO
             }
             catch (Exception ex)
             {
-                LogUtils.DoWarnLog($"Failed to import OBJ file: {ex.Message}");
+                LogUtils.DoWarnLog($"Failed to import OBJ file: {ex.Message}\n{ex}");
             }
             return mesh;
         }

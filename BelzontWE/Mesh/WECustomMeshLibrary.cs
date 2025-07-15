@@ -11,6 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Unity.Mathematics;
 using UnityEngine;
 using static BelzontWE.IO.ObjImporter;
@@ -51,6 +52,76 @@ namespace BelzontWE
                 action();
             }
         }
+        #region Mods integration
+        internal bool LoadMeshToMod(Assembly mainAssembly, string meshName, string objPath)
+        {
+            var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
+            if (meshName.TrimToNull() == null)
+            {
+                LogUtils.DoWarnLog($"Mesh name is null or empty for mod identified by '{modId}' ({mainAssembly.GetName().Name})");
+                return false;
+            }
+            if (!File.Exists(objPath))
+            {
+                LogUtils.DoWarnLog($"Mesh file '{objPath}' does not exist for mod identified by '{modId}' mesh '{meshName}' ({mainAssembly.GetName().Name})");
+                return false;
+            }
+            var mesh = ObjImporter.ImportFromObj(objPath);
+            if (mesh == null)
+            {
+                LogUtils.DoWarnLog($"Failed to load mesh from {objPath} for mod identified by '{modId}' mesh '{meshName}' ({mainAssembly.GetName().Name})");
+                return false;
+            }
+            if (!MeshSources.TryGetValue(modId, out var meshSources))
+            {
+                meshSources = MeshSources[modId] = new();
+            }
+            meshSources[meshName] = mesh;
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"Registered mesh '{meshName}' for mod '{modId}' via file");
+            CleanupMeshCache(modId);
+            return true;
+        }
+        internal bool LoadMeshToMod(Assembly mainAssembly, string meshName, Vector3[] vertices, Vector3[] normals, Vector2[] uv, int[] triangles)
+        {
+            var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
+            if (meshName.TrimToNull() == null)
+            {
+                LogUtils.DoWarnLog($"Mesh name is null or empty for mod identified by '{modId}' ({mainAssembly.GetName().Name})");
+                return false;
+            }
+            if (vertices.Length == 0)
+            {
+                LogUtils.DoWarnLog($"Mesh vertices are empty for mod identified by '{modId}' mesh '{meshName}' ({mainAssembly.GetName().Name})");
+                return false;
+            }
+            if (vertices.Length != normals.Length)
+            {
+                LogUtils.DoWarnLog($"Mesh vertices and normals count mismatch for mod identified by '{modId}' mesh '{meshName}' ({mainAssembly.GetName().Name})");
+                return false;
+            }
+            if (uv.Length != vertices.Length)
+            {
+                LogUtils.DoWarnLog($"Mesh vertices and UVs count mismatch for mod identified by '{modId}' mesh '{meshName}' ({mainAssembly.GetName().Name})");
+                return false;
+            }
+            if (triangles.Any(x => x >= vertices.Length))
+            {
+                LogUtils.DoWarnLog($"Mesh triangles contain invalid indices for mod identified by '{modId}' mesh '{meshName}' ({mainAssembly.GetName().Name})");
+                return false;
+            }
+
+            if (!MeshSources.TryGetValue(modId, out var meshSources))
+            {
+                meshSources = MeshSources[modId] = new();
+            }
+            meshSources[meshName] = new WEMeshDescriptor(vertices, normals, uv, triangles);
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"Registered mesh '{meshName}' for mod '{modId}' via arrays");
+            CleanupMeshCache(modId);
+            return true;
+        }
+
+
+        #endregion
 
         public CustomMeshRenderInformation GetMesh(string meshName, string atlasName, string imageName)
         {
@@ -294,9 +365,10 @@ namespace BelzontWE
 
         }
 
-        internal Dictionary<string, string> ListAvailableMeshes()
+        internal Dictionary<string, string> ListAvailableMeshesUI()
         {
-            return MeshSources.Where(x => x.Key != CURRENT_CITY_KEY && x.Key != LOCAL_LIB_KEY && x.Value.Count > 0).SelectMany(parent => parent.Value.Select(child => ($"{parent}:{child}", $"{parent}:{child}")))
+            return MeshSources.Where(x => x.Key != CURRENT_CITY_KEY && x.Key != LOCAL_LIB_KEY && x.Value.Count > 0)
+                .SelectMany(parent => parent.Value.Where(x => !x.Key.StartsWith("__")).Select(child => ($"{parent}:{child.Key}", $"{parent}:{child.Key}")))
                 .Concat(MeshSources[CURRENT_CITY_KEY].Select(x => (x.Key, x.Key)))
                 .Concat(MeshSources[LOCAL_LIB_KEY].Where(x => !MeshSources[CURRENT_CITY_KEY].ContainsKey(x.Key)).Select(x => (x.Key, x.Key)))
                 .ToDictionary(x => x.Item1, x => x.Item2);
@@ -312,6 +384,18 @@ namespace BelzontWE
 
             CleanCityInstanceForSource(newName);
             return true;
+        }
+
+        public void ClearAllCache()
+        {
+            foreach (var entry in MeshInstances)
+            {
+                foreach (var meshEntry in entry.Value)
+                {
+                    meshEntry.Value.Dispose();
+                }
+            }
+            MeshInstances.Clear();
         }
 
         private void CleanCityInstanceForSource(string meshName)

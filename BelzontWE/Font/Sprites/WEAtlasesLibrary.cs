@@ -189,6 +189,7 @@ namespace BelzontWE.Sprites
             if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded atlases: {string.Join(", ", LocalAtlases.Select(x => x.Key))}");
 
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 100, textI18n: "generatingAtlasesCache.complete");
+            WECustomMeshLibrary.Instance.ClearAllCache();
             localSpritesJobRunning = null;
         }
         internal void UnregisterModAtlas(Assembly modId, string atlasName)
@@ -260,6 +261,7 @@ namespace BelzontWE.Sprites
             }
             modSpritesJobRunning = null;
             WETemplateManager.Instance.IncreaseSpritesAndLayoutsDataVersion();
+            WECustomMeshLibrary.Instance.ClearAllCache();
         }
 
 

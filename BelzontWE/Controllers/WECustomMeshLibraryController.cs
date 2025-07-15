@@ -27,7 +27,7 @@ namespace BelzontWE
 
         public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
 
-        private Dictionary<string, string> ListAvailableLibraries() => m_MeshLibrary.ListAvailableMeshes();
+        private Dictionary<string, string> ListAvailableLibraries() => m_MeshLibrary.ListAvailableMeshesUI();
         private bool CopyToCity(string mesh, string newName) => m_MeshLibrary.CopyToCity(mesh ?? "", newName);
         private bool RemoveFromCity(string mesh) => m_MeshLibrary.RemoveFromCity(mesh ?? "");
 

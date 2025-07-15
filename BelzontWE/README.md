@@ -42,13 +42,13 @@ This feature was heavily inspired by the [Station Entrance Visuals](https://mods
 ### Custom meshes
 
 The custom meshes added to WE shall be at `objMeshes` folder, and they must be in `obj` format. They shall have the following properties:
-	- Must have **vertices, normals, uv and triangles**. They must contain just one mesh.
-	- The meshes can be used only for Image type nodes, and they will be listed by name in the WE UI.
-	- The exported xml with custom meshes will have a new attribute `mesh` on the `imageMesh` node. It will point the mesh name (and like atlases names, names containing `:` will point to mods meshes when it becomes supported).
-	- Formulas for switching meshes are not available *at this moment*.
-	- Modules can't export nor register meshes into WE *at this moment*.
-	- You can't import a mesh to current city savegame *at this moment*.
-	- There are no limitations on sizes for meshes - **use it at your own risk**.
+  - Must have **vertices, normals, uv and triangles**. They must contain just one mesh.
+  - The meshes can be used only for Image type nodes, and they will be listed by name in the WE UI.
+  - The exported xml with custom meshes will have a new attribute `mesh` on the `imageMesh` node. It will point the mesh name (and like atlases names, names containing `:` will point to mods meshes when it becomes supported).
+  - Formulas for switching meshes are not available *at this moment*.
+  - Modules can't export nor register meshes into WE *at this moment*.
+  - You can't import a mesh to current city savegame *at this moment*.
+  - There are no limitations on sizes for meshes - **use it at your own risk**.
 	
 It's pretty easy make a compatible file from blender, just export it as Wavefront OBJ and make sure to check the options for exporting normals, UVs and triangles.
 The mesh will be loaded into the game as it is, so you can use any size you want, but remember that bigger meshes will require more resources from the game and may cause performance issues.
