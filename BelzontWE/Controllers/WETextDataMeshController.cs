@@ -15,7 +15,6 @@ namespace BelzontWE
         public MultiUIValueBinding<string> SelectedFont { get; private set; }
         public MultiUIValueBinding<int> TextSourceType { get; private set; }
         public MultiUIValueBinding<string> ImageAtlasName { get; private set; }
-        public MultiUIValueBinding<string> CustomMeshName { get; private set; }
         public MultiUIValueBinding<bool> RescaleHeightOnTextOverflow { get; private set; }
         public MultiUIValueBinding<bool> ChildrenRefersToFrontFace { get; private set; }
 
@@ -50,19 +49,30 @@ namespace BelzontWE
         public MultiUIValueBinding<string[]> OffsetRotationFormulaeCompileResultErrorArgs { get; private set; }
 
 
+        public MultiUIValueBinding<string> CustomMeshName { get; private set; }
+        public MultiUIValueBinding<string> CustomMeshNameFormulaeStr { get; private set; }
+        public MultiUIValueBinding<int> CustomMeshNameFormulaeCompileResult { get; private set; }
+        public MultiUIValueBinding<string[]> CustomMeshNameFormulaeCompileResultErrorArgs { get; private set; }
+
+
         protected override void DoInitValueBindings(Action<string, object[]> EventCaller, Action<string, Delegate> CallBinder)
         {
             ValueText = new(default, $"{PREFIX}{nameof(ValueText)}", EventCaller, CallBinder);
             SelectedFont = new(default, $"{PREFIX}{nameof(SelectedFont)}", EventCaller, CallBinder);
             TextSourceType = new(default, $"{PREFIX}{nameof(TextSourceType)}", EventCaller, CallBinder);
             ImageAtlasName = new(default, $"{PREFIX}{nameof(ImageAtlasName)}", EventCaller, CallBinder);
-            CustomMeshName = new(default, $"{PREFIX}{nameof(CustomMeshName)}", EventCaller, CallBinder);
             RescaleHeightOnTextOverflow = new(default, $"{PREFIX}{nameof(RescaleHeightOnTextOverflow)}", EventCaller, CallBinder);
             ChildrenRefersToFrontFace = new(default, $"{PREFIX}{nameof(ChildrenRefersToFrontFace)}", EventCaller, CallBinder);
 
             ValueTextFormulaeStr = new(default, $"{PREFIX}{nameof(ValueTextFormulaeStr)}", EventCaller, CallBinder);
             ValueTextFormulaeCompileResult = new(default, $"{PREFIX}{nameof(ValueTextFormulaeCompileResult)}", EventCaller, CallBinder);
             ValueTextFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(ValueTextFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
+
+
+            CustomMeshName = new(default, $"{PREFIX}{nameof(CustomMeshName)}", EventCaller, CallBinder);
+            CustomMeshNameFormulaeStr = new(default, $"{PREFIX}{nameof(CustomMeshNameFormulaeStr)}", EventCaller, CallBinder);
+            CustomMeshNameFormulaeCompileResult = new(default, $"{PREFIX}{nameof(CustomMeshNameFormulaeCompileResult)}", EventCaller, CallBinder);
+            CustomMeshNameFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(CustomMeshNameFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
 
 
             MaxWidth = new(default, $"{PREFIX}{nameof(MaxWidth)}", EventCaller, CallBinder);
@@ -102,6 +112,8 @@ namespace BelzontWE
             MaxWidth.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float, WETextDataMesh>(x, (x, currentItem) => { currentItem.MaxWidthMeters.defaultValue = x; return currentItem; });
             SetupOnFormulaeChangedAction(PickerController, (ref WETextDataMesh data, string newFormulae, out string[] errorArgs) => data.MaxWidthMeters.SetFormulae(newFormulae, out errorArgs), MaxWidthFormulaeStr, MaxWidthFormulaeCompileResult, MaxWidthFormulaeCompileResultErrorArgs);
 
+            CustomMeshName.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.CustomMeshName.DefaultValue = x ?? ""; return currentItem; });
+            SetupOnFormulaeChangedAction(PickerController, (ref WETextDataMesh data, string newFormulae, out string[] errorArgs) => data.CustomMeshName.SetFormulae(newFormulae, out errorArgs), CustomMeshNameFormulaeStr, CustomMeshNameFormulaeCompileResult, CustomMeshNameFormulaeCompileResultErrorArgs);
 
             SelectedFont.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.FontName = FontServer.Instance.TryGetFont(x, out var data) ? data.Name : default(FixedString32Bytes); return currentItem; });
             ValueTextFormulaeStr.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { ValueTextFormulaeCompileResult.Value = currentItem.SetFormulae(x, out var cmpErr); ValueTextFormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
@@ -109,7 +121,6 @@ namespace BelzontWE
             ImageAtlasName.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
             RescaleHeightOnTextOverflow.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMesh>(x, (x, currentItem) => { currentItem.RescaleHeightOnTextOverflow = x; return currentItem; });
             ChildrenRefersToFrontFace.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMesh>(x, (x, currentItem) => { currentItem.childrenRefersToFrontFace = x; return currentItem; });
-            CustomMeshName.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.CustomMeshName = x ?? ""; return currentItem; });
 
         }
 
@@ -121,7 +132,6 @@ namespace BelzontWE
             ValueTextFormulaeStr.Value = mesh.ValueData.Formulae;
             TextSourceType.Value = (int)mesh.TextType;
             ImageAtlasName.Value = mesh.Atlas.ToString();
-            CustomMeshName.Value = mesh.CustomMeshName.ToString();
             RescaleHeightOnTextOverflow.Value = mesh.RescaleHeightOnTextOverflow;
             ChildrenRefersToFrontFace.Value = mesh.childrenRefersToFrontFace;
 
@@ -134,6 +144,9 @@ namespace BelzontWE
             ResetScreenFormulaeValue(mesh.OffsetPositionFormulae.Formulae, OffsetPositionFormulaeStr, OffsetPositionFormulaeCompileResult, OffsetPositionFormulaeCompileResultErrorArgs);
             OffsetRotation.Value = mesh.OffsetRotationFormulae.defaultValue;
             ResetScreenFormulaeValue(mesh.OffsetRotationFormulae.Formulae, OffsetRotationFormulaeStr, OffsetRotationFormulaeCompileResult, OffsetRotationFormulaeCompileResultErrorArgs);
+
+            CustomMeshName.Value = mesh.CustomMeshName.DefaultValue;
+            ResetScreenFormulaeValue(mesh.CustomMeshName.Formulae, CustomMeshNameFormulaeStr, CustomMeshNameFormulaeCompileResult, CustomMeshNameFormulaeCompileResultErrorArgs);
         }
     }
 }

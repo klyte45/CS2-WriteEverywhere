@@ -130,8 +130,8 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const is3dEditor = mesh.TextSourceType.value == WESimulationTextType.WhiteCube;
 
 
-    const formulaeModule = "mesh";
-    const formulaeField = "ValueText";
+    const valueFormulaeModule = "mesh";
+    const valueFormulaeField = "ValueText";
     const formulaeFieldOffsetPosition = "OffsetPosition";
     const formulaeFieldOffsetRotation = "OffsetRotation";
     const formulaeFieldScaler = "Scaler";
@@ -171,7 +171,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                     <ToggleField label={T_childrenRefersToFrontFace} value={mesh.ChildrenRefersToFrontFace.value} onChange={(x) => mesh.ChildrenRefersToFrontFace.set(x)} />
                 }
                 {mesh.TextSourceType.value == WESimulationTextType.Text && <>
-                    <FormulaeEditRow formulaeField="MaxWidth" formulaeModule={formulaeModule} label={T_maxWidth}
+                    <FormulaeEditRow formulaeField="MaxWidth" formulaeModule={valueFormulaeModule} label={T_maxWidth}
                         defaultInputField={<FloatInputStandalone className={editorStyle.input} min={.0} max={1000000} value={mesh.MaxWidth.value} onChange={x => mesh.MaxWidth.set(x)} />}
                     />
                     <ToggleField label={T_resizeHeightOnTextOverflow} value={mesh.RescaleHeightOnTextOverflow.value} onChange={(x) => mesh.RescaleHeightOnTextOverflow.set(x)} />
@@ -183,7 +183,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                             style={{ flexGrow: 1, width: "inherit" }}
                         />
                     </EditorItemRow>
-                    <FormulaeEditRow formulaeField={formulaeField} formulaeModule={formulaeModule} label={T_fixedText}
+                    <FormulaeEditRow formulaeField={valueFormulaeField} formulaeModule={valueFormulaeModule} label={T_fixedText}
                         defaultInputField={<StringInputField
                             value={fixedTextTyping}
                             onChange={(x) => { setFixedTextTyping(x) }}
@@ -195,14 +195,12 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                         />} />
                 </>}
                 {mesh.TextSourceType.value == WESimulationTextType.Image && <>
-                    <EditorItemRow label={T_mesh}>
-                        <DropdownField
-                            value={mesh.CustomMeshName.value}
-                            items={meshes}
-                            onChange={(x) => mesh.CustomMeshName.set(x)}
-                            style={{ flexGrow: 1, width: "inherit" }}
-                        />
-                    </EditorItemRow>
+                    <FormulaeEditRow formulaeField={'CustomMeshName'} formulaeModule={valueFormulaeModule} label={T_mesh} defaultInputField={<DropdownField
+                        value={mesh.CustomMeshName.value}
+                        items={meshes}
+                        onChange={(x) => mesh.CustomMeshName.set(x)}
+                        style={{ flexGrow: 1, width: "inherit" }}
+                    />} />
                     <EditorItemRow label={T_atlas}>
                         <DropdownField
                             value={mesh.ImageAtlasName.value}
@@ -211,7 +209,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                             style={{ flexGrow: 1, width: "inherit" }}
                         />
                     </EditorItemRow>
-                    <FormulaeEditRow formulaeField={formulaeField} formulaeModule={formulaeModule} label={T_image} defaultInputField={<DropdownField
+                    <FormulaeEditRow formulaeField={valueFormulaeField} formulaeModule={valueFormulaeModule} label={T_image} defaultInputField={<DropdownField
                         value={mesh.ValueText.value}
                         items={imgOptions?.map(x => { return { displayName: { __Type: LocElementType.String, value: x || "<DEFAULT>" }, value: x } })}
                         onChange={(x) => mesh.ValueText.set(x)}
@@ -236,19 +234,19 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                 </>}
                 {mesh.TextSourceType.value == WESimulationTextType.MatrixTransform &&
                     <>
-                        <FormulaeEditRow formulaeField={formulaeFieldOffsetPosition} formulaeModule={formulaeModule} label={T_offsetPosition} defaultInputField={
+                        <FormulaeEditRow formulaeField={formulaeFieldOffsetPosition} formulaeModule={valueFormulaeModule} label={T_offsetPosition} defaultInputField={
                             <FocusDisabled>
                                 <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorStyle.input} value={mesh.OffsetPosition.value[0]} onChange={(x) => mesh.OffsetPosition.set([x, mesh.OffsetPosition.value[1], mesh.OffsetPosition.value[2]])} />
                                 <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorStyle.input} value={mesh.OffsetPosition.value[1]} onChange={(x) => mesh.OffsetPosition.set([mesh.OffsetPosition.value[0], x, mesh.OffsetPosition.value[2]])} />
                                 <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorStyle.input} value={mesh.OffsetPosition.value[2]} onChange={(x) => mesh.OffsetPosition.set([mesh.OffsetPosition.value[0], mesh.OffsetPosition.value[1], x])} />
                             </FocusDisabled>} />
-                        <FormulaeEditRow formulaeField={formulaeFieldOffsetRotation} formulaeModule={formulaeModule} label={T_offsetRotation} defaultInputField={
+                        <FormulaeEditRow formulaeField={formulaeFieldOffsetRotation} formulaeModule={valueFormulaeModule} label={T_offsetRotation} defaultInputField={
                             <FocusDisabled>
                                 <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorStyle.input} value={mesh.OffsetRotation.value[0]} onChange={(x) => mesh.OffsetRotation.set([x, mesh.OffsetRotation.value[1], mesh.OffsetRotation.value[2]])} />
                                 <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorStyle.input} value={mesh.OffsetRotation.value[1]} onChange={(x) => mesh.OffsetRotation.set([mesh.OffsetRotation.value[0], x, mesh.OffsetRotation.value[2]])} />
                                 <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorStyle.input} value={mesh.OffsetRotation.value[2]} onChange={(x) => mesh.OffsetRotation.set([mesh.OffsetRotation.value[0], mesh.OffsetRotation.value[1], x])} />
                             </FocusDisabled>} />
-                        <FormulaeEditRow formulaeField={formulaeFieldScaler} formulaeModule={formulaeModule} label={T_scaleByAxis} defaultInputField={
+                        <FormulaeEditRow formulaeField={formulaeFieldScaler} formulaeModule={valueFormulaeModule} label={T_scaleByAxis} defaultInputField={
                             <FocusDisabled>
                                 <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorStyle.input} min={0} max={999} value={mesh.Scaler.value[0]} onChange={(x) => mesh.Scaler.set([x, mesh.Scaler.value[1], mesh.Scaler.value[2]])} />
                                 <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorStyle.input} min={0} max={999} value={mesh.Scaler.value[1]} onChange={(x) => mesh.Scaler.set([mesh.Scaler.value[0], x, mesh.Scaler.value[2]])} />

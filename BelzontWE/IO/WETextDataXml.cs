@@ -2,6 +2,7 @@
 using Belzont.Utils;
 using Colossal.OdinSerializer.Utilities;
 using Colossal.Serialization.Entities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -117,11 +118,11 @@ namespace BelzontWE
                     dictAtlases.Add(targetAtlas);
                     imageMesh.atlas = $"{modId}:{targetAtlas}";
                 }
-                if (imageMesh.mesh.TrimToNull() != null && (imageMesh.mesh.StartsWith($"{modId}:") || !imageMesh.mesh.Contains(":")))
+                if (imageMesh.mesh.defaultValue.TrimToNull() != null && imageMesh.mesh.formulae.TrimToNull() is null && (imageMesh.mesh.defaultValue.StartsWith($"{modId}:") || !imageMesh.mesh.defaultValue.Contains(":")))
                 {
-                    var targetMesh = imageMesh.mesh.Split(":").Last();
+                    var targetMesh = imageMesh.mesh.defaultValue.Split(":").Last();
                     dictMeshes.Add(targetMesh);
-                    imageMesh.mesh = $"{modId}:{targetMesh}";
+                    imageMesh.mesh.defaultValue = $"{modId}:{targetMesh}";
                 }
             }
             else if (textMesh != null && textMesh.fontName.TrimToNull() != null && (textMesh.fontName.StartsWith($"{modId}:") || !textMesh.fontName.Contains(":")))
@@ -363,17 +364,27 @@ namespace BelzontWE
         }
         public class MeshDataImageXml : ISerializable
         {
-            private const int CURRENT_VERSION = 1;
+            private const int CURRENT_VERSION = 2;
             [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.Image;
             [XmlAttribute] public string atlas;
-            [XmlAttribute][DefaultValue("")] public string mesh = "";
+            [XmlAttribute("mesh")]
+            [DefaultValue("")]
+            public string meshAttribute
+            {
+                set
+                {
+                    mesh.defaultValue = value;
+                }
+                get => null;
+            }
+            [XmlElement] public FormulaeStringXml mesh = new();
             [XmlElement] public FormulaeStringXml image;
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
                 writer.Write(CURRENT_VERSION);
                 writer.Write(atlas ?? "");
                 writer.WriteNullCheck(image);
-                writer.Write(mesh ?? "");
+                writer.WriteNullCheck(mesh);
             }
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
             {
@@ -385,13 +396,21 @@ namespace BelzontWE
                 }
                 reader.Read(out atlas);
                 reader.ReadNullCheck(out image);
-                if (version >= 1)
+                if (version == 1)
                 {
-                    reader.Read(out mesh);
+                    reader.Read(out string meshName);
+                    mesh = new FormulaeStringXml
+                    {
+                        defaultValue = meshName
+                    };
+                }
+                else if (version >= 2)
+                {
+                    reader.ReadNullCheck(out mesh);
                 }
                 else
                 {
-                    mesh = "";
+                    mesh = new();
                 }
             }
         }

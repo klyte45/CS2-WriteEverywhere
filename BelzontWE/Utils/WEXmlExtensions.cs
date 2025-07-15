@@ -168,7 +168,7 @@ namespace BelzontWE.Utils
             => new()
             {
                 atlas = value.Atlas.ToString(),
-                mesh = value.CustomMeshName.ToString(),
+                mesh = value.CustomMeshName.ToXml(),
                 image = value.ValueData.ToXml(),
             };
         public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataImageXml value)
@@ -176,7 +176,7 @@ namespace BelzontWE.Utils
             {
                 Atlas = value.atlas ?? "",
                 originalName = $"{value.atlas}",
-                CustomMeshName = value.mesh ?? "",
+                CustomMeshName = value.mesh?.ToComponent() ?? default,
                 ValueData = value.image?.ToComponent() ?? default,
                 TextType = value.textType
             };
@@ -202,7 +202,8 @@ namespace BelzontWE.Utils
             };
 
         public static WETextDataXml.MeshDataWhiteCubeXml ToWhiteCubeXml(this WETextDataMesh value)
-            => new() {
+            => new()
+            {
                 childrenRefersToFrontFace = value.childrenRefersToFrontFace
             };
         public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataWhiteCubeXml value)

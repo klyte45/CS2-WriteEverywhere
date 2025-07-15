@@ -203,9 +203,9 @@ namespace BelzontWE
             {
                 if (m_templateUpdaterLkp.HasBuffer(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
                 IBasicRenderInformation bri = null;
-                if (!weCustomData.CustomMeshName.IsEmpty)
+                if (!weCustomData.CustomMeshName.EffectiveValue.IsEmpty)
                 {
-                    bri = WECustomMeshLibrary.Instance.GetMesh(weCustomData.CustomMeshName.ToString(), weCustomData.Atlas.ToString(), text);
+                    bri = WECustomMeshLibrary.Instance.GetMesh(weCustomData.CustomMeshName.EffectiveValue.ToString(), weCustomData.Atlas.ToString(), text);
                 }
                 bri ??= WEAtlasesLibrary.Instance.GetFromAvailableAtlases(weCustomData.Atlas.ToString(), text, true);
                 if (bri == null)
@@ -213,7 +213,7 @@ namespace BelzontWE
                     if (BasicIMod.TraceMode) LogUtils.DoTraceLog("IMAGE BRI STILL NULL!!!");
                     return false;
                 }
-                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Image returned: {bri} {text} (a={weCustomData.Atlas}, m={weCustomData.CustomMeshName})");
+                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Image returned: {bri} {text} (a={weCustomData.Atlas}, m={weCustomData.CustomMeshName.EffectiveValue})");
                 weCustomData = weCustomData.UpdateBRI(bri, text);
                 return true;
             }

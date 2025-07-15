@@ -17,7 +17,6 @@ namespace BelzontWE
         private FixedString64Bytes atlas;
         public FixedString128Bytes originalName;
         private FixedString64Bytes fontName;
-        private FixedString64Bytes customMeshName;
         internal ushort lastUpdateModReplacements;
         private WETextDataValueString valueData;
         private bool dirty;
@@ -42,7 +41,7 @@ namespace BelzontWE
         public WETextDataValueFloat3 ScaleFormulae;
         public FixedString64Bytes Atlas { readonly get => atlas; set { atlas = value; templateDirty = dirty = true; } }
         public FixedString64Bytes FontName { readonly get => fontName; set { fontName = value; templateDirty = dirty = true; } }
-        public FixedString64Bytes CustomMeshName { readonly get => customMeshName; set { customMeshName = value; templateDirty = dirty = true; } }
+        public WETextDataValueString CustomMeshName;
         public WETextDataValueString ValueData { readonly get => valueData; set => valueData = value; }
         public int MinLod { get; set; }
         public float3 LodReferenceScale { get; set; }
@@ -129,7 +128,7 @@ namespace BelzontWE
 
         public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr, bool force = false)
         {
-            if (HasBRI && (basicRenderInformation.Target is not IBasicRenderInformation))
+            if (HasBRI && (basicRenderInformation.Target is not IBasicRenderInformation ibri || !ibri.IsValid()))
             {
                 basicRenderInformation.Free();
                 basicRenderInformation = default;
@@ -158,7 +157,7 @@ namespace BelzontWE
                             result = true;
                         }
                     }
-                    result |= valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.IsError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString(), vars);
+                    result |= CustomMeshName.UpdateEffectiveValue(em, geometryEntity, vars) | valueData.UpdateEffectiveValue(em, geometryEntity, (RenderInformation?.IsError ?? false) ? LastErrorStr.ToString() : valueData.EffectiveValue.ToString(), vars);
                     break;
                 case WESimulationTextType.Placeholder:
                     if (originalName.Length > 0 && lastUpdateModReplacements != WETemplateManager.Instance.SpritesAndLayoutsDataVersion)
