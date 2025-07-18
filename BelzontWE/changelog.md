@@ -1,4 +1,9 @@
-# v0.4.0 (13-JUL-25)
+# v0.4.0r1 (18-JUL-25)
+
+- Added new bridge for custom mesh management
+- Added a new tag for prefab layouts: `<hideMesh>N</hideMesh>` - `N` shall be a number indicating a mesh index from the original prefab that will be hidden, it's the same number shown at editor.
+
+## FROM v0.4.0 (13-JUL-25)
 
 - Added support to custom meshes import:
   - Add meshes as `obj` files at objMeshes folder. They shall have **vertices, normals, uv and triangles**, and must contain just one mesh
