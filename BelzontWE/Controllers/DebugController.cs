@@ -13,6 +13,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
+using static BelzontWE.Utils.WEMaterialUtils;
 namespace BelzontWE.Controllers
 {
     public partial class DebugController : SystemBase, IBelzontBindable
@@ -35,22 +36,14 @@ namespace BelzontWE.Controllers
             eventCaller($"{PREFIX}createSpecialMeshBRI", CreateSpecialMeshBRI);
         }
 
-        public class PropertyDescriptor
-        {
-            public string Name { get; set; }
-            public int Idx { get; set; }
-            public int Id { get; set; }
-            public string Description { get; set; }
-            public string Type { get; set; }
-            public string Value { get; set; }
-        }
+      
 
         private void CreateSpecialMeshBRI(Entity targetEntity, string meshLocation)
         {
             if (!EntityManager.TryGetComponent<WETextDataMesh>(targetEntity, out var meshData)) return;
             try
             {
-                var parsedMesh = ObjImporter.ImportFromObj(meshLocation);
+                var parsedMesh = ObjFileHandler.ImportFromObj(meshLocation);
                 WEAtlasesLibrary.Instance.TryGetAtlas(meshData.Atlas.ToString(), out var atlasInfo);
                 var spriteInfo = atlasInfo.Sprites[meshData.Text];
                 var dimensions = new float2(atlasInfo.Width, atlasInfo.Height);
@@ -77,95 +70,13 @@ namespace BelzontWE.Controllers
                     EntityManager.SetComponentData(targetEntity, meshData);
                     EntityManager.SetComponentData(targetEntity, mainData);
                 }
-                var propertyCount = mat.shader.GetPropertyCount();
-                var listResult = new List<PropertyDescriptor>
-                {
-                    new()
-                    {
-                        Name = "<RenderQueue>",
-                        Idx = -1,
-                        Id= -1,
-                        Description="Render queue index",
-                        Type= "<RenderQueue>",
-                        Value = mat.renderQueue.ToString()
-                    }
-                };
-                for (int i = 0; i < propertyCount; i++)
-                {
-                    int nameID = mat.shader.GetPropertyNameId(i);
-                    var name = mat.shader.GetPropertyName(i);
-                    ShaderPropertyType shaderPropertyType = mat.shader.GetPropertyType(i);
-                    listResult.Add(new()
-                    {
-                        Idx = i,
-                        Name = name,
-                        Id = nameID,
-                        Description = mat.shader.GetPropertyDescription(i),
-                        Type = shaderPropertyType.ToString(),
-                        Value = shaderPropertyType switch
-                        {
-                            ShaderPropertyType.Color => mat.GetColor(name).ToRGBA(),
-                            ShaderPropertyType.Vector => mat.GetVector(name).ToString()[1..^1].Trim(),
-                            ShaderPropertyType.Float or ShaderPropertyType.Range => GetFloatVal(mat, name),
-                            ShaderPropertyType.Texture => ReadTexture(mat, name),
-                            ShaderPropertyType.Int => mat.GetInt(name).ToString(),
-                            _ => null
-                        }
-                    });
-                }
-                foreach (var keyword in mat.shader.keywordSpace.keywords)
-                {
-                    listResult.Add(new()
-                    {
-                        Idx = -2,
-                        Name = keyword.ToString(),
-                        Id = -2,
-                        Description = keyword.type.ToString(),
-                        Type = "Keyword",
-                        Value = mat.enabledKeywords.Any(x => x == keyword).ToString()
-                    });
-                }
-                for (var i = 0; i < mat.passCount; i++)
-                {
-                    var passName = mat.GetPassName(i);
-                    listResult.Add(new()
-                    {
-                        Idx = -3,
-                        Name = passName,
-                        Id = -3,
-                        Description = passName,
-                        Type = "ShaderPass",
-                        Value = mat.GetShaderPassEnabled(passName).ToString()
-                    });
-                }
-                return listResult;
+                return ListPropertiesFromMaterial(mat);
             }
             return null;
         }
 
-        private static string GetFloatVal(Material mat, string name)
-        {
-            if (name != "colossal_DecalLayerMask")
-            {
-                return mat.GetFloat(name).ToString();
-            }
-            else
-            {
-                return "0x" + math.asint(mat.GetFloat(name)).ToString("X8");
-            }
-        }
+        
 
-        private static string ReadTexture(Material mat, string name)
-        {
-            try
-            {
-                return mat.GetTexture(name) is Texture2D t2d ? Convert.ToBase64String(ImageConversion.EncodeToPNG(t2d)) : null;
-            }
-            catch
-            {
-                return "Unreadable";
-            }
-        }
 
         private string SetCurrentMaterialSettings(Entity targetEntity, string propertyIdxStr, string value)
         {

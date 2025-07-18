@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using Unity.Mathematics;
 using UnityEngine;
-using static BelzontWE.IO.ObjImporter;
+using static BelzontWE.IO.ObjFileHandler;
 
 namespace BelzontWE
 {

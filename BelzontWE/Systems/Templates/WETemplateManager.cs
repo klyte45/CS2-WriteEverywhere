@@ -6,6 +6,7 @@ using Colossal.Entities;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.Common;
+using Game.Objects;
 using Game.Prefabs;
 using Game.Rendering;
 using Game.SceneFlow;
@@ -61,6 +62,7 @@ namespace BelzontWE
         private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
         private bool m_templatesDirty;
+        public Entity PrefabUpdateSource { get; private set; } = Entity.Null;
 
         private Dictionary<string, Dictionary<string, WETextDataXmlTree>> ModsSubTemplates { get; } = new();
 
@@ -231,6 +233,7 @@ namespace BelzontWE
             PrefabTemplates = new();
             m_prefabSystem = World.GetExistingSystemManaged<PrefabSystem>();
             m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
+            PrefabUpdateSource = EntityManager.CreateEntity();
             m_templateBasedEntities = GetEntityQuery(new EntityQueryDesc[]
               {
                     new ()
@@ -790,6 +793,7 @@ namespace BelzontWE
         public void MarkPrefabsDirty() => isPrefabListDirty = true;
         public void MarkTemplatesDirty() => m_templatesDirty = true;
         private readonly Dictionary<string, HashSet<long>> PrefabNameToIndex = new();
+        private Dictionary<(string prefabName, int meshIdx), ObjectState> MeshesHidden = new();
         private bool isPrefabListDirty = true;
 
         public int CanBePrefabLayout(WETextDataXmlTree data) => CanBePrefabLayout(data, true);
@@ -885,6 +889,8 @@ namespace BelzontWE
 
         private IEnumerator LoadTemplatesFromFolder(int offsetPercentage, float totalStepFull, string modName = null)
         {
+            var prefabs = PrefabSystemOverrides.LoadedPrefabBaseList(m_prefabSystem);
+            var prefabsToUpdate = new List<PrefabBase>();
             var totalStepPrefabTemplates = modName is null ? totalStepFull : totalStepFull * .7f;
             KFileUtils.EnsureFolderCreation(SAVED_PREFABS_FOLDER);
             var currentValues = PrefabTemplates.Keys.ToArray();
@@ -906,6 +912,23 @@ namespace BelzontWE
                     }
                 }
                 PrefabTemplates.Clear();
+                foreach (var x in MeshesHidden)
+                {
+                    foreach (var y in PrefabNameToIndex[x.Key.prefabName])
+                    {
+                        switch (prefabs[(int)y])
+                        {
+                            case ObjectGeometryPrefab ogp:
+                                if (x.Key.meshIdx < ogp.m_Meshes.Length)
+                                {
+                                    ogp.m_Meshes[x.Key.meshIdx].m_RequireState = x.Value;
+                                }
+                                prefabsToUpdate.Add(ogp);
+                                break;
+                        }
+                    }
+                }
+                MeshesHidden.Clear();
             }
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.11f * totalStepPrefabTemplates)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.searchingForFiles");
             yield return 0;
@@ -943,6 +966,32 @@ namespace BelzontWE
                     });
                 });
             }
+            var meshesToHide = MeshesHidden.Keys.ToArray();
+            foreach (var key in meshesToHide)
+            {
+                if (MeshesHidden[key] != 0) continue;
+                foreach (var prefabIdx in PrefabNameToIndex[key.prefabName])
+                {
+                    switch (prefabs[(int)prefabIdx])
+                    {
+                        case ObjectGeometryPrefab ogp:
+                            if (key.meshIdx < ogp.m_Meshes.Length)
+                            {
+                                MeshesHidden[key] = ogp.m_Meshes[key.meshIdx].m_RequireState;
+                                ogp.m_Meshes[key.meshIdx].m_RequireState = ObjectState.Outline;
+                            }
+
+                            prefabsToUpdate.Add(ogp);
+                            break;
+                    }
+                }
+            }
+
+            foreach (var prefab in prefabsToUpdate)
+            {
+                m_prefabSystem.UpdatePrefab(prefab, PrefabUpdateSource);
+            }
+
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + totalStepPrefabTemplates), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingComplete");
             m_endFrameBarrier.CreateCommandBuffer().AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty, EntityQueryCaptureMode.AtPlayback);
         }
@@ -999,6 +1048,16 @@ namespace BelzontWE
                     else
                     {
                         PrefabTemplates[idx] = tree;
+                    }
+                }
+                if (tree.MeshesToHide?.Length > 0)
+                {
+                    foreach (var x in tree.MeshesToHide)
+                    {
+                        if (!MeshesHidden.ContainsKey((prefabName, x)))
+                        {
+                            MeshesHidden[(prefabName, x)] = default;
+                        }
                     }
                 }
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {tree} from {fileItem[SAVED_PREFABS_FOLDER.Length..]}");

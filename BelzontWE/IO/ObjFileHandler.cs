@@ -2,12 +2,14 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 
 namespace BelzontWE.IO
 {
-    public static class ObjImporter
+    public static class ObjFileHandler
     {
         private static CultureInfo convertCulture = new System.Globalization.CultureInfo("en");
         public class WEMeshDescriptor
@@ -131,6 +133,36 @@ namespace BelzontWE.IO
                 LogUtils.DoWarnLog($"Failed to import OBJ file: {ex.Message}\n{ex}");
             }
             return mesh;
+        }
+
+        public static void ExportToObj(Mesh mesh, string path)
+        {
+            StringBuilder sb = new();
+            foreach (Vector3 v in mesh.vertices)
+            {
+                sb.Append(string.Format("v {0} {1} {2}\n", v.x.ToString(convertCulture), v.y.ToString(convertCulture), v.z.ToString(convertCulture)));
+            }
+            foreach (Vector3 v in mesh.normals)
+            {
+                sb.Append(string.Format("vn {0} {1} {2}\n", v.x.ToString(convertCulture), v.y.ToString(convertCulture), v.z.ToString(convertCulture)));
+            }
+            foreach (Vector2 v in mesh.uv)
+            {
+                sb.Append(string.Format("vt {0} {1}\n", v.x.ToString(convertCulture), v.y.ToString(convertCulture)));
+            }
+            for (int material = 0; material < mesh.subMeshCount; material++)
+            {
+                sb.Append(string.Format("\ns mat{0}\n", material));
+                int[] triangles = mesh.GetTriangles(material);
+                for (int i = 0; i < triangles.Length; i += 3)
+                {
+                    sb.Append(string.Format("f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}\n",
+                    triangles[i] + 1,
+                    triangles[i + 1] + 1,
+                    triangles[i + 2] + 1));
+                }
+            }
+            File.WriteAllText(path, sb.ToString());
         }
     }
 }

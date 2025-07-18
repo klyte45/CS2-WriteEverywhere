@@ -14,7 +14,7 @@ using System.Linq;
 using System.Reflection;
 using Unity.Mathematics;
 using UnityEngine;
-using static BelzontWE.IO.ObjImporter;
+using static BelzontWE.IO.ObjFileHandler;
 
 namespace BelzontWE
 {
@@ -66,7 +66,7 @@ namespace BelzontWE
                 LogUtils.DoWarnLog($"Mesh file '{objPath}' does not exist for mod identified by '{modId}' mesh '{meshName}' ({mainAssembly.GetName().Name})");
                 return false;
             }
-            var mesh = ObjImporter.ImportFromObj(objPath);
+            var mesh = ObjFileHandler.ImportFromObj(objPath);
             if (mesh == null)
             {
                 LogUtils.DoWarnLog($"Failed to load mesh from {objPath} for mod identified by '{modId}' mesh '{meshName}' ({mainAssembly.GetName().Name})");
@@ -227,7 +227,7 @@ namespace BelzontWE
                 yield return 0;
                 try
                 {
-                    var mesh = ObjImporter.ImportFromObj(file);
+                    var mesh = ObjFileHandler.ImportFromObj(file);
                     if (mesh == null)
                     {
                         errors.Add($"Failed to load mesh from {file}");

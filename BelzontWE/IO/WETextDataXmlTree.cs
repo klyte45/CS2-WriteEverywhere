@@ -29,6 +29,10 @@ namespace BelzontWE
         [XmlElement("metadata")]
         public WEXmlMetadata[] metadatas = new WEXmlMetadata[0];
 
+
+        [XmlElement("hideMesh")]
+        public int[] MeshesToHide = new int[0];
+
         public bool ShouldSerializechildren() => self.layoutMesh is null;
 
         internal string ModSource { get; set; }

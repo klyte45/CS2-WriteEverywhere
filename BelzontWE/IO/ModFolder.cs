@@ -5,4 +5,5 @@
         public string Location;
         public string ModName;
     }
+
 }
