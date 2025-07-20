@@ -1,6 +1,5 @@
 ﻿using Belzont.Utils;
 using BelzontWE.Sprites;
-using Colossal.OdinSerializer.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -85,7 +84,7 @@ namespace BelzontWE.Layout
             return null;
         }
 
-        public static WEImageInfo CreateFromBaseImageFile(List<string> errors, string imgFile)
+        public static WEImageInfo CreateFromBaseImageFile(Action<string, string> onError, string imgFile)
         {
             if (!imgFile.EndsWith(".png")) return null;
             if (excludeFileSuffixes.Any(x => imgFile.EndsWith(x))) return null;
@@ -114,13 +113,13 @@ namespace BelzontWE.Layout
                 }
                 else
                 {
-                    errors.Add($"{Path.GetFileName(imgFile)}: IMAGE TOO LARGE (max: {MAX_SIZE_IMAGE_IMPORT}x{MAX_SIZE_IMAGE_IMPORT}, have: {tex.width}x{tex.height})");
+                    onError(string.Join(Path.DirectorySeparatorChar, imgFile.Split(Path.DirectorySeparatorChar)[^2..]), $"IMAGE TOO LARGE (max: {MAX_SIZE_IMAGE_IMPORT}x{MAX_SIZE_IMAGE_IMPORT}, have: {tex.width}x{tex.height})");
                     GameObject.Destroy(tex);
                 }
             }
             else
             {
-                errors.Add($"{Path.GetFileName(imgFile)}: FAILED LOADING IMAGE");
+                onError(string.Join(Path.DirectorySeparatorChar, imgFile.Split(Path.DirectorySeparatorChar)[^2..]), "FAILED LOADING IMAGE");
                 GameObject.Destroy(tex);
             }
             return null;

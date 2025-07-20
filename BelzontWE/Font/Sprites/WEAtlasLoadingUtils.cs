@@ -1,4 +1,5 @@
 ﻿using BelzontWE.Layout;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -7,20 +8,20 @@ namespace BelzontWE.Sprites
 {
     public static class WEAtlasLoadingUtils
     {
-        internal static void LoadAllImagesFromFolderRef(string folder, List<WEImageInfo> spritesToAdd, List<string> errors)
+        internal static void LoadAllImagesFromFolderRef(string folder, List<WEImageInfo> spritesToAdd, Action<string, string> onError)
         {
             foreach (var imgFile in Directory.GetFiles(folder, "*.png"))
             {
-                var info = WEImageInfo.CreateFromBaseImageFile(errors, imgFile);
+                var info = WEImageInfo.CreateFromBaseImageFile(onError, imgFile);
                 if (info != null) spritesToAdd.Add(info);
             }
         }
 
-        internal static void LoadAllImagesFromList(string[] files, List<WEImageInfo> spritesToAdd, List<string> errors)
+        internal static void LoadAllImagesFromList(string[] files, List<WEImageInfo> spritesToAdd, Action<string, string> onError)
         {
             foreach (var imgFile in files)
             {
-                var info = WEImageInfo.CreateFromBaseImageFile(errors, imgFile);
+                var info = WEImageInfo.CreateFromBaseImageFile(onError, imgFile);
                 if (info != null) spritesToAdd.Add(info);
             }
         }
@@ -45,7 +46,7 @@ namespace BelzontWE.Sprites
             }
             else
             {
-                Object.Destroy(tex);
+                GameObject.Destroy(tex);
                 return null;
             }
         }
@@ -59,7 +60,7 @@ namespace BelzontWE.Sprites
             }
             else
             {
-                Object.Destroy(tex);
+                GameObject.Destroy(tex);
                 return null;
             }
         }

@@ -10,6 +10,7 @@ using Game;
 using Game.Common;
 using Game.SceneFlow;
 using Game.Tools;
+using Game.UI;
 using Game.UI.Localization;
 using System;
 using System.Collections;
@@ -34,6 +35,7 @@ namespace BelzontWE.Sprites
         public static string IMAGES_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "imageAtlases");
         public static string ATLAS_EXPORT_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "exportedAtlases");
         private const string GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID = "generatingAtlasesCache";
+        private const string ERRORS_IMAGE_ATLAS_NOTIFICATION_ID = "errorLoadingAtlasesCache";
 
         public static WEAtlasesLibrary Instance { get; private set; }
         private readonly Queue<Action> actionQueue = new();
@@ -145,7 +147,7 @@ namespace BelzontWE.Sprites
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 0);
             yield return 0;
             ClearAtlasDict(LocalAtlases);
-            var errors = new List<string>();
+            var errors = new Dictionary<string, string>();
             var folders = Directory.GetDirectories(IMAGES_FOLDER);
             for (int i = 0; i < folders.Length; i++)
             {
@@ -158,7 +160,7 @@ namespace BelzontWE.Sprites
                 NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * i / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
                 yield return 0;
                 var spritesToAdd = new List<WEImageInfo>();
-                WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, errors);
+                WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, (img, msg) => errors[img] = msg);
                 RegisterLocalAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25);
             }
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
@@ -181,10 +183,32 @@ namespace BelzontWE.Sprites
             LocalAtlases[INTERNAL_ATLAS_NAME].Apply();
             if (errors.Count > 0)
             {
-                for (var i = 0; i < errors.Count; i++)
+                foreach (var error in errors)
                 {
-                    LogUtils.DoWarnLog($"Error loading WE atlases: {errors[i]}");
+                    LogUtils.DoWarnLog($"Error loading WE image '{error.Key}': {error.Value}");
                 }
+                NotificationHelper.NotifyWithCallback(ERRORS_IMAGE_ATLAS_NOTIFICATION_ID, Colossal.PSI.Common.ProgressState.Warning, () =>
+                {
+                    var dialog2 = new MessageDialog(
+                        LocalizedString.Id(NotificationHelper.GetModDefaultNotificationTitle(ERRORS_IMAGE_ATLAS_NOTIFICATION_ID)),
+                        LocalizedString.Id("K45::WE.ATLAS_MANAGER[errorDialogHeader]"),
+                        LocalizedString.Value(string.Join("\n", errors.Select(x => $"{x.Key}: {x.Value}"))),
+                        true,
+                        LocalizedString.Id("Common.OK"),
+                        LocalizedString.Id(BasicIMod.ModData.FixLocaleId(BasicIMod.ModData.GetOptionLabelLocaleID(nameof(BasicModData.GoToLogFolder))))
+                        );
+                    GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog2, (x) =>
+                    {
+                        switch (x)
+                        {
+                            case 2:
+                                BasicIMod.ModData.GoToLogFolder = true;
+                                break;
+                        }
+                        NotificationHelper.RemoveNotification(ERRORS_IMAGE_ATLAS_NOTIFICATION_ID);
+                    });
+                });
+
             }
             if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded atlases: {string.Join(", ", LocalAtlases.Select(x => x.Key))}");
 
@@ -210,7 +234,7 @@ namespace BelzontWE.Sprites
         internal void LoadImagesToAtlas(Assembly mainAssembly, string atlasName, string[] imagePaths, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args)
         {
             var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
-            EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, errors));
+            EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, (img, msg) => errors.Add($"{img}: {msg}")));
         }
 
         internal void LoadImagesAsDynamicAtlas(Assembly mainAssembly, string atlasName,

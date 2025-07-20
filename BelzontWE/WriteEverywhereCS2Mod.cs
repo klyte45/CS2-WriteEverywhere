@@ -29,6 +29,9 @@ namespace BelzontWE
             updateSystem.UpdateAt<WECustomMeshLibrary>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateManager>(SystemUpdatePhase.Rendering);
 
+            updateSystem.UpdateAt<WENodeExtraDataUpdater2B>(SystemUpdatePhase.Modification2B);
+            updateSystem.UpdateAt<WENodeExtraDataUpdater>(SystemUpdatePhase.Rendering);
+
             updateSystem.UpdateAt<WEPreRendererSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateAfter<WERendererSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateAfter<WEPostRendererSystem>(SystemUpdatePhase.MainLoop);

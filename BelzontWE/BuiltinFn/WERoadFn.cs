@@ -1,109 +1,96 @@
-﻿using Colossal.Entities;
+﻿using Belzont.Utils;
+using Colossal.Entities;
 using Game;
-using Game.City;
 using Game.Common;
 using Game.Net;
-using Belzont.Utils;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.Entities;
 using Unity.Mathematics;
-using UnityEngine;
 using Transform = Game.Objects.Transform;
 
 namespace BelzontWE.Builtin
 {
     public static class WERoadFn
     {
-        public interface ICacheComponent
+        public struct WENodeElementCache : IComponentData
         {
-            Entity CachedValue { set; get; }
-            int RefChecksum { get; set; }
-            byte NodeIdx { get; set; }
-            Entity PrevValue { get; set; }
-            Entity NextValue { get; set; }
+            public byte ExtraDataBelongingIdx { get; set; }
+            public Colossal.Hash128 VersionHash { get; set; }
+            public byte ExtraDataBelongingSideIdx { get; set; }
         }
-        public struct WECachedGetRoadSegmentOfSubProp : IComponentData, ICacheComponent
-        {
-            public Entity CachedValue { get; set; }
-            public int RefChecksum { get; set; }
-            public byte NodeIdx { get; set; }
-            public Entity PrevValue { get; set; }
-            public Entity NextValue { get; set; }
-        }
-        public struct WECachedGetRoadSegmentOfSubProp180 : IComponentData, ICacheComponent
-        {
-            public Entity CachedValue { get; set; }
-            public int RefChecksum { get; set; }
-            public byte NodeIdx { get; set; }
-            public Entity PrevValue { get; set; }
-            public Entity NextValue { get; set; }
-        }
-        //&BelzontWE.Builtin.WERoadFn;GetRoadSegmentCrossingDataByPropAngle180.CachedValue/&BelzontWE.Builtin.WERoadFn;GetRoadAggregation/&BelzontWE.Builtin.WEUtitlitiesFn;GetEntityName
-        private static EndFrameBarrier m_barrier;
-        private static EndFrameBarrier Barrier => m_barrier ??= World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<EndFrameBarrier>();
-        private static CityConfigurationSystem m_cityConf;
-        private static CityConfigurationSystem CityConfiguration => m_cityConf ??= World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<CityConfigurationSystem>();
 
-        public static ICacheComponent GetRoadSegmentCrossingDataByPropAngle(Entity reference) => GetReferenceRoadSegmentByAngle<WECachedGetRoadSegmentOfSubProp>(reference, false);
-        public static ICacheComponent GetRoadSegmentCrossingDataByPropAngle180(Entity reference) => GetReferenceRoadSegmentByAngle<WECachedGetRoadSegmentOfSubProp180>(reference, true);
-        public static Entity GetNextRoadSegmentOfSubPropByAngle(ICacheComponent cache) => CityConfiguration.leftHandTraffic ? cache.PrevValue : cache.NextValue;
-        public static Entity GetPrevRoadSegmentOfSubPropByAngle(ICacheComponent cache) => CityConfiguration.leftHandTraffic ? cache.NextValue : cache.PrevValue;
-        public static Entity GetCrossingRoad(ICacheComponent cache)
+        public static WENodeElementCache GetNodePropData(Entity reference) => GetRoadCache(reference, Identity);
+        public static WENodeExtraDataUpdater.WENetNodeInformation GetRoadSideSegmentForProp(Entity reference) => GetRoadCache(reference, GetSideSegment);
+        public static WENodeExtraDataUpdater.WENetNodeInformation GetRoadOwnSegmentForProp(Entity reference) => GetRoadCache(reference, GetRoadOwnSegment);
+        public static WENodeExtraDataUpdater.WENetNodeInformation GetFromPropByTargetVar(Entity reference, Dictionary<string, string> vars)
         {
-            var currentAggregation = GetRoadAggregation(cache.CachedValue);
-            return (CityConfiguration.leftHandTraffic && GetRoadAggregation(cache.PrevValue) != currentAggregation) || GetRoadAggregation(cache.NextValue) == currentAggregation ? cache.PrevValue : cache.NextValue;
-        }
-        //&BelzontWE.Builtin.WERoadFn;GetCrossingRoadAggregation/&BelzontWE.Builtin.WEUtitlitiesFn;GetEntityName
-        private static TCacheComponent GetReferenceRoadSegmentByAngle<TCacheComponent>(Entity reference, bool rotated180) where TCacheComponent : unmanaged, ICacheComponent, IComponentData
-        {
-            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-            if (em.TryGetComponent<Transform>(reference, out var transform)
-                && em.TryGetComponent<Owner>(reference, out var owner)
-                && em.TryGetBuffer<ConnectedEdge>(owner.m_Owner, true, out var edges))
+            return vars.GetValueOrDefault("target") switch
             {
-                var refChecksum = 0;
+                "side" => GetRoadSideSegmentForProp(reference),
+                _ => GetRoadOwnSegmentForProp(reference),
+            };
+        }
+
+        private static WENodeElementCache Identity(WENodeElementCache cache, ref DynamicBuffer<WENodeExtraDataUpdater.WENetNodeInformation> nodeBuffer) => cache;
+        private static WENodeExtraDataUpdater.WENetNodeInformation GetSideSegment(WENodeElementCache cache, ref DynamicBuffer<WENodeExtraDataUpdater.WENetNodeInformation> nodeInfo) => nodeInfo[cache.ExtraDataBelongingSideIdx];
+        private static WENodeExtraDataUpdater.WENetNodeInformation GetRoadOwnSegment(WENodeElementCache cache, ref DynamicBuffer<WENodeExtraDataUpdater.WENetNodeInformation> nodeInfo) => nodeInfo[cache.ExtraDataBelongingIdx];
+
+        private delegate T DoWithCacheDelegate<T>(WENodeElementCache cache, ref DynamicBuffer<WENodeExtraDataUpdater.WENetNodeInformation> nodeBuffer);
+
+        private static T GetRoadCache<T>(Entity reference, DoWithCacheDelegate<T> doWithCache)
+        {
+
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+            if (!em.TryGetComponent<Owner>(reference, out var owner) || !em.TryGetBuffer<WENodeExtraDataUpdater.WENetNodeInformation>(owner.m_Owner, true, out var nodeInfo) || nodeInfo.Length == 0)
+            {
+                return default;
+            }
+            if (em.TryGetComponent<WENodeElementCache>(reference, out var elementCache))
+            {
+                if (elementCache.VersionHash == nodeInfo[elementCache.ExtraDataBelongingIdx].m_versionIdentifier)
+                {
+                    return doWithCache(elementCache, ref nodeInfo);
+                }
+            }
+
+            if (em.TryGetComponent<Transform>(reference, out var transform))
+            {
+                WENodeElementCache result = default;
+                var angle = nodeInfo[0].m_centerPoint.xz.GetAngleToPoint(transform.m_Position.xz);
+                var azimuthDirection16bits = (ushort)((angle + 360) % 360f / 360f * 65536f);
+
+                var nextRefIdx = 0;
+                for (; nextRefIdx < nodeInfo.Length; nextRefIdx++)
+                {
+                    if (nodeInfo[nextRefIdx].m_azimuthDirection16bits >= azimuthDirection16bits)
+                    {
+                        break;
+                    }
+                }
+                var prevRefIdx = (nextRefIdx + nodeInfo.Length - 1) % nodeInfo.Length;
+                nextRefIdx %= nodeInfo.Length;
+
+                var belongsToPrev = false;
                 unchecked
                 {
-                    for (int i = 0; i < edges.Length; i++)
-                    {
-                        refChecksum += edges[i].m_Edge.Index * edges[i].m_Edge.Version;
-                    }
+                    belongsToPrev = math.abs((short)(nodeInfo[prevRefIdx].m_azimuthDirection16bits - azimuthDirection16bits)) < math.abs((short)(nodeInfo[nextRefIdx].m_azimuthDirection16bits - azimuthDirection16bits));
                 }
-                if (em.TryGetComponent<TCacheComponent>(reference, out var cache))
+                if (belongsToPrev)
                 {
-                    if (cache.RefChecksum == refChecksum)
-                    {
-                        return cache;
-                    }
-                    else
-                    {
-                        em.RemoveComponent<TCacheComponent>(reference);
-                    }
+                    result.VersionHash = nodeInfo[prevRefIdx].m_versionIdentifier;
+                    result.ExtraDataBelongingIdx = (byte)prevRefIdx;
+                    result.ExtraDataBelongingSideIdx = (byte)nextRefIdx;
                 }
-                var vectorAngle = math.abs(((Quaternion)transform.m_Rotation).eulerAngles.y + 360) % 360;
-                for (int i = 0; i < edges.Length; i++)
+                else
                 {
-                    var edge = edges[i];
-                    em.TryGetComponent<Edge>(edge.m_Edge, out var edgeNodes);
-                    em.TryGetComponent<Node>(edgeNodes.m_Start, out var startTransform);
-                    em.TryGetComponent<Node>(edgeNodes.m_End, out var endTransform);
-                    var angle = startTransform.m_Position.xz.GetAngleToPoint(endTransform.m_Position.xz);
-                    if (edgeNodes.m_Start != owner.m_Owner) angle = (angle + 180) % 360;
-                    var diff = math.abs(angle - vectorAngle);
-                    if (rotated180 ? diff > 160 && diff < 200 : diff < 20 || diff > 340)
-                    {
-                        var cacheObj = new TCacheComponent
-                        {
-                            CachedValue = edge.m_Edge,
-                            RefChecksum = edges.Length,
-                            NodeIdx = (byte)i,
-                            PrevValue = edges[(i + edges.Length - 1) % edges.Length].m_Edge,
-                            NextValue = edges[(i + 1) % edges.Length].m_Edge
-                        };
-                        Barrier.CreateCommandBuffer().AddComponent(reference, cacheObj);
-                        return cacheObj;
-                    }
-                }
-
+                    result.VersionHash = nodeInfo[nextRefIdx].m_versionIdentifier;
+                    result.ExtraDataBelongingIdx = (byte)nextRefIdx;
+                    result.ExtraDataBelongingSideIdx = (byte)prevRefIdx;
+                }               
+                WENodeExtraDataUpdater.EnqueueToRun(() => World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<EndFrameBarrier>().CreateCommandBuffer().AddComponent(reference, result));
+                return doWithCache(result, ref nodeInfo); ;
             }
             return default;
         }
