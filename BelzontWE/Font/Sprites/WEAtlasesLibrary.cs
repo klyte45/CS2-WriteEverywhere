@@ -36,6 +36,7 @@ namespace BelzontWE.Sprites
         public static string ATLAS_EXPORT_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "exportedAtlases");
         private const string GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID = "generatingAtlasesCache";
         private const string ERRORS_IMAGE_ATLAS_NOTIFICATION_ID = "errorLoadingAtlasesCache";
+        private const string ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID = "errorLoadingModuleAtlasesCache";
 
         public static WEAtlasesLibrary Instance { get; private set; }
         private readonly Queue<Action> actionQueue = new();
@@ -192,7 +193,7 @@ namespace BelzontWE.Sprites
                     var dialog2 = new MessageDialog(
                         LocalizedString.Id(NotificationHelper.GetModDefaultNotificationTitle(ERRORS_IMAGE_ATLAS_NOTIFICATION_ID)),
                         LocalizedString.Id("K45::WE.ATLAS_MANAGER[errorDialogHeader]"),
-                        LocalizedString.Value(string.Join("\n", errors.Select(x => $"{x.Key}: {x.Value}"))),
+                        LocalizedString.Value("Errors on local images:\n" + string.Join("\n", errors.Select(x => $"{x.Key}: {x.Value}"))),
                         true,
                         LocalizedString.Id("Common.OK"),
                         LocalizedString.Id(BasicIMod.ModData.FixLocaleId(BasicIMod.ModData.GetOptionLabelLocaleID(nameof(BasicModData.GoToLogFolder))))
@@ -256,12 +257,33 @@ namespace BelzontWE.Sprites
                     loaderEnqueue(spritesToAdd, errors);
                     if (errors.Count > 0)
                     {
-                        throw new Exception($"Some error were found when trying to create atlas '{atlasName}' for mod identified by '{modIdentifier}' ({displayName}), aborting:\n- {string.Join("\n- ", errors)}");
+                        NotificationHelper.NotifyWithCallback($"{ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID}.{modId}.{atlasName}", Colossal.PSI.Common.ProgressState.Warning, () =>
+                        {
+                            var dialog2 = new MessageDialog(
+                                LocalizedString.Id(NotificationHelper.GetModDefaultNotificationTitle(ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID)),
+                                LocalizedString.Id("K45::WE.ATLAS_MANAGER[errorDialogHeader]"),
+                                LocalizedString.Value($"Errors on {atlasName} images from mod '{displayName}' ({modIdentifier}):\n" + string.Join("\n", errors)),
+                                true,
+                                LocalizedString.Id("Common.OK"),
+                                LocalizedString.Id(BasicIMod.ModData.FixLocaleId(BasicIMod.ModData.GetOptionLabelLocaleID(nameof(BasicModData.GoToLogFolder))))
+                                );
+                            GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog2, (x) =>
+                            {
+                                switch (x)
+                                {
+                                    case 2:
+                                        BasicIMod.ModData.GoToLogFolder = true;
+                                        break;
+                                }
+                                NotificationHelper.RemoveNotification($"{ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID}.{modId}.{atlasName}");
+                            });
+                        }, titleI18n: ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID);
                     }
-                    if (spritesToAdd.Count == 0)
+                    else if (spritesToAdd.Count == 0)
                     {
                         throw new Exception($"There are no images to load. Check with the developer from the module for a fix");
                     }
+                    if (spritesToAdd.Count == 0) return;
                     RegisterAtlas(ModAtlases, WEModIntegrationUtility.GetModAccessName(mainAssembly, atlasName), spritesToAdd, notifGroup, "generatingAtlasesCacheMod.loading", args, args, LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, 100, 0);
                 }
                 if (!RegisteredModsAtlases.ContainsKey(modId)) RegisteredModsAtlases[modId] = (ModManagementUtils.GetModDataFromMainAssembly(mainAssembly), new());

@@ -113,13 +113,13 @@ namespace BelzontWE.Layout
                 }
                 else
                 {
-                    onError(string.Join(Path.DirectorySeparatorChar, imgFile.Split(Path.DirectorySeparatorChar)[^2..]), $"IMAGE TOO LARGE (max: {MAX_SIZE_IMAGE_IMPORT}x{MAX_SIZE_IMAGE_IMPORT}, have: {tex.width}x{tex.height})");
+                    onError(string.Join("/", imgFile.Split(Path.DirectorySeparatorChar)[^2..]), $"IMAGE TOO LARGE (max: {MAX_SIZE_IMAGE_IMPORT}x{MAX_SIZE_IMAGE_IMPORT}, have: {tex.width}x{tex.height})");
                     GameObject.Destroy(tex);
                 }
             }
             else
             {
-                onError(string.Join(Path.DirectorySeparatorChar, imgFile.Split(Path.DirectorySeparatorChar)[^2..]), "FAILED LOADING IMAGE");
+                onError(string.Join("/", imgFile.Split(Path.DirectorySeparatorChar)[^2..]), "FAILED LOADING IMAGE");
                 GameObject.Destroy(tex);
             }
             return null;
