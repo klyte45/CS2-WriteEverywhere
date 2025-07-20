@@ -368,7 +368,7 @@ namespace BelzontWE
         internal Dictionary<string, string> ListAvailableMeshesUI()
         {
             return MeshSources.Where(x => x.Key != CURRENT_CITY_KEY && x.Key != LOCAL_LIB_KEY && x.Value.Count > 0)
-                .SelectMany(parent => parent.Value.Where(x => !x.Key.StartsWith("__")).Select(child => ($"{parent}:{child.Key}", $"{parent}:{child.Key}")))
+                .SelectMany(parent => parent.Value.Where(x => !x.Key.StartsWith("__")).Select(child => ($"{parent.Key}:{child.Key}", $"{parent.Key}:{child.Key}")))
                 .Concat(MeshSources[CURRENT_CITY_KEY].Select(x => (x.Key, x.Key)))
                 .Concat(MeshSources[LOCAL_LIB_KEY].Where(x => !MeshSources[CURRENT_CITY_KEY].ContainsKey(x.Key)).Select(x => (x.Key, x.Key)))
                 .ToDictionary(x => x.Item1, x => x.Item2);
