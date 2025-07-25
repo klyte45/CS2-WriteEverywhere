@@ -4,7 +4,7 @@
 - Added alert when an image fails to be loaded into an atlas
 - Fixed custom meshes from modules not being properly listed on UI
 
-## FROM v0.4.0r1 (18-JUL-25)
+# FROM v0.4.0r1 (18-JUL-25)
 
 - Added new bridge for custom mesh management
 - Added a new tag for prefab layouts: `<hideMesh>N</hideMesh>` - `N` shall be a number indicating a mesh index from the original prefab that will be hidden, it's the same number shown at editor.
