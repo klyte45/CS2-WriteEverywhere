@@ -108,7 +108,7 @@ namespace BelzontWE.Font
             {
                 if (!m_textCache.TryGetValue("", out bri))
                 {
-                    bri = new PrimitiveRenderInformation(str, null, null, null, null, null, null, null);
+                    bri = new PrimitiveRenderInformation(str, null, null, null, default, null, null, null, default);
                     m_textCache.TryAdd("", bri);
                     return bri;
                 }
@@ -355,7 +355,7 @@ namespace BelzontWE.Font
                 itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
                 return;
             }
-            var result = PrimitiveRenderInformation.Fill(brij, CurrentAtlas.Texture);
+            var result = PrimitiveRenderInformation.Fill(brij, CurrentAtlas.Texture, CurrentAtlas.SharedDecalMaterial);
             if (result is null)
             {
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] removing {originalText} ");
@@ -409,7 +409,7 @@ namespace BelzontWE.Font
         {
             if (!m_textCache.ContainsKey(""))
             {
-                m_textCache[""] = new PrimitiveRenderInformation("", new Vector3[0], new int[0], new Vector2[0], null);
+                m_textCache[""] = new PrimitiveRenderInformation("", new Vector3[0], new int[0], new Vector2[0], default, CurrentAtlas.SharedDecalMaterial, null);
             }
             if (itemsQueue.Count >= queueConsumptionFrame || framesBuffering++ > 60)
             {

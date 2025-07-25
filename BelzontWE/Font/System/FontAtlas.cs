@@ -17,6 +17,8 @@ namespace BelzontWE.Font
 
         public bool IsPendingApply { get; private set; }
 
+        public Material SharedDecalMaterial { get; }
+
         public FontAtlas(int w, int h, int count)
         {
             Width = w;
@@ -26,6 +28,7 @@ namespace BelzontWE.Font
             Nodes[0].Y = 0;
             Nodes[0].Width = w;
             NodesNumber++;
+            SharedDecalMaterial = WERenderingHelper.SetupBaseSharedMaterialDecal();
         }
 
         public void InsertNode(int idx, int x, int y, int w)
@@ -223,6 +226,7 @@ namespace BelzontWE.Font
             if (IsPendingApply)
             {
                 Texture.Apply();
+                SharedDecalMaterial.SetTexture(_BaseColorMap, Texture);
                 IsPendingApply = false;
             }
         }

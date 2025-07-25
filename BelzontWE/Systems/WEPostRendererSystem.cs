@@ -224,8 +224,8 @@ namespace BelzontWE
                 if (m_templateUpdaterLkp.HasBuffer(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
                 if (text.Trim() == "")
                 {
-                    weCustomData = weCustomData.UpdateBRI(new PrimitiveRenderInformation("", new UnityEngine.Vector3[0], new int[0], new UnityEngine.Vector2[0],
-                        null), "");
+                    weCustomData = weCustomData.UpdateBRI(new PrimitiveRenderInformation("", new UnityEngine.Vector3[0], new int[0], new UnityEngine.Vector2[0], default,
+                        WERenderingHelper.WHITE_TEXTURE_MATERIAL_SHARED, null), "");
                     return true;
                 }
                 var font = fontDict.TryGetValue(weCustomData.FontName, out var fsd) ? fsd : FontServer.Instance.DefaultFont;

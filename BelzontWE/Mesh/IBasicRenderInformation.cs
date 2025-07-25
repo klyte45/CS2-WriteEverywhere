@@ -18,5 +18,7 @@ namespace BelzontWE
         bool IsValid();
         bool IsError { get; set; }
         Bounds3 Bounds { get; }
+
+        Material SharedMaterial { get; }
     }
 }

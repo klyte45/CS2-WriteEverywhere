@@ -153,18 +153,22 @@ namespace BelzontWE
             }
         }
 
-        public readonly void UpdateDecalMaterial(Material material, WESimulationTextType textType, Bounds2 uvBounds)
+        public void UpdateDecalPropertyBlock(MaterialPropertyBlock material)
         {
-            material.SetColor("_BaseColor", color.EffectiveValue);
-            material.SetFloat("_Metallic", metallic.EffectiveValue);
-            material.SetFloat("_Smoothness", smoothness.EffectiveValue);
-            material.SetFloat("_AffectAlbedo", 1);
-            material.SetFloat("_AffectMetal", 1);
-            material.SetFloat("_AffectNormal", 1);
-            material.SetFloat("_AffectSmoothness", AffectSmoothness ? 1 : 0);
-            material.SetFloat("_AffectEmission", AffectEmission ? 1 : 0);
-            material.SetFloat("_AffectAO", AffectAO ? 1 : 0);
-            material.SetFloat("_DrawOrder", DrawOrder);
+            if (dirty)
+            {
+                material.SetColor("_BaseColor", color.EffectiveValue);
+                material.SetFloat("_Metallic", metallic.EffectiveValue);
+                material.SetFloat("_Smoothness", smoothness.EffectiveValue);
+                material.SetFloat("_AffectAlbedo", 1);
+                material.SetFloat("_AffectMetal", 1);
+                material.SetFloat("_AffectNormal", 1);
+                material.SetFloat("_AffectSmoothness", AffectSmoothness ? 1 : 0);
+                material.SetFloat("_AffectEmission", AffectEmission ? 1 : 0);
+                material.SetFloat("_AffectAO", AffectAO ? 1 : 0);
+                material.SetFloat("_DrawOrder", DrawOrder);
+                dirty = false;
+            }
         }
 
         public readonly void UpdateGlassMaterial(Material material)
@@ -228,6 +232,11 @@ namespace BelzontWE
                 WESimulationTextType.Text or WESimulationTextType.Image => mesh.RenderInformation,
                 _ => WEAtlasesLibrary.GetWhiteTextureBRI()
             };
+            if (shader == WEShader.Decal)
+            {
+                result = bri.SharedMaterial;
+                return result;
+            }
             result = null;
             bool requireUpdate = false;
             if (bri is null) return false;
@@ -241,14 +250,15 @@ namespace BelzontWE
             {
                 switch (mesh.TextType)
                 {
-                    case WESimulationTextType.Text:
+                    case WESimulationTextType.WhiteCube:
                         if (shader == WEShader.Decal)
                         {
                             shader = WEShader.Default;
                             World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<WEWorldPickerController>().ForceReload();
                         }
-                        goto case WESimulationTextType.Image;
+                        break;
                     case WESimulationTextType.Image:
+                    case WESimulationTextType.Text:
                         if (!bri.IsValid())
                         {
                             mesh.ResetBri();
@@ -263,38 +273,35 @@ namespace BelzontWE
             }
             if (dirty)
             {
-                switch (shader)
+                if (shader != WEShader.Decal)
                 {
-                    case WEShader.Default:
-                        if (!bri.IsError)
-                        {
-                            UpdateDefaultMaterial(material, mesh.TextType);
-                        }
-                        break;
-                    case WEShader.Glass:
-                        if (!bri.IsError)
-                        {
-                            UpdateGlassMaterial(material);
-                        }
-                        break;
-                    case WEShader.Decal:
-                        if (!bri.IsError)
-                        {
-                            UpdateDecalMaterial(material, mesh.TextType, uvBounds);
-                        }
-                        break;
-                    default:
-                        return false;
+                    switch (shader)
+                    {
+                        case WEShader.Default:
+                            if (!bri.IsError)
+                            {
+                                UpdateDefaultMaterial(material, mesh.TextType);
+                            }
+                            break;
+                        case WEShader.Glass:
+                            if (!bri.IsError)
+                            {
+                                UpdateGlassMaterial(material);
+                            }
+                            break;
+                        default:
+                            return false;
+                    }
+                    material.SetFloat(WERenderingHelper.DecalLayerMask, math.asfloat(DecalFlags));
+                    HDMaterial.ValidateMaterial(material);
+                    requireUpdate = true;
                 }
-                material.SetFloat(WERenderingHelper.DecalLayerMask, math.asfloat(DecalFlags));
-                HDMaterial.ValidateMaterial(material);
                 dirty = false;
-                requireUpdate = true;
             }
             result = material;
             return requireUpdate;
         }
-        public readonly bool CheckIsDecal(WETextDataMesh mesh) => Shader == WEShader.Decal && (mesh.TextType) switch { WESimulationTextType.Text or WESimulationTextType.Placeholder => false, _ => true };
+        public readonly bool CheckIsDecal(WETextDataMesh mesh) => Shader == WEShader.Decal && (mesh.TextType) switch { WESimulationTextType.WhiteCube or WESimulationTextType.Placeholder => false, _ => true };
 
         public WETextDataXml.DefaultStyleXml ToDefaultXml()
             => new()

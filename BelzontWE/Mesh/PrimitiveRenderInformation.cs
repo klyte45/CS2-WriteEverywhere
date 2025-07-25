@@ -14,12 +14,17 @@ namespace BelzontWE.Font.Utility
     public class PrimitiveRenderInformation : IBasicRenderInformation
     {
         public const string PLACEHOLDER_REFTEXT = "\0Placeholder\0";
-        public static readonly PrimitiveRenderInformation LOADING_PLACEHOLDER = new(PLACEHOLDER_REFTEXT, null, null, null, null, null, null, Texture2D.whiteTexture);
+        public static readonly PrimitiveRenderInformation LOADING_PLACEHOLDER = new(PLACEHOLDER_REFTEXT, null, null, null, default, null, null, null, Texture2D.whiteTexture);
+
+
+
         public PrimitiveRenderInformation(string refText,
-            Vector3[] vertices, int[] triangles, Vector2[] uv,
+            Vector3[] vertices, int[] triangles, Vector2[] uv, bool2 invertUv,
+            Material sharedMaterialDecal,
             Texture main, Texture normal = null, Texture control = null, Texture emissive = null, Texture mask = null)
         {
             m_refText = refText ?? throw new ArgumentNullException("refText");
+            m_invertUv = invertUv;
             if (vertices != null && (triangles?.All(x => x < vertices.Length) ?? false))
             {
                 m_vertices = vertices;
@@ -45,15 +50,16 @@ namespace BelzontWE.Font.Utility
             Control = control;
             Mask = mask;
             Guid = System.Guid.NewGuid();
+            SharedMaterial = sharedMaterialDecal;
         }
-        public static PrimitiveRenderInformation Fill(BasicRenderInformationJob brij, Texture main)
+        public static PrimitiveRenderInformation Fill(BasicRenderInformationJob brij, Texture main, Material sharedDecalMaterial)
         {
             if (brij.Invalid)
             {
                 return null;
             }
             var bri = new PrimitiveRenderInformation(brij.originalText.ToString(), brij.vertices.ToArray(), brij.triangles.ToArray(), brij.uv1.ToArray(),
-                main);
+                brij.invertUv, sharedDecalMaterial, main);
             if (bri.Mesh == null) return null;
 
             bri.m_colors32 = brij.colors.ToArray();
@@ -72,6 +78,7 @@ namespace BelzontWE.Font.Utility
 
         private Mesh m_mesh;
         private Mesh[] m_meshCube;
+        private Vector3[] m_meshCubeOffsets;
 
         [XmlIgnore]
         public Texture Main { get; private set; }
@@ -79,13 +86,15 @@ namespace BelzontWE.Font.Utility
         public Texture Emissive { get; private set; }
         public Texture Control { get; private set; }
         public Texture Mask { get; private set; }
+        public Material SharedMaterial { get; }
 
         public Bounds2 BoundsUV { get; }
 
-      //  public Mesh GetMesh(WEShader shader) => shader == WEShader.Decal ? MeshCube : Mesh;
+        //  public Mesh GetMesh(WEShader shader) => shader == WEShader.Decal ? MeshCube : Mesh;
         public int MeshCount(WEShader shader) => shader == WEShader.Decal ? MeshCube.Length : 1;
         public Mesh GetMesh(WEShader shader, int idx = 0) => shader == WEShader.Decal ? MeshCube[idx] : Mesh;
         public MaterialPropertyBlock GetPropertyBlock(WEShader shader, int idx = 0) => shader == WEShader.Decal ? CubeDecalBlocks[idx] : null;
+        public Vector3 GetMeshTranslation(WEShader shader, int idx = 0) => shader == WEShader.Decal ? m_meshCubeOffsets[idx] : default;
 
         [XmlIgnore]
         private Mesh Mesh
@@ -115,7 +124,7 @@ namespace BelzontWE.Font.Utility
             {
                 if (m_meshCube is null && m_vertices?.Length > 0)
                 {
-                    WERenderingHelper.DecalCubeFromPlanes(m_vertices, m_uv, out var m_verticesCube, out var m_trianglesCube, out var m_uvCube, m_sizeMetersUnscaled.x);
+                    WERenderingHelper.DecalCubeFromPlanes(m_vertices, m_uv, out var m_verticesCube, out var m_trianglesCube, out var m_uvCube, out m_meshCubeOffsets);
                     m_meshCube = m_verticesCube.Select((x, i) =>
                     {
                         var mesh = new Mesh
@@ -149,7 +158,18 @@ namespace BelzontWE.Font.Utility
                     {
                         var uvBounds = (min: new float2(MeshCube[i].uv.Min(x => x.x), MeshCube[i].uv.Min(x => x.y)),
                                        max: new float2(MeshCube[i].uv.Max(x => x.x), MeshCube[i].uv.Max(x => x.y)));
-                        m_cubeDecalBlocks[i].SetVector("colossal_TextureArea", new float4(uvBounds.min, uvBounds.max));
+                        var valueArea = new float4(uvBounds.min, uvBounds.max);
+                        if (m_invertUv[0])
+                        {
+                            valueArea = valueArea.zyxw;
+                        }
+                        if (m_invertUv[1])
+                        {
+                            valueArea = valueArea.xwzy;
+                        }
+
+                        m_cubeDecalBlocks[i].SetVector("colossal_TextureArea", valueArea);
+                        m_cubeDecalBlocks[i].SetVector("colossal_MeshSize", new float4(MeshCube[i].bounds.size, 0f));
                     }
                 }
                 return m_cubeDecalBlocks;
@@ -159,8 +179,11 @@ namespace BelzontWE.Font.Utility
 
         public bool IsError { get; set; } = false;
 
+
         public Vector2 m_sizeMetersUnscaled;
         public readonly string m_refText;
+        private readonly bool2 m_invertUv;
+        public bool m_isError = false;
 
         public override string ToString() => $"BRI [r={m_refText};v={m_vertices?.Length};sz={m_sizeMetersUnscaled};{(IsError ? "ERR" : "")}]";
 
@@ -205,6 +228,7 @@ namespace BelzontWE.Font.Utility
         public NativeArray<Vector3> vertices;
         public NativeArray<int> triangles;
         public NativeArray<Vector2> uv1;
+        public bool2 invertUv;
 
         public RangeVector m_YAxisOverflows;
         public RangeVector m_fontBaseLimits;

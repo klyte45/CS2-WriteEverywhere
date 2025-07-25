@@ -3,6 +3,7 @@ using BelzontWE.Font;
 using BelzontWE.Font.Utility;
 using BelzontWE.Layout;
 using BelzontWE.Sprites;
+using Colossal.Mathematics;
 using System.Linq;
 using Unity.Collections;
 using Unity.Mathematics;
@@ -84,19 +85,30 @@ namespace BelzontWE
         {
             return GenerateBri(refName, imageInfo.Main, imageInfo.Normal, imageInfo.ControlMask, imageInfo.Emissive, imageInfo.MaskMap);
         }
-
-        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[][] cubeVertices, out int[][] cubeTris, out Vector2[][] uvCube, float xDivider)
+        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[][] cubeVertices, out int[][] cubeTris, out Vector2[][] uvCube, out Vector3[] cubeOffsets)
         {
             var verticesGroup = originalVertices.Select((x, i) => (x, i)).GroupBy(x => x.i / 4);
-            cubeVertices = verticesGroup.Select(x =>
+
+            var verticesBounds = verticesGroup.Select(x =>
             {
                 var list = x.Select(x => x.x).ToList();
-                return (minx: list.Min(x => x.x) / xDivider, maxx: list.Max(x => x.x) / xDivider, miny: list.Min(x => x.y), maxy: list.Max(x => x.y));
-            })
+                return (minx: list.Min(x => x.x), maxx: list.Max(x => x.x), miny: list.Min(x => x.y), maxy: list.Max(x => x.y));
+            });
+
+            cubeVertices = verticesBounds
                 .Select(x =>
-                    kVerticesPositionsCube.Select((y, j) => new Vector3(y.x < 0 ? x.minx : x.maxx, y.y * -.5f, y.z < 0 ? x.miny : x.maxy)).ToArray())
+                {
+                    var itemProportion = (x.maxx - x.minx) / (x.maxy - x.miny);
+                    float3 proportionMultipler = itemProportion > 1 ? new float3(1, 1, 1 / itemProportion) : new float3(itemProportion, 1, 1);
+                    return kVerticesPositionsCube.Select((y, j) => (Vector3)(new float3(math.sign(y.x) * .5f, y.y * -.5f, math.sign(y.z) * .5f) * proportionMultipler)).ToArray();
+                })
                 .ToArray();
             cubeTris = verticesGroup.Select((_, i) => kTriangleIndicesCube).ToArray();
+            cubeOffsets = verticesBounds.Select(x =>
+            {
+                var bounds = new Bounds2(new(x.minx, x.miny), new(x.maxx, x.maxy));
+                return (Vector3)new float3((bounds.min + (bounds.Size() / 2)) * new float2(-1, 1), 0).xzy;
+            }).ToArray();
 
             uvCube = originalUv.Select((x, i) => (x, i)).GroupBy(x => x.i / 4).Select(x =>
             {
@@ -106,6 +118,9 @@ namespace BelzontWE
                 .Select(x => kUvCube.Select((y, j) => new Vector2(y.x < 0.5f ? x.minx : x.maxx, y.y < 0.5f ? x.miny : x.maxy)).ToArray())
                 .ToArray();
         }
+
+        internal static readonly Material WHITE_TEXTURE_MATERIAL_SHARED = SetupBaseSharedMaterialDecal();
+
 
         public static IBasicRenderInformation GenerateBri(FixedString32Bytes refName, Texture main, Texture normal, Texture control, Texture emissive, Texture mask)
         {
@@ -130,7 +145,9 @@ namespace BelzontWE
                  normal: normal,
                  control: control,
                  emissive: emissive,
-                 mask: mask
+                 mask: mask,
+                 invertUv: default,
+                 sharedMaterialDecal: WHITE_TEXTURE_MATERIAL_SHARED
                 )
             {
                 m_sizeMetersUnscaled = new Vector2(proportion, 1),
@@ -140,6 +157,7 @@ namespace BelzontWE
 
         public static Material GenerateMaterial(IBasicRenderInformation bri, WEShader shader)
         {
+            if (shader == WEShader.Decal) return bri.SharedMaterial;
             var material = CreateDefaultFontMaterial(shader);
             if (material is null) return null;
             material.SetTexture(FontAtlas._BaseColorMap, bri.Main);
@@ -176,16 +194,6 @@ namespace BelzontWE
                     material.SetFloat(DecalLayerMask, math.asfloat(8));
                     material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
                     break;
-                case WEShader.Decal:
-                    material = new Material(Shader.Find(defaultDecalShaderName));
-                    material.SetFloat(DecalLayerMask, math.asfloat(8));
-                    material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
-                    material.SetFloat("_AffectAlbedo", 1);
-                    material.SetFloat("_AffectNormal", 1);
-                    material.SetFloat("_AffectMetal", 1);
-                    material.SetFloat("_AffectAO", 1);
-                    material.SetFloat("_AffectSmoothness", 1);
-                    break;
                 default:
                     return null;
             }
@@ -193,6 +201,22 @@ namespace BelzontWE
             HDMaterial.ValidateMaterial(material);
             return material;
         }
+
+        public static Material SetupBaseSharedMaterialDecal()
+        {
+            var material = new Material(Shader.Find(defaultDecalShaderName));
+            material.SetFloat(DecalLayerMask, math.asfloat(8));
+            material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
+            material.SetFloat("_AffectAlbedo", 1);
+            material.SetFloat("_AffectNormal", 1);
+            material.SetFloat("_AffectMetal", 1);
+            material.SetFloat("_AffectAO", 1);
+            material.SetFloat("_AffectSmoothness", 1);
+            material.enableInstancing = true;
+            HDMaterial.ValidateMaterial(material);
+            return material;
+        }
+
 
         internal static IBasicRenderInformation GenerateBri(WETextureAtlas textureAtlas, WESpriteInfo spriteInfo)
         {
@@ -222,7 +246,9 @@ namespace BelzontWE
                         normal: spriteInfo.HasNormal ? textureAtlas.Normal : null,
                         control: spriteInfo.HasControl ? textureAtlas.Control : null,
                         emissive: spriteInfo.HasEmissive ? textureAtlas.Emissive : textureAtlas.Main,
-                        mask: spriteInfo.HasMask ? textureAtlas.Mask : null
+                        mask: spriteInfo.HasMask ? textureAtlas.Mask : null,
+                 sharedMaterialDecal: textureAtlas.SharedMaterial,
+                 invertUv: default
             )
             {
                 m_sizeMetersUnscaled = new Vector2(proportion, 1),

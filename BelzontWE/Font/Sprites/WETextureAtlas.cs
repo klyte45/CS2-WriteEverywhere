@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Unity.Collections;
 using UnityEngine;
+using UnityEngine.Rendering.HighDefinition;
 using HeuristicMethod = MaxRectsBinPack.FreeRectChoiceHeuristic;
 
 namespace BelzontWE.Font
@@ -36,6 +37,7 @@ namespace BelzontWE.Font
         private byte[][] m_serializationOrder;
 
         public IEnumerable<FixedString32Bytes> Keys => Sprites.Keys;
+        public UnityEngine.Material SharedMaterial { get; } = WERenderingHelper.SetupBaseSharedMaterialDecal();
 
         private MaxRectsBinPack rectsPack;
 
@@ -67,6 +69,7 @@ namespace BelzontWE.Font
             Method = method;
             rectsPack = new MaxRectsBinPack(Width, Height, false);
             WillSerialize = willSerialize;
+                       
         }
 
         #region Write
@@ -108,6 +111,14 @@ namespace BelzontWE.Font
                     Normal.EncodeToPNG(),
                 };
             }
+
+            SharedMaterial.SetTexture(FontAtlas._BaseColorMap, Main);
+            if (Mask && SharedMaterial.HasTexture(WERenderingHelper.MaskMap)) SharedMaterial.SetTexture(WERenderingHelper.MaskMap, Mask);
+            if (Control && SharedMaterial.HasTexture(WERenderingHelper.ControlMask)) SharedMaterial.SetTexture(WERenderingHelper.ControlMask, Control);
+            if (Normal && SharedMaterial.HasTexture(WERenderingHelper.NormalMap)) SharedMaterial.SetTexture(WERenderingHelper.NormalMap, Normal);
+            if (SharedMaterial.HasTexture(WERenderingHelper.EmissionMap)) SharedMaterial.SetTexture(WERenderingHelper.EmissionMap, Emissive ?? Main);
+
+
             IsApplied = true;
         }
 
@@ -144,7 +155,7 @@ namespace BelzontWE.Font
             if (Control) GameObject.Destroy(Control);
             if (Mask) GameObject.Destroy(Mask);
             if (Normal) GameObject.Destroy(Normal);
-
+            if (SharedMaterial) GameObject.Destroy(SharedMaterial);
             ClearSprites();
         }
 
