@@ -57,7 +57,7 @@ namespace BelzontWE.Font.Utility
                 return null;
             }
             var bri = new PrimitiveRenderInformation(brij.originalText.ToString(), brij.vertices.ToArray(), brij.triangles.ToArray(), brij.uv1.ToArray(),
-                brij.invertUv,  main);
+                brij.invertUv, main);
             if (bri.Mesh == null) return null;
 
             bri.m_colors32 = brij.colors.ToArray();
@@ -90,7 +90,6 @@ namespace BelzontWE.Font.Utility
         //  public Mesh GetMesh(WEShader shader) => shader == WEShader.Decal ? MeshCube : Mesh;
         public int MeshCount(WEShader shader) => shader == WEShader.Decal ? MeshCube.Length : 1;
         public Mesh GetMesh(WEShader shader, int idx = 0) => shader == WEShader.Decal ? MeshCube[idx] : Mesh;
-        public MaterialPropertyBlock GetPropertyBlock(WEShader shader, int idx = 0) => shader == WEShader.Decal ? CubeDecalBlocks[idx] : null;
         public Vector3 GetMeshTranslation(WEShader shader, int idx = 0) => shader == WEShader.Decal ? m_meshCubeOffsets[idx] : default;
 
         [XmlIgnore]
@@ -141,17 +140,17 @@ namespace BelzontWE.Font.Utility
         }
 
         [XmlIgnore]
-        private MaterialPropertyBlock[] m_cubeDecalBlocks;
+        private DecalCharCoordinates[] m_cubeCharactersCoordinates;
 
         [XmlIgnore]
-        public MaterialPropertyBlock[] CubeDecalBlocks
+        public DecalCharCoordinates[] CubeCharCoordinates
         {
             get
             {
-                if (m_cubeDecalBlocks is null)
+                if (m_cubeCharactersCoordinates is null)
                 {
-                    m_cubeDecalBlocks = MeshCube.Select(x => new MaterialPropertyBlock()).ToArray();
-                    for (int i = 0; i < m_cubeDecalBlocks.Length; i++)
+                    m_cubeCharactersCoordinates = MeshCube.Select(x => new DecalCharCoordinates()).ToArray();
+                    for (int i = 0; i < m_cubeCharactersCoordinates.Length; i++)
                     {
                         var uvBounds = (min: new float2(MeshCube[i].uv.Min(x => x.x), MeshCube[i].uv.Min(x => x.y)),
                                        max: new float2(MeshCube[i].uv.Max(x => x.x), MeshCube[i].uv.Max(x => x.y)));
@@ -164,12 +163,11 @@ namespace BelzontWE.Font.Utility
                         {
                             valueArea = valueArea.xwzy;
                         }
-
-                        m_cubeDecalBlocks[i].SetVector("colossal_TextureArea", valueArea);
-                        m_cubeDecalBlocks[i].SetVector("colossal_MeshSize", new float4(MeshCube[i].bounds.size, 0f));
+                        m_cubeCharactersCoordinates[i].textureArea = valueArea;
+                        m_cubeCharactersCoordinates[i].meshSize = new float4(MeshCube[i].bounds.size, 0f);
                     }
                 }
-                return m_cubeDecalBlocks;
+                return m_cubeCharactersCoordinates;
             }
         }
         public Colossal.Hash128 Guid { get; private set; }
@@ -252,7 +250,11 @@ namespace BelzontWE.Font.Utility
         public readonly float Center => max + (min / 2);
 
         public override readonly string ToString() => $"[min = {min}, max = {max}]";
+    }
 
-
+    public struct DecalCharCoordinates
+    {
+        public float4 textureArea;
+        public float4 meshSize;
     }
 }

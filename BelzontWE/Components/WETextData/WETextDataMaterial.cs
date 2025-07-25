@@ -1,6 +1,6 @@
-﻿using BelzontWE.Sprites;
+﻿using BelzontWE.Font.Utility;
+using BelzontWE.Sprites;
 using BelzontWE.Utils;
-using Colossal.Mathematics;
 using System;
 using System.Runtime.InteropServices;
 using Unity.Collections;
@@ -139,6 +139,7 @@ namespace BelzontWE
             material.SetFloat("_EmissiveExposureWeight", emissiveExposureWeight.EffectiveValue);
             material.SetFloat("_CoatStrength", coatStrength.EffectiveValue);
             material.SetFloat("_Smoothness", smoothness.EffectiveValue);
+            material.SetFloat(WERenderingHelper.DecalLayerMask, math.asfloat(DecalFlags));
             if (textType == WESimulationTextType.Image)
             {
                 material.SetColor("colossal_ColorMask0", colorMask1.EffectiveValue);
@@ -153,7 +154,7 @@ namespace BelzontWE
             }
         }
 
-        public readonly void UpdateDecalMaterial(Material material, WESimulationTextType textType, Bounds2 uvBounds)
+        public readonly void UpdateDecalMaterial(Material material, WESimulationTextType textType, DecalCharCoordinates coordinates)
         {
             material.SetColor("_BaseColor", color.EffectiveValue);
             material.SetFloat("_Metallic", metallic.EffectiveValue);
@@ -165,6 +166,9 @@ namespace BelzontWE
             material.SetFloat("_AffectEmission", AffectEmission ? 1 : 0);
             material.SetFloat("_AffectAO", AffectAO ? 1 : 0);
             material.SetFloat("_DrawOrder", DrawOrder);
+            material.SetFloat(WERenderingHelper.DecalLayerMask, math.asfloat(DecalFlags));
+            material.SetVector("colossal_TextureArea", coordinates.textureArea);
+            material.SetVector("colossal_MeshSize", coordinates.meshSize);
         }
 
         public readonly void UpdateGlassMaterial(Material material)
@@ -177,12 +181,19 @@ namespace BelzontWE
             material.SetFloat("_NormalStrength", normalStrength.EffectiveValue);
             material.SetFloat("_Thickness", glassThickness.EffectiveValue);
             material.SetVector("colossal_TextureArea", new float4(Vector2.zero, Vector2.one));
+            material.SetFloat(WERenderingHelper.DecalLayerMask, math.asfloat(DecalFlags));
         }
         public void ResetMaterial()
         {
             if (ownMaterial.IsAllocated)
             {
-                GameObject.Destroy(ownMaterial.Target as Material);
+                if (ownMaterial.Target is Material[] matArray)
+                {
+                    foreach (var material in matArray)
+                    {
+                        GameObject.Destroy(material);
+                    }
+                }
                 ownMaterial.Free();
             }
         }
@@ -210,13 +221,19 @@ namespace BelzontWE
         {
             if (ownMaterial.IsAllocated)
             {
-                WETemplateManager.Instance.EnqueueToBeDestructed(ownMaterial.Target as Material);
+                if (ownMaterial.Target is Material[] matArray)
+                {
+                    foreach (var material in matArray)
+                    {
+                        GameObject.Destroy(material);
+                    }
+                }
                 ownMaterial.Free();
             }
             ownMaterial = default;
         }
 
-        public bool GetOwnMaterial(ref WETextDataMesh mesh, Bounds2 uvBounds, out Material result)
+        public bool GetOwnMaterial(ref WETextDataMesh mesh, DecalCharCoordinates[] coordinates, out Material[] result)
         {
             if (mesh.TextType == WESimulationTextType.MatrixTransform)
             {
@@ -237,11 +254,11 @@ namespace BelzontWE
                 ownMaterialGuid = bri.Guid;
                 dirty = true;
             }
-            if (!ownMaterial.IsAllocated || ownMaterial.Target is not Material material || !material)
+            if (!ownMaterial.IsAllocated || ownMaterial.Target is not Material[] materialArray || materialArray.Length == 0 || !materialArray[0])
             {
                 switch (mesh.TextType)
                 {
-                     case WESimulationTextType.WhiteCube:
+                    case WESimulationTextType.WhiteCube:
                         if (shader == WEShader.Decal)
                         {
                             shader = WEShader.Default;
@@ -258,41 +275,47 @@ namespace BelzontWE
                         break;
                 }
                 ResetMaterial();
-                material = WERenderingHelper.GenerateMaterial(bri, shader);
-                ownMaterial = GCHandle.Alloc(material);
+                materialArray = new Material[coordinates?.Length ?? 1];
+                ownMaterial = GCHandle.Alloc(materialArray);
                 dirty = true;
             }
             if (dirty)
             {
+                var baseMaterial = materialArray[0] ??= WERenderingHelper.GenerateMaterial(bri, shader);
                 switch (shader)
                 {
                     case WEShader.Default:
                         if (!bri.IsError)
                         {
-                            UpdateDefaultMaterial(material, mesh.TextType);
+                            UpdateDefaultMaterial(baseMaterial, mesh.TextType);
+                            HDMaterial.ValidateMaterial(baseMaterial);
                         }
                         break;
                     case WEShader.Glass:
                         if (!bri.IsError)
                         {
-                            UpdateGlassMaterial(material);
+                            UpdateGlassMaterial(baseMaterial);
+                            HDMaterial.ValidateMaterial(baseMaterial);
                         }
                         break;
                     case WEShader.Decal:
                         if (!bri.IsError)
                         {
-                            UpdateDecalMaterial(material, mesh.TextType, uvBounds);
+                            for (int i = 0; i < materialArray.Length; i++)
+                            {
+                                materialArray[i] ??= new Material(baseMaterial);
+                                UpdateDecalMaterial(materialArray[i], mesh.TextType, coordinates?[i] ?? default);
+                                HDMaterial.ValidateMaterial(materialArray[i]);
+                            }
                         }
                         break;
                     default:
                         return false;
                 }
-                material.SetFloat(WERenderingHelper.DecalLayerMask, math.asfloat(DecalFlags));
-                HDMaterial.ValidateMaterial(material);
                 dirty = false;
                 requireUpdate = true;
             }
-            result = material;
+            result = materialArray;
             return requireUpdate;
         }
         public readonly bool CheckIsDecal(WETextDataMesh mesh) => Shader == WEShader.Decal && (mesh.TextType) switch { WESimulationTextType.WhiteCube or WESimulationTextType.Placeholder => false, _ => true };

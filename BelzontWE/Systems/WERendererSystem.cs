@@ -219,11 +219,12 @@ namespace BelzontWE
                                     break;
                             }
                         }
-                        if (doRender && (bri is not PrimitiveRenderInformation brii || brii.m_refText != ""))
+                        var brii = bri as PrimitiveRenderInformation;
+                        if (doRender && (brii is null || brii.m_refText != ""))
                         {
-                            Material ownMaterial;
+                            Material[] ownMaterial = null;
                             if (ìsPlaceholder) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
-                            else material.GetOwnMaterial(ref mesh, bri.BoundsUV, out ownMaterial);
+                            else material.GetOwnMaterial(ref mesh, brii?.CubeCharCoordinates, out ownMaterial);
 
                             var bri2 = bri as PrimitiveRenderInformation;
                             var meshCount = bri2 is null || mesh.TextType == WESimulationTextType.WhiteCube ? 1 : bri2.MeshCount(item.material.Shader);
@@ -232,7 +233,7 @@ namespace BelzontWE
                                 var geomMesh = bri2 is not null ? (mesh.TextType == WESimulationTextType.WhiteCube ? bri2.MeshCube[0] : bri2.GetMesh(item.material.Shader, i)) : bri.GetMesh(item.material.Shader);
                                 var effectiveMatrix = bri2 is null ? item.transformMatrix : item.transformMatrix * Matrix4x4.Translate(bri2.GetMeshTranslation(item.material.Shader, i));
 
-                                Graphics.DrawMesh(geomMesh, effectiveMatrix, ownMaterial, 0, null, 0, bri2?.GetPropertyBlock(item.material.Shader, i), ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
+                                Graphics.DrawMesh(geomMesh, effectiveMatrix, ownMaterial[i], 0, null, 0, null, ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
                                 if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)
                                 {
                                     if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! DRAWING Extra mesh");

@@ -426,13 +426,14 @@ namespace BelzontWE.Sprites
             m_bgTexture ??= WERenderingHelper.GenerateBri("\0whiteTexture\0", new WEImageInfo() { Main = Texture2D.whiteTexture });
             return m_bgTexture;
         }
-        private static Material m_whiteBriMaterial;
-        public static Material DefaultMaterialWhiteTexture()
+        private static Material[] m_whiteBriMaterial;
+        public static Material[] DefaultMaterialWhiteTexture()
         {
-            if (!m_whiteBriMaterial)
+            if (m_whiteBriMaterial is null)
             {
-                m_whiteBriMaterial = WERenderingHelper.GenerateMaterial(m_bgTexture, WEShader.Default);
-                m_whiteBriMaterial.mainTexture = Texture2D.whiteTexture;
+                m_whiteBriMaterial = new Material[1];
+                m_whiteBriMaterial[0] = WERenderingHelper.GenerateMaterial(m_bgTexture, WEShader.Default);
+                m_whiteBriMaterial[0].mainTexture = Texture2D.whiteTexture;
             }
             return m_whiteBriMaterial;
         }

@@ -30,7 +30,6 @@ namespace BelzontWE.Controllers
             eventCaller($"{PREFIX}listShaderDatails", ListShadersDetails);
             eventCaller($"{PREFIX}listShader", ListShaders);
             eventCaller($"{PREFIX}setShader", SetShader);
-            eventCaller($"{PREFIX}getShader", GetShader);
             eventCaller($"{PREFIX}listCurrentMaterialSettings", ListCurrentMaterialSettings);
             eventCaller($"{PREFIX}setCurrentMaterialSettings", SetCurrentMaterialSettings);
             eventCaller($"{PREFIX}createSpecialMeshBRI", CreateSpecialMeshBRI);
@@ -64,13 +63,13 @@ namespace BelzontWE.Controllers
                 && EntityManager.TryGetComponent<WETextDataMesh>(targetEntity, out var meshData)
                 && EntityManager.TryGetComponent<WETextDataMain>(targetEntity, out var mainData))
             {
-                if (materialData.GetOwnMaterial(ref meshData, new Bounds2(Vector2.zero, Vector2.one), out var mat))
+                if (materialData.GetOwnMaterial(ref meshData, null, out var mat))
                 {
                     EntityManager.SetComponentData(targetEntity, materialData);
                     EntityManager.SetComponentData(targetEntity, meshData);
                     EntityManager.SetComponentData(targetEntity, mainData);
                 }
-                return ListPropertiesFromMaterial(mat);
+                return ListPropertiesFromMaterial(mat[0]);
             }
             return null;
         }
@@ -85,11 +84,12 @@ namespace BelzontWE.Controllers
             if (EntityManager.TryGetComponent<WETextDataMaterial>(targetEntity, out var materialData)
                 && EntityManager.TryGetComponent<WETextDataMesh>(targetEntity, out var meshData))
             {
-                if (materialData.GetOwnMaterial(ref meshData, new Bounds2(Vector2.zero, Vector2.one), out var mat))
+                if (materialData.GetOwnMaterial(ref meshData, default, out var mats))
                 {
                     EntityManager.SetComponentData(targetEntity, materialData);
                     EntityManager.SetComponentData(targetEntity, meshData);
                 }
+                var mat = mats[0];
                 if (!int.TryParse(propertyIdxStr, out var propertyIdx))
                 {
                     switch (propertyIdxStr)
@@ -232,27 +232,13 @@ namespace BelzontWE.Controllers
                 && EntityManager.TryGetComponent<WETextDataMaterial>(targetEntity, out var materialData)
               && EntityManager.TryGetComponent<WETextDataMesh>(targetEntity, out var meshData))
             {
-                if (materialData.GetOwnMaterial(ref meshData, new Bounds2(Vector2.zero, Vector2.one), out var mat))
+                if (materialData.GetOwnMaterial(ref meshData, null, out var mats))
                 {
                     EntityManager.SetComponentData(targetEntity, materialData);
                     EntityManager.SetComponentData(targetEntity, meshData);
                 }
-                mat.shader = sh;
+                mats[0].shader = sh;
             }
-        }
-        private string GetShader(Entity targetEntity)
-        {
-            if (EntityManager.TryGetComponent<WETextDataMaterial>(targetEntity, out var materialData)
-             && EntityManager.TryGetComponent<WETextDataMesh>(targetEntity, out var meshData))
-            {
-                if (materialData.GetOwnMaterial(ref meshData, new Bounds2(Vector2.zero, Vector2.one), out var mat))
-                {
-                    EntityManager.SetComponentData(targetEntity, materialData);
-                    EntityManager.SetComponentData(targetEntity, meshData);
-                }
-                return mat.shader.name;
-            }
-            return null;
         }
 
         public void SetupCaller(Action<string, object[]> eventCaller)
