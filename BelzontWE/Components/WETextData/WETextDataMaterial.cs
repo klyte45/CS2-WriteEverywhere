@@ -158,7 +158,6 @@ namespace BelzontWE
             material.SetColor("_BaseColor", color.EffectiveValue);
             material.SetFloat("_Metallic", metallic.EffectiveValue);
             material.SetFloat("_Smoothness", smoothness.EffectiveValue);
-            material.SetVector("colossal_TextureArea", new float4(uvBounds.min, uvBounds.max));
             material.SetFloat("_AffectAlbedo", 1);
             material.SetFloat("_AffectMetal", 1);
             material.SetFloat("_AffectNormal", 1);

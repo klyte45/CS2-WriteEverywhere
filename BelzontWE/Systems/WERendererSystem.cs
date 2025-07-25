@@ -18,6 +18,7 @@ using UnityEngine.Rendering;
 
 
 
+
 #if BURST
 using UnityEngine.Scripting;
 using Unity.Burst;
@@ -40,6 +41,9 @@ namespace BelzontWE
         internal const char VARIABLE_ITEM_SEPARATOR = '↓';
         internal const char VARIABLE_KV_SEPARATOR = '→';
 
+#if DEBUG
+        public uint DrawCallsLastFrame { get; private set; } = 0;
+#endif
         private uint FrameCounter { get; set; } = 0;
 #if BURST
         [Preserve]
@@ -130,6 +134,9 @@ namespace BelzontWE
         {
             FrameCounter++;
             EntityCommandBuffer cmd;
+#if DEBUG
+            DrawCallsLastFrame = 0;
+#endif
             if (availToDraw.Count > 0)
             {
                 if (dumpNextFrame) LogUtils.DoLog($"Drawing Items: E {m_renderQueueEntities.CalculateEntityCount()} | C {m_renderQueueEntities.CalculateChunkCount()}");
@@ -217,15 +224,23 @@ namespace BelzontWE
                             Material ownMaterial;
                             if (ìsPlaceholder) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
                             else material.GetOwnMaterial(ref mesh, bri.BoundsUV, out ownMaterial);
-                            var geomMesh = bri is PrimitiveRenderInformation bri2 && mesh.TextType == WESimulationTextType.WhiteCube ? bri2.MeshCube : bri.GetMesh(item.material.Shader);
-                            Graphics.DrawMesh(geomMesh, item.transformMatrix, ownMaterial, 0, null, 0, null, ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
-                            if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)
-                            {
-                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! DRAWING Extra mesh");
-                                Graphics.DrawMesh(geomMesh, item.transformMatrix, WEAtlasesLibrary.DefaultMaterialSemiTransparent(), 0, null, 0, null, false, false);
-                            }
 
-                            if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {mesh.RenderInformation} | {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
+                            var bri2 = bri as PrimitiveRenderInformation;
+                            var meshCount = bri2 is null || mesh.TextType == WESimulationTextType.WhiteCube ? 1 : bri2.MeshCount(item.material.Shader);
+                            for (int i = 0; i < meshCount; i++)
+                            {
+                                var geomMesh = bri2 is not null ? (mesh.TextType == WESimulationTextType.WhiteCube ? bri2.MeshCube[0] : bri2.GetMesh(item.material.Shader, i)) : bri.GetMesh(item.material.Shader);
+                                Graphics.DrawMesh(geomMesh, item.transformMatrix, ownMaterial, 0, null, 0, bri2?.GetPropertyBlock(item.material.Shader, i), ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
+                                if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)
+                                {
+                                    if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! DRAWING Extra mesh");
+                                    Graphics.DrawMesh(geomMesh, item.transformMatrix, WEAtlasesLibrary.DefaultMaterialSemiTransparent(), 0, null, 0, null, false, false);
+                                }
+#if DEBUG
+                                DrawCallsLastFrame++;
+#endif
+                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
+                            }
                         }
                     }
                     //      if (!WETemplateManager.Instance.IsAnyGarbagePending)

@@ -1,10 +1,12 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
+using Colossal.IO.AssetDatabase.Internal;
 using Colossal.Mathematics;
 using System;
 using System.Linq;
 using System.Xml.Serialization;
 using Unity.Collections;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace BelzontWE.Font.Utility
@@ -69,7 +71,7 @@ namespace BelzontWE.Font.Utility
         public readonly Bounds3 m_boundsCube;
 
         private Mesh m_mesh;
-        private Mesh m_meshCube;
+        private Mesh[] m_meshCube;
 
         [XmlIgnore]
         public Texture Main { get; private set; }
@@ -80,7 +82,10 @@ namespace BelzontWE.Font.Utility
 
         public Bounds2 BoundsUV { get; }
 
-        public Mesh GetMesh(WEShader shader) => shader == WEShader.Decal ? MeshCube : Mesh;
+      //  public Mesh GetMesh(WEShader shader) => shader == WEShader.Decal ? MeshCube : Mesh;
+        public int MeshCount(WEShader shader) => shader == WEShader.Decal ? MeshCube.Length : 1;
+        public Mesh GetMesh(WEShader shader, int idx = 0) => shader == WEShader.Decal ? MeshCube[idx] : Mesh;
+        public MaterialPropertyBlock GetPropertyBlock(WEShader shader, int idx = 0) => shader == WEShader.Decal ? CubeDecalBlocks[idx] : null;
 
         [XmlIgnore]
         private Mesh Mesh
@@ -104,24 +109,50 @@ namespace BelzontWE.Font.Utility
             }
         }
         [XmlIgnore]
-        internal Mesh MeshCube
+        internal Mesh[] MeshCube
         {
             get
             {
                 if (m_meshCube is null && m_vertices?.Length > 0)
                 {
                     WERenderingHelper.DecalCubeFromPlanes(m_vertices, m_uv, out var m_verticesCube, out var m_trianglesCube, out var m_uvCube, m_sizeMetersUnscaled.x);
-                    m_meshCube = new Mesh
+                    m_meshCube = m_verticesCube.Select((x, i) =>
                     {
-                        vertices = m_verticesCube,
-                        triangles = m_trianglesCube,
-                        uv = m_uvCube,
-                    };
-                    m_meshCube.RecalculateBounds();
-                    m_meshCube.RecalculateNormals();
-                    m_meshCube.tangents = m_verticesCube.Select(x => Vector4.zero).ToArray();
+                        var mesh = new Mesh
+                        {
+                            vertices = x,
+                            triangles = m_trianglesCube[i],
+                            uv = m_uvCube[i],
+                        };
+                        mesh.RecalculateBounds();
+                        mesh.RecalculateNormals();
+                        mesh.tangents = x.Select(_ => Vector4.zero).ToArray();
+                        return mesh;
+                    }).ToArray();
                 }
                 return m_meshCube;
+            }
+        }
+
+        [XmlIgnore]
+        private MaterialPropertyBlock[] m_cubeDecalBlocks;
+
+        [XmlIgnore]
+        public MaterialPropertyBlock[] CubeDecalBlocks
+        {
+            get
+            {
+                if (m_cubeDecalBlocks is null)
+                {
+                    m_cubeDecalBlocks = MeshCube.Select(x => new MaterialPropertyBlock()).ToArray();
+                    for (int i = 0; i < m_cubeDecalBlocks.Length; i++)
+                    {
+                        var uvBounds = (min: new float2(MeshCube[i].uv.Min(x => x.x), MeshCube[i].uv.Min(x => x.y)),
+                                       max: new float2(MeshCube[i].uv.Max(x => x.x), MeshCube[i].uv.Max(x => x.y)));
+                        m_cubeDecalBlocks[i].SetVector("colossal_TextureArea", new float4(uvBounds.min, uvBounds.max));
+                    }
+                }
+                return m_cubeDecalBlocks;
             }
         }
         public Colossal.Hash128 Guid { get; private set; }
@@ -164,7 +195,7 @@ namespace BelzontWE.Font.Utility
         public void Dispose()
         {
             if (Mesh) GameObject.Destroy(Mesh);
-            if (MeshCube) GameObject.Destroy(MeshCube);
+            MeshCube?.ForEach(x => GameObject.Destroy(x));
         }
     }
 

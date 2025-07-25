@@ -70,7 +70,7 @@ namespace BelzontWE
             GameObject.Destroy(mesh);
         }
 
-        public Mesh GetMesh(WEShader shader) => CachedMesh;
+        public Mesh GetMesh(WEShader shade, int idx = 0) => CachedMesh;
         public bool IsValid() => Main;
         public bool IsError { get => false; set { } }
 

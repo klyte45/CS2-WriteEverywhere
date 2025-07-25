@@ -14,7 +14,7 @@ namespace BelzontWE
         Texture Mask { get; }
         Texture Normal { get; }
 
-        Mesh GetMesh(WEShader shader);
+        Mesh GetMesh(WEShader shader, int idx = 0);
         bool IsValid();
         bool IsError { get; set; }
         Bounds3 Bounds { get; }
