@@ -355,7 +355,7 @@ namespace BelzontWE.Font
                 itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
                 return;
             }
-            var result = PrimitiveRenderInformation.Fill(brij, CurrentAtlas.Texture, CurrentAtlas.SharedDecalMaterial);
+            var result = PrimitiveRenderInformation.Fill(brij, CurrentAtlas.Texture);
             if (result is null)
             {
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] removing {originalText} ");
@@ -409,7 +409,7 @@ namespace BelzontWE.Font
         {
             if (!m_textCache.ContainsKey(""))
             {
-                m_textCache[""] = new PrimitiveRenderInformation("", new Vector3[0], new int[0], new Vector2[0], default, CurrentAtlas.SharedDecalMaterial, null);
+                m_textCache[""] = new PrimitiveRenderInformation("", new Vector3[0], new int[0], new Vector2[0], default, null);
             }
             if (itemsQueue.Count >= queueConsumptionFrame || framesBuffering++ > 60)
             {

@@ -231,13 +231,8 @@ namespace BelzontWE
                             {
                                 var geomMesh = bri2 is not null ? (mesh.TextType == WESimulationTextType.WhiteCube ? bri2.MeshCube[0] : bri2.GetMesh(item.material.Shader, i)) : bri.GetMesh(item.material.Shader);
                                 var effectiveMatrix = bri2 is null ? item.transformMatrix : item.transformMatrix * Matrix4x4.Translate(bri2.GetMeshTranslation(item.material.Shader, i));
-                                var pb = bri2?.GetPropertyBlock(item.material.Shader, i);
-                                if (pb != null && material.Shader == WEShader.Decal)
-                                {
-                                    material.UpdateDecalPropertyBlock(pb);
-                                    var x = pb.GetHashCode() == bri2?.GetPropertyBlock(item.material.Shader, i).GetHashCode();
-                                }
-                                Graphics.DrawMesh(geomMesh, effectiveMatrix, ownMaterial, 0, null, 0, pb, ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
+
+                                Graphics.DrawMesh(geomMesh, effectiveMatrix, ownMaterial, 0, null, 0, bri2?.GetPropertyBlock(item.material.Shader, i), ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
                                 if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)
                                 {
                                     if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! DRAWING Extra mesh");

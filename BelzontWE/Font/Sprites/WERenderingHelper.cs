@@ -119,8 +119,6 @@ namespace BelzontWE
                 .ToArray();
         }
 
-        internal static readonly Material WHITE_TEXTURE_MATERIAL_SHARED = SetupBaseSharedMaterialDecal();
-
 
         public static IBasicRenderInformation GenerateBri(FixedString32Bytes refName, Texture main, Texture normal, Texture control, Texture emissive, Texture mask)
         {
@@ -146,8 +144,7 @@ namespace BelzontWE
                  control: control,
                  emissive: emissive,
                  mask: mask,
-                 invertUv: default,
-                 sharedMaterialDecal: WHITE_TEXTURE_MATERIAL_SHARED
+                 invertUv: default
                 )
             {
                 m_sizeMetersUnscaled = new Vector2(proportion, 1),
@@ -157,7 +154,6 @@ namespace BelzontWE
 
         public static Material GenerateMaterial(IBasicRenderInformation bri, WEShader shader)
         {
-            if (shader == WEShader.Decal) return bri.SharedMaterial;
             var material = CreateDefaultFontMaterial(shader);
             if (material is null) return null;
             material.SetTexture(FontAtlas._BaseColorMap, bri.Main);
@@ -194,6 +190,16 @@ namespace BelzontWE
                     material.SetFloat(DecalLayerMask, math.asfloat(8));
                     material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
                     break;
+                case WEShader.Decal:
+                    material = new Material(Shader.Find(defaultDecalShaderName));
+                    material.SetFloat(DecalLayerMask, math.asfloat(8));
+                    material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
+                    material.SetFloat("_AffectAlbedo", 1);
+                    material.SetFloat("_AffectNormal", 1);
+                    material.SetFloat("_AffectMetal", 1);
+                    material.SetFloat("_AffectAO", 1);
+                    material.SetFloat("_AffectSmoothness", 1);
+                    break;
                 default:
                     return null;
             }
@@ -201,22 +207,6 @@ namespace BelzontWE
             HDMaterial.ValidateMaterial(material);
             return material;
         }
-
-        public static Material SetupBaseSharedMaterialDecal()
-        {
-            var material = new Material(Shader.Find(defaultDecalShaderName));
-            material.SetFloat(DecalLayerMask, math.asfloat(8));
-            material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
-            material.SetFloat("_AffectAlbedo", 1);
-            material.SetFloat("_AffectNormal", 1);
-            material.SetFloat("_AffectMetal", 1);
-            material.SetFloat("_AffectAO", 1);
-            material.SetFloat("_AffectSmoothness", 1);
-            material.enableInstancing = true;
-            HDMaterial.ValidateMaterial(material);
-            return material;
-        }
-
 
         internal static IBasicRenderInformation GenerateBri(WETextureAtlas textureAtlas, WESpriteInfo spriteInfo)
         {
@@ -247,7 +237,6 @@ namespace BelzontWE
                         control: spriteInfo.HasControl ? textureAtlas.Control : null,
                         emissive: spriteInfo.HasEmissive ? textureAtlas.Emissive : textureAtlas.Main,
                         mask: spriteInfo.HasMask ? textureAtlas.Mask : null,
-                 sharedMaterialDecal: textureAtlas.SharedMaterial,
                  invertUv: default
             )
             {

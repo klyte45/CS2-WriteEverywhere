@@ -20,7 +20,6 @@ namespace BelzontWE.Font.Utility
 
         public PrimitiveRenderInformation(string refText,
             Vector3[] vertices, int[] triangles, Vector2[] uv, bool2 invertUv,
-            Material sharedMaterialDecal,
             Texture main, Texture normal = null, Texture control = null, Texture emissive = null, Texture mask = null)
         {
             m_refText = refText ?? throw new ArgumentNullException("refText");
@@ -50,16 +49,15 @@ namespace BelzontWE.Font.Utility
             Control = control;
             Mask = mask;
             Guid = System.Guid.NewGuid();
-            SharedMaterial = sharedMaterialDecal;
         }
-        public static PrimitiveRenderInformation Fill(BasicRenderInformationJob brij, Texture main, Material sharedDecalMaterial)
+        public static PrimitiveRenderInformation Fill(BasicRenderInformationJob brij, Texture main)
         {
             if (brij.Invalid)
             {
                 return null;
             }
             var bri = new PrimitiveRenderInformation(brij.originalText.ToString(), brij.vertices.ToArray(), brij.triangles.ToArray(), brij.uv1.ToArray(),
-                brij.invertUv, sharedDecalMaterial, main);
+                brij.invertUv,  main);
             if (bri.Mesh == null) return null;
 
             bri.m_colors32 = brij.colors.ToArray();
@@ -86,7 +84,6 @@ namespace BelzontWE.Font.Utility
         public Texture Emissive { get; private set; }
         public Texture Control { get; private set; }
         public Texture Mask { get; private set; }
-        public Material SharedMaterial { get; }
 
         public Bounds2 BoundsUV { get; }
 

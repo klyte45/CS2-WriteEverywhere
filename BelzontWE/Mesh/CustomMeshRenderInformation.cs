@@ -76,8 +76,6 @@ namespace BelzontWE
 
         public Bounds3 Bounds { get; }
 
-        public Material SharedMaterial => null;
-
         public void Dispose()
         {
             GameObject.Destroy(mesh);
