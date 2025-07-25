@@ -3,6 +3,7 @@ using BelzontWE.Font;
 using BelzontWE.Font.Utility;
 using BelzontWE.Layout;
 using BelzontWE.Sprites;
+using Colossal.Mathematics;
 using System.Linq;
 using Unity.Collections;
 using Unity.Mathematics;
@@ -84,19 +85,27 @@ namespace BelzontWE
         {
             return GenerateBri(refName, imageInfo.Main, imageInfo.Normal, imageInfo.ControlMask, imageInfo.Emissive, imageInfo.MaskMap);
         }
-        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[][] cubeVertices, out int[][] cubeTris, out Vector2[][] uvCube, float xDivider)
+        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[][] cubeVertices, out int[][] cubeTris, out Vector2[][] uvCube, out Vector3[] cubeOffsets, float xDivider)
         {
             var verticesGroup = originalVertices.Select((x, i) => (x, i)).GroupBy(x => x.i / 4);
-            cubeVertices = verticesGroup.Select(x =>
+
+            var verticesBounds = verticesGroup.Select(x =>
             {
                 var list = x.Select(x => x.x).ToList();
                 return (minx: list.Min(x => x.x) / xDivider, maxx: list.Max(x => x.x) / xDivider, miny: list.Min(x => x.y), maxy: list.Max(x => x.y));
-            })
+            });
+
+            cubeVertices = verticesBounds
                 .Select(x =>
                     kVerticesPositionsCube.Select((y, j) => new Vector3(y.x < 0 ? x.minx : x.maxx, y.y * -.5f, y.z < 0 ? x.miny : x.maxy)).ToArray()
                     )
                 .ToArray();
-            cubeTris = verticesGroup.Select((_, i) => kTriangleIndicesCube.Select(x => i * 24).ToArray()).ToArray();
+            cubeTris = verticesGroup.Select((_, i) => kTriangleIndicesCube).ToArray();
+            cubeOffsets = verticesBounds.Select(x =>
+            {
+                var bounds = new Bounds2(new(x.minx, x.miny), new(x.maxx, x.maxy));
+                return (Vector3)new float3((bounds.min + (bounds.Size() / 2)) * new float2(-1, 1), 0).xzy;
+            }).ToArray();
 
             uvCube = originalUv.Select((x, i) => (x, i)).GroupBy(x => x.i / 4).Select(x =>
             {
@@ -131,7 +140,8 @@ namespace BelzontWE
                  normal: normal,
                  control: control,
                  emissive: emissive,
-                 mask: mask
+                 mask: mask,
+                 invertUv: default
                 )
             {
                 m_sizeMetersUnscaled = new Vector2(proportion, 1),
@@ -222,7 +232,8 @@ namespace BelzontWE
                         normal: spriteInfo.HasNormal ? textureAtlas.Normal : null,
                         control: spriteInfo.HasControl ? textureAtlas.Control : null,
                         emissive: spriteInfo.HasEmissive ? textureAtlas.Emissive : textureAtlas.Main,
-                        mask: spriteInfo.HasMask ? textureAtlas.Mask : null
+                        mask: spriteInfo.HasMask ? textureAtlas.Mask : null,
+                 invertUv: default
             )
             {
                 m_sizeMetersUnscaled = new Vector2(proportion, 1),

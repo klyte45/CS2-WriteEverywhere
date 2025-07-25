@@ -294,11 +294,20 @@ namespace BelzontWE
                                 return;
                             }
                             var scale = transform.scale;
+                            var material = m_weMaterialLookup[nextEntity];
+                            var isDecal = material.CheckIsDecal(mesh);
                             if (mesh.HasBRI)
                             {
-                                if (mesh.TextType == WESimulationTextType.Image && transform.useAbsoluteSizeEditing)
+                                if (mesh.TextType == WESimulationTextType.Image)
                                 {
-                                    scale.x /= mesh.BriWidthMetersUnscaled;
+                                    if (transform.useAbsoluteSizeEditing)
+                                    {
+                                        scale.x /= mesh.BriWidthMetersUnscaled;
+                                    }
+                                    if (isDecal)
+                                    {
+                                        scale.x /= mesh.BriWidthMetersUnscaled;
+                                    }
                                 }
                                 if (mesh.TextType == WESimulationTextType.Text && mesh.MaxWidthMeters.EffectiveValue > 0 && mesh.BriWidthMetersUnscaled * scale.x > mesh.MaxWidthMeters.EffectiveValue)
                                 {
@@ -312,10 +321,9 @@ namespace BelzontWE
                             }
                             var refPos = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform.offsetPosition, transform.PivotAsFloat3, scale);
                             var refRot = parentIsPlaceholder ? default : transform.offsetRotation;
-                            var material = m_weMaterialLookup[nextEntity];
-                            var isDecal = material.CheckIsDecal(mesh);
                             var effRot = parentIsPlaceholder ? default : isDecal ? refRot * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)refRot;
-                            var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? (scale.xzy * new float3(mesh.TextType == WESimulationTextType.Image ? mesh.BriWidthMetersUnscaled : 1, 1, 1)) : new float3(scale.xy, math.sign(scale.z)));
+                            var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one)
+                                * Matrix4x4.Scale(isDecal ? (scale.xzy * new float3(mesh.TextType == WESimulationTextType.Image ? mesh.BriWidthMetersUnscaled : 1, 1, 1)) : new float3(scale.xy, math.sign(scale.z)));
                             var zeroedBounds = (Vector3)(mesh.Bounds.min - mesh.Bounds.max) == default;
                             var invalidBri = (mesh.EffectiveText.Length >= 0 && zeroedBounds);
                             if (mesh.HasBRI || invalidBri)

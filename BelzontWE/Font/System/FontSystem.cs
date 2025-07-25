@@ -108,7 +108,7 @@ namespace BelzontWE.Font
             {
                 if (!m_textCache.TryGetValue("", out bri))
                 {
-                    bri = new PrimitiveRenderInformation(str, null, null, null, null, null, null, null);
+                    bri = new PrimitiveRenderInformation(str, null, null, null, default, null, null, null,default);
                     m_textCache.TryAdd("", bri);
                     return bri;
                 }
@@ -409,7 +409,7 @@ namespace BelzontWE.Font
         {
             if (!m_textCache.ContainsKey(""))
             {
-                m_textCache[""] = new PrimitiveRenderInformation("", new Vector3[0], new int[0], new Vector2[0], null);
+                m_textCache[""] = new PrimitiveRenderInformation("", new Vector3[0], new int[0], new Vector2[0], default, null);
             }
             if (itemsQueue.Count >= queueConsumptionFrame || framesBuffering++ > 60)
             {

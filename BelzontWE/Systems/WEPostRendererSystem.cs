@@ -224,7 +224,7 @@ namespace BelzontWE
                 if (m_templateUpdaterLkp.HasBuffer(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
                 if (text.Trim() == "")
                 {
-                    weCustomData = weCustomData.UpdateBRI(new PrimitiveRenderInformation("", new UnityEngine.Vector3[0], new int[0], new UnityEngine.Vector2[0],
+                    weCustomData = weCustomData.UpdateBRI(new PrimitiveRenderInformation("", new UnityEngine.Vector3[0], new int[0], new UnityEngine.Vector2[0], default,
                         null), "");
                     return true;
                 }
