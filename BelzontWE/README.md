@@ -81,7 +81,7 @@ Image atlases are a group of images stored together in a folder, and since 0.4 c
 The shaders currently supported by WE are: **Default**, **Glass** and **Decal**
 - The Default shader is the most used shader in the game, and shall be the right choice most of time
 - The Glass shader is semitransparent, can be useful in many situations too
-- The Decal shader only works for images currently. It projects into meshes that have the same decal flags in their material. The flags are editable at UI and they can be added also over WE surfaces using the shaders above.
+- The Decal shader only works for images and texts. It projects into meshes that have the same decal flags in their material. The flags are editable at UI and they can be added also over WE surfaces using the shaders above.
 
 ### Variables
 

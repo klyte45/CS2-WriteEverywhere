@@ -160,10 +160,6 @@ namespace BelzontWE
             material.SetFloat("_AffectSmoothness", AffectSmoothness ? 1 : 0);
             material.SetFloat("_MetallicOpacity", coatStrength.EffectiveValue);
             material.SetFloat("_NormalOpacity", normalStrength.EffectiveValue);
-            material.SetFloat("_DecalColorMask0", colorMask1.EffectiveValue.r);
-            material.SetFloat("_DecalColorMask1", colorMask1.EffectiveValue.g);
-            material.SetFloat("_DecalColorMask2", colorMask1.EffectiveValue.b);
-            material.SetFloat("_DecalColorMask3", colorMask1.EffectiveValue.a);
             material.SetFloat("_DrawOrder", DrawOrder);
             material.SetFloat(WERenderingHelper.DecalLayerMask, math.asfloat(DecalFlags));
             material.SetVector("colossal_TextureArea", coordinates.textureArea);

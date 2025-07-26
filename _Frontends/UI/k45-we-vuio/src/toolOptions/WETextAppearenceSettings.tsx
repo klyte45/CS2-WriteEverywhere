@@ -64,7 +64,6 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="Smoothness" label={T_Smoothness} max={1} min={0} />
             </>}
             {[2].includes(material.ShaderType.value) && <>
-                <FormulaeEditorRowColor showAlpha={true} formulaeModule="material" formulaeField="ColorMask1" label={T_colorMask1} />
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="CoatStrength" label={T_metallicOpacity} max={1} min={0} />
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="Metallic" label={T_Metallic} max={1} min={0} />
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="NormalStrength" label={T_normalStrength} max={1} min={0} />
