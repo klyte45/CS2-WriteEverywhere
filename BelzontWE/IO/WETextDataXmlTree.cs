@@ -141,6 +141,12 @@ namespace BelzontWE
 
         internal void MapFontAtlasesTemplates(string modId, HashSet<string> dictAtlases, HashSet<string> dictFonts, HashSet<string> dictTemplates, HashSet<string> dictMeshes)
         {
+            if (self is null)
+            {
+                LogUtils.DoWarnLog($"WETextDataXmlTree: self is null for a file on modId {modId}");
+                return;
+            }
+
             self.MapFontAtlasesTemplates(modId, dictAtlases, dictFonts, dictTemplates, dictMeshes);
             if (children?.Length > 0)
             {

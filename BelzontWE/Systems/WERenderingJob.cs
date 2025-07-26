@@ -321,7 +321,7 @@ namespace BelzontWE
                             }
                             var refPos = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform.offsetPosition, transform.PivotAsFloat3, scale);
                             var refRot = parentIsPlaceholder ? default : transform.offsetRotation;
-                            var effRot = parentIsPlaceholder ? default : isDecal ? refRot * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)refRot;
+                            var effRot = (parentIsPlaceholder ? quaternion.identity : (Quaternion)refRot) * (isDecal ? Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)quaternion.identity);
                             var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one)
                                 * Matrix4x4.Scale(isDecal ? (scale.xzy * new float3(mesh.TextType == WESimulationTextType.Image ? mesh.BriWidthMetersUnscaled : 1, 1, 1)) : new float3(scale.xy, math.sign(scale.z)));
                             var zeroedBounds = (Vector3)(mesh.Bounds.min - mesh.Bounds.max) == default;

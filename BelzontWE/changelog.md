@@ -1,4 +1,9 @@
-# v0.5.0r0 (26-JUL-25)
+# v0.5.0r1 (26-JUL-25)
+
+- Fixed issue when the first child of a placeholder layout is a decal.
+- Minor i18n fixes.
+
+## FROM v0.5.0r0 (26-JUL-25)
 
 - Added text decals support
 - All decals support was revisited and now have fine controls for metal and normal effect strength.
