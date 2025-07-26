@@ -75,9 +75,7 @@ namespace BelzontWE
         public MultiUIValueBinding<string> GlassThicknessFormulaeStr { get; private set; }
         public MultiUIValueBinding<int> GlassThicknessFormulaeCompileResult { get; private set; }
         public MultiUIValueBinding<string[]> GlassThicknessFormulaeCompileResultErrorArgs { get; private set; }
-        public MultiUIValueBinding<bool> AffectSmoothness { get; private set; }
-        public MultiUIValueBinding<bool> AffectAO { get; private set; }
-        public MultiUIValueBinding<bool> AffectEmission { get; private set; }
+        public MultiUIValueBinding<bool> AffectSmoothness { get; private set; }  
         public MultiUIValueBinding<float> DrawOrder { get; private set; }
 
         private WEWorldPickerController m_pickerController;
@@ -103,9 +101,8 @@ namespace BelzontWE
             ColorMask3 = new(default, $"{PREFIX}{nameof(ColorMask3)}", EventCaller, CallBinder, (x, _) => new() { r = x.r, g = x.g, b = x.b, a = x.a }, (x, _) => new Color(x.r, x.g, x.b, x.a));
             NormalStrength = new(default, $"{PREFIX}{nameof(NormalStrength)}", EventCaller, CallBinder);
             AffectSmoothness = new(default, $"{PREFIX}{nameof(AffectSmoothness)}", EventCaller, CallBinder);
-            AffectAO = new(default, $"{PREFIX}{nameof(AffectAO)}", EventCaller, CallBinder);
-            AffectEmission = new(default, $"{PREFIX}{nameof(AffectEmission)}", EventCaller, CallBinder);
             DrawOrder = new(default, $"{PREFIX}{nameof(DrawOrder)}", EventCaller, CallBinder);
+
 
             MainColorFormulaeStr = new(default, $"{PREFIX}{nameof(MainColorFormulaeStr)}", EventCaller, CallBinder);
             MainColorFormulaeCompileResult = new(default, $"{PREFIX}{nameof(MainColorFormulaeCompileResult)}", EventCaller, CallBinder);
@@ -154,7 +151,7 @@ namespace BelzontWE
             NormalStrengthFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(NormalStrengthFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
             GlassThicknessFormulaeStr = new(default, $"{PREFIX}{nameof(GlassThicknessFormulaeStr)}", EventCaller, CallBinder);
             GlassThicknessFormulaeCompileResult = new(default, $"{PREFIX}{nameof(GlassThicknessFormulaeCompileResult)}", EventCaller, CallBinder);
-            GlassThicknessFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(GlassThicknessFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
+            GlassThicknessFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(GlassThicknessFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);            
 
 
             DecalFlags.OnScreenValueChanged += (x) => PickerController.EnqueueModification<int, WETextDataMaterial>(x, (x, currentItem) => { currentItem.DecalFlags = x; return currentItem; });
@@ -174,9 +171,8 @@ namespace BelzontWE
             ColorMask3.OnScreenValueChanged += (x) => PickerController.EnqueueModification<Color, WETextDataMaterial>(x, (x, currentItem) => { currentItem.ColorMask3 = x; return currentItem; });
             NormalStrength.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.NormalStrength = x; return currentItem; });
             AffectSmoothness.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMaterial>(x, (x, currentItem) => { currentItem.AffectSmoothness = x; return currentItem; });
-            AffectAO.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMaterial>(x, (x, currentItem) => { currentItem.AffectAO = x; return currentItem; });
-            AffectEmission.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMaterial>(x, (x, currentItem) => { currentItem.AffectEmission = x; return currentItem; });
             DrawOrder.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.DrawOrder = x; return currentItem; });
+
 
 
             SetupOnFormulaeChangedAction((ref WETextDataMaterial data, string newFormulae, out string[] errorArgs) => data.SetFormulaeMainColor(newFormulae, out errorArgs), MainColorFormulaeStr, MainColorFormulaeCompileResult, MainColorFormulaeCompileResultErrorArgs);
@@ -195,7 +191,7 @@ namespace BelzontWE
             SetupOnFormulaeChangedAction((ref WETextDataMaterial data, string newFormulae, out string[] errorArgs) => data.SetFormulaeNormalStrength(newFormulae, out errorArgs), NormalStrengthFormulaeStr, NormalStrengthFormulaeCompileResult, NormalStrengthFormulaeCompileResultErrorArgs);
             SetupOnFormulaeChangedAction((ref WETextDataMaterial data, string newFormulae, out string[] errorArgs) => data.SetFormulaeNormalStrength(newFormulae, out errorArgs), NormalStrengthFormulaeStr, NormalStrengthFormulaeCompileResult, NormalStrengthFormulaeCompileResultErrorArgs);
 
-            CallBinder($"{PREFIX}isDecalMesh", () => EntityManager.TryGetComponent<WETextDataMaterial>(m_pickerController.CurrentSubEntity.Value, out var material) && EntityManager.TryGetComponent<WETextDataMesh>(m_pickerController.CurrentSubEntity.Value, out var mesh) ? material.CheckIsDecal(mesh) : false);
+            CallBinder($"{PREFIX}isDecalMesh", () => EntityManager.TryGetComponent<WETextDataMaterial>(m_pickerController.CurrentSubEntity.Value, out var material) && EntityManager.TryGetComponent<WETextDataMesh>(m_pickerController.CurrentSubEntity.Value, out var mesh) && material.CheckIsDecal(mesh));
         }
         private void SetupOnFormulaeChangedAction(FormulaeSetter<WETextDataMaterial> formulaeSetter, MultiUIValueBinding<string> formulaeStr, MultiUIValueBinding<int> formulaeCompileResult, MultiUIValueBinding<string[]> formulaeCompileResultErrorArgs)
             => WEFormulaeHelper.SetupOnFormulaeChangedAction(PickerController, formulaeSetter, formulaeStr, formulaeCompileResult, formulaeCompileResultErrorArgs);
@@ -220,9 +216,8 @@ namespace BelzontWE
             NormalStrength.Value = material.NormalStrength;
             GlassThickness.Value = material.GlassThickness;
             AffectSmoothness.Value = material.AffectSmoothness;
-            AffectAO.Value = material.AffectAO;
-            AffectEmission.Value = material.AffectEmission;
             DrawOrder.Value = material.DrawOrder;
+
 
             ResetScreenFormulaeValue(material.ColorFormulae, MainColorFormulaeStr, MainColorFormulaeCompileResult, MainColorFormulaeCompileResultErrorArgs);
             ResetScreenFormulaeValue(material.EmissiveColorFormulae, EmissiveColorFormulaeStr, EmissiveColorFormulaeCompileResult, EmissiveColorFormulaeCompileResultErrorArgs);

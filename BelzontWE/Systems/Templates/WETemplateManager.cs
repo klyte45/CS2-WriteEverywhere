@@ -701,7 +701,8 @@ namespace BelzontWE
                 }
                 else if (!m_textDataDirtyQuery.IsEmpty)
                 {
-                    new WEUpdateFormulaesJob
+                    using var tempArr = m_textDataDirtyQuery.ToArchetypeChunkArray(Allocator.Temp);
+                    var job = new WEUpdateFormulaesJob
                     {
                         m_MainDataHdl = GetComponentTypeHandle<WETextDataMain>(true),
                         m_MaterialDataHdl = GetComponentTypeHandle<WETextDataMaterial>(true),
@@ -709,11 +710,15 @@ namespace BelzontWE
                         m_MeshDataHdl = GetComponentTypeHandle<WETextDataMesh>(true),
                         m_DirtyFormulaeHdl = GetComponentTypeHandle<WETextDataDirtyFormulae>(true),
                         m_EntityType = GetEntityTypeHandle(),
-                        m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+                        m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
                         em = EntityManager,
                         nextUpdateFrame = UnityEngine.Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal,
                         intervalUpdate = WEModData.InstanceWE.FramesCheckUpdateVal
-                    }.Schedule(m_textDataDirtyQuery, Dependency).Complete();
+                    };
+                    for (int i = 0; i < tempArr.Length; i++)
+                    {
+                        job.Execute(tempArr[i]);
+                    }
                     m_endFrameBarrier.CreateCommandBuffer().RemoveComponent<WETextDataDirtyFormulae>(m_textDataDirtyQuery, EntityQueryCaptureMode.AtPlayback);
                 }
             }
@@ -733,7 +738,7 @@ namespace BelzontWE
             Dependency.Complete();
         }
 
-        private struct WEUpdateFormulaesJob : IJobChunk
+        private struct WEUpdateFormulaesJob
         {
             public ComponentTypeHandle<WETextDataMain> m_MainDataHdl;
             public ComponentTypeHandle<WETextDataMaterial> m_MaterialDataHdl;
@@ -741,12 +746,12 @@ namespace BelzontWE
             public ComponentTypeHandle<WETextDataMesh> m_MeshDataHdl;
             public ComponentTypeHandle<WETextDataDirtyFormulae> m_DirtyFormulaeHdl;
             public EntityTypeHandle m_EntityType;
-            public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
+            public EntityCommandBuffer m_CommandBuffer;
             public EntityManager em;
             public int nextUpdateFrame;
             internal int intervalUpdate;
 
-            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+            public void Execute(in ArchetypeChunk chunk)
             {
                 var entities = chunk.GetNativeArray(m_EntityType);
                 var mainData = chunk.GetNativeArray(ref m_MainDataHdl);
@@ -774,7 +779,7 @@ namespace BelzontWE
                     meshData[i] = mesh;
                     if (canMultiply && transformChanged)
                     {
-                        m_CommandBuffer.AddComponent<WETemplateDirtyInstancing>(unfilteredChunkIndex, entities[i]);
+                        m_CommandBuffer.AddComponent<WETemplateDirtyInstancing>(entities[i]);
                     }
                 }
             }

@@ -231,7 +231,7 @@ namespace BelzontWE
                             for (int i = 0; i < meshCount; i++)
                             {
                                 var geomMesh = bri2 is not null ? (mesh.TextType == WESimulationTextType.WhiteCube ? bri2.MeshCube[0] : bri2.GetMesh(item.material.Shader, i)) : bri.GetMesh(item.material.Shader);
-                                var effectiveMatrix = bri2 is null ? item.transformMatrix : item.transformMatrix * Matrix4x4.Translate(bri2.GetMeshTranslation(item.material.Shader, i));
+                                var effectiveMatrix = bri2 is null ? item.transformMatrix : item.transformMatrix * bri2.GetMeshTranslation(item.material.Shader, i);
 
                                 Graphics.DrawMesh(geomMesh, effectiveMatrix, ownMaterial[i], 0, null, 0, null, ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
                                 if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)

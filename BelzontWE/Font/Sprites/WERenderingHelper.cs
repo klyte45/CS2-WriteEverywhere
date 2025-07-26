@@ -85,7 +85,7 @@ namespace BelzontWE
         {
             return GenerateBri(refName, imageInfo.Main, imageInfo.Normal, imageInfo.ControlMask, imageInfo.Emissive, imageInfo.MaskMap);
         }
-        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[][] cubeVertices, out int[][] cubeTris, out Vector2[][] uvCube, out Vector3[] cubeOffsets)
+        public static void DecalCubeFromPlanes(Vector3[] originalVertices, Vector2[] originalUv, out Vector3[][] cubeVertices, out int[][] cubeTris, out Vector2[][] uvCube, out Matrix4x4[] cubeOffsets)
         {
             var verticesGroup = originalVertices.Select((x, i) => (x, i)).GroupBy(x => x.i / 4);
 
@@ -98,16 +98,15 @@ namespace BelzontWE
             cubeVertices = verticesBounds
                 .Select(x =>
                 {
-                    var itemProportion = (x.maxx - x.minx) / (x.maxy - x.miny);
-                    float3 proportionMultipler = itemProportion > 1 ? new float3(1, 1, 1 / itemProportion) : new float3(itemProportion, 1, 1);
-                    return kVerticesPositionsCube.Select((y, j) => (Vector3)(new float3(math.sign(y.x) * .5f, y.y * -.5f, math.sign(y.z) * .5f) * proportionMultipler)).ToArray();
+                    return kVerticesPositionsCube.Select((y, j) => (Vector3)(new float3(math.sign(y.x) * .5f, y.y * -.5f, math.sign(y.z) * .5f) )).ToArray();
                 })
                 .ToArray();
             cubeTris = verticesGroup.Select((_, i) => kTriangleIndicesCube).ToArray();
             cubeOffsets = verticesBounds.Select(x =>
             {
                 var bounds = new Bounds2(new(x.minx, x.miny), new(x.maxx, x.maxy));
-                return (Vector3)new float3((bounds.min + (bounds.Size() / 2)) * new float2(-1, 1), 0).xzy;
+                var itemProportion = (x.maxx - x.minx) / (x.maxy - x.miny);
+                return Matrix4x4.Translate((Vector3)new float3((bounds.min + (bounds.Size() / 2)) * new float2(-1, 1), 0).xzy) * Matrix4x4.Scale(new float3(bounds.Size(), 1).xzy);
             }).ToArray();
 
             uvCube = originalUv.Select((x, i) => (x, i)).GroupBy(x => x.i / 4).Select(x =>

@@ -76,7 +76,7 @@ namespace BelzontWE.Font.Utility
 
         private Mesh m_mesh;
         private Mesh[] m_meshCube;
-        private Vector3[] m_meshCubeOffsets;
+        private Matrix4x4[] m_meshCubeOffsets;
 
         [XmlIgnore]
         public Texture Main { get; private set; }
@@ -90,7 +90,7 @@ namespace BelzontWE.Font.Utility
         //  public Mesh GetMesh(WEShader shader) => shader == WEShader.Decal ? MeshCube : Mesh;
         public int MeshCount(WEShader shader) => shader == WEShader.Decal ? MeshCube.Length : 1;
         public Mesh GetMesh(WEShader shader, int idx = 0) => shader == WEShader.Decal ? MeshCube[idx] : Mesh;
-        public Vector3 GetMeshTranslation(WEShader shader, int idx = 0) => shader == WEShader.Decal ? m_meshCubeOffsets[idx] : default;
+        public Matrix4x4 GetMeshTranslation(WEShader shader, int idx = 0) => shader == WEShader.Decal ? m_meshCubeOffsets[idx] : Matrix4x4.identity;
 
         [XmlIgnore]
         private Mesh Mesh

@@ -37,8 +37,6 @@ namespace BelzontWE
         private Colossal.Hash128 ownMaterialGuid;
 
         private bool affectSmoothness;
-        private bool affectAO;
-        private bool affectEmission;
         private float drawOrder;
 
         public WEShader Shader { readonly get => shader; set { shader = value; ResetMaterial(); } }
@@ -72,8 +70,6 @@ namespace BelzontWE
         public string ColorMask1Formulae => colorMask1.Formulae;
         public string ColorMask2Formulae => colorMask2.Formulae;
         public string ColorMask3Formulae => colorMask3.Formulae;
-
-
         public readonly Color ColorEffective => color.EffectiveValue;
         public readonly Color EmissiveColorEffective => emissiveColor.EffectiveValue;
         public readonly Color GlassColorEffective => glassColor.EffectiveValue;
@@ -92,8 +88,7 @@ namespace BelzontWE
         public int DecalFlags { readonly get => decalFlags; set { decalFlags = value; dirty = true; } }
 
         public bool AffectSmoothness { readonly get => affectSmoothness; set { affectSmoothness = value; dirty = true; } }
-        public bool AffectAO { readonly get => affectAO; set { affectAO = value; dirty = true; } }
-        public bool AffectEmission { readonly get => affectEmission; set { affectEmission = value; dirty = true; } }
+
         public float DrawOrder { readonly get => drawOrder; set { drawOrder = value; dirty = true; } }
 
         public int SetFormulaeMainColor(string value, out string[] cmpErr) => color.SetFormulae(value, out cmpErr);
@@ -163,8 +158,12 @@ namespace BelzontWE
             material.SetFloat("_AffectMetal", 1);
             material.SetFloat("_AffectNormal", 1);
             material.SetFloat("_AffectSmoothness", AffectSmoothness ? 1 : 0);
-            material.SetFloat("_AffectEmission", AffectEmission ? 1 : 0);
-            material.SetFloat("_AffectAO", AffectAO ? 1 : 0);
+            material.SetFloat("_MetallicOpacity", coatStrength.EffectiveValue);
+            material.SetFloat("_NormalOpacity", normalStrength.EffectiveValue);
+            material.SetFloat("_DecalColorMask0", colorMask1.EffectiveValue.r);
+            material.SetFloat("_DecalColorMask1", colorMask1.EffectiveValue.g);
+            material.SetFloat("_DecalColorMask2", colorMask1.EffectiveValue.b);
+            material.SetFloat("_DecalColorMask3", colorMask1.EffectiveValue.a);
             material.SetFloat("_DrawOrder", DrawOrder);
             material.SetFloat(WERenderingHelper.DecalLayerMask, math.asfloat(DecalFlags));
             material.SetVector("colossal_TextureArea", coordinates.textureArea);
@@ -342,12 +341,11 @@ namespace BelzontWE
                 color = color.ToRgbaXml(),
                 metallic = metallic.ToXml(),
                 smoothness = smoothness.ToXml(),
-                affectAO = affectAO,
-                affectEmission = affectEmission,
                 drawOrder = drawOrder,
                 affectSmoothness = affectSmoothness,
-                decalFlags = decalFlags
-
+                decalFlags = decalFlags,
+                metallicOpacity = coatStrength.ToXml(),
+                normalOpacity = normalStrength.ToXml(),
             };
         public WETextDataXml.GlassStyleXml ToGlassXml()
             => new()
@@ -383,13 +381,13 @@ namespace BelzontWE
                 color = value.color.ToComponent(),
                 metallic = value.metallic.ToComponent(),
                 smoothness = value.smoothness.ToComponent(),
-                affectAO = value.affectAO,
-                affectEmission = value.affectEmission,
                 drawOrder = value.drawOrder,
                 affectSmoothness = value.affectSmoothness,
                 decalFlags = value.decalFlags,
                 shader = value.shader,
-                DecalFlags = value.decalFlags
+                DecalFlags = value.decalFlags,
+                coatStrength = value.metallicOpacity.ToComponent(),
+                normalStrength = value.normalOpacity.ToComponent(),
             };
         public static WETextDataMaterial ToComponent(WETextDataXml.GlassStyleXml value)
             => new()

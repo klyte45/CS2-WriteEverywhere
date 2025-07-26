@@ -2,7 +2,6 @@
 using Belzont.Utils;
 using Colossal.OdinSerializer.Utilities;
 using Colossal.Serialization.Entities;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -490,15 +489,15 @@ namespace BelzontWE
 
         public class DecalStyleXml : ISerializable
         {
-            private const int CURRENT_VERSION = 0;
+            private const int CURRENT_VERSION = 1;
             [XmlIgnore] public WEShader shader => WEShader.Decal;
             [XmlAttribute][DefaultValue(WETextDataMaterial.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextDataMaterial.DEFAULT_DECAL_FLAGS;
             [XmlElement] public FormulaeColorRgbaXml color = new() { defaultValue = Color.white };
             [XmlElement] public FormulaeFloatXml metallic;
             [XmlElement] public FormulaeFloatXml smoothness;
+            [XmlElement] public FormulaeFloatXml normalOpacity;
+            [XmlElement] public FormulaeFloatXml metallicOpacity;
             [XmlAttribute] public bool affectSmoothness;
-            [XmlAttribute] public bool affectAO;
-            [XmlAttribute] public bool affectEmission;
             [XmlAttribute] public float drawOrder;
 
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
@@ -509,9 +508,9 @@ namespace BelzontWE
                 writer.WriteNullCheck(metallic);
                 writer.WriteNullCheck(smoothness);
                 writer.Write(affectSmoothness);
-                writer.Write(affectAO);
-                writer.Write(affectEmission);
                 writer.Write(drawOrder);
+                writer.WriteNullCheck(normalOpacity);
+                writer.WriteNullCheck(metallicOpacity);
             }
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
             {
@@ -526,9 +525,17 @@ namespace BelzontWE
                 reader.ReadNullCheck(out metallic);
                 reader.ReadNullCheck(out smoothness);
                 reader.Read(out affectSmoothness);
-                reader.Read(out affectAO);
-                reader.Read(out affectEmission);
+                if (version == 0)
+                {
+                    reader.Read(out bool _);
+                    reader.Read(out bool _);
+                }
                 reader.Read(out drawOrder);
+                if (version >= 1)
+                {
+                    reader.ReadNullCheck(out normalOpacity);
+                    reader.ReadNullCheck(out metallicOpacity);
+                }
             }
         }
         public class GlassStyleXml : ISerializable

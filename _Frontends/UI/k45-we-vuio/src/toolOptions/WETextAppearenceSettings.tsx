@@ -29,8 +29,7 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
     const T_glassThickness = translate("appearenceSettings.glassThickness"); //"Emissive Exposure"
 
     const T_affectSmoothness = translate("appearenceSettings.affectSmoothness");
-    const T_affectAO = translate("appearenceSettings.affectAO");
-    const T_affectEmission = translate("appearenceSettings.affectEmission");
+    const T_metallicOpacity = translate("appearenceSettings.metallicOpacity");
     const T_drawOrder = translate("appearenceSettings.drawOrder");
 
 
@@ -65,11 +64,12 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="Smoothness" label={T_Smoothness} max={1} min={0} />
             </>}
             {[2].includes(material.ShaderType.value) && <>
+                <FormulaeEditorRowColor showAlpha={true} formulaeModule="material" formulaeField="ColorMask1" label={T_colorMask1} />
+                <FormulaeEditorRowFloat formulaeModule="material" formulaeField="CoatStrength" label={T_metallicOpacity} max={1} min={0} />
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="Metallic" label={T_Metallic} max={1} min={0} />
+                <FormulaeEditorRowFloat formulaeModule="material" formulaeField="NormalStrength" label={T_normalStrength} max={1} min={0} />
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="Smoothness" label={T_Smoothness} max={1} min={0} />
                 <ToggleField label={T_affectSmoothness} value={material.AffectSmoothness.value} onChange={(x) => material.AffectSmoothness.set(x)} />
-                <ToggleField label={T_affectAO} value={material.AffectAO.value} onChange={(x) => material.AffectAO.set(x)} />
-                <ToggleField label={T_affectEmission} value={material.AffectEmission.value} onChange={(x) => material.AffectEmission.set(x)} />
                 <IntInputField label={T_drawOrder} value={material.DrawOrder.value} onChange={(x) => material.DrawOrder.set(x)} />
             </>}
             {material.ShaderType.value == 1 && <>
