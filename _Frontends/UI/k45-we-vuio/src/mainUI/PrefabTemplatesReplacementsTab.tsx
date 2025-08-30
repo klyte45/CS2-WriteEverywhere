@@ -1,4 +1,5 @@
 import { LocElementType, PropsDropdownField, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import useAsyncMemo from "@klyte45/vuio-commons/src/utils/useAsyncMemo";
 import { FilePickerDialog } from "common/FilePickerDialog";
 import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
 import { WEListWithContentTab } from "common/WEListWithContentTab";
@@ -10,12 +11,16 @@ import { CSSProperties, useEffect, useState } from "react";
 import { FontService } from "services/FontService";
 import { LayoutsService, ModReplacementData } from "services/LayoutsService";
 import { TextureAtlasService } from "services/TextureAtlasService";
+import { WEModuleOptionFieldTypes, WEModuleService } from "services/WEModulesService";
 import "style/mainUi/layoutsReplacementsTab.scss";
 import { translate } from "utils/translate";
+
+const engine = (window as any).engine;
 
 type Props = {}
 
 enum SubTab {
+    OPTIONS = "OPTIONS",
     FONTS = "FONTS",
     ATLASES = "ATLASES",
     SUBTEMPLATES = "SUBTEMPLATES"
@@ -40,6 +45,7 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
     const T_atlasToReplaceTab = translate("prefabTemplatesReplacementsTab.atlasToReplaceTab")
     const T_subtemplatesToReplace = translate("prefabTemplatesReplacementsTab.subtemplatesToReplace")
     const T_subtemplatesToReplaceTab = translate("prefabTemplatesReplacementsTab.subtemplatesToReplaceTab")
+    const T_weModuleOptionsTab = translate("prefabTemplatesReplacementsTab.weModuleOptionsTab")
 
     const T_currentCitySource = translate("prefabTemplatesReplacementsTab.currentCitySourceTitle")
 
@@ -53,6 +59,7 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
     const T_loadSettingsDialogText = translate("prefabTemplatesReplacementsTab.loadSettingsDialogText")
 
     const M_tabTitle: Record<SubTab, string> = {
+        [SubTab.OPTIONS]: T_weModuleOptionsTab,
         [SubTab.ATLASES]: T_atlasToReplaceTab,
         [SubTab.FONTS]: T_fontsToReplaceTab,
         [SubTab.SUBTEMPLATES]: T_subtemplatesToReplaceTab,
@@ -67,6 +74,7 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
     const [modLayoutReplacementFolder, setModLayoutReplacementFolder] = useState("");
     const [extensionsImport, setExtensionsImport] = useState("")
     const [alertToDisplay, setAlertToDisplay] = useState(undefined as string | undefined)
+    const [modsOptions, setModsOptions] = useState<Record<string, Record<string, WEModuleOptionFieldTypes>>>({})
 
 
     const [isSavingReplacements, setIsSavingReplacements] = useState(false);
@@ -84,8 +92,10 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
 
 
     const getSettings = async () => {
-        const replacemendData = await LayoutsService.listModsReplacementData();
-        setModReplacementData(ObjectTyped.fromEntries(replacemendData.map(y => [y.modId, y])));
+        await LayoutsService.listModsReplacementData().then(replacemendData =>
+            setModReplacementData(ObjectTyped.fromEntries(replacemendData.map(y => [y.modId, y])))
+        );
+        await WEModuleService.listAllOptions().then(x => setModsOptions(x));
     }
     useEffect(() => {
         getSettings();
@@ -146,10 +156,12 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
     useEffect(() => {
         if (selectedMod) {
             const replacementData = modsReplacementData[selectedMod];
+            const optionsData = modsOptions[selectedMod];
             const newTabs = [
+                Object.keys(optionsData ?? {}).length && SubTab.OPTIONS,
                 Object.keys(replacementData?.fonts ?? {}).length && SubTab.FONTS,
                 Object.keys(replacementData?.atlases ?? {}).length && SubTab.ATLASES,
-                Object.keys(replacementData?.subtemplates ?? {}).length && SubTab.SUBTEMPLATES
+                Object.keys(replacementData?.subtemplates ?? {}).length && SubTab.SUBTEMPLATES,
             ].filter(x => x) as SubTab[]
             setTabs(newTabs);
             setSelectedEditorTab(newTabs[0]);
@@ -217,6 +229,29 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
     const [currentTitle, setCurrentTitle] = useState<string>()
     const [currentOptionList, setCurrentOptionList] = useState<SelectableEntriesRecord>({})
 
+    const getCurrentTabContent = () => {
+        if (selectedEditorTab == SubTab.OPTIONS) {
+            const currentOptions = ObjectTyped.entries(modsOptions[selectedMod!] ?? {});
+            return <Scrollable>
+                <FocusDisabled>
+                    {currentOptions.map(([i18n, optionObj], i) => {
+                        return <OptionRow key={i} selectedModule={selectedMod!} i18n={i18n} optionObj={optionObj} />;
+                    })}
+                </FocusDisabled>
+            </Scrollable>
+        } else {
+            return <>
+                <div className="sectionTitle">{currentTitle}</div>
+                <Scrollable>
+                    {Object.entries(currentItemObj).map((x, i) => <RowData
+                        currentOptionList={currentOptionList} getDefaultValue={getDefaultValue}
+                        itemKey={x[0]} itemValue={x[1]} rowIndex={i} setValue={setValue}
+                    />)}
+                </Scrollable>
+            </>
+        }
+    }
+
     return <>
         <WEListWithContentTab listActions={listActions}
             listItems={Object.values(modsReplacementData).map(x => { return { displayName: x.displayName, value: x.modId } }).sort((a, b) => a.displayName.localeCompare(b.displayName))}
@@ -226,13 +261,7 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
                     tabs.map(x => <Tab id={x} selectedId={selectedEditorTab} onSelect={() => setSelectedEditorTab(x)}>{M_tabTitle[x]}</Tab>)
                 }</TabBar>
                 <TabNav tabs={tabs} selectedTab={selectedEditorTab}>
-                    <div className="sectionTitle">{currentTitle}</div>
-                    <Scrollable>
-                        {Object.entries(currentItemObj).map((x, i) => <RowData
-                            currentOptionList={currentOptionList} getDefaultValue={getDefaultValue}
-                            itemKey={x[0]} itemValue={x[1]} rowIndex={i} setValue={setValue}
-                        />)}
-                    </Scrollable>
+                    {getCurrentTabContent()}
                 </TabNav>
             </>}
         </WEListWithContentTab>
@@ -315,3 +344,49 @@ const RowData = ({
     </FocusDisabled>;
     ;
 }
+
+const OptionRow = ({ selectedModule, i18n, optionObj }: { selectedModule: string, i18n: string, optionObj: WEModuleOptionFieldTypes }) => {
+    switch (optionObj) {
+        case WEModuleOptionFieldTypes.BOOLEAN:
+            return <BooleanOptionRow module={selectedModule} i18n={i18n} />;
+        case WEModuleOptionFieldTypes.DROPDOWN:
+            return <DropdownOptionRow module={selectedModule} i18n={i18n} />;
+        default:
+            return <>{engine.translate(i18n)} (TYPE = {optionObj} ????)</>;
+    }
+};
+
+const BooleanOptionRow = ({ module, i18n }: { module: string, i18n: string }) => {
+    const [buildIdx, setBuildIdx] = useState(0);
+
+    const value = useAsyncMemo(async () => {
+        const result = await WEModuleService.getFieldValue<boolean>(module, i18n);
+        return result;
+    }, [buildIdx]);
+
+    const EditorRow = VanillaWidgets.instance.EditorItemRowNoFocus;
+    const BoooleanField = VanillaWidgets.instance.Checkbox;
+    return <EditorRow label={engine.translate(i18n)}>
+        <BoooleanField checked={value ?? false} onChange={x => WEModuleService.setFieldValue(module, i18n, x).then(() => setBuildIdx(buildIdx + 1))} />
+    </EditorRow>;
+};
+
+const DropdownOptionRow = ({ module, i18n }: { module: string, i18n: string }) => {
+    const [buildIdx, setBuildIdx] = useState(0);
+
+    const value = useAsyncMemo(async () => {
+        const result = await WEModuleService.getFieldValue<string>(module, i18n);
+        return result;
+    }, [buildIdx]);
+
+    const optionsData = useAsyncMemo(async () => {
+        const result = await WEModuleService.getFieldOptions(module, i18n);
+        return ObjectTyped.entries(result).map(x => ({ displayName: { __Type: LocElementType.String as any, value: x[1] }, value: x[0] }));
+    }, [buildIdx]);
+
+    const EditorRow = VanillaWidgets.instance.EditorItemRowNoFocus;
+    const DropdownField = VanillaWidgets.instance.DropdownField<string>();
+    return <EditorRow label={engine.translate(i18n)}>
+        <DropdownField value={value ?? ""} items={optionsData ?? []} onChange={x => WEModuleService.setFieldValue(module, i18n, x).then(() => setBuildIdx(buildIdx + 1))} />
+    </EditorRow>;
+};
