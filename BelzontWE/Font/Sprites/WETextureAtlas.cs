@@ -115,9 +115,14 @@ namespace BelzontWE.Font
 
         private WESpriteInfo Write(Texture2D main, Texture2D emissive, Texture2D control, Texture2D mask, Texture2D normal)
         {
-            Rect newRect = rectsPack.Insert(main.width, main.height, Method);
+            Rect newRect = rectsPack.Insert(main.width + 2, main.height + 2, Method);
             if (newRect.height == 0)
                 return default;
+
+            newRect.xMin += 1;
+            newRect.xMax -= 1;
+            newRect.yMin += 1;
+            newRect.yMax -= 1;
 
             Main.SetPixels((int)newRect.x, (int)newRect.y, (int)newRect.width, (int)newRect.height, main.GetPixels());
             var spriteInfo = new WESpriteInfo
