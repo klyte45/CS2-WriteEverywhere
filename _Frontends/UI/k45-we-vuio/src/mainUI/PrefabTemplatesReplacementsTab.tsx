@@ -1,5 +1,6 @@
-import { LocElementType, PropsDropdownField, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
+import { ColorHSVA, LocElementType, PropsDropdownField, replaceArgs, UIColorRGBA, VanillaComponentResolver, VanillaFnResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import useAsyncMemo from "@klyte45/vuio-commons/src/utils/useAsyncMemo";
+import classNames from "classnames";
 import { FilePickerDialog } from "common/FilePickerDialog";
 import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
 import { WEListWithContentTab } from "common/WEListWithContentTab";
@@ -7,7 +8,7 @@ import { ListActionTypeArray } from "common/WEListWithPreviewTab";
 import { FocusDisabled } from "cs2/input";
 import { ConfirmationDialog, Portal, Scrollable, Tooltip } from "cs2/ui";
 import { ObjectTyped } from "object-typed";
-import { CSSProperties, useEffect, useState } from "react";
+import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FontService } from "services/FontService";
 import { LayoutsService, ModReplacementData } from "services/LayoutsService";
 import { TextureAtlasService } from "services/TextureAtlasService";
@@ -351,6 +352,22 @@ const OptionRow = ({ selectedModule, i18n, optionObj }: { selectedModule: string
             return <BooleanOptionRow module={selectedModule} i18n={i18n} />;
         case WEModuleOptionFieldTypes.DROPDOWN:
             return <DropdownOptionRow module={selectedModule} i18n={i18n} />;
+        case WEModuleOptionFieldTypes.SECTION_TITLE: return <h4>{engine.translate(i18n)}</h4>;
+        case WEModuleOptionFieldTypes.BUTTON_ROW: return <ButtonRowOptionsRow module={selectedModule} i18n={i18n} />;
+        case WEModuleOptionFieldTypes.SLIDER: return <SliderOptionsRow module={selectedModule} i18n={i18n} />;
+        case WEModuleOptionFieldTypes.FILE_PICKER: return <FilePickerOptionsRow module={selectedModule} i18n={i18n} />;
+        case WEModuleOptionFieldTypes.COLOR_PICKER: return <ColorPickerOptionsRow module={selectedModule} i18n={i18n} />;
+        case WEModuleOptionFieldTypes.SPACER: return <div style={{ height: "16px" }} />;
+        case WEModuleOptionFieldTypes.TEXT_INPUT: return <TextInputOptionsRow module={selectedModule} i18n={i18n} multiline={false} />;
+        case WEModuleOptionFieldTypes.MULTILINE_TEXT_INPUT: return <TextInputOptionsRow module={selectedModule} i18n={i18n} multiline={true} />;
+        case WEModuleOptionFieldTypes.RADIO_BUTTON: return <></>;
+        case WEModuleOptionFieldTypes.MULTISELECT: return <></>;
+        case WEModuleOptionFieldTypes.VECTOR2: return <></>;
+        case WEModuleOptionFieldTypes.VECTOR3: return <></>;
+        case WEModuleOptionFieldTypes.VECTOR4: return <></>;
+        case WEModuleOptionFieldTypes.INT_INPUT: return <></>;
+        case WEModuleOptionFieldTypes.FLOAT_INPUT: return <></>;
+        case WEModuleOptionFieldTypes.RANGE_INPUT: return <></>;
         default:
             return <>{engine.translate(i18n)} (TYPE = {optionObj} ????)</>;
     }
@@ -388,5 +405,149 @@ const DropdownOptionRow = ({ module, i18n }: { module: string, i18n: string }) =
     const DropdownField = VanillaWidgets.instance.DropdownField<string>();
     return <EditorRow label={engine.translate(i18n)}>
         <DropdownField value={value ?? ""} items={optionsData ?? []} onChange={x => WEModuleService.setFieldValue(module, i18n, x).then(() => setBuildIdx(buildIdx + 1))} />
+    </EditorRow>;
+};
+
+const ButtonRowOptionsRow = ({ module, i18n }: { module: string, i18n: string }) => {
+    const optionsData = useAsyncMemo(async () => {
+        const result = await WEModuleService.getFieldOptions(module, i18n);
+        return ObjectTyped.entries(result);
+    }, []);
+
+    const EditorRow = VanillaWidgets.instance.EditorItemRowNoFocus;
+    const Button = VanillaComponentResolver.instance.CommonButton;
+    return <EditorRow label="">
+        {optionsData?.map(([key, value]) =>
+            <Button key={key} onClick={() => WEModuleService.setFieldValue(module, i18n, key)}>{value}</Button>
+        )}
+    </EditorRow>;
+};
+
+const SliderOptionsRow = ({ module, i18n }: { module: string, i18n: string }) => {
+    const [buildIdx, setBuildIdx] = useState(0);
+
+    const value = useAsyncMemo(async () => {
+        const result = await WEModuleService.getFieldValue<number>(module, i18n);
+        return result;
+    }, [buildIdx]);
+
+    const range = useAsyncMemo(async () => {
+        const result = await WEModuleService.getMinMax(module, i18n);
+        return { min: result[0][0], max: result[1][0] };
+    }, [buildIdx]);
+
+    const EditorRow = VanillaWidgets.instance.EditorItemRowNoFocus;
+    const SliderField = VanillaWidgets.instance.FloatSlider;
+    return <EditorRow label={engine.translate(i18n)}>
+        {range && <SliderField value={value ?? 0} fractionDigits={3} min={range?.min} max={range?.max} onChange={x => WEModuleService.setFieldValue(module, i18n, x).then(() => setBuildIdx(buildIdx + 1))} />}
+    </EditorRow>;
+};
+
+const FilePickerOptionsRow = ({ module, i18n }: { module: string, i18n: string }) => {
+    const [buildIdx, setBuildIdx] = useState(0);
+    const [showPicker, setShowPicker] = useState(false);
+
+    const value = useAsyncMemo(async () => {
+        const result = await WEModuleService.getFieldValue<string>(module, i18n);
+        return result;
+    }, [buildIdx]);
+
+    const filePickerOptions = useAsyncMemo(async () => {
+        const result = await WEModuleService.getFilePickerOptions(module, i18n);
+        return result;
+    }, [buildIdx]);
+
+    const EditorRow = VanillaWidgets.instance.EditorItemRowNoFocus;
+    const Button = VanillaComponentResolver.instance.CommonButton;
+    return <><EditorRow label={engine.translate(i18n)}>
+        <Button onClick={() => setShowPicker(true)}>{engine.translate("Common.Browse")}</Button>
+    </EditorRow>
+        {filePickerOptions && <FilePickerDialog
+            dialogTitle={engine.translate(i18n)}
+            dialogPromptText={filePickerOptions.promptText}
+            isActive={showPicker}
+            setIsActive={setShowPicker}
+            actionOnSuccess={(x) => WEModuleService.setFieldValue(module, i18n, x ?? "").then(() => setBuildIdx(buildIdx + 1))}
+            allowedExtensions={filePickerOptions.fileExtensionFilter}
+            initialFolder={value?.split("/").slice(0, -1).join("/") ?? filePickerOptions.initialFolder}
+        />
+        }
+    </>;
+};
+
+const ColorPickerOptionsRow = ({ module, i18n }: { module: string, i18n: string }) => {
+    const [buildIdx, setBuildIdx] = useState(0);
+
+    const [prevHue, setPrevHue] = useState(0)
+    const [menuOpen, setMenuOpen] = useState(false)
+
+    const colorStringRGB = useAsyncMemo(async () => {
+        const result = await WEModuleService.getFieldValue<string>(module, i18n);
+        return result;
+    }, [buildIdx]);
+
+    const colorHsv = useMemo(() => {
+        return colorStringRGB ? VanillaColorUtils.rgbaToHsva(VanillaColorUtils.parseRgba(colorStringRGB), prevHue) : undefined;
+    }, [colorStringRGB, prevHue]);
+
+    const EditorRow = VanillaWidgets.instance.EditorItemRowNoFocus;
+    const ColorPicker = VanillaComponentResolver.instance.ColorPicker;
+
+    const VanillaColorUtils = VanillaFnResolver.instance.color;
+
+    const formatColorCss = ({ r, g, b, a }: UIColorRGBA) => `rgba(${Math.round(255 * r)},${Math.round(255 * g)},${Math.round(255 * b)},${a.toString().replace(",", ".")})`
+    const onChangeColorPicker = useCallback((e: ColorHSVA) => {
+        setPrevHue(e.h);
+        WEModuleService.setFieldValue(module, i18n, VanillaColorUtils.formatHexColor(VanillaColorUtils.hsvaToRgba(e))).then(() => setBuildIdx(buildIdx + 1))
+    }, [])
+    const Button = VanillaComponentResolver.instance.CommonButton;
+    const sliderTheme = VanillaComponentResolver.instance.sliderTheme;
+    const editorItemTheme = VanillaComponentResolver.instance.editorItemTheme;
+    const label = engine.translate(i18n);
+    const btnRef = useRef(null as any as HTMLDivElement);
+    const menuRef = useRef(null as any as HTMLDivElement);
+    const findFixedPosition = (el: HTMLElement) => {
+        const result = { left: 0, top: 0 }
+        if (el) {
+            let nextParent = el;
+            do {
+                result.left += nextParent.offsetLeft;
+                result.top += nextParent.offsetTop;
+            } while ((nextParent = nextParent.offsetParent as HTMLElement) && !isNaN(nextParent.offsetLeft))
+        }
+        return result;
+    }
+    const menuPosition = findFixedPosition(btnRef.current)
+    const menuCss = { bottom: window.innerHeight - menuPosition.top + 3, right: window.innerWidth - menuPosition.left - btnRef.current?.offsetWidth };
+    return <EditorRow label={label}>
+
+        <div className="k45_we_formulaeEditorFieldContainer" ref={btnRef}>
+            <Button className={classNames(editorItemTheme.swatch, "we_colorpicker_btn")}
+                onClick={() => { setMenuOpen(!menuOpen) }}
+                theme={sliderTheme}
+            ><div style={{ backgroundColor: formatColorCss(VanillaColorUtils.hsvaToRgba(colorHsv!)) }}><div>{VanillaColorUtils.formatHexColor(VanillaColorUtils.hsvaToRgba(colorHsv!)).toUpperCase()}</div></div></Button>
+        </div>
+        {(menuOpen && colorHsv) &&
+            <Portal>
+                <div className="k45_comm_contextMenu k45_we_colorPickerOverlay" style={menuCss} ref={menuRef}>
+                    <div className="k45_we_colorPickerTitle">{label}</div>
+                    <ColorPicker alpha={false} color={colorHsv} onChange={onChangeColorPicker} />
+                </div>
+            </Portal>
+        }
+    </EditorRow>;
+};
+
+const TextInputOptionsRow = ({ module, i18n, multiline }: { module: string, i18n: string, multiline: boolean }) => {
+    const EditorRow = VanillaWidgets.instance.EditorItemRowNoFocus;
+    const TextInput = VanillaWidgets.instance.StringInputField;
+    const [buildIdx, setBuildIdx] = useState(0);
+    const [typingValue, setTypingValue] = useState("")
+    useEffect(() => {
+        WEModuleService.getFieldValue<string>(module, i18n).then(setTypingValue)
+    }, [buildIdx]);
+
+    return <EditorRow label={engine.translate(i18n)}>
+        <TextInput value={typingValue} multiline={multiline} onChangeEnd={_ => WEModuleService.setFieldValue(module, i18n, typingValue)} onChange={setTypingValue} />
     </EditorRow>;
 };
