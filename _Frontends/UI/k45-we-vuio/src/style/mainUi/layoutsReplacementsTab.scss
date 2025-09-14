@@ -9,6 +9,17 @@
         padding-top: 5rem;
     }
 
+    > div[class^=scrollable_]{
+        display: flex;
+        flex-grow: 1;
+        flex-shrink: 1;
+        width: 100%;
+
+        div[class^=content_] {
+            width: 100%;
+        }
+    }
+
     div[class^=row_] {
         padding-top: 5rem;
         padding-bottom: 5rem;
@@ -32,4 +43,10 @@
             background-color: var(--sectionBackgroundColorLight);
         }
     }
+
+}
+
+@import "../buttonsStyles";
+.k45_we_moduleOptionsTab {
+    @extend %buttonsStyle;
 }
