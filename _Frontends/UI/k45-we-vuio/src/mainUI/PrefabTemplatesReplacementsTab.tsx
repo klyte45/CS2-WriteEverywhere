@@ -98,6 +98,8 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
         );
         await WEModuleService.listAllOptions().then(x => setModsOptions(x));
     }
+
+    const [tabBuildIdx, setTabBuildIdx] = useState(0);
     useEffect(() => {
         getSettings();
         FontService.listCityFonts().then((x) => {
@@ -125,6 +127,7 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
         });
         LayoutsService.getLocationSavedReplacements().then(setModLayoutReplacementFolder)
         LayoutsService.getExtensionSavedReplacements().then((x) => setExtensionsImport("*." + x))
+        engine.on("k45::we.modules.reloadOptions!", () => setTabBuildIdx(z => z + 1));
     }, [])
     const buttonClass = VanillaComponentResolver.instance.toolButtonTheme.button;
     const noFocus = VanillaComponentResolver.instance.FOCUS_DISABLED;
@@ -236,7 +239,7 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
             return <Scrollable className="k45_we_moduleOptionsTab">
                 <FocusDisabled>
                     {currentOptions.map(([i18n, optionObj], i) => {
-                        return <OptionRow key={i} selectedModule={selectedMod!} i18n={i18n} optionObj={optionObj} />;
+                        return <OptionRow key={i} selectedModule={selectedMod!} i18n={i18n} optionObj={optionObj} tabBuildIdx={tabBuildIdx} />;
                     })}
                 </FocusDisabled>
             </Scrollable>
@@ -346,24 +349,24 @@ const RowData = ({
     ;
 }
 
-const OptionRow = ({ selectedModule, i18n, optionObj }: { selectedModule: string, i18n: string, optionObj: WEModuleOptionFieldTypes }) => {
+const OptionRow = ({ selectedModule, i18n, optionObj, tabBuildIdx }: { selectedModule: string, i18n: string, optionObj: WEModuleOptionFieldTypes, tabBuildIdx: number }) => {
     const tooltipKey = i18n.replace(/(]?)$/, ".tooltip$1");
     let tooltip = engine.translate(tooltipKey);
     if (tooltip === tooltipKey) tooltip = null;
     const content = ((x: WEModuleOptionFieldTypes) => {
         switch (x) {
             case WEModuleOptionFieldTypes.BOOLEAN:
-                return <BooleanOptionRow module={selectedModule} i18n={i18n} />;
+                return <BooleanOptionRow module={selectedModule} i18n={i18n} tabBuildIdx={tabBuildIdx} />;
             case WEModuleOptionFieldTypes.DROPDOWN:
-                return <DropdownOptionRow module={selectedModule} i18n={i18n} />;
+                return <DropdownOptionRow module={selectedModule} i18n={i18n} tabBuildIdx={tabBuildIdx} />;
             case WEModuleOptionFieldTypes.SECTION_TITLE: return <h4>{engine.translate(i18n)}</h4>;
-            case WEModuleOptionFieldTypes.BUTTON_ROW: return <ButtonRowOptionsRow module={selectedModule} i18n={i18n} />;
-            case WEModuleOptionFieldTypes.SLIDER: return <SliderOptionsRow module={selectedModule} i18n={i18n} />;
-            case WEModuleOptionFieldTypes.FILE_PICKER: return <FilePickerOptionsRow module={selectedModule} i18n={i18n} />;
-            case WEModuleOptionFieldTypes.COLOR_PICKER: return <ColorPickerOptionsRow module={selectedModule} i18n={i18n} />;
+            case WEModuleOptionFieldTypes.BUTTON_ROW: return <ButtonRowOptionsRow module={selectedModule} i18n={i18n} tabBuildIdx={tabBuildIdx} />;
+            case WEModuleOptionFieldTypes.SLIDER: return <SliderOptionsRow module={selectedModule} i18n={i18n} tabBuildIdx={tabBuildIdx} />;
+            case WEModuleOptionFieldTypes.FILE_PICKER: return <FilePickerOptionsRow module={selectedModule} i18n={i18n} tabBuildIdx={tabBuildIdx} />;
+            case WEModuleOptionFieldTypes.COLOR_PICKER: return <ColorPickerOptionsRow module={selectedModule} i18n={i18n} tabBuildIdx={tabBuildIdx} />;
             case WEModuleOptionFieldTypes.SPACER: return <div style={{ height: "16px" }} />;
-            case WEModuleOptionFieldTypes.TEXT_INPUT: return <TextInputOptionsRow module={selectedModule} i18n={i18n} multiline={false} />;
-            case WEModuleOptionFieldTypes.MULTILINE_TEXT_INPUT: return <TextInputOptionsRow module={selectedModule} i18n={i18n} multiline={true} />;
+            case WEModuleOptionFieldTypes.TEXT_INPUT: return <TextInputOptionsRow module={selectedModule} i18n={i18n} multiline={false} tabBuildIdx={tabBuildIdx} />;
+            case WEModuleOptionFieldTypes.MULTILINE_TEXT_INPUT: return <TextInputOptionsRow module={selectedModule} i18n={i18n} multiline={true} tabBuildIdx={tabBuildIdx} />;
             case WEModuleOptionFieldTypes.RADIO_BUTTON: return <></>;
             case WEModuleOptionFieldTypes.MULTISELECT: return <></>;
             case WEModuleOptionFieldTypes.VECTOR2: return <></>;
@@ -379,13 +382,13 @@ const OptionRow = ({ selectedModule, i18n, optionObj }: { selectedModule: string
     return tooltip ? <Tooltip tooltip={tooltip}>{content}</Tooltip> : content;
 };
 
-const BooleanOptionRow = ({ module, i18n }: { module: string, i18n: string }) => {
+const BooleanOptionRow = ({ module, i18n, tabBuildIdx }: { module: string, i18n: string, tabBuildIdx: number }) => {
     const [buildIdx, setBuildIdx] = useState(0);
 
     const value = useAsyncMemo(async () => {
         const result = await WEModuleService.getFieldValue<boolean>(module, i18n);
         return result;
-    }, [buildIdx]);
+    }, [buildIdx, tabBuildIdx]);
 
     const EditorRow = VanillaWidgets.instance.EditorItemRow;
     const BoooleanField = VanillaWidgets.instance.Checkbox;
@@ -394,18 +397,18 @@ const BooleanOptionRow = ({ module, i18n }: { module: string, i18n: string }) =>
     </EditorRow>;
 };
 
-const DropdownOptionRow = ({ module, i18n }: { module: string, i18n: string }) => {
+const DropdownOptionRow = ({ module, i18n, tabBuildIdx }: { module: string, i18n: string, tabBuildIdx: number }) => {
     const [buildIdx, setBuildIdx] = useState(0);
 
     const value = useAsyncMemo(async () => {
         const result = await WEModuleService.getFieldValue<string>(module, i18n);
         return result;
-    }, [buildIdx]);
+    }, [buildIdx, tabBuildIdx]);
 
     const optionsData = useAsyncMemo(async () => {
         const result = await WEModuleService.getFieldOptions(module, i18n);
-        return ObjectTyped.entries(result).map(x => ({ displayName: { __Type: LocElementType.String as any, value:  x[1].startsWith("__") ? x[1].replace(/^__/g, "").trim() : engine.translate(x[1]) }, value: x[0] }));
-    }, [buildIdx]);
+        return ObjectTyped.entries(result).map(x => ({ displayName: { __Type: LocElementType.String as any, value: x[1].startsWith("__") ? x[1].replace(/^__/g, "").trim() : engine.translate(x[1]) }, value: x[0] }));
+    }, [buildIdx, tabBuildIdx]);
 
     const EditorRow = VanillaWidgets.instance.EditorItemRow;
     const DropdownField = VanillaWidgets.instance.DropdownField<string>();
@@ -414,33 +417,38 @@ const DropdownOptionRow = ({ module, i18n }: { module: string, i18n: string }) =
     </EditorRow>;
 };
 
-const ButtonRowOptionsRow = ({ module, i18n }: { module: string, i18n: string }) => {
+const ButtonRowOptionsRow = ({ module, i18n, tabBuildIdx }: { module: string, i18n: string, tabBuildIdx: number }) => {
     const optionsData = useAsyncMemo(async () => {
         const result = await WEModuleService.getFieldOptions(module, i18n);
         return ObjectTyped.entries(result);
-    }, []);
+    }, [tabBuildIdx]);
 
     const EditorRow = VanillaWidgets.instance.EditorItemRowNoFocus;
     const Button = VanillaComponentResolver.instance.CommonButton;
-    return <EditorRow styleContent={{flexDirection: "row-reverse"}} label={i18n.startsWith("__") ? i18n.replace(/^__/g, "").trim() : engine.translate(i18n)}>
-        {optionsData?.map(([key, value]) =>
-            <Button key={key} className="k45_we neutralBtn" onClick={() => WEModuleService.setFieldValue(module, i18n, key)}>{value.startsWith("__") ? value.replace(/^__/g, "").trim() : engine.translate(value)}</Button>
+    return <EditorRow styleContent={{ flexDirection: "row-reverse" }} label={i18n.startsWith("__") ? i18n.replace(/^__/g, "").trim() : engine.translate(i18n)}>
+        {optionsData?.map(([key, value]) => {
+            const tooltipKey = i18n.replace(/(]?)$/, ".tooltip$1");
+            let tooltip = engine.translate(tooltipKey);
+            if (tooltip === tooltipKey) tooltip = null;
+            const content = <Button key={key} className="k45_we neutralBtn" onClick={() => WEModuleService.setFieldValue(module, i18n, key)}>{value.startsWith("__") ? value.replace(/^__/g, "").trim() : engine.translate(value)}</Button>;
+            return tooltip ? <Tooltip tooltip={tooltip}>{content}</Tooltip> : content;
+        }
         )}
     </EditorRow>;
 };
 
-const SliderOptionsRow = ({ module, i18n }: { module: string, i18n: string }) => {
+const SliderOptionsRow = ({ module, i18n, tabBuildIdx }: { module: string, i18n: string, tabBuildIdx: number }) => {
     const [buildIdx, setBuildIdx] = useState(0);
 
     const value = useAsyncMemo(async () => {
         const result = await WEModuleService.getFieldValue<number>(module, i18n);
         return result;
-    }, [buildIdx]);
+    }, [buildIdx, tabBuildIdx]);
 
     const range = useAsyncMemo(async () => {
         const result = await WEModuleService.getMinMax(module, i18n);
         return { min: result[0][0], max: result[1][0] };
-    }, [buildIdx]);
+    }, [buildIdx, tabBuildIdx]);
 
     const EditorRow = VanillaWidgets.instance.EditorItemRow;
     const SliderField = VanillaWidgets.instance.FloatSlider;
@@ -449,19 +457,19 @@ const SliderOptionsRow = ({ module, i18n }: { module: string, i18n: string }) =>
     </EditorRow>;
 };
 
-const FilePickerOptionsRow = ({ module, i18n }: { module: string, i18n: string }) => {
+const FilePickerOptionsRow = ({ module, i18n, tabBuildIdx }: { module: string, i18n: string, tabBuildIdx: number }) => {
     const [buildIdx, setBuildIdx] = useState(0);
     const [showPicker, setShowPicker] = useState(false);
 
     const value = useAsyncMemo(async () => {
         const result = await WEModuleService.getFieldValue<string>(module, i18n);
         return result;
-    }, [buildIdx]);
+    }, [buildIdx, tabBuildIdx]);
 
     const filePickerOptions = useAsyncMemo(async () => {
         const result = await WEModuleService.getFilePickerOptions(module, i18n);
         return result;
-    }, [buildIdx]);
+    }, [buildIdx, tabBuildIdx]);
 
     const EditorRow = VanillaWidgets.instance.EditorItemRow;
     const Button = VanillaComponentResolver.instance.CommonButton;
@@ -481,7 +489,7 @@ const FilePickerOptionsRow = ({ module, i18n }: { module: string, i18n: string }
     </>;
 };
 
-const ColorPickerOptionsRow = ({ module, i18n }: { module: string, i18n: string }) => {
+const ColorPickerOptionsRow = ({ module, i18n, tabBuildIdx }: { module: string, i18n: string, tabBuildIdx: number }) => {
     const [buildIdx, setBuildIdx] = useState(0);
 
     const [prevHue, setPrevHue] = useState(0)
@@ -490,7 +498,7 @@ const ColorPickerOptionsRow = ({ module, i18n }: { module: string, i18n: string 
     const colorStringRGB = useAsyncMemo(async () => {
         const result = await WEModuleService.getFieldValue<string>(module, i18n);
         return result;
-    }, [buildIdx]);
+    }, [buildIdx, tabBuildIdx]);
 
     const colorHsv = useMemo(() => {
         return colorStringRGB ? VanillaColorUtils.rgbaToHsva(VanillaColorUtils.parseRgba(colorStringRGB), prevHue) : undefined;
@@ -544,14 +552,14 @@ const ColorPickerOptionsRow = ({ module, i18n }: { module: string, i18n: string 
     </EditorRow>;
 };
 
-const TextInputOptionsRow = ({ module, i18n, multiline }: { module: string, i18n: string, multiline: boolean }) => {
+const TextInputOptionsRow = ({ module, i18n, multiline, tabBuildIdx }: { module: string, i18n: string, multiline: boolean, tabBuildIdx: number }) => {
     const EditorRow = VanillaWidgets.instance.EditorItemRow;
     const TextInput = VanillaWidgets.instance.StringInputField;
     const [buildIdx, setBuildIdx] = useState(0);
     const [typingValue, setTypingValue] = useState("")
     useEffect(() => {
         WEModuleService.getFieldValue<string>(module, i18n).then(setTypingValue)
-    }, [buildIdx]);
+    }, [buildIdx, tabBuildIdx]);
 
     return <EditorRow label={engine.translate(i18n)}>
         <TextInput value={typingValue} multiline={multiline} onChangeEnd={_ => WEModuleService.setFieldValue(module, i18n, typingValue)} onChange={setTypingValue} />

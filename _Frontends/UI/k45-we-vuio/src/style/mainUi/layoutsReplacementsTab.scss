@@ -26,16 +26,21 @@
 
         >div[class^=label_] {
             padding-right: 5rem;
-            max-width: 66%;
+            flex-grow: 99;
         }
 
         >div[class^=control_] {
-            flex-shrink: 9e+09;
-            flex-grow: 1;
+            flex-shrink: 1;
+            flex-grow: 0;
             min-width: 50rem;
+            width: initial;
+            max-width: initial;
+            flex-direction: row;
+            justify-content: end;            
 
-            [class^=dropdown-toggle_] {
+            button[class*="dropdown-toggle_"],button[class^="dropdown-toggle_"] {
                 color: white;
+                max-width: 300rem;
             }
         }
 

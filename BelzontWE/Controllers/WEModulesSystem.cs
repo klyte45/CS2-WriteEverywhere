@@ -207,7 +207,12 @@ namespace BelzontWE
             callBinder($"{PREFIX}getFilePickerOptions", GetFilePickerOptions);
         }
 
-        public void SetupCaller(Action<string, object[]> eventCaller) { }
+        private Action<string, object[]> eventCaller;
+
+        public void SetupCaller(Action<string, object[]> eventCaller)
+        {
+            this.eventCaller = eventCaller;
+        }
 
         public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
 
@@ -335,6 +340,12 @@ namespace BelzontWE
             => modulesOptions.TryGetValue(modIdentifier, out var options) && options.TryGetValue(i18nKey, out var field) && field is IWEFilePickerOptionField filePickerField
                 ? (filePickerField.FileExtensionFilter, filePickerField.InitialPath, filePickerField.PromptText)
                 : throw new KeyNotFoundException($"Option '{i18nKey}' not found in module '{modIdentifier}' or is not a file picker.");
+
+        internal void ForceReloadOptions()
+        {
+            eventCaller($"{PREFIX}reloadOptions!", new object[0]);
+        }
+
         private interface IWEModuleOptionField
         {
             public string I18nKey { get; }

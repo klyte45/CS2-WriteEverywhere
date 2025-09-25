@@ -17,8 +17,8 @@ namespace BelzontWE
     [FileLocation("K45_WE_settings")]
     [SettingsUIShowGroupName(kLogSection, kFontsSection, kSpritesSection, kMeshesSection,
          kToolControlsSection, kItemEditing, kViewPerspectiveSection)]
-    [SettingsUIMouseAction(kActionApplyMouse, ActionType.Button, false, false, new string[] { "K45_WE.Tool" })]
-    [SettingsUIMouseAction(kActionCancelMouse, ActionType.Button, false, false, new string[] { "K45_WE.Tool" })]
+    [SettingsUIMouseAction(kActionApplyMouse, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new string[] { "K45_WE.Tool" })]
+    [SettingsUIMouseAction(kActionCancelMouse, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new string[] { "K45_WE.Tool" })]
     [SettingsUIKeyboardAction(kActionIncreaseMovementStrenght, ActionType.Button, "K45_WE.Tool")]
     [SettingsUIKeyboardAction(kActionReduceMovementStrenght, ActionType.Button, "K45_WE.Tool")]
     [SettingsUIKeyboardAction(kActionAlternateFixedCamera, ActionType.Button, "K45_WE.Tool")]
@@ -27,14 +27,14 @@ namespace BelzontWE
     [SettingsUIKeyboardAction(kActionPerspectiveXZ, ActionType.Button, "K45_WE.Tool")]
     [SettingsUIKeyboardAction(kActionCycleEditAxisLock, ActionType.Button, "K45_WE.Tool")]
     [SettingsUIKeyboardAction(kActionToggleLockCameraRotation, ActionType.Button, "K45_WE.Tool")]
-    [SettingsUIKeyboardAction(kActionNextText, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
-    [SettingsUIKeyboardAction(kActionPreviousText, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
-    [SettingsUIKeyboardAction(kActionMoveLeft, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
-    [SettingsUIKeyboardAction(kActionMoveRight, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
-    [SettingsUIKeyboardAction(kActionMoveUp, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
-    [SettingsUIKeyboardAction(kActionMoveDown, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
-    [SettingsUIKeyboardAction(kActionRotateClockwise, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
-    [SettingsUIKeyboardAction(kActionRotateCounterClockwise, ActionType.Button, false, false, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionNextText, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionPreviousText, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionMoveLeft, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionMoveRight, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionMoveUp, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionMoveDown, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionRotateClockwise, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionRotateCounterClockwise, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
     public class WEModData : BasicModData
     {
         const string kFontsSection = "Font";
