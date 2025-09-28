@@ -1,8 +1,10 @@
 using Belzont.Interfaces;
 using Belzont.Serialization;
 using Belzont.Utils;
+using BelzontWE.AssetDatabases;
 using BelzontWE.Font;
 using BelzontWE.Layout;
+using Colossal;
 using Colossal.IO.AssetDatabase;
 using Colossal.OdinSerializer.Utilities;
 using Colossal.Serialization.Entities;
@@ -18,6 +20,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
@@ -34,6 +37,7 @@ namespace BelzontWE.Sprites
         internal const string LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX = "generatingAtlasesCacheMod";
         public static string IMAGES_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "imageAtlases");
         public static string ATLAS_EXPORT_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "exportedAtlases");
+        public static string CACHED_VT_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, ".cache", "vtAtlases");
         private const string GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID = "generatingAtlasesCache";
         private const string ERRORS_IMAGE_ATLAS_NOTIFICATION_ID = "errorLoadingAtlasesCache";
         private const string ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID = "errorLoadingModuleAtlasesCache";
@@ -42,6 +46,10 @@ namespace BelzontWE.Sprites
         private readonly Queue<Action> actionQueue = new();
         private EntityQuery m_atlasUsageQuery;
 
+        public WEAtlasesLibrary() : base()
+        {
+            KFileUtils.EnsureFolderCreation(K45WE_VTLocalDatabase.EffectivePath);
+        }
 
         protected override void OnCreate()
         {
@@ -61,7 +69,8 @@ namespace BelzontWE.Sprites
                         {
                             ComponentType.ReadOnly<WEWaitingRendering>(),
                             ComponentType.ReadOnly<Temp>(),
-                            ComponentType.ReadOnly<Deleted>(),        }
+                            ComponentType.ReadOnly<Deleted>(),
+                        }
                     }
               });
         }
@@ -87,6 +96,7 @@ namespace BelzontWE.Sprites
         private const string INTERNAL_ATLAS_NAME = @"\/INTERNAL\/";
 
         private Dictionary<FixedString32Bytes, WETextureAtlas> LocalAtlases { get; } = new();
+        private AssetDatabase<K45WE_VTLocalDatabase> LocalAtlasDatabase { get; } = AssetDatabase<K45WE_VTLocalDatabase>.instance;
         private Dictionary<FixedString32Bytes, WETextureAtlas> CityAtlases { get; } = new();
         private Dictionary<string, WETextureAtlas> ModAtlases { get; } = new();
 
@@ -150,6 +160,14 @@ namespace BelzontWE.Sprites
             ClearAtlasDict(LocalAtlases);
             var errors = new Dictionary<string, string>();
             var folders = Directory.GetDirectories(IMAGES_FOLDER);
+            LocalAtlasDatabase.RemoveAllAssets();
+            var loadingProgress = new TaskProgress((x) => NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((5f * x.progress / folders.Length) + 20), textI18n: "generatingAtlasesCache.reloadingVT"));
+            var taskReloading = LocalAtlasDatabase.PopulateFromDataSource(false, CancellationToken.None, loadingProgress);
+            do
+            {
+                yield return 0;
+            } while (!taskReloading.IsCompleted);
+            LogUtils.DoInfoLog($"Loaded {LocalAtlasDatabase.count} items into local VT database");
             for (int i = 0; i < folders.Length; i++)
             {
                 string dir = folders[i];
@@ -160,9 +178,33 @@ namespace BelzontWE.Sprites
                 };
                 NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * i / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
                 yield return 0;
+                var vtXmlFilePath = Path.Combine(CACHED_VT_FOLDER, $"~{Path.GetFileNameWithoutExtension(dir)}_vt.xml");
+                var directoryChecksum = WEAtlasLoadingUtils.CalculateCheckshumForDirectory(dir);
+                if (File.Exists(vtXmlFilePath))
+                {
+                    var vtInfo = XmlUtils.DefaultXmlDeserialize<XmlVTAtlasInfo>(File.ReadAllText(vtXmlFilePath));
+                    if (vtInfo != null && vtInfo.Checksum == directoryChecksum)
+                    {
+                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Loading VT atlas from cache for folder {dir}");
+                        var loaded = new WETextureAtlas(vtInfo, LocalAtlasDatabase);
+                        LocalAtlases[Path.GetFileNameWithoutExtension(dir)] = loaded;
+
+                        NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * (i + 1) / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
+                        continue;
+                    }
+                    else
+                    {
+                        File.Delete(vtXmlFilePath);
+                    }
+                }
                 var spritesToAdd = new List<WEImageInfo>();
                 WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, (img, msg) => errors[img] = msg);
-                RegisterLocalAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25);
+                var generatedAtlas = RegisterLocalAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25);
+                if (generatedAtlas != null)
+                {
+                    var vtInfo = generatedAtlas.GetVTDataXml(LocalAtlasDatabase, Path.GetFileNameWithoutExtension(dir), $"{Path.GetFileNameWithoutExtension(dir)}", directoryChecksum);
+                    File.WriteAllText(vtXmlFilePath, XmlUtils.DefaultXmlSerialize(vtInfo, true));
+                }
             }
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
             yield return 0;
@@ -235,7 +277,10 @@ namespace BelzontWE.Sprites
         internal void LoadImagesToAtlas(Assembly mainAssembly, string atlasName, string[] imagePaths, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args)
         {
             var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
-            EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, (img, msg) => errors.Add($"{img}: {msg}")));
+            EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) =>
+            {
+                WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, (img, msg) => errors.Add($"{img}: {msg}"));
+            });
         }
 
         internal void LoadImagesAsDynamicAtlas(Assembly mainAssembly, string atlasName,
@@ -311,12 +356,12 @@ namespace BelzontWE.Sprites
         }
 
 
-        private void RegisterLocalAtlas(string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
+        private WETextureAtlas RegisterLocalAtlas(string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
         {
-            RegisterAtlas(LocalAtlases, atlasName, spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset);
+            return RegisterAtlas(LocalAtlases, atlasName, spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset);
         }
 
-        private void RegisterAtlas<T>(Dictionary<T, WETextureAtlas> targetDict, T atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
+        private WETextureAtlas RegisterAtlas<T>(Dictionary<T, WETextureAtlas> targetDict, T atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
         {
             if (spritesToAdd.Count > 0)
             {
@@ -343,7 +388,9 @@ namespace BelzontWE.Sprites
                 NotificationHelper.NotifyProgress(notificationGroupId, Mathf.RoundToInt(progressOffset + loopCompleteSizeProgress), argsTitle: argsTitle, textI18n: notificationI18n, argsText: argsNotif, titleI18n: notificationTitlei18n);
                 targetDict[atlasName].Apply();
                 if (BasicIMod.TraceMode && atlasName is string s) targetDict[atlasName]._SaveDebug(s);
+                return targetDict[atlasName];
             }
+            return null;
         }
 
         private void ClearAtlasDict<T>(Dictionary<T, WETextureAtlas> atlasDict)
@@ -458,6 +505,11 @@ namespace BelzontWE.Sprites
         }
         #endregion
 
+        #region VT mapping
+
+
+
+        #endregion
 
 
         internal string ExportModAtlas(string atlasFullName, string folder)
@@ -561,5 +613,4 @@ namespace BelzontWE.Sprites
         #endregion
 
     }
-
 }

@@ -59,7 +59,7 @@ namespace BelzontWE
                 if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas))
                 {
                     response.SetStatus(200);
-                    var data = textureAtlas.Main.EncodeToPNG();
+                    var data = textureAtlas.Main.MakeReadable().EncodeToPNG();
                     var size = (ulong)data.Length;
                     var space = response.GetSpace(size);
                     Marshal.Copy(data, 0, space, data.Length);

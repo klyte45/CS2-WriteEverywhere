@@ -28,7 +28,7 @@ namespace BelzontWE.Sprites
         [XmlIgnore] public ExtraTexturesFlag ExtraTextures { get; set; }
         public bool HasEmissive { get => (ExtraTextures & ExtraTexturesFlag.Emissive) != 0; set => ExtraTextures = value ? (ExtraTextures | ExtraTexturesFlag.Emissive) : (ExtraTextures & ~ExtraTexturesFlag.Emissive); }
         public bool HasControl { get => (ExtraTextures & ExtraTexturesFlag.Control) != 0; set => ExtraTextures = value ? (ExtraTextures | ExtraTexturesFlag.Control) : (ExtraTextures & ~ExtraTexturesFlag.Control); }
-        public bool HasMask { get => (ExtraTextures & ExtraTexturesFlag.Mask) != 0; set => ExtraTextures = value ? (ExtraTextures | ExtraTexturesFlag.Mask) : (ExtraTextures & ~ExtraTexturesFlag.Mask); }
+        public bool HasMaskMap { get => (ExtraTextures & ExtraTexturesFlag.Mask) != 0; set => ExtraTextures = value ? (ExtraTextures | ExtraTexturesFlag.Mask) : (ExtraTextures & ~ExtraTexturesFlag.Mask); }
         public bool HasNormal { get => (ExtraTextures & ExtraTexturesFlag.Normal) != 0; set => ExtraTextures = value ? (ExtraTextures | ExtraTexturesFlag.Normal) : (ExtraTextures & ~ExtraTexturesFlag.Normal); }
         [XmlIgnore] public IBasicRenderInformation CachedBRI { get; set; }
 

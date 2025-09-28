@@ -8,6 +8,16 @@ namespace BelzontWE.Sprites
 {
     public static class WEAtlasLoadingUtils
     {
+        internal static ulong CalculateCheckshumForDirectory(string folder)
+        {
+            ulong checksum = 0;
+            foreach (var imgFile in Directory.GetFiles(folder, "*.png"))
+            {
+                checksum ^= WEImageInfo.CalculateCheckshumFor(imgFile);
+            }
+            return checksum;
+        }
+
         internal static void LoadAllImagesFromFolderRef(string folder, List<WEImageInfo> spritesToAdd, Action<string, string> onError)
         {
             foreach (var imgFile in Directory.GetFiles(folder, "*.png"))

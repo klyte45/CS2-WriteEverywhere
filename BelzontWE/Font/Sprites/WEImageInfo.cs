@@ -124,5 +124,34 @@ namespace BelzontWE.Layout
             }
             return null;
         }
+
+
+
+        public static ulong CalculateCheckshumFor(string imgFile)
+        {
+            if (!imgFile.EndsWith(".png")) return 0;
+            if (excludeFileSuffixes.Any(x => imgFile.EndsWith(x))) return 0;
+
+            var checksum = GetChecksumInfoForImageFile(imgFile);
+
+            checksum ^= GetChecksumInfoForImageFile(imgFile.Replace(".png", CONTROL_MASK_MAP_EXTENSION));
+            checksum ^= GetChecksumInfoForImageFile(imgFile.Replace(".png", EMISSIVE_MAP_EXTENSION));
+            checksum ^= GetChecksumInfoForImageFile(imgFile.Replace(".png", MASK_MAP_EXTENSION));
+            checksum ^= GetChecksumInfoForImageFile(imgFile.Replace(".png", NORMAL_MAP_EXTENSION));
+            return checksum;
+        }
+
+        public static ulong GetChecksumInfoForImageFile(string imgFile)
+        {
+            if (File.Exists(imgFile))
+            {
+                var fileInfo = new FileInfo(imgFile);
+                ulong size = (ulong)fileInfo.Length << 25;
+                ulong lastWrite = (ulong)fileInfo.LastWriteTimeUtc.ToFileTimeUtc();
+                ulong nameHash = (ulong)imgFile.GetHashCode();
+                return size ^ lastWrite ^ nameHash;
+            }
+            return 0;
+        }
     }
 }

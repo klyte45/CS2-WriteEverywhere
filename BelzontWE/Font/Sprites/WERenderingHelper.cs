@@ -235,7 +235,7 @@ namespace BelzontWE
                         normal: spriteInfo.HasNormal ? textureAtlas.Normal : null,
                         control: spriteInfo.HasControl ? textureAtlas.Control : null,
                         emissive: spriteInfo.HasEmissive ? textureAtlas.Emissive : textureAtlas.Main,
-                        mask: spriteInfo.HasMask ? textureAtlas.Mask : null,
+                        mask: spriteInfo.HasMaskMap ? textureAtlas.Mask : null,
                  invertUv: default
             )
             {
