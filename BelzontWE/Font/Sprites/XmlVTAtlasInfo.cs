@@ -16,11 +16,19 @@ namespace BelzontWE.Sprites
         [XmlIgnore] public Colossal.Hash128 ControlMap;
         [XmlIgnore] public Colossal.Hash128 Emissive;
 
+
+        [XmlIgnore] public Colossal.Hash128 SurfDef;
+        [XmlIgnore] public Colossal.Hash128 SurfGls;
+        [XmlIgnore] public Colossal.Hash128 SurfDcl;
+
         [XmlAttribute("MainTex")] public string MainTexStr { get => MainTex.ToString(); set => MainTex = Colossal.Hash128.Parse(value); }
         [XmlAttribute("Normal")] public string NormalStr { get => Normal.ToString(); set => Normal = Colossal.Hash128.Parse(value); }
         [XmlAttribute("MaskMap")] public string MaskMapStr { get => MaskMap.ToString(); set => MaskMap = Colossal.Hash128.Parse(value); }
         [XmlAttribute("ControlMap")] public string ControlMapStr { get => ControlMap.ToString(); set => ControlMap = Colossal.Hash128.Parse(value); }
         [XmlAttribute("Emissive")] public string EmissiveStr { get => Emissive.ToString(); set => Emissive = Colossal.Hash128.Parse(value); }
+        [XmlAttribute("SurfDef")] public string SurfDefStr { get => SurfDef.ToString(); set => SurfDef = Colossal.Hash128.Parse(value); }
+        [XmlAttribute("SurfGls")] public string SurfGlsStr { get => SurfGls.ToString(); set => SurfGls = Colossal.Hash128.Parse(value); }
+        [XmlAttribute("SurfDcl")] public string SurfDclStr { get => SurfDcl.ToString(); set => SurfDcl = Colossal.Hash128.Parse(value); }
 
         [XmlAttribute]
         public ulong Checksum;

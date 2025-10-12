@@ -3,6 +3,7 @@ using BelzontWE.Font;
 using BelzontWE.Font.Utility;
 using BelzontWE.Layout;
 using BelzontWE.Sprites;
+using Colossal.AssetPipeline;
 using Colossal.Mathematics;
 using System.Linq;
 using Unity.Collections;
@@ -98,7 +99,7 @@ namespace BelzontWE
             cubeVertices = verticesBounds
                 .Select(x =>
                 {
-                    return kVerticesPositionsCube.Select((y, j) => (Vector3)(new float3(math.sign(y.x) * .5f, y.y * -.5f, math.sign(y.z) * .5f) )).ToArray();
+                    return kVerticesPositionsCube.Select((y, j) => (Vector3)(new float3(math.sign(y.x) * .5f, y.y * -.5f, math.sign(y.z) * .5f))).ToArray();
                 })
                 .ToArray();
             cubeTris = verticesGroup.Select((_, i) => kTriangleIndicesCube).ToArray();
@@ -153,13 +154,18 @@ namespace BelzontWE
 
         public static Material GenerateMaterial(IBasicRenderInformation bri, WEShader shader)
         {
+            return GenerateMaterial(shader, bri.Main, bri.Normal, bri.Mask, bri.Control, bri.Emissive);
+        }
+
+        public static Material GenerateMaterial(WEShader shader, Texture main, Texture normal = null, Texture mask = null, Texture control = null, Texture emissive = null)
+        {
             var material = CreateDefaultFontMaterial(shader);
             if (material is null) return null;
-            material.SetTexture(FontAtlas._BaseColorMap, bri.Main);
-            if (bri.Mask && material.HasTexture(MaskMap)) material.SetTexture(MaskMap, bri.Mask);
-            if (bri.Control && material.HasTexture(ControlMask)) material.SetTexture(ControlMask, bri.Control);
-            if (bri.Normal && material.HasTexture(NormalMap)) material.SetTexture(NormalMap, bri.Normal);
-            if (bri.Emissive && material.HasTexture(EmissionMap)) material.SetTexture(EmissionMap, bri.Emissive);
+            material.SetTexture(FontAtlas._BaseColorMap, main);
+            if (mask && material.HasTexture(MaskMap)) material.SetTexture(MaskMap, mask);
+            if (control && material.HasTexture(ControlMask)) material.SetTexture(ControlMask, control);
+            if (normal && material.HasTexture(NormalMap)) material.SetTexture(NormalMap, normal);
+            if (emissive && material.HasTexture(EmissionMap)) material.SetTexture(EmissionMap, emissive);
             return material;
         }
         private static Material CreateDefaultFontMaterial(WEShader type)
@@ -169,12 +175,12 @@ namespace BelzontWE
             {
                 case WEShader.Default:
                     material = new Material(Shader.Find(defaultShaderName));
-                    material.EnableKeyword("_GPU_ANIMATION_OFF");
-                    HDMaterial.SetAlphaClipping(material, true);
-                    HDMaterial.SetAlphaCutoff(material, .7f);
-                    HDMaterial.SetUseEmissiveIntensity(material, true);
-                    HDMaterial.SetEmissiveColor(material, UnityEngine.Color.white);
-                    HDMaterial.SetEmissiveIntensity(material, 0, UnityEditor.Rendering.HighDefinition.EmissiveIntensityUnit.Nits);
+                    // material.EnableKeyword("_GPU_ANIMATION_OFF");
+                    //HDMaterial.SetAlphaClipping(material, true);
+                    //HDMaterial.SetAlphaCutoff(material, .7f);
+                    //HDMaterial.SetUseEmissiveIntensity(material, true);
+                    //HDMaterial.SetEmissiveColor(material, UnityEngine.Color.white);
+                    //HDMaterial.SetEmissiveIntensity(material, 0, UnityEditor.Rendering.HighDefinition.EmissiveIntensityUnit.Nits);
                     material.SetFloat("_DoubleSidedEnable", 1);
                     material.SetVector("_DoubleSidedConstants", new Vector4(1, 1, -1, 0));
                     material.SetFloat("_Smoothness", .5f);

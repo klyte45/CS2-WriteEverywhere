@@ -58,6 +58,10 @@ namespace BelzontWE.Font
 
         public bool IsWritable { get; private set; } = true;
 
+        public Material DefaultMaterial => defaultSurface?.Load();
+        public Material GlassMaterial => glassSurface?.Load();
+        public Material DecalMaterial => decalSurface?.Load();
+
 
         public IEnumerable<FixedString32Bytes> Keys => Sprites.Keys;
 
@@ -73,6 +77,10 @@ namespace BelzontWE.Font
         private VTTextureAsset controlVT;
         private VTTextureAsset maskVT;
         private VTTextureAsset normalVT;
+
+        private SurfaceAsset defaultSurface;
+        private SurfaceAsset glassSurface;
+        private SurfaceAsset decalSurface;
 
         internal WETextureAtlas()
         {
@@ -461,7 +469,7 @@ namespace BelzontWE.Font
                     Emissive = emissive,
                     MaskMap = mask,
                     Normal = normal,
-                    Main = Main,
+                    Main = main,
                     Name = x.ToString()
                 };
             }).ToArray();
@@ -483,47 +491,61 @@ namespace BelzontWE.Font
 
                 VirtualTexturingConfig virtualTexturingConfig = Resources.Load<VirtualTexturingConfig>("VirtualTexturingConfig");
 
-                mainVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_Main", EscapeStrategy.Filename), default);
-                mainVT.Save(0, db.AddAsset(main), main.width, 0, virtualTexturingConfig);
-                //if (mask)
-                {
-                    File.WriteAllBytes(Path.Combine(K45WE_VTLocalDatabase.EffectivePath, $"{atlasName}__Mask.png"), mask.EncodeToPNG());
-                    maskVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_Mask", EscapeStrategy.Filename), default);
-                    var textureAsset = db.AddAsset(mask);
-                    maskVT.Save(0, textureAsset, mask.width, 0, virtualTexturingConfig);
-                }
-                //if (normal)
-                {
-                    normalVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_Normal", EscapeStrategy.Filename), default);
-                    normalVT.Save(0, db.AddAsset(normal), normal.width, 0, virtualTexturingConfig);
-                }
+                //mainVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_Main", EscapeStrategy.Filename), default);
+                //    mainVT.Save(0, db.AddAsset(main), main.width, 0, virtualTexturingConfig);
+                ////if (mask)
+                //{
+                //    File.WriteAllBytes(Path.Combine(K45WE_VTLocalDatabase.EffectivePath, $"{atlasName}__Mask.png"), mask.EncodeToPNG());
+                //    maskVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_Mask", EscapeStrategy.Filename), default);
+                //    var textureAsset = db.AddAsset(mask);
+                //    //     maskVT.Save(0, textureAsset, mask.width, 0, virtualTexturingConfig);
+                //}
+                ////if (normal)
+                //{
+                //    normalVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_Normal", EscapeStrategy.Filename), default);
+                //    //    normalVT.Save(0, db.AddAsset(normal), normal.width, 0, virtualTexturingConfig);
+                //}
                 //if (control)
                 //{
                 //    controlVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_ControlMask", EscapeStrategy.Filename), default);
                 //    var textureAsset = db.AddAsset(control);
-                //    controlVT.Save(0, textureAsset, control.width, 0, virtualTexturingConfig);
+                //    //   controlVT.Save(0, textureAsset, control.width, 0, virtualTexturingConfig);
                 //}
                 ////if (emissive)
                 //{
                 //    emissiveVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_Emissive", EscapeStrategy.Filename), default);
                 //    var textureAsset = db.AddAsset(emissive);
-                //    emissiveVT.Save(0, textureAsset, emissive.width, 0, virtualTexturingConfig);
+                //    //        emissiveVT.Save(0, textureAsset, emissive.width, 0, virtualTexturingConfig);
                 //}
+
+                var assetControlMask = AssetDataPath.Create($"{atlasName}_ControlMask", EscapeStrategy.Filename);
+                var assetEmissive = AssetDataPath.Create($"{atlasName}_Emissive", EscapeStrategy.Filename);
+                var assetMaskMap = AssetDataPath.Create($"{atlasName}_MaskMap", EscapeStrategy.Filename);
+                var assetNormal = AssetDataPath.Create($"{atlasName}_Normal", EscapeStrategy.Filename);
+                var assetMain = AssetDataPath.Create($"{atlasName}_Main", EscapeStrategy.Filename);
+
+                VTSurfaceUtility.CreateVTSurfaceAsset(main, normal, mask, control, emissive, db, $"{atlasName}_DefMat", out defaultSurface, out glassSurface, out decalSurface);
+
+
                 IsWritable = false;
                 GameObject.Destroy(main);
                 GameObject.Destroy(control);
                 GameObject.Destroy(emissive);
                 GameObject.Destroy(mask);
                 GameObject.Destroy(normal);
+
             }
             return new XmlVTAtlasInfo
             {
                 Checksum = Checksum,
-                MainTex = mainVT.id.guid,
+                MainTex = default,// mainVT.id.guid,
                 ControlMap = default,// controlVT.id.guid,
                 Emissive = default,// emissiveVT.id.guid,
-                MaskMap = maskVT.id.guid,
-                Normal = normalVT.id.guid,
+                MaskMap = default,//maskVT.id.guid,
+                Normal = default,//normalVT.id.guid,
+                SurfDcl = decalSurface.id.guid,
+                SurfDef = defaultSurface.id.guid,
+                SurfGls = glassSurface.id.guid,
                 Name = atlasName,
                 FullName = fullName,
                 Sprites = Sprites.Values.Select(x => new XmlVTAtlasInfo.XmlSpriteEntry
