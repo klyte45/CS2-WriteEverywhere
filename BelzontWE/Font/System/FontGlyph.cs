@@ -27,6 +27,8 @@ namespace BelzontWE.Font
             }
         }
         public readonly bool IsValid => fontAddr.IsAllocated && fontAddr.Target != null;
+        public readonly bool IsValidSimple => fontAddr.IsAllocated;
+
         public readonly float xMin => x;
         public readonly float yMin => y;
         public readonly float xMax => x + width;
@@ -59,6 +61,15 @@ namespace BelzontWE.Font
             _kernings.Add(nextGlyph.Index, result);
 
             return result;
+        }
+
+        public int GetKerningCached(FontGlyph nextGlyph)
+        {
+            if (!_kernings.IsCreated)
+            {
+                _kernings = new NativeHashMap<int, int>(1, Allocator.Persistent);
+            }
+            return _kernings.TryGetValue(nextGlyph.Index, out int result) ? result : 0;
         }
 
         public static int PadFromBlur(int blur) => blur + 2;

@@ -229,7 +229,8 @@ namespace BelzontWE.Font.Utility
         public RangeVector m_fontBaseLimits;
         public uint AtlasVersion;
         public FixedString512Bytes originalText;
-        public bool Invalid;
+        public bool Invalid => !Valid;
+        public bool Valid;
 
         public void Dispose()
         {

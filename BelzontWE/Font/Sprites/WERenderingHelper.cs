@@ -98,7 +98,7 @@ namespace BelzontWE
             cubeVertices = verticesBounds
                 .Select(x =>
                 {
-                    return kVerticesPositionsCube.Select((y, j) => (Vector3)(new float3(math.sign(y.x) * .5f, y.y * -.5f, math.sign(y.z) * .5f) )).ToArray();
+                    return kVerticesPositionsCube.Select((y, j) => (Vector3)(new float3(math.sign(y.x) * .5f, y.y * -.5f, math.sign(y.z) * .5f))).ToArray();
                 })
                 .ToArray();
             cubeTris = verticesGroup.Select((_, i) => kTriangleIndicesCube).ToArray();
