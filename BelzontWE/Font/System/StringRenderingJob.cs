@@ -103,7 +103,8 @@ namespace BelzontWE.Font
                 NativeList<int> trianglesCube;
                 NativeList<Rune> str;
 
-                str = GetRunes(strOr);
+                str = GetRunes(strOr);                
+
                 if (str.IsEmpty)
                 {
                     output.Enqueue(result);

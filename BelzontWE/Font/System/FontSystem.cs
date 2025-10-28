@@ -262,7 +262,7 @@ namespace BelzontWE.Font
                 }
                 break;
             } while (true);
-            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Rendered glyph #{glyph} @ texture {CurrentAtlas.Texture}");
+            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Rendered glyph #{glyph} (unicode 0x{codepoint:X}) @ texture {CurrentAtlas.Texture}");
 
             glyph.AtlasGenerated = true;
 
@@ -271,13 +271,9 @@ namespace BelzontWE.Font
             return glyph;
         }
 
-        private FontGlyph GetGlyph(NativeHashMap<int, FontGlyph> glyphs, int codepoint, out bool hasResetted, bool ignoreDefaultChar = false)
+        private FontGlyph GetGlyph(NativeHashMap<int, FontGlyph> glyphs, int codepoint, out bool hasResetted)
         {
             FontGlyph result = GetGlyphInternal(glyphs, codepoint, out hasResetted);
-            if (!ignoreDefaultChar && DefaultCharacter != null)
-            {
-                result = GetGlyphInternal(glyphs, DefaultCharacter.Value, out hasResetted);
-            }
 
             return result;
         }
@@ -404,6 +400,16 @@ namespace BelzontWE.Font
                     foreach (var charact in charsToRender)
                     {
                         var result = GetGlyph(glyphs, charact, out bool hasReseted);
+                        if (!result.IsValid)
+                        {
+                            var normalizedChar = char.ConvertFromUtf32(charact).Normalize(System.Text.NormalizationForm.FormKD);
+                            if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] Normalizing char ID 0x{charact:X} ({char.ConvertFromUtf32(charact)}) got: {string.Join(", ", normalizedChar.ToArray().Select(x => "0x" + ((int)x).ToString("X")))}");
+                            if (normalizedChar.Length > 1)
+                            {
+                                result = GetGlyph(glyphs, char.ConvertToUtf32(normalizedChar, 0), out hasReseted);
+                                glyphs[charact] = result;
+                            }
+                        }
                         if (result.IsValid)
                         {
                             if (hasReseted)
