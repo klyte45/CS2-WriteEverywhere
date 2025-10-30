@@ -68,6 +68,7 @@ namespace BelzontWE
                         ComponentType.ReadOnly<CullingInfo>(),
                         ComponentType.ReadOnly<PrefabRef>(),
                         ComponentType.ReadOnly<WESubTextRef>(),
+                        ComponentType.ReadOnly<WEDrawing>(),
                     },
                     None = new ComponentType[]
                     {
@@ -82,6 +83,7 @@ namespace BelzontWE
                         ComponentType.ReadOnly<CullingInfo>(),
                         ComponentType.ReadOnly<PrefabRef>(),
                         ComponentType.ReadOnly<WETemplateForPrefab>(),
+                        ComponentType.ReadOnly<WEDrawing>(),
                     },
                     None = new ComponentType[]
                     {
@@ -90,7 +92,7 @@ namespace BelzontWE
                         ComponentType.ReadOnly<WEPlaceholderToBeProcessedInMain>(),
                     }
                 }
-            });
+            });         
 
             m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
