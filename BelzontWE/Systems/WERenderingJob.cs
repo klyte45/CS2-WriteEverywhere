@@ -175,6 +175,7 @@ namespace BelzontWE
                             if (!m_weTemplateUpdaterLookup.TryGetBuffer(nextEntity, out var updaterBuff))
                             {
                                 m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
+                                m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, nextEntity, true);
                                 return;
                             }
 
@@ -291,6 +292,7 @@ namespace BelzontWE
                             if (m_weTemplateUpdaterLookup.HasBuffer(nextEntity))
                             {
                                 m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
+                                m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, nextEntity, true);
                                 return;
                             }
                             var scale = transform.scale;

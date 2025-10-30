@@ -14,6 +14,8 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Colossal.Entities;
+
 
 
 
@@ -92,7 +94,7 @@ namespace BelzontWE
                         ComponentType.ReadOnly<WEPlaceholderToBeProcessedInMain>(),
                     }
                 }
-            });         
+            });
 
             m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
 
@@ -150,7 +152,7 @@ namespace BelzontWE
                     ref var material = ref item.material;
                     ref var mesh = ref item.mesh;
 
-                    if (!EntityManager.HasComponent<WETextDataDirtyFormulae>(item.textDataEntity))
+                    if (!EntityManager.HasEnabledComponent<WETextDataDirtyFormulae>(item.textDataEntity))
                     {
                         main.CheckDirtyFormulae(item.geometryEntity, item.textDataEntity, item.variables, cmd);
                     }
@@ -174,10 +176,11 @@ namespace BelzontWE
                         case WESimulationTextType.Image:
                         case WESimulationTextType.WhiteTexture:
                         case WESimulationTextType.WhiteCube:
-                            if (mesh.IsDirty() && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
+                            if (mesh.IsDirty() && !EntityManager.HasEnabledComponent<WEWaitingRendering>(item.textDataEntity))
                             {
                                 if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! +WEWaitingRendering");
                                 cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                                cmd.SetComponentEnabled<WEWaitingRendering>(item.textDataEntity, true);
                             }
                             break;
                         case WESimulationTextType.Placeholder:
@@ -185,6 +188,7 @@ namespace BelzontWE
                             {
                                 mesh.ClearTemplateDirty();
                                 cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                                cmd.SetComponentEnabled<WEWaitingRendering>(item.textDataEntity, true);
                                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - {mesh.originalName}\nTEMPLATE DIRTY");
                             }
                             doRender = m_pickerTool.IsSelected;
@@ -202,9 +206,10 @@ namespace BelzontWE
                             {
                                 case WESimulationTextType.Text:
                                 case WESimulationTextType.Image:
-                                    if (mesh.ValueData.EffectiveValue.Length > 0 && !EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
+                                    if (mesh.ValueData.EffectiveValue.Length > 0 && !EntityManager.HasEnabledComponent<WEWaitingRendering>(item.textDataEntity))
                                     {
                                         cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                                        cmd.SetComponentEnabled<WEWaitingRendering>(item.textDataEntity, true);
                                         if (dumpNextFrame)
                                         {
                                             LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E =  {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nMARKED TO RE-RENDER");

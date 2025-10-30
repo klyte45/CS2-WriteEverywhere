@@ -26,7 +26,7 @@ namespace BelzontWE
             };
         public bool SetNewParent(Entity e, EntityManager em)
         {
-            if ((e != TargetEntity && e != Entity.Null && (!em.TryGetComponent<WETextDataMesh>(e, out var mesh) || !em.TryGetComponent<WETextDataMain>(e, out var mainData) || mesh.TextType == WESimulationTextType.Placeholder || (mainData.TargetEntity != Entity.Null && mainData.TargetEntity != TargetEntity))))
+            if (e != TargetEntity && e != Entity.Null && (!em.TryGetComponent<WETextDataMesh>(e, out var mesh) || !em.TryGetComponent<WETextDataMain>(e, out var mainData) || mesh.TextType == WESimulationTextType.Placeholder || (mainData.TargetEntity != Entity.Null && mainData.TargetEntity != TargetEntity)))
             {
                 return false;
             }
@@ -42,6 +42,7 @@ namespace BelzontWE
                     vars = vars,
                     geometry = geometry,
                 });
+                cmdBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(textData, true);
             }
         }
     }

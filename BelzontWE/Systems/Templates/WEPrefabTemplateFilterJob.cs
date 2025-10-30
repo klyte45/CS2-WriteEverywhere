@@ -4,6 +4,8 @@ using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Game.Tools;
+using Colossal.Entities;
+
 
 
 
@@ -44,9 +46,9 @@ namespace BelzontWE
                     {
                         m_CommandBuffer.RemoveComponent<WETemplateForPrefabEmpty>(unfilteredChunkIndex, entity);
                     }
-                    if (m_prefabDirtyLkp.HasComponent(entity))
+                    if (m_prefabDirtyLkp.HasEnabledComponent(entity))
                     {
-                        m_CommandBuffer.RemoveComponent<WETemplateForPrefabDirty>(unfilteredChunkIndex, entity);
+                        m_CommandBuffer.SetComponentEnabled<WETemplateForPrefabDirty>(unfilteredChunkIndex, entity, false);
                     }
                 }
             }
@@ -114,6 +116,7 @@ namespace BelzontWE
                         if (m_indexesWithLayout.ContainsKey(prefabData.m_Index))
                         {
                             m_CommandBuffer.AddComponent<WETemplateForPrefabToRunOnMain>(unfilteredChunkIndex, entity);
+                            m_CommandBuffer.SetComponentEnabled<WETemplateForPrefabToRunOnMain>(unfilteredChunkIndex, entity, true);
                         }
                         else
                         {

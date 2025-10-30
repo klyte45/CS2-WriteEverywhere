@@ -2,6 +2,7 @@
 using Belzont.Serialization;
 using Belzont.Utils;
 using BelzontWE.Sprites;
+using BelzontWE.Utils;
 using Colossal.Entities;
 using Colossal.Serialization.Entities;
 using Game;
@@ -457,7 +458,7 @@ namespace BelzontWE
                     var prefabRef = prefabRefs[i];
 
                     EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
-                    cmd.RemoveComponent<WETemplateForPrefabToRunOnMain>(e);
+                    cmd.SetComponentEnabled<WETemplateForPrefabToRunOnMain>(e, false);
                     if (m_prefabDataLkp.TryGetComponent(prefabRef.m_Prefab, out var prefabData))
                     {
                         if (PrefabTemplates.TryGetValue(prefabData.m_Index, out var newTemplate))
@@ -622,6 +623,7 @@ namespace BelzontWE
             if (m_templatesDirty)
             {
                 EntityManager.AddComponent<WEWaitingRendering>(m_templateBasedEntities);
+                EntityManager.SetComponentEnabled<WEWaitingRendering>(m_templateBasedEntities, true);
                 m_templatesDirty = false;
             }
             if (m_updatingEntitiesOnMain is null)
@@ -693,8 +695,9 @@ namespace BelzontWE
                                 cmd.DestroyEntity(buff[j].childEntity);
                             }
                             buff.Clear();
-                            cmd.RemoveComponent<WETemplateDirtyInstancing>(e);
+                            cmd.SetComponentEnabled<WETemplateDirtyInstancing>(e, false);
                             cmd.AddComponent<WEWaitingRendering>(e);
+                            cmd.SetComponentEnabled<WEWaitingRendering>(e, true);
                         }
                     }
                     chunks.Dispose();
@@ -719,12 +722,12 @@ namespace BelzontWE
                     {
                         job.Execute(tempArr[i]);
                     }
-                    m_endFrameBarrier.CreateCommandBuffer().RemoveComponent<WETextDataDirtyFormulae>(m_textDataDirtyQuery, EntityQueryCaptureMode.AtPlayback);
                 }
             }
+            Dependency.Complete();
             if (!m_componentsToDispose.IsEmpty)
             {
-                Dependency = new WETemplateDisposalJob
+                new WETemplateDisposalJob
                 {
                     m_EntityType = GetEntityTypeHandle(),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
@@ -733,9 +736,8 @@ namespace BelzontWE
                     m_TransformDataLkp = GetComponentLookup<WETextDataTransform>(true),
                     m_WETemplateForPrefabLkp = GetComponentLookup<WETemplateForPrefab>(true),
                     m_UpdaterDataLkp = GetBufferLookup<WETemplateUpdater>(true),
-                }.Schedule(m_componentsToDispose, Dependency);
+                }.ScheduleParallel(m_componentsToDispose, Dependency).Complete();
             }
-            Dependency.Complete();
         }
 
         private struct WEUpdateFormulaesJob
@@ -780,7 +782,9 @@ namespace BelzontWE
                     if (canMultiply && transformChanged)
                     {
                         m_CommandBuffer.AddComponent<WETemplateDirtyInstancing>(entities[i]);
+                        m_CommandBuffer.SetComponentEnabled<WETemplateDirtyInstancing>(entities[i], true);
                     }
+                    m_CommandBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(entities[i], false);
                 }
             }
         }
@@ -998,8 +1002,13 @@ namespace BelzontWE
             }
 
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + totalStepPrefabTemplates), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingComplete");
-            m_endFrameBarrier.CreateCommandBuffer().AddComponent<WETemplateForPrefabDirty>(m_prefabsToMarkDirty, EntityQueryCaptureMode.AtPlayback);
+            new WEAddAndEnableComponentJob<WETemplateForPrefabDirty>
+            {
+                m_EntityType = GetEntityTypeHandle(),
+                m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+            }.ScheduleParallel(m_prefabsToMarkDirty, Dependency).Complete();
         }
+
 
         private IEnumerator LoadPrefabFileTemplate(int offsetPercentage, float totalStep, (string, string, string)[] files, Dictionary<string, LocalizedString> errorsList, int i)
         {

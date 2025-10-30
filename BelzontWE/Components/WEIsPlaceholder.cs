@@ -2,6 +2,6 @@
 
 namespace BelzontWE
 {
-    public struct WEIsPlaceholder : IComponentData { 
+    public struct WEIsPlaceholder : IComponentData, IEnableableComponent { 
     }
 }
