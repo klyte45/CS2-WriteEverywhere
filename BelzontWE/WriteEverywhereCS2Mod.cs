@@ -56,5 +56,7 @@ namespace BelzontWE
         {
             return new WEModData(this);
         }
+
+        internal static WEModData WeData => ModData as WEModData;
     }
 }

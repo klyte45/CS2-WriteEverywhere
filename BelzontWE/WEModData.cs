@@ -81,6 +81,9 @@ namespace BelzontWE
         public override void OnSetDefaults()
         {
         }
+        [SettingsUISection(kSourcesTab, null)]
+        public bool TempDisableRendering { get; set; } = false;
+
 
         [SettingsUIDropdown(typeof(WEModData), nameof(StartTextureSizeFontValues))]
         [SettingsUISection(kSourcesTab, kFontsSection)]

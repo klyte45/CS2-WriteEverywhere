@@ -106,7 +106,8 @@ namespace BelzontWE
 #endif
         protected override void OnUpdate()
         {
-            if (GameManager.instance.isGameLoading) return;
+            if (GameManager.instance.isGameLoading) return; 
+            if (WriteEverywhereCS2Mod.WeData.TempDisableRendering) return;
             float4 m_LodParameters = 1f;
             float3 m_CameraPosition = 0f;
             float3 m_CameraDirection = 0f;
@@ -138,6 +139,7 @@ namespace BelzontWE
         {
             FrameCounter++;
             EntityCommandBuffer cmd;
+            
 #if DEBUG
             DrawCallsLastFrame = 0;
 #endif
