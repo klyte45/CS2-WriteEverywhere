@@ -1,3 +1,7 @@
+# v0.5.2r1 (02-NOV-25)
+
+- Improved general mod performance; The formulas update rate now is variable
+
 # v0.5.2r0 (30-OCT-25)
 
 - Improved general mod performance (raising fps up to 50% in some cases)

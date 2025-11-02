@@ -46,7 +46,7 @@ namespace BelzontWE
 #if DEBUG
         public uint DrawCallsLastFrame { get; private set; } = 0;
 #endif
-        private uint FrameCounter { get; set; } = 0;
+        private int FrameCounter { get; set; } = 0;
 #if BURST
         [Preserve]
 #endif
@@ -147,12 +147,13 @@ namespace BelzontWE
                 cmd = m_endFrameBarrier.CreateCommandBuffer();
                 while (availToDraw.TryDequeue(out var item))
                 {
+                    bool willCheckUpdate = ((FrameCounter + item.textDataEntity.Index) & 0x1f) == 0;
                     ref var transform = ref item.transform;
                     ref var main = ref item.main;
                     ref var material = ref item.material;
                     ref var mesh = ref item.mesh;
 
-                    if (!EntityManager.HasEnabledComponent<WETextDataDirtyFormulae>(item.textDataEntity))
+                    if (willCheckUpdate && !EntityManager.HasEnabledComponent<WETextDataDirtyFormulae>(item.textDataEntity))
                     {
                         main.CheckDirtyFormulae(item.geometryEntity, item.textDataEntity, item.variables, cmd);
                     }
@@ -176,7 +177,7 @@ namespace BelzontWE
                         case WESimulationTextType.Image:
                         case WESimulationTextType.WhiteTexture:
                         case WESimulationTextType.WhiteCube:
-                            if (mesh.IsDirty() && !EntityManager.HasEnabledComponent<WEWaitingRendering>(item.textDataEntity))
+                            if (willCheckUpdate && mesh.IsDirty() && !EntityManager.HasEnabledComponent<WEWaitingRendering>(item.textDataEntity))
                             {
                                 if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! +WEWaitingRendering");
                                 cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
@@ -184,7 +185,7 @@ namespace BelzontWE
                             }
                             break;
                         case WESimulationTextType.Placeholder:
-                            if (mesh.IsTemplateDirty())
+                            if (willCheckUpdate && mesh.IsTemplateDirty())
                             {
                                 mesh.ClearTemplateDirty();
                                 cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
@@ -206,7 +207,7 @@ namespace BelzontWE
                             {
                                 case WESimulationTextType.Text:
                                 case WESimulationTextType.Image:
-                                    if (mesh.ValueData.EffectiveValue.Length > 0 && !EntityManager.HasEnabledComponent<WEWaitingRendering>(item.textDataEntity))
+                                    if (willCheckUpdate && mesh.ValueData.EffectiveValue.Length > 0 && !EntityManager.HasEnabledComponent<WEWaitingRendering>(item.textDataEntity))
                                     {
                                         cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
                                         cmd.SetComponentEnabled<WEWaitingRendering>(item.textDataEntity, true);
