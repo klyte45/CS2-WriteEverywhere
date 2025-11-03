@@ -117,6 +117,7 @@ namespace BelzontWE
                         return;
                     }
 
+                    weMeshData.ClearTemplateDirty();
                     switch (weMeshData.TextType)
                     {
                         case WESimulationTextType.Text:
@@ -146,11 +147,13 @@ namespace BelzontWE
                                     m_CommandBuffer.SetComponentEnabled<WETemplateDirtyInstancing>(unfilteredChunkIndex, entity, true);
                                 }
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
+                                m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
                                 m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
                             }
                             break;
                         default:
                             if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.SetComponentEnabled<WEIsPlaceholder>(unfilteredChunkIndex, entity, false);
+                            m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
                             m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
                             break;
 

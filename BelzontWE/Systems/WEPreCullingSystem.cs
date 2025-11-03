@@ -174,33 +174,40 @@ namespace BelzontWE
                     }
                     var entity = cullingAction.m_Entity;
 
-                    Matrix4x4 baseMatrix;
-                    if (m_interpolatedTransformLkp.HasComponent(entity))
-                    {
-                        baseMatrix = Matrix4x4.identity;
-                    }
-                    else if (m_transform.TryGetComponent(entity, out var transform2))
+                    Matrix4x4 itemBaseMatrix;
+                    Matrix4x4 geomMatrix;
+                    if (m_transform.TryGetComponent(entity, out var transform2))
                     {
                         var positionRef = transform2.m_Position;
                         var rotationRef = transform2.m_Rotation;
 
-                        baseMatrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one);
+                        geomMatrix = itemBaseMatrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one);
                     }
                     else
                     {
                         return;
                     }
+
+
+                    if (m_interpolatedTransformLkp.HasComponent(entity))
+                    {
+                        itemBaseMatrix = Matrix4x4.identity;
+                    }
+                    else
+                    {
+                        geomMatrix = Matrix4x4.identity;
+                    }
                     FixedString512Bytes variables = new();
                     PopulateVars(entity, ref variables);
                     if (m_weTemplateForPrefabLookup.TryGetComponent(entity, out var prefabWeLayout))
                     {
-                        DrawTree(entity, prefabWeLayout.childEntity, baseMatrix, index, variables, 0);
+                        DrawTree(entity, prefabWeLayout.childEntity, itemBaseMatrix, geomMatrix, index, variables, 0);
                     }
                     if (m_weSubRefLookup.TryGetBuffer(entity, out var subLayout))
                     {
                         for (int j = 0; j < subLayout.Length; j++)
                         {
-                            DrawTree(entity, subLayout[j].m_weTextData, baseMatrix, index, variables, 0);
+                            DrawTree(entity, subLayout[j].m_weTextData, itemBaseMatrix, geomMatrix, index, variables, 0);
                         }
                     }
 
@@ -234,9 +241,9 @@ namespace BelzontWE
                 }
             }
 
-            private void DrawTree(Entity geometryEntity, Entity nextEntity, Matrix4x4 prevMatrix, int unfilteredChunkIndex, FixedString512Bytes variables, int nthCall, bool parentIsPlaceholder = false)
+            private void DrawTree(Entity geometryEntity, Entity nextEntity, Matrix4x4 prevMatrix, Matrix4x4 geomMatrix, int unfilteredChunkIndex, FixedString512Bytes variables, int nthCall, bool parentIsPlaceholder = false)
             {
-                if (nthCall >= 12) return;
+                if (nthCall >= 16) return;
                 if (!m_weMeshLookup.TryGetComponent(nextEntity, out var mesh))
                 {
                     DestroyRecursive(ref this, nextEntity, unfilteredChunkIndex);
@@ -255,17 +262,17 @@ namespace BelzontWE
 
                 if (transform.useFormulaeToCheckIfDraw && !transform.MustDraw)
                 {
-                    availToDraw.Enqueue(new WERenderData
-                    {
-                        transform = transform,
-                        textDataEntity = nextEntity,
-                        geometryEntity = geometryEntity,
-                        main = m_weMainLookup[nextEntity],
-                        material = m_weMaterialLookup[nextEntity],
-                        mesh = m_weMeshLookup[nextEntity],
-                        transformMatrix = default,
-                        variables = variables
-                    });
+                    //availToDraw.Enqueue(new WERenderData
+                    //{
+                    //    transform = transform,
+                    //    textDataEntity = nextEntity,
+                    //    geometryEntity = geometryEntity,
+                    //    main = m_weMainLookup[nextEntity],
+                    //    material = m_weMaterialLookup[nextEntity],
+                    //    mesh = m_weMeshLookup[nextEntity],
+                    //    transformMatrix = default,
+                    //    variables = variables
+                    //});
 
                     return;
                 }
@@ -277,20 +284,20 @@ namespace BelzontWE
                         if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayoutSc))
                         {
                             var matrix = prevMatrix * Matrix4x4.TRS(mesh.OffsetPositionFormulae.EffectiveValue, Quaternion.Euler(mesh.OffsetRotationFormulae.EffectiveValue), mesh.ScaleFormulae.EffectiveValue);
-                            availToDraw.Enqueue(new WERenderData
-                            {
-                                transform = transform,
-                                textDataEntity = nextEntity,
-                                geometryEntity = geometryEntity,
-                                main = m_weMainLookup[nextEntity],
-                                material = m_weMaterialLookup[nextEntity],
-                                mesh = m_weMeshLookup[nextEntity],
-                                transformMatrix = matrix,
-                                variables = variables
-                            });
+                            //availToDraw.Enqueue(new WERenderData
+                            //{
+                            //    transform = transform,
+                            //    textDataEntity = nextEntity,
+                            //    geometryEntity = geometryEntity,
+                            //    main = m_weMainLookup[nextEntity],
+                            //    material = m_weMaterialLookup[nextEntity],
+                            //    mesh = m_weMeshLookup[nextEntity],
+                            //    transformMatrix = matrix,
+                            //    variables = variables
+                            //});
                             for (int j = 0; j < subLayoutSc.Length; j++)
                             {
-                                DrawTree(geometryEntity, subLayoutSc[j].m_weTextData, matrix, unfilteredChunkIndex, variables, nthCall + 1);
+                                DrawTree(geometryEntity, subLayoutSc[j].m_weTextData, matrix, geomMatrix, unfilteredChunkIndex, variables, nthCall + 1);
                             }
                         }
                         break;
@@ -300,7 +307,7 @@ namespace BelzontWE
                             prevMatrix *= Matrix4x4.TRS(new Vector3(0, 0, .001f), default, Vector3.one);
                             for (int j = 0; j < subLayout2.Length; j++)
                             {
-                                DrawTree(geometryEntity, subLayout2[j].m_weTextData, prevMatrix, unfilteredChunkIndex, variables, nthCall + 1);
+                                DrawTree(geometryEntity, subLayout2[j].m_weTextData, prevMatrix, geomMatrix, unfilteredChunkIndex, variables, nthCall + 1);
                             }
                         }
                         return;
@@ -320,7 +327,7 @@ namespace BelzontWE
                                 return;
                             }
 
-                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, ref prevMatrix, out int minLod, ref this);
+                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, geomMatrix * prevMatrix, out int minLod, ref this);
                             if (!mesh.ValueData.InitializedEffectiveText || lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 var scale2 = transform.scale;
@@ -352,7 +359,7 @@ namespace BelzontWE
                                     layoutVars.Append(VARIABLE_KV_SEPARATOR);
                                     layoutVars.Append(i);
                                     layoutVars.Append(VARIABLE_ITEM_SEPARATOR);
-                                    DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one), unfilteredChunkIndex, layoutVars, nthCall + 1, true);
+                                    DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one), geomMatrix, unfilteredChunkIndex, layoutVars, nthCall + 1, true);
                                 }
                             }
                         }
@@ -365,7 +372,7 @@ namespace BelzontWE
 
                             var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(transform.scale.xyz);
                             var lumMultiplier = GetEmissiveMultiplier(ref material);
-                            int lod = CalculateLod(whiteCubeBounds * lumMultiplier, ref mesh, ref transform, ref WTmatrix, out int minLod, ref this);
+                            int lod = CalculateLod(whiteCubeBounds * lumMultiplier, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod, ref this);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
 
@@ -387,7 +394,7 @@ namespace BelzontWE
                                 var itemMatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, mesh.childrenRefersToFrontFace ? (transform.scale.z * .5f) + .001f : .001f)), transform.offsetRotation, Vector3.one);
                                 for (int j = 0; j < subLayoutWt.Length; j++)
                                 {
-                                    DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, unfilteredChunkIndex, variables, nthCall + 1);
+                                    DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, geomMatrix, unfilteredChunkIndex, variables, nthCall + 1);
                                 }
                             }
                         }
@@ -401,7 +408,7 @@ namespace BelzontWE
 
                             var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? transform.scale.xzy : new float3(transform.scale.xy, math.sign(transform.scale.z)));
                             var lumMultiplier = GetEmissiveMultiplier(ref material);
-                            int lod = CalculateLod(whiteTextureBounds * lumMultiplier, ref mesh, ref transform, ref WTmatrix, out int minLod, ref this);
+                            int lod = CalculateLod(whiteTextureBounds * lumMultiplier, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod, ref this);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
 
@@ -423,7 +430,7 @@ namespace BelzontWE
                                 var itemMatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, material.Shader == WEShader.Decal ? .002f : .001f)), transform.offsetRotation, Vector3.one);
                                 for (int j = 0; j < subLayoutWt.Length; j++)
                                 {
-                                    DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, unfilteredChunkIndex, variables, nthCall + 1);
+                                    DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, geomMatrix, unfilteredChunkIndex, variables, nthCall + 1);
                                 }
                             }
                         }
@@ -482,7 +489,7 @@ namespace BelzontWE
                                 {
                                     int minLod = -1;
                                     float lumMultiplier = GetEmissiveMultiplier(ref material);
-                                    int lod = invalidBri ? 0 : CalculateLod(mesh.Bounds * lumMultiplier, ref mesh, ref transform, ref matrix, out minLod, ref this);
+                                    int lod = invalidBri ? 0 : CalculateLod(mesh.Bounds * lumMultiplier, ref mesh, ref transform, geomMatrix * matrix, out minLod, ref this);
                                     if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                     {
                                         availToDraw.Enqueue(new WERenderData
@@ -518,7 +525,7 @@ namespace BelzontWE
                                 var itemMatrix = prevMatrix * Matrix4x4.TRS(refPos + (float3)Matrix4x4.Rotate(refRot).MultiplyPoint(new float3(0, 0, material.Shader == WEShader.Decal ? .002f : .001f)), refRot, Vector3.one);
                                 for (int j = 0; j < subLayout.Length; j++)
                                 {
-                                    DrawTree(geometryEntity, subLayout[j].m_weTextData, itemMatrix, unfilteredChunkIndex, variables, nthCall + 1);
+                                    DrawTree(geometryEntity, subLayout[j].m_weTextData, itemMatrix, geomMatrix, unfilteredChunkIndex, variables, nthCall + 1);
                                 }
                             }
                         }
@@ -542,7 +549,7 @@ namespace BelzontWE
                 return effectiveOffsetPosition;
             }
 
-            private int CalculateLod(Bounds3 meshBounds, ref WETextDataMesh meshData, ref WETextDataTransform transformData, ref Matrix4x4 matrix, out int minLod, ref WERenderingJob job)
+            private int CalculateLod(Bounds3 meshBounds, ref WETextDataMesh meshData, ref WETextDataTransform transformData, Matrix4x4 matrix, out int minLod, ref WERenderingJob job)
             {
                 var refBounds = new Bounds3(matrix.MultiplyPoint(meshBounds.min), matrix.MultiplyPoint(meshBounds.max));
                 var minDist = RenderingUtils.CalculateMinDistance(refBounds, job.m_CameraPosition, job.m_CameraDirection, job.m_LodParameters);

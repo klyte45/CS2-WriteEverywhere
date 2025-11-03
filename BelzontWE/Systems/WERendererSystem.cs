@@ -100,19 +100,30 @@ namespace BelzontWE
                         case WESimulationTextType.Image:
                         case WESimulationTextType.WhiteTexture:
                         case WESimulationTextType.WhiteCube:
-                            if (willCheckUpdate && mesh.IsDirty() && !EntityManager.HasEnabledComponent<WEWaitingRendering>(item.textDataEntity))
+                            if (mesh.IsDirty() && !EntityManager.HasEnabledComponent<WEWaitingRendering>(item.textDataEntity))
                             {
                                 if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! +WEWaitingRendering");
-                                cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
-                                cmd.SetComponentEnabled<WEWaitingRendering>(item.textDataEntity, true);
+                                if (!EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
+                                {
+                                    cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                                }
+                                else
+                                {
+                                    EntityManager.SetComponentEnabled<WEWaitingRendering>(item.textDataEntity, true);
+                                }
                             }
                             break;
                         case WESimulationTextType.Placeholder:
-                            if (willCheckUpdate && mesh.IsTemplateDirty())
+                            if (mesh.IsTemplateDirty() && !EntityManager.HasEnabledComponent<WEWaitingRendering>(item.textDataEntity))
                             {
-                                mesh.ClearTemplateDirty();
-                                cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
-                                cmd.SetComponentEnabled<WEWaitingRendering>(item.textDataEntity, true);
+                                if (!EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
+                                {
+                                    cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                                }
+                                else
+                                {
+                                    EntityManager.SetComponentEnabled<WEWaitingRendering>(item.textDataEntity, true);
+                                }
                                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - {mesh.originalName}\nTEMPLATE DIRTY");
                             }
                             doRender = m_pickerTool.IsSelected;
@@ -132,8 +143,14 @@ namespace BelzontWE
                                 case WESimulationTextType.Image:
                                     if (willCheckUpdate && mesh.ValueData.EffectiveValue.Length > 0 && !EntityManager.HasEnabledComponent<WEWaitingRendering>(item.textDataEntity))
                                     {
-                                        cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
-                                        cmd.SetComponentEnabled<WEWaitingRendering>(item.textDataEntity, true);
+                                        if (!EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
+                                        {
+                                            cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
+                                        }
+                                        else
+                                        {
+                                            EntityManager.SetComponentEnabled<WEWaitingRendering>(item.textDataEntity, true);
+                                        }
                                         if (dumpNextFrame)
                                         {
                                             LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E =  {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nMARKED TO RE-RENDER");
@@ -188,10 +205,10 @@ namespace BelzontWE
                     }
                     //      if (!WETemplateManager.Instance.IsAnyGarbagePending)
                     {
-                        if (EntityManager.HasComponent<WETextDataMain>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, main);
-                        if (EntityManager.HasComponent<WETextDataMaterial>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, material);
-                        if (EntityManager.HasComponent<WETextDataMesh>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, mesh);
-                        if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
+                        //if (EntityManager.HasComponent<WETextDataMain>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, main);
+                        //if (EntityManager.HasComponent<WETextDataMaterial>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, material);
+                        //if (EntityManager.HasComponent<WETextDataMesh>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, mesh);
+                        //if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
                     }
 
                 }

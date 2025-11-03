@@ -707,10 +707,10 @@ namespace BelzontWE
                     using var tempArr = m_textDataDirtyQuery.ToArchetypeChunkArray(Allocator.Temp);
                     var job = new WEUpdateFormulaesJob
                     {
-                        m_MainDataHdl = GetComponentTypeHandle<WETextDataMain>(true),
-                        m_MaterialDataHdl = GetComponentTypeHandle<WETextDataMaterial>(true),
-                        m_TransformDataHdl = GetComponentTypeHandle<WETextDataTransform>(true),
-                        m_MeshDataHdl = GetComponentTypeHandle<WETextDataMesh>(true),
+                        m_MainDataHdl = GetComponentTypeHandle<WETextDataMain>(false),
+                        m_MaterialDataHdl = GetComponentTypeHandle<WETextDataMaterial>(false),
+                        m_TransformDataHdl = GetComponentTypeHandle<WETextDataTransform>(false),
+                        m_MeshDataHdl = GetComponentTypeHandle<WETextDataMesh>(false),
                         m_DirtyFormulaeHdl = GetComponentTypeHandle<WETextDataDirtyFormulae>(true),
                         m_EntityType = GetEntityTypeHandle(),
                         m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
