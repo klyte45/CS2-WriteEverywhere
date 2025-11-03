@@ -62,6 +62,7 @@ namespace BelzontWE
         protected override void OnUpdate()
         {
             if (!ready) return;
+            if (WriteEverywhereCS2Mod.WeData.TempDisableRendering) return;
 
             float4 m_LodParameters = 1f;
             float3 m_CameraPosition = 0f;
@@ -118,13 +119,6 @@ namespace BelzontWE
             if (m_availToDraw.IsCreated) m_availToDraw.Dispose();
             m_availToDraw = queueRender.ToArray(Allocator.Persistent);
             queueRender.Dispose();
-            if (frameCounter++ % 200 == 0)
-            {
-                LogUtils.DoInfoLog($"Avail to draw: {m_availToDraw.Length}");
-            }
-
-
-
         }
 
         private float GetLevelOfDetail(float levelOfDetail, IGameCameraController cameraController)

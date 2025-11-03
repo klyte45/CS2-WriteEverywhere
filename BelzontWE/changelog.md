@@ -1,7 +1,6 @@
-# v0.5.2r2 (02-NOV-25)
+# v0.5.3r0 (03-NOV-25)
 
-- Added button to disable WE rendering (to speed up simulation). Then the WE settings won't be lost.
-- Fixed issue with new options settings not updating when switching between modules that have the options tab
+- HUGE performance boost update. Now it shall weight almost nothing on fps, some hiccups may still occur due intensive usage of formulaes.
 
 ## FROM v0.5.2r1 (02-NOV-25)
 

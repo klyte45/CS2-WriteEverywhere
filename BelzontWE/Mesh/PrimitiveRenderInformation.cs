@@ -147,7 +147,7 @@ namespace BelzontWE.Font.Utility
         {
             get
             {
-                if (m_cubeCharactersCoordinates is null)
+                if (m_cubeCharactersCoordinates is null && MeshCube is not null)
                 {
                     m_cubeCharactersCoordinates = MeshCube.Select(x => new DecalCharCoordinates()).ToArray();
                     for (int i = 0; i < m_cubeCharactersCoordinates.Length; i++)
