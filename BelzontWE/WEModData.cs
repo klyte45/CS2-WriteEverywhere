@@ -82,6 +82,8 @@ namespace BelzontWE
         {
         }
         [SettingsUISection(kSourcesTab, null)]
+        public bool TempDisableRenderingGen { get; set; } = false;
+        [SettingsUISection(kSourcesTab, null)]
         public bool TempDisableRendering { get; set; } = false;
 
 

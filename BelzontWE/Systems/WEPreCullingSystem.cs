@@ -1,5 +1,5 @@
 ﻿using Belzont.Utils;
-using Colossal;
+using Colossal.Entities;
 using Colossal.Mathematics;
 using Game.Rendering;
 using Unity.Burst;
@@ -50,9 +50,19 @@ namespace BelzontWE
             ready = true;
         }
 
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            if (m_availToDraw.IsCreated)
+            {
+                m_availToDraw.Dispose();
+            }
+        }
+
         protected override void OnUpdate()
         {
             if (!ready) return;
+            if (WriteEverywhereCS2Mod.WeData.TempDisableRenderingGen) return;
 
             float4 m_LodParameters = 1f;
             float3 m_CameraPosition = 0f;
@@ -71,48 +81,49 @@ namespace BelzontWE
             if (data.IsEmpty) return;
             var commandBuffer = new EntityCommandBuffer(Allocator.Persistent);
             var queueRender = new NativeQueue<WERenderData>(Allocator.Persistent);
-            WERenderingJob cullingActionJob = new();
+            WERenderingJob cullingActionJob = new()
+            {
 
-            cullingActionJob.m_CullingActions = data;
-            cullingActionJob.m_WEDrawingLookup = GetComponentLookup<WEDrawing>(true);
-            cullingActionJob.m_CommandBuffer = commandBuffer.AsParallelWriter();
-            cullingActionJob.m_EntityType = GetEntityTypeHandle();
-            cullingActionJob.m_transform = GetComponentLookup<Game.Objects.Transform>(true);
-            cullingActionJob.m_weMainLookup = GetComponentLookup<WETextDataMain>(true);
-            cullingActionJob.m_weMeshLookup = GetComponentLookup<WETextDataMesh>(false);
-            cullingActionJob.m_weMaterialLookup = GetComponentLookup<WETextDataMaterial>(true);
-            cullingActionJob.m_weTemplateUpdaterLookup = GetBufferLookup<WETemplateUpdater>(true);
-            cullingActionJob.m_weTemplateForPrefabLookup = GetComponentLookup<WETemplateForPrefab>(true);
-            cullingActionJob.m_LodParameters = m_LodParameters;
-            cullingActionJob.m_CameraPosition = m_CameraPosition;
-            cullingActionJob.m_CameraDirection = m_CameraDirection;
-            cullingActionJob.availToDraw = queueRender.AsParallelWriter();
-            cullingActionJob.isAtWeEditor = m_pickerTool.IsSelected;
-            cullingActionJob.m_selectedSubEntity = m_pickerController.CurrentSubEntity.Value;
-            cullingActionJob.m_selectedEntity = m_pickerController.CurrentEntity.Value;
-            cullingActionJob.m_weSubRefLookup = GetBufferLookup<WESubTextRef>(true);
-            cullingActionJob.m_weVariablesLookup = GetBufferLookup<WETextDataVariable>(true);
-            cullingActionJob.m_weTransformLookup = GetComponentLookup<WETextDataTransform>(true);
-            cullingActionJob.m_weWaitingRenderingLookup = GetComponentLookup<WEWaitingRendering>(true);
-            cullingActionJob.m_weDirtyFormulae = GetComponentLookup<WETextDataDirtyFormulae>(true);
-            cullingActionJob.m_interpolatedTransformLkp = GetComponentLookup<InterpolatedTransform>(true);
+                m_CullingActions = data,
+                m_WEDrawingLookup = GetComponentLookup<WEDrawing>(true),
+                m_CommandBuffer = commandBuffer.AsParallelWriter(),
+                m_EntityType = GetEntityTypeHandle(),
+                m_transform = GetComponentLookup<Game.Objects.Transform>(true),
+                m_weMainLookup = GetComponentLookup<WETextDataMain>(true),
+                m_weMeshLookup = GetComponentLookup<WETextDataMesh>(false),
+                m_weMaterialLookup = GetComponentLookup<WETextDataMaterial>(true),
+                m_weTemplateUpdaterLookup = GetBufferLookup<WETemplateUpdater>(true),
+                m_weTemplateForPrefabLookup = GetComponentLookup<WETemplateForPrefab>(true),
+                m_LodParameters = m_LodParameters,
+                m_CameraPosition = m_CameraPosition,
+                m_CameraDirection = m_CameraDirection,
+                availToDraw = queueRender.AsParallelWriter(),
+                isAtWeEditor = m_pickerTool.IsSelected,
+                m_selectedSubEntity = m_pickerController.CurrentSubEntity.Value,
+                m_selectedEntity = m_pickerController.CurrentEntity.Value,
+                m_weSubRefLookup = GetBufferLookup<WESubTextRef>(true),
+                m_weVariablesLookup = GetBufferLookup<WETextDataVariable>(true),
+                m_weTransformLookup = GetComponentLookup<WETextDataTransform>(true),
+                m_weWaitingRenderingLookup = GetComponentLookup<WEWaitingRendering>(true),
+                m_weDirtyFormulae = GetComponentLookup<WETextDataDirtyFormulae>(true),
+                m_interpolatedTransformLkp = GetComponentLookup<InterpolatedTransform>(true),
+            };
 
 
 
             Dependency = cullingActionJob.Schedule(data.Length, 1, deps);
-            Dependency.GetAwaiter().OnCompleted(() =>
-            {
-                commandBuffer.Playback(EntityManager);
-                commandBuffer.Dispose();
+            Dependency.Complete();
+            commandBuffer.Playback(EntityManager);
+            commandBuffer.Dispose();
 
-                if (m_availToDraw.IsCreated) m_availToDraw.Dispose();
-                m_availToDraw = queueRender.ToArray(Allocator.Persistent);
-                queueRender.Dispose();
-                if (frameCounter++ % 200 == 0)
-                {
-                    LogUtils.DoInfoLog($"Avail to draw: {m_availToDraw.Length}");
-                }
-            });
+            if (m_availToDraw.IsCreated) m_availToDraw.Dispose();
+            m_availToDraw = queueRender.ToArray(Allocator.Persistent);
+            queueRender.Dispose();
+            if (frameCounter++ % 200 == 0)
+            {
+                LogUtils.DoInfoLog($"Avail to draw: {m_availToDraw.Length}");
+            }
+
 
 
         }
@@ -164,15 +175,21 @@ namespace BelzontWE
                 var cullingAction = m_CullingActions[index];
                 if ((cullingAction.m_Flags & PreCullingFlags.PassedCulling) != 0)
                 {
+                    var entity = cullingAction.m_Entity;
+                    if ((!m_weTemplateForPrefabLookup.TryGetComponent(entity, out var prefabWeLayout) || prefabWeLayout.childEntity == Entity.Null) & (!m_weSubRefLookup.TryGetBuffer(entity, out var subLayout) || subLayout.Length == 0)) return;
+
+
                     if (m_WEDrawingLookup.HasComponent(cullingAction.m_Entity))
                     {
-                        m_CommandBuffer.SetComponentEnabled<WEDrawing>(index, cullingAction.m_Entity, true);
+                        m_CommandBuffer.SetComponentEnabled<WEDrawing>(index, entity, true);
                     }
                     else
                     {
-                        m_CommandBuffer.AddComponent<WEDrawing>(index, cullingAction.m_Entity);
+                        m_CommandBuffer.AddComponent<WEDrawing>(index, entity);
                     }
-                    var entity = cullingAction.m_Entity;
+
+
+
 
                     Matrix4x4 itemBaseMatrix;
                     Matrix4x4 geomMatrix;
@@ -199,11 +216,11 @@ namespace BelzontWE
                     }
                     FixedString512Bytes variables = new();
                     PopulateVars(entity, ref variables);
-                    if (m_weTemplateForPrefabLookup.TryGetComponent(entity, out var prefabWeLayout))
+                    if (prefabWeLayout.childEntity != Entity.Null)
                     {
                         DrawTree(entity, prefabWeLayout.childEntity, itemBaseMatrix, geomMatrix, index, variables, 0);
                     }
-                    if (m_weSubRefLookup.TryGetBuffer(entity, out var subLayout))
+                    if (subLayout.IsCreated)
                     {
                         for (int j = 0; j < subLayout.Length; j++)
                         {
@@ -241,6 +258,40 @@ namespace BelzontWE
                 }
             }
 
+            private void CheckMesh(ref WETextDataMesh mesh, Entity nextEntity, int index)
+            {
+                switch (mesh.TextType)
+                {
+                    case WESimulationTextType.Text:
+                    case WESimulationTextType.Image:
+                        if (mesh.IsDirty() && !m_weWaitingRenderingLookup.HasEnabledComponent(nextEntity))
+                        {
+                            if (!m_weWaitingRenderingLookup.HasComponent(nextEntity))
+                            {
+                                m_CommandBuffer.AddComponent<WEWaitingRendering>(index, nextEntity);
+                            }
+                            else
+                            {
+                                m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(index, nextEntity, true);
+                            }
+                        }
+                        break;
+                    case WESimulationTextType.Placeholder:
+                        if (mesh.IsTemplateDirty() && !m_weWaitingRenderingLookup.HasEnabledComponent(nextEntity))
+                        {
+                            if (!m_weWaitingRenderingLookup.HasComponent(nextEntity))
+                            {
+                                m_CommandBuffer.AddComponent<WEWaitingRendering>(index, nextEntity);
+                            }
+                            else
+                            {
+                                m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(index, nextEntity, true);
+                            }
+                        }
+                        return;
+                }
+            }
+
             private void DrawTree(Entity geometryEntity, Entity nextEntity, Matrix4x4 prevMatrix, Matrix4x4 geomMatrix, int unfilteredChunkIndex, FixedString512Bytes variables, int nthCall, bool parentIsPlaceholder = false)
             {
                 if (nthCall >= 16) return;
@@ -250,7 +301,7 @@ namespace BelzontWE
                     return;
                 }
                 var transform = m_weTransformLookup[nextEntity];
-                if (!m_weDirtyFormulae.TryGetComponent(nextEntity, out var wETextDataDirtyFormulae))
+                if (!m_weDirtyFormulae.HasComponent(nextEntity))
                 {
                     m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, new WETextDataDirtyFormulae
                     {
@@ -259,6 +310,7 @@ namespace BelzontWE
                     });
                     return;
                 }
+                CheckMesh(ref mesh, nextEntity, unfilteredChunkIndex);
 
                 if (transform.useFormulaeToCheckIfDraw && !transform.MustDraw)
                 {

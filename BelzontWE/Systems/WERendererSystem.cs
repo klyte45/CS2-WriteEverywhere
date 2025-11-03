@@ -56,6 +56,7 @@ namespace BelzontWE
 #endif
         private void Render(ScriptableRenderContext context, List<Camera> cameras)
         {
+            if (WriteEverywhereCS2Mod.WeData.TempDisableRendering) return;
             FrameCounter++;
 
 #if DEBUG
@@ -83,8 +84,7 @@ namespace BelzontWE
 
                     if (main.nextUpdateFrame == 0) continue;
 
-                    bool ìsPlaceholder = false;
-                    bool doRender = true;
+                    bool isPlaceholder = false;
 
 
                     if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
@@ -92,46 +92,14 @@ namespace BelzontWE
                         && item.transformMatrix.ValidTRS())
                     {
                         m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
-                    }
+                    }                  
 
-                    switch (mesh.TextType)
+                    bool doRender = mesh.TextType switch
                     {
-                        case WESimulationTextType.Text:
-                        case WESimulationTextType.Image:
-                        case WESimulationTextType.WhiteTexture:
-                        case WESimulationTextType.WhiteCube:
-                            if (mesh.IsDirty() && !EntityManager.HasEnabledComponent<WEWaitingRendering>(item.textDataEntity))
-                            {
-                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! +WEWaitingRendering");
-                                if (!EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
-                                {
-                                    cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
-                                }
-                                else
-                                {
-                                    EntityManager.SetComponentEnabled<WEWaitingRendering>(item.textDataEntity, true);
-                                }
-                            }
-                            break;
-                        case WESimulationTextType.Placeholder:
-                            if (mesh.IsTemplateDirty() && !EntityManager.HasEnabledComponent<WEWaitingRendering>(item.textDataEntity))
-                            {
-                                if (!EntityManager.HasComponent<WEWaitingRendering>(item.textDataEntity))
-                                {
-                                    cmd.AddComponent<WEWaitingRendering>(item.textDataEntity);
-                                }
-                                else
-                                {
-                                    EntityManager.SetComponentEnabled<WEWaitingRendering>(item.textDataEntity, true);
-                                }
-                                if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - {mesh.originalName}\nTEMPLATE DIRTY");
-                            }
-                            doRender = m_pickerTool.IsSelected;
-                            break;
-                        case WESimulationTextType.MatrixTransform:
-                            doRender = false;
-                            break;
-                    }
+                        WESimulationTextType.Placeholder => m_pickerTool.IsSelected,
+                        WESimulationTextType.MatrixTransform => false,
+                        _ => true,
+                    };
                     if (doRender)
                     {
                         IBasicRenderInformation bri;
@@ -159,7 +127,7 @@ namespace BelzontWE
                                     goto case WESimulationTextType.Placeholder;
                                 case WESimulationTextType.Placeholder:
                                     doRender = m_pickerTool.IsSelected;
-                                    ìsPlaceholder = true;
+                                    isPlaceholder = true;
                                     goto case WESimulationTextType.WhiteTexture;
                                 case WESimulationTextType.WhiteTexture:
                                 case WESimulationTextType.WhiteCube:
@@ -171,7 +139,7 @@ namespace BelzontWE
                         if (doRender && (brii is null || brii.m_refText != ""))
                         {
                             Material[] ownMaterial = null;
-                            if (ìsPlaceholder) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
+                            if (isPlaceholder) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
                             else material.GetOwnMaterial(ref mesh, brii?.CubeCharCoordinates, out ownMaterial);
 
                             var bri2 = bri as PrimitiveRenderInformation;
@@ -202,13 +170,6 @@ namespace BelzontWE
                                 if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
                             }
                         }
-                    }
-                    //      if (!WETemplateManager.Instance.IsAnyGarbagePending)
-                    {
-                        //if (EntityManager.HasComponent<WETextDataMain>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, main);
-                        //if (EntityManager.HasComponent<WETextDataMaterial>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, material);
-                        //if (EntityManager.HasComponent<WETextDataMesh>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, mesh);
-                        //if (EntityManager.HasComponent<WETextDataTransform>(item.textDataEntity)) EntityManager.SetComponentData(item.textDataEntity, transform);
                     }
 
                 }
