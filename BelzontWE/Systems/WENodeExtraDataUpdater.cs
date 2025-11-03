@@ -10,7 +10,6 @@ using Unity.Collections;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using System;
-using static Game.Rendering.Debug.RenderPrefabRenderer;
 
 
 

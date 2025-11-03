@@ -32,6 +32,8 @@ namespace BelzontWE
             updateSystem.UpdateAt<WENodeExtraDataUpdater2B>(SystemUpdatePhase.Modification2B);
             updateSystem.UpdateAt<WENodeExtraDataUpdater>(SystemUpdatePhase.Rendering);
 
+            updateSystem.UpdateAt<WEPreCullingSystem>(SystemUpdatePhase.PreCulling);
+
             updateSystem.UpdateAt<WEPreRendererSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateAfter<WERendererSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateAfter<WEPostRendererSystem>(SystemUpdatePhase.MainLoop);

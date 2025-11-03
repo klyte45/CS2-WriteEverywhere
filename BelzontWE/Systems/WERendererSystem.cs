@@ -3,45 +3,29 @@ using Belzont.Utils;
 using BelzontWE.Font.Utility;
 using BelzontWE.Sprites;
 using Game;
-using Game.Common;
-using Game.Prefabs;
-using Game.Rendering;
-using Game.SceneFlow;
 using System.Collections.Generic;
-using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Colossal.Entities;
-
-
-
-
+using Game.Rendering;
 
 
 #if BURST
 using UnityEngine.Scripting;
-using Unity.Burst;
 #else
 #endif
 
 namespace BelzontWE
 {
+
     public partial class WERendererSystem : SystemBase
     {
-        private EntityQuery m_renderQueueEntities;
-        private EndFrameBarrier m_endFrameBarrier;
-        private CameraUpdateSystem m_CameraUpdateSystem;
-        private RenderingSystem m_RenderingSystem;
         private WEWorldPickerController m_pickerController;
         private WEWorldPickerTool m_pickerTool;
-        private NativeQueue<WERenderData> availToDraw = new(Allocator.Persistent);
         internal static bool dumpNextFrame;
-
-        internal const char VARIABLE_ITEM_SEPARATOR = '↓';
-        internal const char VARIABLE_KV_SEPARATOR = '→';
+        private EndFrameBarrier m_endFrameBarrier;
+        private WEPreCullingSystem m_wePreCullSys;
 
 #if DEBUG
         public uint DrawCallsLastFrame { get; private set; } = 0;
@@ -53,82 +37,17 @@ namespace BelzontWE
         protected unsafe override void OnCreate()
         {
             base.OnCreate();
-
-            LogUtils.DoInfoLog($"WERenderingJob size: {sizeof(WERenderingJob)}");
-
-            m_CameraUpdateSystem = World.GetExistingSystemManaged<CameraUpdateSystem>();
-            m_RenderingSystem = World.GetExistingSystemManaged<RenderingSystem>();
+            m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
             m_pickerController = World.GetExistingSystemManaged<WEWorldPickerController>();
             m_pickerTool = World.GetExistingSystemManaged<WEWorldPickerTool>();
-
-            m_renderQueueEntities = GetEntityQuery(new EntityQueryDesc[]
-            {
-                new ()
-                {
-                    All = new ComponentType[]
-                    {
-                        ComponentType.ReadOnly<CullingInfo>(),
-                        ComponentType.ReadOnly<PrefabRef>(),
-                        ComponentType.ReadOnly<WESubTextRef>(),
-                        ComponentType.ReadOnly<WEDrawing>(),
-                    },
-                    None = new ComponentType[]
-                    {
-                        ComponentType.ReadOnly<Deleted>(),
-                        ComponentType.ReadOnly<WEPlaceholderToBeProcessedInMain>(),
-                    }
-                },
-                new ()
-                {
-                    All = new ComponentType[]
-                    {
-                        ComponentType.ReadOnly<CullingInfo>(),
-                        ComponentType.ReadOnly<PrefabRef>(),
-                        ComponentType.ReadOnly<WETemplateForPrefab>(),
-                        ComponentType.ReadOnly<WEDrawing>(),
-                    },
-                    None = new ComponentType[]
-                    {
-                        ComponentType.ReadOnly<Deleted>(),
-                        ComponentType.ReadOnly<WETemplateForPrefabEmpty>(),
-                        ComponentType.ReadOnly<WEPlaceholderToBeProcessedInMain>(),
-                    }
-                }
-            });
-
-            m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
-
-            RequireAnyForUpdate(m_renderQueueEntities);
+            m_wePreCullSys = World.GetExistingSystemManaged<WEPreCullingSystem>();
             RenderPipelineManager.beginContextRendering += Render;
         }
 #if BURST
         [Preserve]
 #endif
-        protected override void OnUpdate()
-        {
-            if (GameManager.instance.isGameLoading) return; 
-            if (WriteEverywhereCS2Mod.WeData.TempDisableRendering) return;
-            float4 m_LodParameters = 1f;
-            float3 m_CameraPosition = 0f;
-            float3 m_CameraDirection = 0f;
-
-            if (m_CameraUpdateSystem.TryGetLODParameters(out LODParameters LodParametersStr))
-            {
-                IGameCameraController activeCameraController = m_CameraUpdateSystem.activeCameraController;
-                m_LodParameters = RenderingUtils.CalculateLodParameters(GetLevelOfDetail(m_RenderingSystem.frameLod, activeCameraController), LodParametersStr);
-                m_CameraPosition = LodParametersStr.cameraPosition;
-                m_CameraDirection = m_CameraUpdateSystem.activeViewer.forward;
-            }
-            CheckRenderQueue(m_LodParameters, m_CameraPosition, m_CameraDirection);
-
-        }
-
-#if BURST
-        [Preserve]
-#endif
         protected override void OnDestroy()
         {
-            availToDraw.Dispose();
             base.OnDestroy();
             RenderPipelineManager.beginContextRendering -= Render;
         }
@@ -138,17 +57,17 @@ namespace BelzontWE
         private void Render(ScriptableRenderContext context, List<Camera> cameras)
         {
             FrameCounter++;
-            EntityCommandBuffer cmd;
-            
+
 #if DEBUG
             DrawCallsLastFrame = 0;
 #endif
-            if (availToDraw.Count > 0)
+            if (m_wePreCullSys.m_availToDraw.Length > 0)
             {
-                if (dumpNextFrame) LogUtils.DoLog($"Drawing Items: E {m_renderQueueEntities.CalculateEntityCount()} | C {m_renderQueueEntities.CalculateChunkCount()}");
-                cmd = m_endFrameBarrier.CreateCommandBuffer();
-                while (availToDraw.TryDequeue(out var item))
+                var count = m_wePreCullSys.m_availToDraw.Length;
+                EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
+                for (int j = 0; j < count; j++)
                 {
+                    var item = m_wePreCullSys.m_availToDraw[j];
                     bool willCheckUpdate = ((FrameCounter + item.textDataEntity.Index) & 0x1f) == 0;
                     ref var transform = ref item.transform;
                     ref var main = ref item.main;
@@ -159,6 +78,8 @@ namespace BelzontWE
                     {
                         main.CheckDirtyFormulae(item.geometryEntity, item.textDataEntity, item.variables, cmd);
                     }
+
+                    if (item.transformMatrix == default) continue;
 
                     if (main.nextUpdateFrame == 0) continue;
 
@@ -238,10 +159,19 @@ namespace BelzontWE
 
                             var bri2 = bri as PrimitiveRenderInformation;
                             var meshCount = bri2 is null || mesh.TextType == WESimulationTextType.WhiteCube ? 1 : bri2.MeshCount(item.material.Shader);
+
+                            var baseMatrix = item.transformMatrix;
+                            if (EntityManager.HasComponent<InterpolatedTransform>(item.geometryEntity))
+                            {
+                                var transformInterpolated = EntityManager.GetComponentData<InterpolatedTransform>(item.geometryEntity);
+                                var interpolatedMatrix = Matrix4x4.TRS(transformInterpolated.m_Position, transformInterpolated.m_Rotation, Vector3.one);
+                                baseMatrix = interpolatedMatrix * item.transformMatrix;
+                            }
+
                             for (int i = 0; i < meshCount; i++)
                             {
                                 var geomMesh = bri2 is not null ? (mesh.TextType == WESimulationTextType.WhiteCube ? bri2.MeshCube[0] : bri2.GetMesh(item.material.Shader, i)) : bri.GetMesh(item.material.Shader);
-                                var effectiveMatrix = bri2 is null ? item.transformMatrix : item.transformMatrix * bri2.GetMeshTranslation(item.material.Shader, i);
+                                var effectiveMatrix = bri2 is null ? baseMatrix : baseMatrix * bri2.GetMeshTranslation(item.material.Shader, i);
 
                                 Graphics.DrawMesh(geomMesh, effectiveMatrix, ownMaterial[i], 0, null, 0, null, ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
                                 if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)
@@ -268,64 +198,9 @@ namespace BelzontWE
                 dumpNextFrame = false;
             }
         }
-#if BURST
-        [BurstCompile]
-#endif
-        private void CheckRenderQueue(float4 m_LodParameters, float3 m_CameraPosition, float3 m_CameraDirection)
-        {
-            if (!GameManager.instance.isGameLoading && !m_renderQueueEntities.IsEmptyIgnoreFilter)
-            {
-                var job2 = new WERenderingJob
-                {
-                    m_EntityType = GetEntityTypeHandle(),
-                    m_cullingInfo = GetComponentTypeHandle<CullingInfo>(true),
-                    m_transform = GetComponentLookup<Game.Objects.Transform>(true),
-                    m_iTransform = GetComponentLookup<InterpolatedTransform>(true),
-                    m_weMainLookup = GetComponentLookup<WETextDataMain>(true),
-                    m_weMeshLookup = GetComponentLookup<WETextDataMesh>(false),
-                    m_weMaterialLookup = GetComponentLookup<WETextDataMaterial>(true),
-                    m_weTemplateUpdaterLookup = GetBufferLookup<WETemplateUpdater>(true),
-                    m_weTemplateForPrefabLookup = GetComponentLookup<WETemplateForPrefab>(true),
-                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-                    m_LodParameters = m_LodParameters,
-                    m_CameraPosition = m_CameraPosition,
-                    m_CameraDirection = m_CameraDirection,
-                    availToDraw = availToDraw.AsParallelWriter(),
-                    isAtWeEditor = m_pickerTool.IsSelected,
-                    m_selectedSubEntity = m_pickerController.CurrentSubEntity.Value,
-                    m_selectedEntity = m_pickerController.CurrentEntity.Value,
-                    m_weSubRefLookup = GetBufferLookup<WESubTextRef>(true),
-                    m_weVariablesLookup = GetBufferLookup<WETextDataVariable>(true),
-                    //doLog = dumpNextFrame,
-                    m_weTransformLookup = GetComponentLookup<WETextDataTransform>(true),
-                };
-                job2.ScheduleParallel(m_renderQueueEntities, Dependency).Complete();
-            }
-        }
 
-
-        private struct WERenderData
+        protected override void OnUpdate()
         {
-            public Entity textDataEntity;
-            public Entity geometryEntity;
-            public WETextDataMain main;
-            public WETextDataTransform transform;
-            public WETextDataMesh mesh;
-            public WETextDataMaterial material;
-            public Matrix4x4 transformMatrix;
-            public FixedString512Bytes variables;
-        }
-#if BURST
-        [Preserve]
-#endif
-        public float GetLevelOfDetail(float levelOfDetail, IGameCameraController cameraController)
-        {
-            if (cameraController != null)
-            {
-                levelOfDetail *= 1f - 1f / (2f + 0.01f * cameraController.zoom);
-            }
-            return levelOfDetail;
         }
     }
-
 }

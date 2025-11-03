@@ -1,4 +1,4 @@
-﻿using Belzont.Utils;
+﻿using Game;
 using Game.Common;
 using Game.Tools;
 using Unity.Collections;
@@ -9,6 +9,8 @@ namespace BelzontWE
     public partial class WEPreRendererSystem : SystemBase
     {
         private EntityQuery m_pendingPostInstantiate;
+        private EndFrameBarrier m_endFrameBarrier;
+
 
         protected override void OnCreate()
         {
@@ -29,28 +31,32 @@ namespace BelzontWE
                         ComponentType.ReadOnly<Deleted>(),
                     }
                 }
-            }); ;
-
-            RequireForUpdate(m_pendingPostInstantiate);
+            });
+            m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
+            RequireAnyForUpdate(m_pendingPostInstantiate);
         }
         protected override void OnUpdate()
         {
-            var entities = m_pendingPostInstantiate.ToEntityArray(Allocator.Temp);
-            var meshData = m_pendingPostInstantiate.ToComponentDataArray<WETextDataMesh>(Allocator.Temp);
-            var mainData = m_pendingPostInstantiate.ToComponentDataArray<WETextDataMain>(Allocator.Temp);
-            try
+            var commandBuffer = m_endFrameBarrier.CreateCommandBuffer();
+            if (!m_pendingPostInstantiate.IsEmpty)
             {
-                for (int i = 0; i < entities.Length; i++)
+                var entities = m_pendingPostInstantiate.ToEntityArray(Allocator.Temp);
+                var meshData = m_pendingPostInstantiate.ToComponentDataArray<WETextDataMesh>(Allocator.Temp);
+                var mainData = m_pendingPostInstantiate.ToComponentDataArray<WETextDataMain>(Allocator.Temp);
+                try
                 {
-                    meshData[i].OnPostInstantiate(EntityManager, mainData[i].TargetEntity);
-                    EntityManager.SetComponentData(entities[i], meshData[i]);
-                    EntityManager.RemoveComponent<WEWaitingPostInstantiation>(entities[i]);
+                    for (int i = 0; i < entities.Length; i++)
+                    {
+                        meshData[i].OnPostInstantiate(EntityManager, mainData[i].TargetEntity);
+                        commandBuffer.SetComponent(entities[i], meshData[i]);
+                        commandBuffer.RemoveComponent<WEWaitingPostInstantiation>(entities[i]);
+                    }
                 }
-            }
-            finally
-            {
-                meshData.Dispose();
-                entities.Dispose();
+                finally
+                {
+                    meshData.Dispose();
+                    entities.Dispose();
+                }
             }
         }
     }
