@@ -62,7 +62,6 @@ namespace BelzontWE
         protected override void OnUpdate()
         {
             if (!ready) return;
-            if (WriteEverywhereCS2Mod.WeData.TempDisableRenderingGen) return;
 
             float4 m_LodParameters = 1f;
             float3 m_CameraPosition = 0f;

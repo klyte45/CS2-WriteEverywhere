@@ -80,10 +80,9 @@ namespace BelzontWE
         }
         public override void OnSetDefaults()
         {
+            FramesCheckUpdate = 1;
         }
-        [SettingsUISection(kSourcesTab, null)]
-        public bool TempDisableRenderingGen { get; set; } = false;
-        [SettingsUISection(kSourcesTab, null)]
+        [SettingsUISection(kSourcesTab, null)] 
         public bool TempDisableRendering { get; set; } = false;
 
 

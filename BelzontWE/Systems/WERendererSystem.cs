@@ -72,7 +72,7 @@ namespace BelzontWE
                     bool willCheckUpdate = ((FrameCounter + item.textDataEntity.Index) & 0x1f) == 0;
                     ref var transform = ref item.transform;
                     ref var main = ref item.main;
-                    ref var material = ref item.material;
+                    ref var materialData = ref item.material;
                     ref var mesh = ref item.mesh;
 
                     if (willCheckUpdate && !EntityManager.HasEnabledComponent<WETextDataDirtyFormulae>(item.textDataEntity))
@@ -92,7 +92,7 @@ namespace BelzontWE
                         && item.transformMatrix.ValidTRS())
                     {
                         m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
-                    }                  
+                    }
 
                     bool doRender = mesh.TextType switch
                     {
@@ -135,12 +135,14 @@ namespace BelzontWE
                                     break;
                             }
                         }
+
                         var brii = bri as PrimitiveRenderInformation;
+                        bool materialChanged = false;
                         if (doRender && (brii is null || brii.m_refText != ""))
                         {
                             Material[] ownMaterial = null;
                             if (isPlaceholder) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();
-                            else material.GetOwnMaterial(ref mesh, brii?.CubeCharCoordinates, out ownMaterial);
+                            else materialChanged = materialData.GetOwnMaterial(ref mesh, brii?.CubeCharCoordinates, out ownMaterial);
 
                             var bri2 = bri as PrimitiveRenderInformation;
                             var meshCount = bri2 is null || mesh.TextType == WESimulationTextType.WhiteCube ? 1 : bri2.MeshCount(item.material.Shader);
@@ -159,7 +161,7 @@ namespace BelzontWE
                                 var effectiveMatrix = bri2 is null ? baseMatrix : baseMatrix * bri2.GetMeshTranslation(item.material.Shader, i);
 
                                 Graphics.DrawMesh(geomMesh, effectiveMatrix, ownMaterial[i], 0, null, 0, null, ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
-                                if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && material.Shader == WEShader.Decal)
+                                if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && materialData.Shader == WEShader.Decal)
                                 {
                                     if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! DRAWING Extra mesh");
                                     Graphics.DrawMesh(geomMesh, effectiveMatrix, WEAtlasesLibrary.DefaultMaterialSemiTransparent(), 0, null, 0, null, false, false);
@@ -169,6 +171,8 @@ namespace BelzontWE
 #endif
                                 if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
                             }
+
+                            if (materialChanged) EntityManager.SetComponentData(item.textDataEntity, materialData);
                         }
                     }
 
