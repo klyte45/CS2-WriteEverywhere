@@ -1,6 +1,8 @@
-# v0.5.3r0 (03-NOV-25)
+# v0.5.3r1 (04-NOV-25)
 
 - HUGE performance boost update. Now it shall weight almost nothing on fps, some hiccups may still occur due intensive usage of formulaes.
+- Now formulaes only are updated when the camera is next to them (except first time, that is always). Added a setting to configure the distance. (defaults to 150)
+- Fixed issue related to cross-mesh leak.
 
 ## FROM v0.5.2r1 (02-NOV-25)
 
