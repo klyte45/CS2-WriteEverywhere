@@ -83,6 +83,7 @@ namespace BelzontWE
             Dependency.Complete();
         }
 
+        private static IBasicRenderInformation cachedEmpty;
 
         private unsafe struct WETextImageDataUpdateJob : IJobChunk
         {
@@ -224,12 +225,13 @@ namespace BelzontWE
             }
 
 
+
             private bool UpdateTextMesh(Entity e, ref WETextDataMesh weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, Dictionary<FixedString64Bytes, FontSystemData> fontDict)
             {
                 if (m_templateUpdaterLkp.HasBuffer(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
                 if (text.Trim() == "")
                 {
-                    weCustomData = weCustomData.UpdateBRI(new PrimitiveRenderInformation("", new UnityEngine.Vector3[0], new int[0], new UnityEngine.Vector2[0], default, null), "");
+                    weCustomData = weCustomData.UpdateBRI(cachedEmpty ??= new PrimitiveRenderInformation("", [], [], [], default, null), "");
                     return true;
                 }
                 var font = fontDict.TryGetValue(weCustomData.FontName, out var fsd) ? fsd : FontServer.Instance.DefaultFont;

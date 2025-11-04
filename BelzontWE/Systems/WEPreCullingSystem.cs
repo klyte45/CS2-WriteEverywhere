@@ -1,5 +1,4 @@
-﻿using Belzont.Utils;
-using Colossal.Entities;
+﻿using Colossal.Entities;
 using Colossal.Mathematics;
 using Game.Rendering;
 using Unity.Burst;
@@ -296,6 +295,7 @@ namespace BelzontWE
                 var transform = m_weTransformLookup[nextEntity];
                 if (!m_weDirtyFormulae.HasComponent(nextEntity))
                 {
+                    PopulateVars(nextEntity, ref variables);
                     m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, new WETextDataDirtyFormulae
                     {
                         geometry = geometryEntity,
