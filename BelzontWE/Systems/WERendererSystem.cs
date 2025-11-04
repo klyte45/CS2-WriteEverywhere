@@ -1,5 +1,4 @@
-﻿using Belzont.Interfaces;
-using Belzont.Utils;
+﻿using Belzont.Utils;
 using BelzontWE.Font.Utility;
 using BelzontWE.Sprites;
 using Game;
@@ -58,7 +57,7 @@ namespace BelzontWE
         {
             if (WriteEverywhereCS2Mod.WeData.TempDisableRendering) return;
             FrameCounter++;
-
+            var minLodUpdateSetting = WriteEverywhereCS2Mod.WeData.RequiredLodForFormulaesUpdate;
 #if DEBUG
             DrawCallsLastFrame = 0;
 #endif
@@ -70,12 +69,10 @@ namespace BelzontWE
                 {
                     var item = m_wePreCullSys.m_availToDraw[j];
                     bool willCheckUpdate = ((FrameCounter + item.textDataEntity.Index) & 0x1f) == 0;
-                    ref var transform = ref item.transform;
-                    ref var main = ref item.main;
-                    ref var materialData = ref item.material;
                     ref var mesh = ref item.mesh;
+                    ref var main = ref item.main;
 
-                    if (willCheckUpdate && !EntityManager.HasEnabledComponent<WETextDataDirtyFormulae>(item.textDataEntity))
+                    if (mesh.LastLod >= minLodUpdateSetting && willCheckUpdate && !EntityManager.HasEnabledComponent<WETextDataDirtyFormulae>(item.textDataEntity))
                     {
                         main.CheckDirtyFormulae(item.geometryEntity, item.textDataEntity, item.variables, cmd);
                     }
@@ -84,6 +81,8 @@ namespace BelzontWE
 
                     if (main.nextUpdateFrame == 0) continue;
 
+                    ref var transform = ref item.transform;
+                    ref var materialData = ref item.material;
                     bool isPlaceholder = false;
 
 

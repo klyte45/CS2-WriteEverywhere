@@ -89,7 +89,7 @@ namespace BelzontWE
                 m_EntityType = GetEntityTypeHandle(),
                 m_transform = GetComponentLookup<Game.Objects.Transform>(true),
                 m_weMainLookup = GetComponentLookup<WETextDataMain>(true),
-                m_weMeshLookup = GetComponentLookup<WETextDataMesh>(false),
+                m_weMeshLookup = GetComponentLookup<WETextDataMesh>(true),
                 m_weMaterialLookup = GetComponentLookup<WETextDataMaterial>(true),
                 m_weTemplateUpdaterLookup = GetBufferLookup<WETemplateUpdater>(true),
                 m_weTemplateForPrefabLookup = GetComponentLookup<WETemplateForPrefab>(true),
@@ -104,8 +104,9 @@ namespace BelzontWE
                 m_weVariablesLookup = GetBufferLookup<WETextDataVariable>(true),
                 m_weTransformLookup = GetComponentLookup<WETextDataTransform>(true),
                 m_weWaitingRenderingLookup = GetComponentLookup<WEWaitingRendering>(true),
-                m_weDirtyFormulae = GetComponentLookup<WETextDataDirtyFormulae>(true),
+                m_weDirtyFormulae = GetComponentLookup<WETextDataDirtyFormulae>(false),
                 m_interpolatedTransformLkp = GetComponentLookup<InterpolatedTransform>(true),
+                frameCount = UnityEngine.Time.frameCount
             };
 
 
@@ -118,6 +119,12 @@ namespace BelzontWE
             if (m_availToDraw.IsCreated) m_availToDraw.Dispose();
             m_availToDraw = queueRender.ToArray(Allocator.Persistent);
             queueRender.Dispose();
+#if DEBUG
+            for (int i = 0; i < m_availToDraw.Length; i++)
+            {
+                EntityManager.SetComponentData(m_availToDraw[i].textDataEntity, m_availToDraw[i].mesh);
+            }
+#endif
         }
 
         private float GetLevelOfDetail(float levelOfDetail, IGameCameraController cameraController)
@@ -128,6 +135,7 @@ namespace BelzontWE
             }
             return levelOfDetail;
         }
+
 
 #if BURST
         [BurstCompile]
@@ -156,8 +164,8 @@ namespace BelzontWE
             public ComponentLookup<WETextDataTransform> m_weTransformLookup;
             public ComponentLookup<WEDrawing> m_WEDrawingLookup;
             public ComponentLookup<WETextDataDirtyFormulae> m_weDirtyFormulae;
-            [ReadOnly]
             public NativeList<PreCullingData> m_CullingActions;
+            public int frameCount;
 
             private static readonly Bounds3 whiteTextureBounds = new(new(-.5f, -.5f, 0), new(.5f, .5f, 0));
             private static readonly Bounds3 whiteCubeBounds = new(new(-.5f, -.5f, -.5f), new(.5f, .5f, .5f));
@@ -307,18 +315,7 @@ namespace BelzontWE
 
                 if (transform.useFormulaeToCheckIfDraw && !transform.MustDraw)
                 {
-                    //availToDraw.Enqueue(new WERenderData
-                    //{
-                    //    transform = transform,
-                    //    textDataEntity = nextEntity,
-                    //    geometryEntity = geometryEntity,
-                    //    main = m_weMainLookup[nextEntity],
-                    //    material = m_weMaterialLookup[nextEntity],
-                    //    mesh = m_weMeshLookup[nextEntity],
-                    //    transformMatrix = default,
-                    //    variables = variables
-                    //});
-
+                    CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables);
                     return;
                 }
 
@@ -329,17 +326,7 @@ namespace BelzontWE
                         if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayoutSc))
                         {
                             var matrix = prevMatrix * Matrix4x4.TRS(mesh.OffsetPositionFormulae.EffectiveValue, Quaternion.Euler(mesh.OffsetRotationFormulae.EffectiveValue), mesh.ScaleFormulae.EffectiveValue);
-                            //availToDraw.Enqueue(new WERenderData
-                            //{
-                            //    transform = transform,
-                            //    textDataEntity = nextEntity,
-                            //    geometryEntity = geometryEntity,
-                            //    main = m_weMainLookup[nextEntity],
-                            //    material = m_weMaterialLookup[nextEntity],
-                            //    mesh = m_weMeshLookup[nextEntity],
-                            //    transformMatrix = matrix,
-                            //    variables = variables
-                            //});
+                            CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables);
                             for (int j = 0; j < subLayoutSc.Length; j++)
                             {
                                 DrawTree(geometryEntity, subLayoutSc[j].m_weTextData, matrix, geomMatrix, unfilteredChunkIndex, variables, nthCall + 1);
@@ -575,6 +562,19 @@ namespace BelzontWE
                             }
                         }
                         break;
+                }
+            }
+
+            private void CheckForUpdates(Entity geometryEntity, Entity nextEntity, int unfilteredChunkIndex, FixedString512Bytes variables)
+            {
+                if (((frameCount + nextEntity.Index) & 0x1f) == 0 && m_weMainLookup[nextEntity].nextUpdateFrame < frameCount)
+                {
+                    m_CommandBuffer.SetComponent(unfilteredChunkIndex, nextEntity, new WETextDataDirtyFormulae
+                    {
+                        geometry = geometryEntity,
+                        vars = variables
+                    });
+                    m_CommandBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(unfilteredChunkIndex, nextEntity, true);
                 }
             }
 

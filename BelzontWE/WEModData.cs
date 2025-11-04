@@ -77,13 +77,20 @@ namespace BelzontWE
         public static WEModData InstanceWE => Instance as WEModData;
         public WEModData(IMod mod) : base(mod)
         {
+            RequiredLodForFormulaesUpdate = 150;
+            FramesCheckUpdate = 1;
         }
         public override void OnSetDefaults()
         {
+            RequiredLodForFormulaesUpdate = 150;
             FramesCheckUpdate = 1;
         }
-        [SettingsUISection(kSourcesTab, null)] 
+        [SettingsUISection(kSourcesTab, null)]
         public bool TempDisableRendering { get; set; } = false;
+
+        [SettingsUISlider(min = 110, max = 160, step = 2.5f, scalarMultiplier = 1)]
+        [SettingsUISection(kSourcesTab, null)]
+        public float RequiredLodForFormulaesUpdate { get; set; } = 150;
 
 
         [SettingsUIDropdown(typeof(WEModData), nameof(StartTextureSizeFontValues))]
