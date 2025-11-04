@@ -138,6 +138,7 @@ namespace BelzontWE
         }
 
 
+        private readonly FixedString32Bytes indexStartString = new($"$idx{VARIABLE_KV_SEPARATOR}");
 #if BURST
         [BurstCompile]
 #endif
@@ -168,9 +169,11 @@ namespace BelzontWE
             public NativeList<PreCullingData> m_CullingActions;
             public int frameCount;
             public int minLodUpdateSetting;
+            public FixedString32Bytes indexStartString;
 
             private static readonly Bounds3 whiteTextureBounds = new(new(-.5f, -.5f, 0), new(.5f, .5f, 0));
             private static readonly Bounds3 whiteCubeBounds = new(new(-.5f, -.5f, -.5f), new(.5f, .5f, .5f));
+
 
             public void Execute(int index)
             {
@@ -367,7 +370,8 @@ namespace BelzontWE
                             if (!mesh.ValueData.InitializedEffectiveText || lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 var scale2 = transform.scale;
-                                var effectiveOffsetPosition = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform);
+                                // Optimize: Use already loaded mesh instead of re-looking up
+                                var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
 
                                 availToDraw.Enqueue(new WERenderData
                                 {
@@ -376,51 +380,52 @@ namespace BelzontWE
                                     geometryEntity = geometryEntity,
                                     main = m_weMainLookup[nextEntity],
                                     material = m_weMaterialLookup[nextEntity],
-                                    mesh = m_weMeshLookup[nextEntity],
+                                    mesh = mesh,
                                     transformMatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, -.001f)), transform.offsetRotation, scale2),
                                     variables = variables
                                 });
                             }
                             if (transform.MustDraw)
                             {
+                                // Optimize: Pre-calculate transform matrix outside loop
+                                var childBaseMatrix = prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one);
                                 for (int i = 0; i < updaterBuff.Length; i++)
                                 {
                                     var updater = updaterBuff[i];
                                     if (updater.childEntity.Index < 0) continue;
+                                    // Optimize: Build variable string with fewer operations (Burst-compatible)
                                     var layoutVars = new FixedString512Bytes(variables);
-                                    layoutVars.Append('$');
-                                    layoutVars.Append('i');
-                                    layoutVars.Append('d');
-                                    layoutVars.Append('x');
-                                    layoutVars.Append(VARIABLE_KV_SEPARATOR);
+                                    layoutVars.Append(indexStartString);
                                     layoutVars.Append(i);
                                     layoutVars.Append(VARIABLE_ITEM_SEPARATOR);
-                                    DrawTree(geometryEntity, updater.childEntity, prevMatrix * Matrix4x4.TRS(transform.offsetPosition, transform.offsetRotation, Vector3.one), geomMatrix, unfilteredChunkIndex, layoutVars, nthCall + 1, true);
+                                    DrawTree(geometryEntity, updater.childEntity, childBaseMatrix, geomMatrix, unfilteredChunkIndex, layoutVars, nthCall + 1, true);
                                 }
                             }
                         }
                         break;
                     case WESimulationTextType.WhiteCube:
                         {
-                            var material = m_weMaterialLookup[nextEntity];
+                            // Optimize: Cache material and main lookups
+                            var cubeMaterial = m_weMaterialLookup[nextEntity];
                             var effRot = (Quaternion)transform.offsetRotation;
-                            var effectiveOffsetPosition = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform);
+                            // Optimize: Calculate effectiveOffsetPosition using already loaded mesh
+                            var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
 
                             var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(transform.scale.xyz);
-                            var lumMultiplier = GetEmissiveMultiplier(ref material);
+                            var lumMultiplier = GetEmissiveMultiplier(ref cubeMaterial);
                             int lod = CalculateLod(whiteCubeBounds * lumMultiplier, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod, ref this);
                             CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables, lod);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
-
+                                // Optimize: Reuse mesh variable instead of re-looking up
                                 availToDraw.Enqueue(new WERenderData
                                 {
                                     transform = transform,
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
                                     main = m_weMainLookup[nextEntity],
-                                    material = material,
-                                    mesh = m_weMeshLookup[nextEntity],
+                                    material = cubeMaterial,
+                                    mesh = mesh,
                                     transformMatrix = WTmatrix,
                                     variables = variables
                                 });
@@ -438,26 +443,28 @@ namespace BelzontWE
                         return;
                     case WESimulationTextType.WhiteTexture:
                         {
-                            var material = m_weMaterialLookup[nextEntity];
-                            var isDecal = material.CheckIsDecal(mesh);
+                            // Optimize: Cache material lookup and calculations
+                            var textureMaterial = m_weMaterialLookup[nextEntity];
+                            var isDecal = textureMaterial.CheckIsDecal(mesh);
                             var effRot = isDecal ? ((Quaternion)transform.offsetRotation) * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)transform.offsetRotation;
-                            var effectiveOffsetPosition = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform);
+                            // Optimize: Use already loaded mesh instead of re-looking up
+                            var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
 
                             var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? transform.scale.xzy : new float3(transform.scale.xy, math.sign(transform.scale.z)));
-                            var lumMultiplier = GetEmissiveMultiplier(ref material);
+                            var lumMultiplier = GetEmissiveMultiplier(ref textureMaterial);
                             int lod = CalculateLod(whiteTextureBounds * lumMultiplier, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod, ref this);
                             CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables, lod);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
-
+                                // Optimize: Reuse mesh variable
                                 availToDraw.Enqueue(new WERenderData
                                 {
                                     transform = transform,
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
                                     main = m_weMainLookup[nextEntity],
-                                    material = material,
-                                    mesh = m_weMeshLookup[nextEntity],
+                                    material = textureMaterial,
+                                    mesh = mesh,
                                     transformMatrix = WTmatrix,
                                     variables = variables
                                 });
@@ -465,7 +472,9 @@ namespace BelzontWE
 
                             if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayoutWt))
                             {
-                                var itemMatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, material.Shader == WEShader.Decal ? .002f : .001f)), transform.offsetRotation, Vector3.one);
+                                // Optimize: Cache shader check result
+                                var zOffset = textureMaterial.Shader == WEShader.Decal ? .002f : .001f;
+                                var itemMatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, zOffset)), transform.offsetRotation, Vector3.one);
                                 for (int j = 0; j < subLayoutWt.Length; j++)
                                 {
                                     DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, geomMatrix, unfilteredChunkIndex, variables, nthCall + 1);
@@ -489,22 +498,27 @@ namespace BelzontWE
                                 return;
                             }
                             var scale = transform.scale;
-                            var material = m_weMaterialLookup[nextEntity];
-                            var isDecal = material.CheckIsDecal(mesh);
-                            if (mesh.HasBRI)
+                            var defaultMaterial = m_weMaterialLookup[nextEntity];
+                            var isDecal = defaultMaterial.CheckIsDecal(mesh);
+                            // Optimize: Cache frequently accessed values
+                            var meshTextType = mesh.TextType;
+                            var hasBRI = mesh.HasBRI;
+
+                            if (hasBRI)
                             {
-                                if (mesh.TextType == WESimulationTextType.Image)
+                                if (meshTextType == WESimulationTextType.Image)
                                 {
+                                    var briWidth = mesh.BriWidthMetersUnscaled;
                                     if (transform.useAbsoluteSizeEditing)
                                     {
-                                        scale.x /= mesh.BriWidthMetersUnscaled;
+                                        scale.x /= briWidth;
                                     }
                                     if (isDecal)
                                     {
-                                        scale.x /= mesh.BriWidthMetersUnscaled;
+                                        scale.x /= briWidth;
                                     }
                                 }
-                                if (mesh.TextType == WESimulationTextType.Text && mesh.MaxWidthMeters.EffectiveValue > 0 && mesh.BriWidthMetersUnscaled * scale.x > mesh.MaxWidthMeters.EffectiveValue)
+                                if (meshTextType == WESimulationTextType.Text && mesh.MaxWidthMeters.EffectiveValue > 0 && mesh.BriWidthMetersUnscaled * scale.x > mesh.MaxWidthMeters.EffectiveValue)
                                 {
                                     var ratio = mesh.MaxWidthMeters.EffectiveValue / mesh.BriWidthMetersUnscaled;
                                     scale.x = ratio;
@@ -514,30 +528,32 @@ namespace BelzontWE
                                     }
                                 }
                             }
-                            var refPos = GetEffectiveOffsetPosition(m_weMeshLookup[nextEntity], transform.offsetPosition, transform.PivotAsFloat3, scale);
+                            // Optimize: Use already loaded mesh instead of re-looking up
+                            var refPos = GetEffectiveOffsetPosition(mesh, transform.offsetPosition, transform.PivotAsFloat3, scale);
                             var refRot = parentIsPlaceholder ? default : transform.offsetRotation;
                             var effRot = (parentIsPlaceholder ? quaternion.identity : (Quaternion)refRot) * (isDecal ? Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)quaternion.identity);
                             var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one)
-                                * Matrix4x4.Scale(isDecal ? (scale.xzy * new float3(mesh.TextType == WESimulationTextType.Image ? mesh.BriWidthMetersUnscaled : 1, 1, 1)) : new float3(scale.xy, math.sign(scale.z)));
+                                * Matrix4x4.Scale(isDecal ? (scale.xzy * new float3(meshTextType == WESimulationTextType.Image ? mesh.BriWidthMetersUnscaled : 1, 1, 1)) : new float3(scale.xy, math.sign(scale.z)));
                             var zeroedBounds = (Vector3)(mesh.Bounds.min - mesh.Bounds.max) == default;
                             var invalidBri = (mesh.EffectiveText.Length >= 0 && zeroedBounds);
-                            if (mesh.HasBRI || invalidBri)
+                            if (hasBRI || invalidBri)
                             {
                                 if (!float.IsNaN(matrix.m00) && !float.IsInfinity(matrix.m00))
                                 {
                                     int minLod = -1;
-                                    float lumMultiplier = GetEmissiveMultiplier(ref material);
+                                    float lumMultiplier = GetEmissiveMultiplier(ref defaultMaterial);
                                     int lod = invalidBri ? 0 : CalculateLod(mesh.Bounds * lumMultiplier, ref mesh, ref transform, geomMatrix * matrix, out minLod, ref this);
                                     CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables, lod);
                                     if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                     {
+                                        // Optimize: Reuse material and mesh variables
                                         availToDraw.Enqueue(new WERenderData
                                         {
                                             transform = transform,
                                             textDataEntity = nextEntity,
                                             geometryEntity = geometryEntity,
                                             main = m_weMainLookup[nextEntity],
-                                            material = m_weMaterialLookup[nextEntity],
+                                            material = defaultMaterial,
                                             mesh = mesh,
                                             transformMatrix = matrix,
                                             variables = variables
@@ -552,13 +568,14 @@ namespace BelzontWE
                             else
                             {
                                 CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables, 2000);
+                                // Optimize: Reuse material and mesh variables
                                 availToDraw.Enqueue(new WERenderData
                                 {
                                     transform = transform,
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
                                     main = m_weMainLookup[nextEntity],
-                                    material = m_weMaterialLookup[nextEntity],
+                                    material = defaultMaterial,
                                     mesh = mesh,
                                     transformMatrix = matrix,
                                     variables = variables
@@ -566,7 +583,9 @@ namespace BelzontWE
                             }
                             if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout))
                             {
-                                var itemMatrix = prevMatrix * Matrix4x4.TRS(refPos + (float3)Matrix4x4.Rotate(refRot).MultiplyPoint(new float3(0, 0, material.Shader == WEShader.Decal ? .002f : .001f)), refRot, Vector3.one);
+                                // Optimize: Cache shader check
+                                var zOffset = defaultMaterial.Shader == WEShader.Decal ? .002f : .001f;
+                                var itemMatrix = prevMatrix * Matrix4x4.TRS(refPos + (float3)Matrix4x4.Rotate(refRot).MultiplyPoint(new float3(0, 0, zOffset)), refRot, Vector3.one);
                                 for (int j = 0; j < subLayout.Length; j++)
                                 {
                                     DrawTree(geometryEntity, subLayout[j].m_weTextData, itemMatrix, geomMatrix, unfilteredChunkIndex, variables, nthCall + 1);
