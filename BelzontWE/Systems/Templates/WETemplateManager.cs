@@ -731,9 +731,8 @@ namespace BelzontWE
                 {
                     m_EntityType = GetEntityTypeHandle(),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-                    m_MaterialDataLkp = GetComponentLookup<WETextDataMaterial>(true),
-                    m_MeshDataLkp = GetComponentLookup<WETextDataMesh>(true),
-                    m_TransformDataLkp = GetComponentLookup<WETextDataTransform>(true),
+                    m_MaterialDataHdl = GetComponentTypeHandle<WETextDataMaterial>(true),
+                    m_MeshDataHdl = GetComponentTypeHandle<WETextDataMesh>(true),
                     m_WETemplateForPrefabLkp = GetComponentLookup<WETemplateForPrefab>(true),
                     m_UpdaterDataLkp = GetBufferLookup<WETemplateUpdater>(true),
                 }.ScheduleParallel(m_componentsToDispose, Dependency).Complete();
