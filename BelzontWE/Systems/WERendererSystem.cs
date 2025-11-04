@@ -57,7 +57,6 @@ namespace BelzontWE
         {
             if (WriteEverywhereCS2Mod.WeData.TempDisableRendering) return;
             FrameCounter++;
-            var minLodUpdateSetting = WriteEverywhereCS2Mod.WeData.RequiredLodForFormulaesUpdate;
 #if DEBUG
             DrawCallsLastFrame = 0;
 #endif
@@ -72,10 +71,6 @@ namespace BelzontWE
                     ref var mesh = ref item.mesh;
                     ref var main = ref item.main;
 
-                    if (mesh.LastLod >= minLodUpdateSetting && willCheckUpdate && !EntityManager.HasEnabledComponent<WETextDataDirtyFormulae>(item.textDataEntity))
-                    {
-                        main.CheckDirtyFormulae(item.geometryEntity, item.textDataEntity, item.variables, cmd);
-                    }
 
                     if (item.transformMatrix == default) continue;
 

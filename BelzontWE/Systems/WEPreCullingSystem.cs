@@ -106,7 +106,8 @@ namespace BelzontWE
                 m_weWaitingRenderingLookup = GetComponentLookup<WEWaitingRendering>(true),
                 m_weDirtyFormulae = GetComponentLookup<WETextDataDirtyFormulae>(false),
                 m_interpolatedTransformLkp = GetComponentLookup<InterpolatedTransform>(true),
-                frameCount = UnityEngine.Time.frameCount
+                frameCount = UnityEngine.Time.frameCount,
+                minLodUpdateSetting = Mathf.CeilToInt(WriteEverywhereCS2Mod.WeData.RequiredLodForFormulaesUpdate)
             };
 
 
@@ -166,6 +167,7 @@ namespace BelzontWE
             public ComponentLookup<WETextDataDirtyFormulae> m_weDirtyFormulae;
             public NativeList<PreCullingData> m_CullingActions;
             public int frameCount;
+            public int minLodUpdateSetting;
 
             private static readonly Bounds3 whiteTextureBounds = new(new(-.5f, -.5f, 0), new(.5f, .5f, 0));
             private static readonly Bounds3 whiteCubeBounds = new(new(-.5f, -.5f, -.5f), new(.5f, .5f, .5f));
@@ -315,7 +317,8 @@ namespace BelzontWE
 
                 if (transform.useFormulaeToCheckIfDraw && !transform.MustDraw)
                 {
-                    CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables);
+                    PopulateVars(nextEntity, ref variables);
+                    CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables, 2000);
                     return;
                 }
 
@@ -326,7 +329,7 @@ namespace BelzontWE
                         if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayoutSc))
                         {
                             var matrix = prevMatrix * Matrix4x4.TRS(mesh.OffsetPositionFormulae.EffectiveValue, Quaternion.Euler(mesh.OffsetRotationFormulae.EffectiveValue), mesh.ScaleFormulae.EffectiveValue);
-                            CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables);
+                            CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables, 2000);
                             for (int j = 0; j < subLayoutSc.Length; j++)
                             {
                                 DrawTree(geometryEntity, subLayoutSc[j].m_weTextData, matrix, geomMatrix, unfilteredChunkIndex, variables, nthCall + 1);
@@ -360,6 +363,7 @@ namespace BelzontWE
                             }
 
                             int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, geomMatrix * prevMatrix, out int minLod, ref this);
+                            CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables, lod);
                             if (!mesh.ValueData.InitializedEffectiveText || lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 var scale2 = transform.scale;
@@ -405,6 +409,7 @@ namespace BelzontWE
                             var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(transform.scale.xyz);
                             var lumMultiplier = GetEmissiveMultiplier(ref material);
                             int lod = CalculateLod(whiteCubeBounds * lumMultiplier, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod, ref this);
+                            CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables, lod);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
 
@@ -441,6 +446,7 @@ namespace BelzontWE
                             var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? transform.scale.xzy : new float3(transform.scale.xy, math.sign(transform.scale.z)));
                             var lumMultiplier = GetEmissiveMultiplier(ref material);
                             int lod = CalculateLod(whiteTextureBounds * lumMultiplier, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod, ref this);
+                            CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables, lod);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
 
@@ -522,6 +528,7 @@ namespace BelzontWE
                                     int minLod = -1;
                                     float lumMultiplier = GetEmissiveMultiplier(ref material);
                                     int lod = invalidBri ? 0 : CalculateLod(mesh.Bounds * lumMultiplier, ref mesh, ref transform, geomMatrix * matrix, out minLod, ref this);
+                                    CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables, lod);
                                     if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                     {
                                         availToDraw.Enqueue(new WERenderData
@@ -537,9 +544,14 @@ namespace BelzontWE
                                         });
                                     }
                                 }
+                                else
+                                {
+                                    CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables, 2000);
+                                }
                             }
                             else
                             {
+                                CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, variables, 2000);
                                 availToDraw.Enqueue(new WERenderData
                                 {
                                     transform = transform,
@@ -565,8 +577,10 @@ namespace BelzontWE
                 }
             }
 
-            private void CheckForUpdates(Entity geometryEntity, Entity nextEntity, int unfilteredChunkIndex, FixedString512Bytes variables)
+            private void CheckForUpdates(Entity geometryEntity, Entity nextEntity, int unfilteredChunkIndex, FixedString512Bytes variables, int currentLod)
             {
+                if (minLodUpdateSetting > currentLod) return;
+                if (m_weDirtyFormulae.HasEnabledComponent(nextEntity)) return;
                 if (((frameCount + nextEntity.Index) & 0x1f) == 0 && m_weMainLookup[nextEntity].nextUpdateFrame < frameCount)
                 {
                     m_CommandBuffer.SetComponent(unfilteredChunkIndex, nextEntity, new WETextDataDirtyFormulae
