@@ -58,7 +58,6 @@ namespace BelzontWE
         private EntityQuery m_prefabsDataToSerialize;
         private EntityQuery m_entitiesToBeUpdatedInMain;
         private EntityQuery m_prefabArchetypesToBeUpdatedInMain;
-        private EntityQuery m_componentsToDispose;
         private EntityQuery m_textDataDirtyQuery;
         private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
@@ -373,34 +372,6 @@ namespace BelzontWE
                         {
                             ComponentType.ReadOnly<Deleted>(),
                             ComponentType.ReadOnly<WETemplateForPrefab>(),
-                        }
-                    }
-            });
-
-            m_componentsToDispose = GetEntityQuery(new EntityQueryDesc[]
-            {
-                    new ()
-                    {
-                        Any = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<WETextDataMain>(),
-                            ComponentType.ReadOnly<WETextDataMaterial>(),
-                            ComponentType.ReadOnly<WETemplateUpdater>(),
-                        },
-                        None = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<WETextComponentValid>(),
-                        }
-                    },
-                    new ()
-                    {
-                        Any = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<WETemplateForPrefab>(),
-                        },
-                        None = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<PrefabRef>(),
                         }
                     }
             });
@@ -725,18 +696,6 @@ namespace BelzontWE
                 }
             }
             Dependency.Complete();
-            if (!m_componentsToDispose.IsEmpty)
-            {
-                new WETemplateDisposalJob
-                {
-                    m_EntityType = GetEntityTypeHandle(),
-                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-                    m_MaterialDataHdl = GetComponentTypeHandle<WETextDataMaterial>(true),
-                    m_MeshDataHdl = GetComponentTypeHandle<WETextDataMesh>(true),
-                    m_WETemplateForPrefabLkp = GetComponentLookup<WETemplateForPrefab>(true),
-                    m_UpdaterDataLkp = GetBufferLookup<WETemplateUpdater>(true),
-                }.ScheduleParallel(m_componentsToDispose, Dependency).Complete();
-            }
         }
 
         private struct WEUpdateFormulaesJob
@@ -849,13 +808,6 @@ namespace BelzontWE
             return 0;
         }
         public bool IsLoadingLayouts => LoadingPrefabLayoutsCoroutine != null;
-        public bool IsAnyQueuePending => IsLoadingLayouts ||
-            !m_entitiesToBeUpdatedInMain.IsEmpty ||
-            !m_prefabArchetypesToBeUpdatedInMain.IsEmpty;
-        public bool IsAnyGarbagePending => IsAnyQueuePending ||
-            !m_uncheckedWePrefabLayoutQuery.IsEmpty ||
-            !m_dirtyWePrefabLayoutQuery.IsEmpty ||
-            !m_dirtyInstancingWeQuery.IsEmpty || !m_componentsToDispose.IsEmpty;
         private Coroutine LoadingPrefabLayoutsCoroutine;
         private const string LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID = "loadingPrefabTemplates";
         private const string LOADING_SUBTEMPLATES_NOTIFICATION_ID = "loadingModSubtemplates";
@@ -1273,7 +1225,7 @@ namespace BelzontWE
         }
         public unsafe int GetCityTemplateUsageCount(string name)
         {
-            if (m_templateBasedEntities.IsEmptyIgnoreFilter || !RegisteredTemplates.TryGetValue(name, out var templateEntity)) return 0;
+            if (m_templateBasedEntities.IsEmpty || !RegisteredTemplates.TryGetValue(name, out var templateEntity)) return 0;
             var counterResult = 0;
             var job = new WEPlaceholcerTemplateUsageCount
             {

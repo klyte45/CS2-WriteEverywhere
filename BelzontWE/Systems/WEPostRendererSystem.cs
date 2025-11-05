@@ -48,7 +48,6 @@ namespace BelzontWE
                     {
                         ComponentType.ReadOnly<Temp>(),
                         ComponentType.ReadOnly<Deleted>(),
-                        ComponentType.ReadOnly<WEPlaceholderToBeProcessedInMain>(),
                     }
                 }
             });
@@ -59,11 +58,11 @@ namespace BelzontWE
         protected override void OnUpdate()
         {
             if (GameManager.instance.isGameLoading) return;
-            var cmdBuff = m_endFrameBarrier.CreateCommandBuffer();
-            if (!m_pendingQueueEntities.IsEmptyIgnoreFilter)
+            if (!m_pendingQueueEntities.IsEmpty)
             {
+                var cmdBuff = m_endFrameBarrier.CreateCommandBuffer();
                 var layoutsAvailable = new NativeArray<FixedString128Bytes>(m_templateManager.GetTemplateAvailableKeys(), Allocator.TempJob);
-                Dependency = new WETextImageDataUpdateJob
+                new WETextImageDataUpdateJob
                 {
                     m_EntityType = GetEntityTypeHandle(),
                     m_entityLookup = GetEntityStorageInfoLookup(),
@@ -76,11 +75,10 @@ namespace BelzontWE
                     m_WeMainLkp = GetComponentLookup<WETextDataMain>(true),
                     m_WeIsPlaceholderLkp = GetComponentLookup<WEIsPlaceholder>(true),
                     m_templateManagerEntries = layoutsAvailable
-                }.Schedule(m_pendingQueueEntities, Dependency);
+                }.Schedule(m_pendingQueueEntities, Dependency).Complete();
 
-                layoutsAvailable.Dispose(Dependency);
+                layoutsAvailable.Dispose();
             }
-            Dependency.Complete();
         }
 
         private static IBasicRenderInformation cachedEmpty;

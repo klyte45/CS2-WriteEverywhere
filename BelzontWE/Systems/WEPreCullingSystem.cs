@@ -78,6 +78,13 @@ namespace BelzontWE
             var commandBuffer = new EntityCommandBuffer(Allocator.Persistent);
             m_newItemsRender.Clear();
             m_unmodifiedEntities.Clear();
+
+            m_geomEntitiesLastFrame.Clear();
+            for (var i = 0; i < m_availToDraw.Length; i++)
+            {
+                m_geomEntitiesLastFrame.Add(m_availToDraw[i].geometryEntity);
+            }
+
             WERenderingJob cullingActionJob = new()
             {
 
@@ -130,11 +137,6 @@ namespace BelzontWE
             if (m_availToDraw.IsCreated) m_availToDraw.Dispose();
             m_availToDraw = m_newItemsRender.ToArray(Allocator.Persistent);
 
-            m_geomEntitiesLastFrame.Clear();
-            for (var i = 0; i < m_availToDraw.Length; i++)
-            {
-                m_geomEntitiesLastFrame.Add(m_availToDraw[i].geometryEntity);
-            }
         }
 
         private float GetLevelOfDetail(float levelOfDetail, IGameCameraController cameraController)
