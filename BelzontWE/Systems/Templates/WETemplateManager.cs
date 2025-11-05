@@ -23,7 +23,7 @@ using Unity.Jobs;
 
 namespace BelzontWE
 {
-    public partial class WETemplateManager : SystemBase, IBelzontSerializableSingleton<WETemplateManager>
+    public partial class WETemplateManager : SystemBase, IDefaultSerializable
     {
         public const string SIMPLE_LAYOUT_EXTENSION = "welayout.xml";
         public const string PREFAB_LAYOUT_EXTENSION = "wedefault.xml";
@@ -292,13 +292,12 @@ namespace BelzontWE
             Dependency.Complete();
         }
 
-        public JobHandle SetDefaults(Context context)
+        public void SetDefaults(Context context)
         {
             RegisteredTemplates.Clear();
             m_atlasesReplacements.Clear();
             m_fontsReplacements.Clear();
             SpritesAndLayoutsDataVersion = 2;
-            return Dependency;
         }
     }
 }
