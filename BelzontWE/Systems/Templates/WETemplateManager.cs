@@ -51,14 +51,8 @@ namespace BelzontWE
         private PrefabSystem m_prefabSystem;
         private EndFrameBarrier m_endFrameBarrier;
         private EntityQuery m_templateBasedEntities;
-        private EntityQuery m_uncheckedWePrefabLayoutQuery;
-        private EntityQuery m_dirtyWePrefabLayoutQuery;
-        private EntityQuery m_dirtyInstancingWeQuery;
         private EntityQuery m_prefabsToMarkDirty;
         private EntityQuery m_prefabsDataToSerialize;
-        private EntityQuery m_entitiesToBeUpdatedInMain;
-        private EntityQuery m_prefabArchetypesToBeUpdatedInMain;
-        private EntityQuery m_textDataDirtyQuery;
         private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
         private bool m_templatesDirty;
@@ -249,64 +243,7 @@ namespace BelzontWE
                         }
                     }
               });
-            m_uncheckedWePrefabLayoutQuery = GetEntityQuery(new EntityQueryDesc[]
-              {
-                    new ()
-                    {
-                        All = new[]
-                        {
-                            ComponentType.ReadOnly<PrefabRef>()
-                        },
-                        Any = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<Game.Objects.Transform>(),
-                            ComponentType.ReadOnly<InterpolatedTransform>(),
-                        },
-                        None = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<WETemplateForPrefabEmpty>(),
-                            ComponentType.ReadOnly<WETemplateForPrefabDirty>(),
-                            ComponentType.ReadOnly<WETemplateForPrefab>(),
-                            ComponentType.ReadOnly<Deleted>(),
-                        }
-                    }
-              });
-            m_dirtyWePrefabLayoutQuery = GetEntityQuery(new EntityQueryDesc[]
-                  {
-                      new()
-                        {
-                            Any = new ComponentType[]
-                                {
-                                        ComponentType.ReadOnly<Game.Objects.Transform>(),
-                                        ComponentType.ReadOnly<InterpolatedTransform>(),
-                                },
-                            All = new ComponentType[]
-                                {
-                                        ComponentType.ReadOnly<PrefabRef>(),
-                                        ComponentType.ReadOnly<WETemplateForPrefabDirty>(),
-                                },
-                            None = new ComponentType[]
-                            {
-                                ComponentType.ReadOnly<Deleted>(),
-                            }
-                        }
-              });
-            m_dirtyInstancingWeQuery = GetEntityQuery(new EntityQueryDesc[]
-                  {
-                      new()
-                        {
-                            All = new ComponentType[]
-                                {
-                                        ComponentType.ReadOnly<WEIsPlaceholder>(),
-                                        ComponentType.ReadOnly<WETemplateDirtyInstancing>(),
-                                },
-                            None = new ComponentType[]
-                            {
-                                ComponentType.ReadOnly<Deleted>(),
-                                ComponentType.ReadOnly<WEWaitingRendering>(),
-                            }
-                        }
-              });
+            
             m_prefabsToMarkDirty = GetEntityQuery(new EntityQueryDesc[]
             {
                     new ()
@@ -339,63 +276,7 @@ namespace BelzontWE
                             ComponentType.ReadOnly<Deleted>(),
                         }
                     }
-            });
-            m_entitiesToBeUpdatedInMain = GetEntityQuery(new EntityQueryDesc[]
-            {
-                    new ()
-                    {
-                        All = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<WETextComponentValid>(),
-                            ComponentType.ReadOnly<WETextDataMain>(),
-                            ComponentType.ReadOnly<WETextDataMaterial>(),
-                            ComponentType.ReadOnly<WETextDataMesh>(),
-                            ComponentType.ReadOnly<WETextDataTransform>(),
-                            ComponentType.ReadOnly<WEPlaceholderToBeProcessedInMain>(),
-                        },
-                        None = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<Deleted>(),
-                        }
-                    }
-            });
-            m_prefabArchetypesToBeUpdatedInMain = GetEntityQuery(new EntityQueryDesc[]
-            {
-                    new ()
-                    {
-                        All = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<PrefabRef>(),
-                            ComponentType.ReadOnly<WETemplateForPrefabToRunOnMain>(),
-                        },
-                        None = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<Deleted>(),
-                            ComponentType.ReadOnly<WETemplateForPrefab>(),
-                        }
-                    }
-            });
-
-            m_textDataDirtyQuery = GetEntityQuery(new EntityQueryDesc[]
-            {
-                    new ()
-                    {
-                        All = new ComponentType[]
-                        {
-                            ComponentType.ReadWrite<WETextDataMain>(),
-                            ComponentType.ReadWrite<WETextDataMaterial>(),
-                            ComponentType.ReadWrite<WETextDataTransform>(),
-                            ComponentType.ReadWrite<WETextDataMesh>(),
-                            ComponentType.ReadOnly<WETextDataDirtyFormulae>(),
-                            ComponentType.ReadOnly<WETextComponentValid>(),
-                        },
-                        None = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<WEWaitingRendering>(),
-                            ComponentType.ReadOnly<Deleted>(),
-                        }
-                    }
-            });
+            });          
             WEAtlasesLibrary.GetWhiteTextureBRI();
         }
 
