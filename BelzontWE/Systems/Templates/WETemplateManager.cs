@@ -405,7 +405,7 @@ namespace BelzontWE
 
         private Coroutine m_updatingEntitiesOnMain;
 
-        private void UpdatePrefabArchetypes(NativeArray<ArchetypeChunk> chunks)
+        internal void UpdatePrefabArchetypes(NativeArray<ArchetypeChunk> chunks)
         {
             var m_TextDataLkp = GetComponentLookup<WETextDataMain>();
             var m_prefabDataLkp = GetComponentLookup<PrefabData>();
@@ -456,7 +456,7 @@ namespace BelzontWE
                 }
             }
         }
-        private void UpdateLayouts(NativeArray<ArchetypeChunk> chunks)
+        internal void UpdateLayouts(NativeArray<ArchetypeChunk> chunks)
         {
             var m_MainDataLkp = GetComponentLookup<WETextDataMain>();
             var m_DataTransformLkp = GetComponentLookup<WETextDataTransform>();
@@ -579,6 +579,7 @@ namespace BelzontWE
         {
             if (GameManager.instance.isGameLoading || IsLoadingLayouts || !WriteEverywhereCS2Mod.IsInitializationComplete) return;
 
+            // Process execution queue for UI actions
             if (m_executionQueue.Count > 0)
             {
                 var cmdBuffer = m_endFrameBarrier.CreateCommandBuffer();
@@ -588,167 +589,11 @@ namespace BelzontWE
                 }
             }
 
-
+            // Update prefab index dictionary (file I/O)
             UpdatePrefabIndexDictionary();
 
-            if (m_templatesDirty)
-            {
-                EntityManager.AddComponent<WEWaitingRendering>(m_templateBasedEntities);
-                EntityManager.SetComponentEnabled<WEWaitingRendering>(m_templateBasedEntities, true);
-                m_templatesDirty = false;
-            }
-            if (m_updatingEntitiesOnMain is null)
-            {
-                if (!m_prefabArchetypesToBeUpdatedInMain.IsEmpty)
-                {
-                    var entitiesToUpdate = m_prefabArchetypesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
-                    UpdatePrefabArchetypes(entitiesToUpdate);
-                    entitiesToUpdate.Dispose();
-                }
-                else if (!m_entitiesToBeUpdatedInMain.IsEmpty)
-                {
-                    var entitiesToUpdate = m_entitiesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
-                    UpdateLayouts(entitiesToUpdate);
-                    entitiesToUpdate.Dispose();
-                }
-                else if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
-                {
-                    var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
-                    foreach (var i in PrefabTemplates)
-                    {
-                        keysWithTemplate[i.Key] = i.Value.Guid;
-                    }
-                    Dependency = new WEPrefabTemplateFilterJob
-                    {
-                        m_tempLkp = GetComponentLookup<Temp>(true),
-                        m_EntityType = GetEntityTypeHandle(),
-                        m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>(true),
-                        m_prefabDataLkp = GetComponentLookup<PrefabData>(true),
-                        m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-                        m_indexesWithLayout = keysWithTemplate,
-                    }.ScheduleParallel(m_uncheckedWePrefabLayoutQuery, Dependency);
-                    keysWithTemplate.Dispose(Dependency);
-                }
-                else if (!m_dirtyWePrefabLayoutQuery.IsEmpty)
-                {
-                    var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
-                    foreach (var i in PrefabTemplates)
-                    {
-                        keysWithTemplate[i.Key] = i.Value.Guid;
-                    }
-                    Dependency = new WEPrefabTemplateDirtyJob
-                    {
-                        m_EntityType = GetEntityTypeHandle(),
-                        m_prefabEmptyLkp = GetComponentLookup<WETemplateForPrefabEmpty>(true),
-                        m_prefabDirtyLkp = GetComponentLookup<WETemplateForPrefabDirty>(true),
-                        m_prefabLayoutLkp = GetComponentLookup<WETemplateForPrefab>(true),
-                        m_subRefLkp = GetBufferLookup<WESubTextRef>(true),
-                        m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-                        m_indexesWithLayout = keysWithTemplate,
-                        m_templateUpdaterLkp = GetBufferLookup<WETemplateUpdater>(true),
-                    }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
-                    keysWithTemplate.Dispose(Dependency);
-                }
-                else if (!m_dirtyInstancingWeQuery.IsEmpty)
-                {
-                    var chunks = m_dirtyInstancingWeQuery.ToArchetypeChunkArray(Allocator.Persistent);
-                    EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
-                    for (int h = 0; h < chunks.Length; h++)
-                    {
-                        var chunk = chunks[h];
-                        var entities = chunk.GetNativeArray(GetEntityTypeHandle());
-                        for (int i = 0; i < entities.Length; i++)
-                        {
-                            var e = entities[i];
-                            var buff = cmd.SetBuffer<WETemplateUpdater>(e);
-                            for (int j = 0; j < buff.Length; j++)
-                            {
-                                cmd.DestroyEntity(buff[j].childEntity);
-                            }
-                            buff.Clear();
-                            cmd.SetComponentEnabled<WETemplateDirtyInstancing>(e, false);
-                            cmd.AddComponent<WEWaitingRendering>(e);
-                            cmd.SetComponentEnabled<WEWaitingRendering>(e, true);
-                        }
-                    }
-                    chunks.Dispose();
-                }
-                else if (!m_textDataDirtyQuery.IsEmpty)
-                {
-                    using var tempArr = m_textDataDirtyQuery.ToArchetypeChunkArray(Allocator.Temp);
-                    var job = new WEUpdateFormulaesJob
-                    {
-                        m_MainDataHdl = GetComponentTypeHandle<WETextDataMain>(false),
-                        m_MaterialDataHdl = GetComponentTypeHandle<WETextDataMaterial>(false),
-                        m_TransformDataHdl = GetComponentTypeHandle<WETextDataTransform>(false),
-                        m_MeshDataHdl = GetComponentTypeHandle<WETextDataMesh>(false),
-                        m_DirtyFormulaeHdl = GetComponentTypeHandle<WETextDataDirtyFormulae>(true),
-                        m_EntityType = GetEntityTypeHandle(),
-                        m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer(),
-                        em = EntityManager,
-                        nextUpdateFrame = UnityEngine.Time.frameCount + WEModData.InstanceWE.FramesCheckUpdateVal,
-                        intervalUpdate = WEModData.InstanceWE.FramesCheckUpdateVal
-                    };
-                    for (int i = 0; i < tempArr.Length; i++)
-                    {
-                        job.Execute(tempArr[i]);
-                    }
-                }
-            }
+            // Note: Entity processing has been moved to WETemplateUpdateSystem
             Dependency.Complete();
-        }
-
-        private struct WEUpdateFormulaesJob
-        {
-            public ComponentTypeHandle<WETextDataMain> m_MainDataHdl;
-            public ComponentTypeHandle<WETextDataMaterial> m_MaterialDataHdl;
-            public ComponentTypeHandle<WETextDataTransform> m_TransformDataHdl;
-            public ComponentTypeHandle<WETextDataMesh> m_MeshDataHdl;
-            public ComponentTypeHandle<WETextDataDirtyFormulae> m_DirtyFormulaeHdl;
-            public EntityTypeHandle m_EntityType;
-            public EntityCommandBuffer m_CommandBuffer;
-            public EntityManager em;
-            public int nextUpdateFrame;
-            internal int intervalUpdate;
-
-            public void Execute(in ArchetypeChunk chunk)
-            {
-                var entities = chunk.GetNativeArray(m_EntityType);
-                var mainData = chunk.GetNativeArray(ref m_MainDataHdl);
-                var materialData = chunk.GetNativeArray(ref m_MaterialDataHdl);
-                var transformData = chunk.GetNativeArray(ref m_TransformDataHdl);
-                var meshData = chunk.GetNativeArray(ref m_MeshDataHdl);
-                var dirtyFormulae = chunk.GetNativeArray(ref m_DirtyFormulaeHdl);
-                for (int i = 0; i < entities.Length; i++)
-                {
-                    var main = mainData[i];
-                    var material = materialData[i];
-                    var transform = transformData[i];
-                    var mesh = meshData[i];
-                    var dirtyData = dirtyFormulae[i];
-
-
-                    var anyChanged = material.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
-                    var canMultiply = mesh.TextType == WESimulationTextType.Placeholder;
-                    var transformChanged = transform.UpdateFormulae(em, dirtyData.geometry, dirtyData.vars, canMultiply);
-                    anyChanged |= transformChanged | mesh.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
-                    if (anyChanged)
-                    {
-                        main.lastChangeFrame = main.nextUpdateFrame;
-                    }
-                    main.nextUpdateFrame = nextUpdateFrame + intervalUpdate + (i % intervalUpdate);
-                    mainData[i] = main;
-                    materialData[i] = material;
-                    transformData[i] = transform;
-                    meshData[i] = mesh;
-                    if (canMultiply && transformChanged)
-                    {
-                        m_CommandBuffer.AddComponent<WETemplateDirtyInstancing>(entities[i]);
-                        m_CommandBuffer.SetComponentEnabled<WETemplateDirtyInstancing>(entities[i], true);
-                    }
-                    m_CommandBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(entities[i], false);
-                }
-            }
         }
 
         public JobHandle SetDefaults(Context context)
@@ -1556,6 +1401,16 @@ namespace BelzontWE
         /// Gets read-only access to prefab templates dictionary
         /// </summary>
         internal IReadOnlyDictionary<long, WETextDataXmlTree> GetPrefabTemplatesReadOnly() => PrefabTemplates;
+
+        /// <summary>
+        /// Clears the templates dirty flag
+        /// </summary>
+        internal void ClearTemplatesDirty() => m_templatesDirty = false;
+
+        /// <summary>
+        /// Gets whether entities are currently being updated on main thread
+        /// </summary>
+        internal Coroutine UpdatingEntitiesOnMain => m_updatingEntitiesOnMain;
 
         #endregion
 

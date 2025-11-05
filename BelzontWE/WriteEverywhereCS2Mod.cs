@@ -28,6 +28,9 @@ namespace BelzontWE
             updateSystem.UpdateAt<WEAtlasesLibrary>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WECustomMeshLibrary>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateManager>(SystemUpdatePhase.Rendering);
+            updateSystem.UpdateAfter<WETemplateUpdateSystem>(SystemUpdatePhase.Rendering);
+            updateSystem.UpdateAfter<WETemplateQuerySystem>(SystemUpdatePhase.Rendering);
+            updateSystem.UpdateAfter<WEPrefabLayoutSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateDisposalSystem>(SystemUpdatePhase.Rendering);
 
             updateSystem.UpdateAt<WENodeExtraDataUpdater2B>(SystemUpdatePhase.Modification2B);

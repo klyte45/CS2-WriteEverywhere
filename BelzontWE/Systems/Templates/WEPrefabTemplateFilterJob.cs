@@ -15,7 +15,7 @@ using Unity.Burst;
 
 namespace BelzontWE
 {
-    public partial class WETemplateManager
+    public partial class WETemplateUpdateSystem
     {
 #if BURST
         [BurstCompile]
