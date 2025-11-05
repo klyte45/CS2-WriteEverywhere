@@ -72,6 +72,18 @@ namespace BelzontWE
         /// </summary>
         internal Coroutine UpdatingEntitiesOnMain => m_updatingEntitiesOnMain;
 
+        /// <summary>
+        /// Tries to resolve a template by name, checking both city templates and mod subtemplates.
+        /// Supports both simple names and "modId:templateName" format.
+        /// </summary>
+        internal bool TryGetTargetTemplate(FixedString128Bytes layoutName, out WETextDataXmlTree targetTemplate)
+        {
+            targetTemplate = null;
+            return layoutName.ToString().Split(":", 2) is string[] modEntryName && modEntryName.Length == 2
+                                      ? ModsSubTemplates.TryGetValue(modEntryName[0], out var modTemplates) && modTemplates.TryGetValue(modEntryName[1], out targetTemplate)
+                                      : RegisteredTemplates.TryGetValue(layoutName, out targetTemplate);
+        }
+
         #endregion
     }
 }
