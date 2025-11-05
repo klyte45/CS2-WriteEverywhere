@@ -767,46 +767,9 @@ namespace BelzontWE
         private Dictionary<(string prefabName, int meshIdx), ObjectState> MeshesHidden = new();
         private bool isPrefabListDirty = true;
 
-        public int CanBePrefabLayout(WETextDataXmlTree data) => CanBePrefabLayout(data, true);
-        public int CanBePrefabLayout(WETextDataXmlTree data, bool isRoot) => CanBePrefabLayout(data.self, data.children, isRoot);
-        public int CanBePrefabLayout(WESelflessTextDataTree data) => CanBePrefabLayout(null, data.children, true);
-        private int CanBePrefabLayout(WETextDataXml self, WETextDataXmlTree[] children, bool isRoot)
-        {
-            if (isRoot)
-            {
-                if (children?.Length > 0)
-                {
-                    for (int i = 0; i < children.Length; i++)
-                    {
-                        if (CanBePrefabLayout(children[i], false) != 0)
-                        {
-                            LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: A child node ({i}) failed validation");
-                            return 2;
-                        }
-                    }
-                }
-                else
-                {
-                    LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: The root node had no children. When exporting for prefabs, the selected node must have children typed as Placeholder items. The root setting itself is ignored.");
-                    return 1;
-                }
-            }
-            else
-            {
-                if (self.layoutMesh is null && self.imageMesh is null && self.textMesh is null && self.whiteMesh is null && self.whiteCubeMesh is null && self.matrixTransform is null)
-                {
-                    LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: All children must have type 'Placeholder', 'WhiteTexture', 'MatrixTransform', 'WhiteCube', 'Image' or 'Text'.");
-                    return 4;
-                }
-                ;
-                if (self.layoutMesh is not null && children?.Length > 0)
-                {
-                    LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: The node must not have children, as any Placeholder item don't.");
-                    return 5;
-                }
-            }
-            return 0;
-        }
+        public int CanBePrefabLayout(WETextDataXmlTree data) => World.GetExistingSystemManaged<WETemplateQuerySystem>().CanBePrefabLayout(data);
+        public int CanBePrefabLayout(WETextDataXmlTree data, bool isRoot) => World.GetExistingSystemManaged<WETemplateQuerySystem>().CanBePrefabLayout(data, isRoot);
+        public int CanBePrefabLayout(WESelflessTextDataTree data) => World.GetExistingSystemManaged<WETemplateQuerySystem>().CanBePrefabLayout(data);
         public bool IsLoadingLayouts => LoadingPrefabLayoutsCoroutine != null;
         private Coroutine LoadingPrefabLayoutsCoroutine;
         private const string LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID = "loadingPrefabTemplates";
@@ -1223,18 +1186,9 @@ namespace BelzontWE
             var result = arr.ToArray().OrderBy(x => x).ToDictionary(x => x.ToString(), x => RegisteredTemplates[x].Guid.ToString());
             return result;
         }
-        public unsafe int GetCityTemplateUsageCount(string name)
+        public int GetCityTemplateUsageCount(string name)
         {
-            if (m_templateBasedEntities.IsEmpty || !RegisteredTemplates.TryGetValue(name, out var templateEntity)) return 0;
-            var counterResult = 0;
-            var job = new WEPlaceholcerTemplateUsageCount
-            {
-                m_templateToCheck = templateEntity.Guid,
-                m_updaterHdl = GetBufferTypeHandle<WETemplateUpdater>(),
-                m_counter = &counterResult
-            };
-            job.Schedule(m_templateBasedEntities, Dependency).Complete();
-            return counterResult;
+            return World.GetExistingSystemManaged<WETemplateQuerySystem>().GetCityTemplateUsageCount(name);
         }
 
         public void RenameCityTemplate(string oldName, string newName)
@@ -1605,24 +1559,5 @@ namespace BelzontWE
 
         #endregion
 
-        [BurstCompile]
-        private unsafe struct WEPlaceholcerTemplateUsageCount : IJobChunk
-        {
-            public Colossal.Hash128 m_templateToCheck;
-            public BufferTypeHandle<WETemplateUpdater> m_updaterHdl;
-            public int* m_counter;
-
-            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
-            {
-                var templates = chunk.GetBufferAccessor(ref m_updaterHdl);
-                for (int i = 0; i < templates.Length; i++)
-                {
-                    for (int j = 0; j < templates[i].Length; j++)
-                    {
-                        if (templates[i][j].templateEntity == m_templateToCheck) *m_counter += 1;
-                    }
-                }
-            }
-        }
     }
 }
