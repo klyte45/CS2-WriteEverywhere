@@ -1,8 +1,13 @@
-# v0.5.3r3 (04-NOV-25)
+# v0.5.4r0 (05-NOV-25)
+
+- Fixed bugs related to degradation of performance over time
+- Reduced mesh flashing issue when there are so many templates being loaded in parallel
+
+## FROM v0.5.3r3 (04-NOV-25)
 
 - Fixed issue with template indexes variable not being assigned correctly
 
-## FROM v0.5.3r2 (04-NOV-25)
+# v0.5.3r2 (04-NOV-25)
 
 - Removed some obsolete code (was causing some issues for some players when loading a city)
 - More minor performance improvemnts
