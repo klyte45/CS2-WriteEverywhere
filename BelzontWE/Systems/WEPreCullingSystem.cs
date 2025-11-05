@@ -51,7 +51,9 @@ namespace BelzontWE
             }
         }
 
-        private readonly NativeQueue<WERenderData> m_queueRender = new(Allocator.Persistent);
+        private readonly NativeQueue<WERenderData> m_newItemsRender = new(Allocator.Persistent);
+        private readonly NativeParallelHashSet<Entity> m_unmodifiedEntities = new(1024, Allocator.Persistent);
+        private readonly NativeParallelHashSet<Entity> m_geomEntitiesLastFrame = new(1024, Allocator.Persistent);
 
         protected override void OnUpdate()
         {
@@ -74,7 +76,8 @@ namespace BelzontWE
             var data = m_preCullingSystem.GetCullingData(true, out JobHandle deps);
             if (data.IsEmpty) return;
             var commandBuffer = new EntityCommandBuffer(Allocator.Persistent);
-            m_queueRender.Clear();
+            m_newItemsRender.Clear();
+            m_unmodifiedEntities.Clear();
             WERenderingJob cullingActionJob = new()
             {
 
@@ -91,7 +94,9 @@ namespace BelzontWE
                 m_LodParameters = m_LodParameters,
                 m_CameraPosition = m_CameraPosition,
                 m_CameraDirection = m_CameraDirection,
-                availToDraw = m_queueRender.AsParallelWriter(),
+                m_newItemsRender = m_newItemsRender.AsParallelWriter(),
+                m_unmodifiedEntities = m_unmodifiedEntities.AsParallelWriter(),
+                m_geomEntitiesLastFrame = m_geomEntitiesLastFrame.AsReadOnly(),
                 isAtWeEditor = m_pickerTool.IsSelected,
                 m_selectedSubEntity = m_pickerController.CurrentSubEntity.Value,
                 m_selectedEntity = m_pickerController.CurrentEntity.Value,
@@ -103,17 +108,33 @@ namespace BelzontWE
                 m_interpolatedTransformLkp = GetComponentLookup<InterpolatedTransform>(true),
                 frameCount = UnityEngine.Time.frameCount,
                 minLodUpdateSetting = Mathf.CeilToInt(WriteEverywhereCS2Mod.WeData.RequiredLodForFormulaesUpdate),
-                indexStartString = indexStartString
+                indexStartString = indexStartString,
             };
 
-            Dependency = cullingActionJob.Schedule(data.Length, 1, deps);
-            Dependency.Complete();
+            cullingActionJob.Schedule(data.Length, 1, JobHandle.CombineDependencies(deps, Dependency)).Complete();
             commandBuffer.Playback(EntityManager);
             commandBuffer.Dispose();
 
-            if (m_availToDraw.IsCreated) m_availToDraw.Dispose();
-            m_availToDraw = m_queueRender.ToArray(Allocator.Persistent);
+            // First job: Filter unmodified entities (only if there are items to filter)
+            if (m_availToDraw.IsCreated && m_availToDraw.Length > 0)
+            {
+                var filterJob = new WERenderFilterUnmodifiedEntitiesJob
+                {
+                    m_availToDraw = m_availToDraw,
+                    m_unmodifiedEntities = m_unmodifiedEntities.AsReadOnly(),
+                    m_newItemsRender = m_newItemsRender.AsParallelWriter()
+                };
+                filterJob.Schedule(m_availToDraw.Length, 64).Complete();
+            }
 
+            if (m_availToDraw.IsCreated) m_availToDraw.Dispose();
+            m_availToDraw = m_newItemsRender.ToArray(Allocator.Persistent);
+
+            m_geomEntitiesLastFrame.Clear();
+            for (var i = 0; i < m_availToDraw.Length; i++)
+            {
+                m_geomEntitiesLastFrame.Add(m_availToDraw[i].geometryEntity);
+            }
         }
 
         private float GetLevelOfDetail(float levelOfDetail, IGameCameraController cameraController)
@@ -144,7 +165,7 @@ namespace BelzontWE
             public float3 m_CameraPosition;
             public float3 m_CameraDirection;
             public EntityTypeHandle m_EntityType;
-            public NativeQueue<WERenderData>.ParallelWriter availToDraw;
+            public NativeQueue<WERenderData>.ParallelWriter m_newItemsRender;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
             public Entity m_selectedSubEntity;
             public Entity m_selectedEntity;
@@ -158,6 +179,8 @@ namespace BelzontWE
             public int frameCount;
             public int minLodUpdateSetting;
             public FixedString32Bytes indexStartString;
+            internal NativeParallelHashSet<Entity>.ParallelWriter m_unmodifiedEntities;
+            internal NativeParallelHashSet<Entity>.ReadOnly m_geomEntitiesLastFrame;
 
             private static readonly Bounds3 whiteTextureBounds = new(new(-.5f, -.5f, 0), new(.5f, .5f, 0));
             private static readonly Bounds3 whiteCubeBounds = new(new(-.5f, -.5f, -.5f), new(.5f, .5f, .5f));
@@ -171,17 +194,23 @@ namespace BelzontWE
                     var entity = cullingAction.m_Entity;
                     if ((!m_weTemplateForPrefabLookup.TryGetComponent(entity, out var prefabWeLayout) || prefabWeLayout.childEntity == Entity.Null) & (!m_weSubRefLookup.TryGetBuffer(entity, out var subLayout) || subLayout.Length == 0)) return;
 
-
-                    if (m_WEDrawingLookup.HasComponent(cullingAction.m_Entity))
+                    if (!m_WEDrawingLookup.HasEnabledComponent(entity))
                     {
-                        m_CommandBuffer.SetComponentEnabled<WEDrawing>(index, entity, true);
+                        if (m_WEDrawingLookup.HasComponent(cullingAction.m_Entity))
+                        {
+                            m_CommandBuffer.SetComponentEnabled<WEDrawing>(index, entity, true);
+                        }
+                        else
+                        {
+                            m_CommandBuffer.AddComponent<WEDrawing>(index, entity);
+                        }
                     }
-                    else
+
+                    if (m_geomEntitiesLastFrame.Contains(entity) && (entity.Index & 0x1f) != (frameCount & 0x1f) && (!isAtWeEditor || entity != m_selectedEntity))
                     {
-                        m_CommandBuffer.AddComponent<WEDrawing>(index, entity);
+                        m_unmodifiedEntities.Add(entity);
+                        return;
                     }
-
-
 
 
                     Matrix4x4 itemBaseMatrix;
@@ -231,7 +260,7 @@ namespace BelzontWE
 
             private void FailedCulling(PreCullingData cullingAction, int index)
             {
-                if (m_WEDrawingLookup.HasComponent(cullingAction.m_Entity))
+                if (m_WEDrawingLookup.HasEnabledComponent(cullingAction.m_Entity))
                 {
                     m_CommandBuffer.SetComponentEnabled<WEDrawing>(index, cullingAction.m_Entity, false);
                 }
@@ -366,7 +395,7 @@ namespace BelzontWE
                                 // Optimize: Use already loaded mesh instead of re-looking up
                                 var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
 
-                                availToDraw.Enqueue(new WERenderData
+                                m_newItemsRender.Enqueue(new WERenderData
                                 {
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
@@ -406,7 +435,7 @@ namespace BelzontWE
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 // Optimize: Reuse mesh variable instead of re-looking up
-                                availToDraw.Enqueue(new WERenderData
+                                m_newItemsRender.Enqueue(new WERenderData
                                 {
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
@@ -440,7 +469,7 @@ namespace BelzontWE
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 // Optimize: Reuse mesh variable
-                                availToDraw.Enqueue(new WERenderData
+                                m_newItemsRender.Enqueue(new WERenderData
                                 {
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
@@ -525,7 +554,7 @@ namespace BelzontWE
                                     if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                     {
                                         // Optimize: Reuse material and mesh variables
-                                        availToDraw.Enqueue(new WERenderData
+                                        m_newItemsRender.Enqueue(new WERenderData
                                         {
                                             textDataEntity = nextEntity,
                                             geometryEntity = geometryEntity,
@@ -542,7 +571,7 @@ namespace BelzontWE
                             {
                                 CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, 2000);
                                 // Optimize: Reuse material and mesh variables
-                                availToDraw.Enqueue(new WERenderData
+                                m_newItemsRender.Enqueue(new WERenderData
                                 {
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
@@ -568,7 +597,7 @@ namespace BelzontWE
             {
                 if (minLodUpdateSetting > currentLod) return;
                 if (m_weDirtyFormulae.HasEnabledComponent(nextEntity)) return;
-                if (((frameCount + nextEntity.Index) & 0x1f) == 0 && m_weMainLookup[nextEntity].nextUpdateFrame < frameCount)
+                if (m_weMainLookup[nextEntity].nextUpdateFrame < frameCount)
                 {
                     m_CommandBuffer.SetComponent(unfilteredChunkIndex, nextEntity, new WETextDataDirtyFormulae
                     {
@@ -636,6 +665,25 @@ namespace BelzontWE
                     }
                 }
                 job.m_CommandBuffer.AddComponent<Game.Common.Deleted>(unfilteredChunkIndex, nextEntity);
+            }
+        }
+
+#if BURST
+        [BurstCompile]
+#endif
+        private struct WERenderFilterUnmodifiedEntitiesJob : IJobParallelFor
+        {
+            [ReadOnly] public NativeArray<WERenderData> m_availToDraw;
+            [ReadOnly] public NativeParallelHashSet<Entity>.ReadOnly m_unmodifiedEntities;
+            public NativeQueue<WERenderData>.ParallelWriter m_newItemsRender;
+
+            public void Execute(int index)
+            {
+                var item = m_availToDraw[index];
+                if (m_unmodifiedEntities.Contains(item.geometryEntity))
+                {
+                    m_newItemsRender.Enqueue(item);
+                }
             }
         }
     }

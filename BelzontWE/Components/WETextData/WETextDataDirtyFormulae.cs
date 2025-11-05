@@ -8,5 +8,5 @@ namespace BelzontWE
         public FixedString512Bytes vars;
         internal Entity geometry;
     }
-    public struct WETextDataFormulaeInitialized : IComponentData { }
+
 }
