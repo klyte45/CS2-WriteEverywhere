@@ -769,11 +769,15 @@ namespace BelzontWE
                     var dirtyData = dirtyFormulae[i];
 
 
-                    material.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
+                    var anyChanged = material.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
                     var canMultiply = mesh.TextType == WESimulationTextType.Placeholder;
                     var transformChanged = transform.UpdateFormulae(em, dirtyData.geometry, dirtyData.vars, canMultiply);
-                    mesh.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
-                    main.nextUpdateFrame = nextUpdateFrame + (i % intervalUpdate);
+                    anyChanged |= transformChanged | mesh.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
+                    if (anyChanged)
+                    {
+                        main.lastChangeFrame = main.nextUpdateFrame;
+                    }
+                    main.nextUpdateFrame = nextUpdateFrame + intervalUpdate + (i % intervalUpdate);
                     mainData[i] = main;
                     materialData[i] = material;
                     transformData[i] = transform;

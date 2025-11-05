@@ -67,17 +67,14 @@ namespace BelzontWE
                 for (int j = 0; j < count; j++)
                 {
                     var item = m_wePreCullSys.m_availToDraw[j];
+                    if (!EntityManager.TryGetComponent(item.textDataEntity, out WETextDataMesh mesh)
+                    || !EntityManager.TryGetComponent(item.textDataEntity, out WETextDataMain main)
+                    || !EntityManager.TryGetComponent(item.textDataEntity, out WETextDataMaterial materialData)
+                    || item.transformMatrix == default
+                    || main.nextUpdateFrame == 0) continue;
+                    
                     bool willCheckUpdate = ((FrameCounter + item.textDataEntity.Index) & 0x1f) == 0;
-                    ref var mesh = ref item.mesh;
-                    ref var main = ref item.main;
 
-
-                    if (item.transformMatrix == default) continue;
-
-                    if (main.nextUpdateFrame == 0) continue;
-
-                    ref var transform = ref item.transform;
-                    ref var materialData = ref item.material;
                     bool isPlaceholder = false;
 
 
@@ -139,7 +136,7 @@ namespace BelzontWE
                             else materialChanged = materialData.GetOwnMaterial(ref mesh, brii?.CubeCharCoordinates, out ownMaterial);
 
                             var bri2 = bri as PrimitiveRenderInformation;
-                            var meshCount = bri2 is null || mesh.TextType == WESimulationTextType.WhiteCube ? 1 : bri2.MeshCount(item.material.Shader);
+                            var meshCount = bri2 is null || mesh.TextType == WESimulationTextType.WhiteCube ? 1 : bri2.MeshCount(materialData.Shader);
 
                             var baseMatrix = item.transformMatrix;
                             if (EntityManager.HasComponent<InterpolatedTransform>(item.geometryEntity))
@@ -151,8 +148,8 @@ namespace BelzontWE
 
                             for (int i = 0; i < meshCount; i++)
                             {
-                                var geomMesh = bri2 is not null ? (mesh.TextType == WESimulationTextType.WhiteCube ? bri2.MeshCube[0] : bri2.GetMesh(item.material.Shader, i)) : bri.GetMesh(item.material.Shader);
-                                var effectiveMatrix = bri2 is null ? baseMatrix : baseMatrix * bri2.GetMeshTranslation(item.material.Shader, i);
+                                var geomMesh = bri2 is not null ? (mesh.TextType == WESimulationTextType.WhiteCube ? bri2.MeshCube[0] : bri2.GetMesh(materialData.Shader, i)) : bri.GetMesh(materialData.Shader);
+                                var effectiveMatrix = bri2 is null ? baseMatrix : baseMatrix * bri2.GetMeshTranslation(materialData.Shader, i);
 
                                 Graphics.DrawMesh(geomMesh, effectiveMatrix, ownMaterial[i], 0, null, 0, null, ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
                                 if (m_pickerController.IsValidEditingItem() && m_pickerController.ShowProjectionCube.Value && m_pickerController.CurrentSubEntity.Value == item.textDataEntity && materialData.Shader == WEShader.Decal)

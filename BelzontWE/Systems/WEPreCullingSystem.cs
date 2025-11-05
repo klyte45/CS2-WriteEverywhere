@@ -28,12 +28,7 @@ namespace BelzontWE
         {
             public Entity textDataEntity;
             public Entity geometryEntity;
-            public WETextDataMain main;
-            public WETextDataTransform transform;
-            public WETextDataMesh mesh;
-            public WETextDataMaterial material;
             public Matrix4x4 transformMatrix;
-            public FixedString512Bytes variables;
         }
 
         protected override void OnCreate()
@@ -56,6 +51,8 @@ namespace BelzontWE
             }
         }
 
+        private readonly NativeQueue<WERenderData> m_queueRender = new(Allocator.Persistent);
+
         protected override void OnUpdate()
         {
             if (!ready) return;
@@ -77,7 +74,7 @@ namespace BelzontWE
             var data = m_preCullingSystem.GetCullingData(true, out JobHandle deps);
             if (data.IsEmpty) return;
             var commandBuffer = new EntityCommandBuffer(Allocator.Persistent);
-            var queueRender = new NativeQueue<WERenderData>(Allocator.Persistent);
+            m_queueRender.Clear();
             WERenderingJob cullingActionJob = new()
             {
 
@@ -94,7 +91,7 @@ namespace BelzontWE
                 m_LodParameters = m_LodParameters,
                 m_CameraPosition = m_CameraPosition,
                 m_CameraDirection = m_CameraDirection,
-                availToDraw = queueRender.AsParallelWriter(),
+                availToDraw = m_queueRender.AsParallelWriter(),
                 isAtWeEditor = m_pickerTool.IsSelected,
                 m_selectedSubEntity = m_pickerController.CurrentSubEntity.Value,
                 m_selectedEntity = m_pickerController.CurrentEntity.Value,
@@ -115,14 +112,8 @@ namespace BelzontWE
             commandBuffer.Dispose();
 
             if (m_availToDraw.IsCreated) m_availToDraw.Dispose();
-            m_availToDraw = queueRender.ToArray(Allocator.Persistent);
-            queueRender.Dispose();
-#if DEBUG
-            for (int i = 0; i < m_availToDraw.Length; i++)
-            {
-                EntityManager.SetComponentData(m_availToDraw[i].textDataEntity, m_availToDraw[i].mesh);
-            }
-#endif
+            m_availToDraw = m_queueRender.ToArray(Allocator.Persistent);
+
         }
 
         private float GetLevelOfDetail(float levelOfDetail, IGameCameraController cameraController)
@@ -377,14 +368,9 @@ namespace BelzontWE
 
                                 availToDraw.Enqueue(new WERenderData
                                 {
-                                    transform = transform,
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
-                                    main = m_weMainLookup[nextEntity],
-                                    material = m_weMaterialLookup[nextEntity],
-                                    mesh = mesh,
                                     transformMatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, -.001f)), transform.offsetRotation, scale2),
-                                    variables = currentVars
                                 });
                             }
                             if (transform.MustDraw)
@@ -422,14 +408,9 @@ namespace BelzontWE
                                 // Optimize: Reuse mesh variable instead of re-looking up
                                 availToDraw.Enqueue(new WERenderData
                                 {
-                                    transform = transform,
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
-                                    main = m_weMainLookup[nextEntity],
-                                    material = cubeMaterial,
-                                    mesh = mesh,
-                                    transformMatrix = WTmatrix,
-                                    variables = currentVars
+                                    transformMatrix = WTmatrix
                                 });
                             }
 
@@ -461,14 +442,9 @@ namespace BelzontWE
                                 // Optimize: Reuse mesh variable
                                 availToDraw.Enqueue(new WERenderData
                                 {
-                                    transform = transform,
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
-                                    main = m_weMainLookup[nextEntity],
-                                    material = textureMaterial,
-                                    mesh = mesh,
                                     transformMatrix = WTmatrix,
-                                    variables = currentVars
                                 });
                             }
 
@@ -551,14 +527,9 @@ namespace BelzontWE
                                         // Optimize: Reuse material and mesh variables
                                         availToDraw.Enqueue(new WERenderData
                                         {
-                                            transform = transform,
                                             textDataEntity = nextEntity,
                                             geometryEntity = geometryEntity,
-                                            main = m_weMainLookup[nextEntity],
-                                            material = defaultMaterial,
-                                            mesh = mesh,
                                             transformMatrix = matrix,
-                                            variables = currentVars
                                         });
                                     }
                                 }
@@ -573,14 +544,9 @@ namespace BelzontWE
                                 // Optimize: Reuse material and mesh variables
                                 availToDraw.Enqueue(new WERenderData
                                 {
-                                    transform = transform,
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
-                                    main = m_weMainLookup[nextEntity],
-                                    material = defaultMaterial,
-                                    mesh = mesh,
                                     transformMatrix = matrix,
-                                    variables = currentVars
                                 });
                             }
                             if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout))

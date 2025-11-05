@@ -13,6 +13,8 @@ namespace BelzontWE
         private Entity parentEntity;
         public int nextUpdateFrame;
 
+        public int lastChangeFrame;
+
         public FixedString32Bytes ItemName { get => itemName; set => itemName = value; }
         public Entity TargetEntity { get => targetEntity; set => targetEntity = value; }
         public Entity ParentEntity { get => parentEntity; set => parentEntity = value; }
