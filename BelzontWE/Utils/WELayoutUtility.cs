@@ -95,8 +95,6 @@ namespace BelzontWE
                 }
             }
 
-            cmd.AddComponent<WEWaitingPostInstantiation>(newEntity);
-
             if (childTargetMode == ParentEntityMode.TARGET_IS_TARGET)
             {
                 parentSubRefArray.Add(new WESubTextRef

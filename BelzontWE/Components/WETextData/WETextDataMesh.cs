@@ -119,14 +119,7 @@ namespace BelzontWE
 
         }
 
-        public WETextDataMesh OnPostInstantiate(EntityManager em, Entity targetEntity)
-        {
-            UpdateFormulaes(em, targetEntity, default, true);
-            FontServer.Instance.EnsureFont(fontName);
-            return this;
-        }
-
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr, bool force = false)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr)
         {
             if (HasBRI && (basicRenderInformation.Target is not IBasicRenderInformation ibri || !ibri.IsValid()))
             {

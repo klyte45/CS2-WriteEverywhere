@@ -36,8 +36,6 @@ namespace BelzontWE
             public FixedString512Bytes variables;
         }
 
-        private int frameCounter = 0;
-
         protected override void OnCreate()
         {
             base.OnCreate();
@@ -109,8 +107,6 @@ namespace BelzontWE
                 frameCount = UnityEngine.Time.frameCount,
                 minLodUpdateSetting = Mathf.CeilToInt(WriteEverywhereCS2Mod.WeData.RequiredLodForFormulaesUpdate)
             };
-
-
 
             Dependency = cullingActionJob.Schedule(data.Length, 1, deps);
             Dependency.Complete();

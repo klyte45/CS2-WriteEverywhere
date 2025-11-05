@@ -161,7 +161,7 @@ namespace BelzontWE
         }
         public bool TryGetFont(FixedString64Bytes name, out FontSystemData data)
         {
-            return LoadedFonts.TryGetValue(name, out data);
+            return LoadedFonts.TryGetValue(name, out data) || LoadedFonts.TryGetValue(DEFAULT_FONT_KEY, out data);
         }
 
         protected override void OnUpdate()
@@ -221,12 +221,6 @@ namespace BelzontWE
 
         public string[] GetLoadedFontsNames() => LoadedFonts.Keys.Select(x => x.ToString()).ToArray();
 
-        internal void EnsureFont(FixedString64Bytes fontName)
-        {
-            fontName = fontName.Trim();
-            if (fontName == "" || LoadedFonts.ContainsKey(fontName)) return;
-            RegisterFont(fontName.ToString(), DefaultFont.Font._font.data.ArrayData.ToArray(), true);
-        }
 
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
