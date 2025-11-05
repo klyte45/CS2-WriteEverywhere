@@ -105,7 +105,8 @@ namespace BelzontWE
                 m_weDirtyFormulae = GetComponentLookup<WETextDataDirtyFormulae>(false),
                 m_interpolatedTransformLkp = GetComponentLookup<InterpolatedTransform>(true),
                 frameCount = UnityEngine.Time.frameCount,
-                minLodUpdateSetting = Mathf.CeilToInt(WriteEverywhereCS2Mod.WeData.RequiredLodForFormulaesUpdate)
+                minLodUpdateSetting = Mathf.CeilToInt(WriteEverywhereCS2Mod.WeData.RequiredLodForFormulaesUpdate),
+                indexStartString = indexStartString
             };
 
             Dependency = cullingActionJob.Schedule(data.Length, 1, deps);
