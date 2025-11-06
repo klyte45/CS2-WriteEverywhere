@@ -1,13 +1,18 @@
-# v0.5.4r1 (05-NOV-25)
+# v0.5.4r2 (06-NOV-25)
+
+- Fixed errors relative to reloading default layouts.
+- Fixed garbage from disposed templates causing slowdown on long run.
+
+## FROM v0.5.4r1 (05-NOV-25)
 
 - Fixed issue related to template disposal causing errors and crashes
 
-## FROM v0.5.4r0 (05-NOV-25)
+# v0.5.4r0 (05-NOV-25)
 
 - Fixed bugs related to degradation of performance over time
 - Reduced mesh flashing issue when there are so many templates being loaded in parallel
 
-## FROM v0.5.3r3 (04-NOV-25)
+# v0.5.3r3 (04-NOV-25)
 
 - Fixed issue with template indexes variable not being assigned correctly
 
