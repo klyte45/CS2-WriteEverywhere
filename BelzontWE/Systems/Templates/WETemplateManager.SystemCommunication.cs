@@ -53,11 +53,6 @@ namespace BelzontWE
         }
 
         /// <summary>
-        /// Gets the entity query for template-based entities
-        /// </summary>
-        internal EntityQuery GetTemplateBasedEntitiesQuery() => m_templateBasedEntities;
-
-        /// <summary>
         /// Gets read-only access to prefab templates dictionary
         /// </summary>
         internal IReadOnlyDictionary<long, WETextDataXmlTree> GetPrefabTemplatesReadOnly() => PrefabTemplates;
@@ -70,7 +65,7 @@ namespace BelzontWE
         /// <summary>
         /// Gets whether entities are currently being updated on main thread
         /// </summary>
-        internal Coroutine UpdatingEntitiesOnMain => m_updatingEntitiesOnMain;
+        internal Coroutine UpdatingEntitiesOnMain { get; private set; }
 
         /// <summary>
         /// Tries to resolve a template by name, checking both city templates and mod subtemplates.

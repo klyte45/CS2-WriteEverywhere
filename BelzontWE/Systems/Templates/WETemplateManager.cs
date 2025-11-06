@@ -15,7 +15,6 @@ using System.IO;
 using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
 
 
 #if BURST
@@ -37,7 +36,6 @@ namespace BelzontWE
         private Dictionary<FixedString128Bytes, WETextDataXmlTree> RegisteredTemplates;
         private PrefabSystem m_prefabSystem;
         private EndFrameBarrier m_endFrameBarrier;
-        private EntityQuery m_templateBasedEntities;
         private EntityQuery m_prefabsToMarkDirty;
         private EntityQuery m_prefabsDataToSerialize;
         private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
@@ -215,21 +213,6 @@ namespace BelzontWE
             m_prefabSystem = World.GetExistingSystemManaged<PrefabSystem>();
             m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
             PrefabUpdateSource = EntityManager.CreateEntity();
-            m_templateBasedEntities = GetEntityQuery(new EntityQueryDesc[]
-              {
-                    new ()
-                    {
-                        All = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<WEIsPlaceholder>(),
-                        },
-                        None = new ComponentType[]
-                        {
-                            ComponentType.ReadOnly<WEWaitingRendering>(),
-                            ComponentType.ReadOnly<Deleted>(),
-                        }
-                    }
-              });
 
             m_prefabsToMarkDirty = GetEntityQuery(new EntityQueryDesc[]
             {

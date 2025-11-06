@@ -20,7 +20,6 @@ namespace BelzontWE
     {
         #region Prefab Layout
         public void MarkPrefabsDirty() => isPrefabListDirty = true;
-        public void MarkTemplatesDirty() => m_templatesDirty = true;
         private readonly Dictionary<string, HashSet<long>> PrefabNameToIndex = new();
         private Dictionary<(string prefabName, int meshIdx), ObjectState> MeshesHidden = new();
         private bool isPrefabListDirty = true;
@@ -180,6 +179,7 @@ namespace BelzontWE
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + totalStepPrefabTemplates), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingComplete");
             new WEAddAndEnableComponentJob<WETemplateForPrefabDirty>
             {
+                m_componentLkp = GetComponentLookup<WETemplateForPrefabDirty>(true),
                 m_EntityType = GetEntityTypeHandle(),
                 m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
             }.ScheduleParallel(m_prefabsToMarkDirty, Dependency).Complete();

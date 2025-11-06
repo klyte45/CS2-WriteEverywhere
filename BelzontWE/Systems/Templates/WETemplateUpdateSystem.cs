@@ -1,13 +1,13 @@
-using BelzontWE.Utils;
-using Colossal.Serialization.Entities;
 using Game;
 using Game.Common;
 using Game.Prefabs;
 using Game.Rendering;
 using Game.Tools;
+using Unity.Burst;
+using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
-using UnityEngine;
+using Unity.Jobs;
 
 namespace BelzontWE
 {
@@ -25,6 +25,7 @@ namespace BelzontWE
 
         // Entity queries moved from WETemplateManager
         private EntityQuery m_templateBasedEntities;
+        private EntityQuery m_entitiesWaitingRendering;
         private EntityQuery m_uncheckedWePrefabLayoutQuery;
         private EntityQuery m_dirtyWePrefabLayoutQuery;
         private EntityQuery m_dirtyInstancingWeQuery;
@@ -51,6 +52,20 @@ namespace BelzontWE
                     None = new ComponentType[]
                     {
                         ComponentType.ReadOnly<WEWaitingRendering>(),
+                        ComponentType.ReadOnly<Deleted>(),
+                    }
+                }
+            });
+            m_entitiesWaitingRendering = GetEntityQuery(new EntityQueryDesc[]
+            {
+                new ()
+                {
+                    All = new ComponentType[]
+                    {
+                        ComponentType.ReadOnly<WEWaitingRendering>(),
+                    },
+                    None = new ComponentType[]
+                    {
                         ComponentType.ReadOnly<Deleted>(),
                     }
                 }
@@ -174,53 +189,43 @@ namespace BelzontWE
                     }
                 }
             });
+
+        }
+
+        [BurstCompile]
+        private struct WEReadFirstEntities : IJobChunk
+        {
+            public NativeArray<Entity> output;
+            public EntityTypeHandle m_EntityType;
+            public int entitiesEachChunk;
+
+            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+            {
+                var entities = chunk.GetNativeArray(m_EntityType);
+                var baseIndex = entitiesEachChunk * unfilteredChunkIndex;
+                for (int i = 0; i < entitiesEachChunk && i < entities.Length; i++)
+                {
+                    output[baseIndex + i] = entities[i];
+                }
+            }
         }
 
         protected override void OnUpdate()
         {
             if (m_manager.IsGameLoadingOrInitializing || m_manager.IsLoadingLayouts || !WriteEverywhereCS2Mod.IsInitializationComplete) return;
 
-            // Handle template dirty flag
-            if (m_manager.TemplatesDirty)
-            {
-                EntityManager.AddComponent<WEWaitingRendering>(m_templateBasedEntities);
-                EntityManager.SetComponentEnabled<WEWaitingRendering>(m_templateBasedEntities, true);
-                m_manager.ClearTemplatesDirty();
-            }
-
             // Process entity updates in priority order
             if (m_manager.UpdatingEntitiesOnMain == null)
             {
-                if (!m_prefabArchetypesToBeUpdatedInMain.IsEmpty)
+
+                if (m_manager.TemplatesDirty && m_entitiesWaitingRendering.IsEmpty)
                 {
-                    var entitiesToUpdate = m_prefabArchetypesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
-                    m_manager.UpdatePrefabArchetypes(entitiesToUpdate);
-                    entitiesToUpdate.Dispose();
+                    EntityManager.AddComponent<WEWaitingRendering>(m_templateBasedEntities);
+                    EntityManager.SetComponentEnabled<WEWaitingRendering>(m_templateBasedEntities, true);
+                    m_manager.ClearTemplatesDirty();
+                    return;
                 }
-                if (!m_entitiesToBeUpdatedInMain.IsEmpty)
-                {
-                    var entitiesToUpdate = m_entitiesToBeUpdatedInMain.ToArchetypeChunkArray(Allocator.Persistent);
-                    m_manager.UpdateLayouts(entitiesToUpdate);
-                    entitiesToUpdate.Dispose();
-                }
-                if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
-                {
-                    var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
-                    foreach (var i in m_manager.GetPrefabTemplatesReadOnly())
-                    {
-                        keysWithTemplate[i.Key] = i.Value.Guid;
-                    }
-                    Dependency = new WEPrefabTemplateFilterJob
-                    {
-                        m_tempLkp = GetComponentLookup<Temp>(true),
-                        m_EntityType = GetEntityTypeHandle(),
-                        m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>(true),
-                        m_prefabDataLkp = GetComponentLookup<PrefabData>(true),
-                        m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-                        m_indexesWithLayout = keysWithTemplate,
-                    }.ScheduleParallel(m_uncheckedWePrefabLayoutQuery, Dependency);
-                    keysWithTemplate.Dispose(Dependency);
-                }
+
                 if (!m_dirtyWePrefabLayoutQuery.IsEmpty)
                 {
                     var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
@@ -240,7 +245,75 @@ namespace BelzontWE
                         m_templateUpdaterLkp = GetBufferLookup<WETemplateUpdater>(true),
                     }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
                     keysWithTemplate.Dispose(Dependency);
+                    return;
                 }
+
+                if (!m_prefabArchetypesToBeUpdatedInMain.IsEmpty)
+                {
+                    NativeArray<Entity> outputArray;
+                    if (m_prefabArchetypesToBeUpdatedInMain.CalculateEntityCount() > 10_000)
+                    {
+                        var chunkCount = m_prefabArchetypesToBeUpdatedInMain.CalculateChunkCountWithoutFiltering();
+                        var sizeEachIterationPerChunk = 10_000 / chunkCount;
+                        outputArray = new NativeArray<Entity>(sizeEachIterationPerChunk * chunkCount, Allocator.Temp);
+                        new WEReadFirstEntities
+                        {
+                            entitiesEachChunk = sizeEachIterationPerChunk,
+                            m_EntityType = GetEntityTypeHandle(),
+                            output = outputArray
+                        }.ScheduleParallel(m_prefabArchetypesToBeUpdatedInMain, Dependency).Complete();
+                    }
+                    else
+                    {
+                        outputArray = m_prefabArchetypesToBeUpdatedInMain.ToEntityArray(Allocator.Temp);
+                    }
+                    m_manager.UpdatePrefabArchetypes(outputArray);
+                    outputArray.Dispose();
+                    return;
+                }
+                if (!m_entitiesToBeUpdatedInMain.IsEmpty)
+                {
+                    NativeArray<Entity> outputArray;
+                    if (m_entitiesToBeUpdatedInMain.CalculateEntityCount() > 10_000)
+                    {
+                        var chunkCount = m_entitiesToBeUpdatedInMain.CalculateChunkCountWithoutFiltering();
+                        var sizeEachIterationPerChunk = 10_000 / chunkCount;
+                        outputArray = new NativeArray<Entity>(sizeEachIterationPerChunk * chunkCount, Allocator.Temp);
+                        new WEReadFirstEntities
+                        {
+                            entitiesEachChunk = sizeEachIterationPerChunk,
+                            m_EntityType = GetEntityTypeHandle(),
+                            output = outputArray
+                        }.ScheduleParallel(m_entitiesToBeUpdatedInMain, Dependency).Complete();
+                    }
+                    else
+                    {
+                        outputArray = m_entitiesToBeUpdatedInMain.ToEntityArray(Allocator.Temp);
+                    }
+
+                    m_manager.UpdateLayouts(outputArray);
+                    outputArray.Dispose();
+                    return;
+                }
+                if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
+                {
+                    var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
+                    foreach (var i in m_manager.GetPrefabTemplatesReadOnly())
+                    {
+                        keysWithTemplate[i.Key] = i.Value.Guid;
+                    }
+                    Dependency = new WEPrefabTemplateFilterJob
+                    {
+                        m_tempLkp = GetComponentLookup<Temp>(true),
+                        m_EntityType = GetEntityTypeHandle(),
+                        m_prefabRefHdl = GetComponentTypeHandle<PrefabRef>(true),
+                        m_prefabDataLkp = GetComponentLookup<PrefabData>(true),
+                        m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+                        m_indexesWithLayout = keysWithTemplate,
+                    }.ScheduleParallel(m_uncheckedWePrefabLayoutQuery, Dependency);
+                    keysWithTemplate.Dispose(Dependency);
+                }
+
                 if (!m_dirtyInstancingWeQuery.IsEmpty)
                 {
                     var chunks = m_dirtyInstancingWeQuery.ToArchetypeChunkArray(Allocator.Persistent);

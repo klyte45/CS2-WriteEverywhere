@@ -10,7 +10,7 @@ namespace BelzontWE
     /// System responsible for disposing entities and components marked for removal.
     /// Handles proper cleanup of WETextData components and their associated resources.
     /// </summary>
-    public partial class WETemplateDisposalSystem : SystemBase
+    public partial class WETemplateDisposalSystem : GameSystemBase
     {
         private EndFrameBarrier m_endFrameBarrier;
         private EntityQuery m_componentsToDispose;
@@ -56,6 +56,11 @@ namespace BelzontWE
                 }
            });
             RequireAnyForUpdate(m_componentsToDispose, m_templatesToDispose);
+        }
+
+        public override int GetUpdateInterval(SystemUpdatePhase phase)
+        {
+            return 256;
         }
 
         protected override void OnUpdate()

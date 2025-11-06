@@ -11,6 +11,7 @@ namespace BelzontWE.Utils
     {
         [ReadOnly]
         public EntityTypeHandle m_EntityType;
+        public ComponentLookup<T> m_componentLkp;
 
         public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 
@@ -20,8 +21,14 @@ namespace BelzontWE.Utils
 
             for (int i = 0; i < entities.Length; i++)
             {
-                m_CommandBuffer.AddComponent<T>(unfilteredChunkIndex, entities[i]);
-                m_CommandBuffer.SetComponentEnabled<T>(unfilteredChunkIndex, entities[i], true);
+                if (m_componentLkp.HasComponent(entities[i]))
+                {
+                    m_CommandBuffer.SetComponentEnabled<T>(unfilteredChunkIndex, entities[i], true);
+                }
+                else
+                {
+                    m_CommandBuffer.AddComponent<T>(unfilteredChunkIndex, entities[i]);
+                }
             }
         }
     }
