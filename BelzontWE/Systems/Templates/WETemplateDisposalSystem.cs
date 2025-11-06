@@ -14,6 +14,7 @@ namespace BelzontWE
     {
         private EndFrameBarrier m_endFrameBarrier;
         private EntityQuery m_componentsToDispose;
+        private EntityQuery m_templateUpdaterToDispose;
         private EntityQuery m_templatesToDispose;
 
         protected override void OnCreate()
@@ -33,7 +34,6 @@ namespace BelzontWE
                     {
                         ComponentType.ReadOnly<WETextDataMain>(),
                         ComponentType.ReadOnly<WETextDataMaterial>(),
-                        ComponentType.ReadOnly<WETemplateUpdater>(),
                     },
                     None = new ComponentType[]
                     {
@@ -41,6 +41,20 @@ namespace BelzontWE
                     }
                 },
             });
+            m_templateUpdaterToDispose = GetEntityQuery(new EntityQueryDesc[]
+           {
+                new ()
+                {
+                    Any = new ComponentType[]
+                    {
+                        ComponentType.ReadOnly<WETemplateUpdater>(),
+                    },
+                    None = new ComponentType[]
+                    {
+                        ComponentType.ReadOnly<WETextComponentValid>(),
+                    }
+                }
+           });
             m_templatesToDispose = GetEntityQuery(new EntityQueryDesc[]
            {
                 new ()
@@ -105,8 +119,20 @@ namespace BelzontWE
                 {
                     m_EntityType = GetEntityTypeHandle(),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-                    m_WETemplateForPrefabLkp = GetComponentLookup<WETemplateForPrefab>(true),
+                    m_WETemplateForPrefabLkp = GetComponentTypeHandle<WETemplateForPrefab>(true),
                 }.ScheduleParallel(m_templatesToDispose, Dependency).Complete();
+
+            }
+            if (m_templateUpdaterToDispose.CalculateChunkCount() > 0)
+            {
+
+                // Schedule the disposal job
+                new WETemplateUpdaterDisposalJob
+                {
+                    m_EntityType = GetEntityTypeHandle(),
+                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+                    m_WETemplateForPrefabHnd = GetBufferTypeHandle<WETemplateUpdater>(true),
+                }.ScheduleParallel(m_templateUpdaterToDispose, Dependency).Complete();
 
             }
         }
@@ -150,27 +176,50 @@ namespace BelzontWE
         private unsafe struct WETemplateDisposalJob : IJobChunk
         {
             public EntityTypeHandle m_EntityType;
-            [ReadOnly] public ComponentLookup<WETemplateForPrefab> m_WETemplateForPrefabLkp;
+            [ReadOnly] public ComponentTypeHandle<WETemplateForPrefab> m_WETemplateForPrefabLkp;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
                 var entities = chunk.GetNativeArray(m_EntityType);
+                var templateDatas = chunk.GetNativeArray(ref m_WETemplateForPrefabLkp);
 
                 // Queue component removal and entity destruction commands
                 for (int i = 0; i < entities.Length; i++)
                 {
                     var entity = entities[i];
+                    var templateData = templateDatas[i];
 
-                    m_CommandBuffer.RemoveComponent<WETextDataMesh>(unfilteredChunkIndex, entity);
-                    m_CommandBuffer.RemoveComponent<WETextDataMaterial>(unfilteredChunkIndex, entity);
+                    m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, templateData.childEntity);
+                    m_CommandBuffer.RemoveComponent<WETemplateForPrefab>(unfilteredChunkIndex, entity);
+                    m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, entity);
+                }
+            }
+        }
+        private unsafe struct WETemplateUpdaterDisposalJob : IJobChunk
+        {
+            public EntityTypeHandle m_EntityType;
+            [ReadOnly] public BufferTypeHandle<WETemplateUpdater> m_WETemplateForPrefabHnd;
+            public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
 
-                    if (m_WETemplateForPrefabLkp.TryGetComponent(entity, out var prefabData))
+            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+            {
+                var entities = chunk.GetNativeArray(m_EntityType);
+                var templateUpdaters = chunk.GetBufferAccessor(ref m_WETemplateForPrefabHnd);
+                for (int i = 0; i < entities.Length; i++)
+                {
+                    var entity = entities[i];
+                    var updaterBuffer = templateUpdaters[i];
+
+                    for (var j = 0; j < updaterBuffer.Length; j++)
                     {
-                        m_CommandBuffer.RemoveComponent<WETemplateForPrefab>(unfilteredChunkIndex, entity);
-                        m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, prefabData.childEntity);
+                        var updater = updaterBuffer[j];
+                        m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, updater.childEntity);
                     }
 
+                    var buffer = m_CommandBuffer.SetBuffer<WETemplateUpdater>(unfilteredChunkIndex, entity);
+                    buffer.Clear();
+                    m_CommandBuffer.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, entity);
                     m_CommandBuffer.DestroyEntity(unfilteredChunkIndex, entity);
                 }
             }
