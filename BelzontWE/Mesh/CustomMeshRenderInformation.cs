@@ -61,7 +61,7 @@ namespace BelzontWE
             normals = descriptor.Normals.ToArray();
             triangles = descriptor.Triangles.ToArray();
 
-            Bounds = new Bounds3(vertices.Aggregate(new float3(float.MaxValue, float.MaxValue, float.MaxValue), (p, n) => math.min(p, n)), vertices.Aggregate(new float3(float.MinValue, float.MinValue, float.MinValue), (p, n) => math.min(p, n)));
+            Bounds = new Bounds3(vertices.Aggregate(new float3(float.MaxValue, float.MaxValue, float.MaxValue), (p, n) => math.min(p, n)), vertices.Aggregate(new float3(float.MinValue, float.MinValue, float.MinValue), (p, n) => math.max(p, n)));
         }
 
         public void SetNewBounds(Vector2 minUV, Vector2 maxUV)

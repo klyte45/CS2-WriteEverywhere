@@ -29,6 +29,7 @@ namespace BelzontWE
             public Entity textDataEntity;
             public Entity geometryEntity;
             public Matrix4x4 transformMatrix;
+            public byte lastLod;
         }
 
         protected override void OnCreate()
@@ -402,6 +403,7 @@ namespace BelzontWE
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
                                     transformMatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, -.001f)), transform.offsetRotation, scale2),
+                                    lastLod = (byte)lod
                                 });
                             }
                             if (transform.MustDraw)
@@ -441,7 +443,8 @@ namespace BelzontWE
                                 {
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
-                                    transformMatrix = WTmatrix
+                                    transformMatrix = WTmatrix,
+                                    lastLod = (byte)lod
                                 });
                             }
 
@@ -476,6 +479,7 @@ namespace BelzontWE
                                     textDataEntity = nextEntity,
                                     geometryEntity = geometryEntity,
                                     transformMatrix = WTmatrix,
+                                    lastLod = (byte)lod
                                 });
                             }
 
@@ -561,6 +565,7 @@ namespace BelzontWE
                                             textDataEntity = nextEntity,
                                             geometryEntity = geometryEntity,
                                             transformMatrix = matrix,
+                                            lastLod = (byte)lod
                                         });
                                     }
                                 }
@@ -572,13 +577,6 @@ namespace BelzontWE
                             else
                             {
                                 CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, 2000);
-                                // Optimize: Reuse material and mesh variables
-                                m_newItemsRender.Enqueue(new WERenderData
-                                {
-                                    textDataEntity = nextEntity,
-                                    geometryEntity = geometryEntity,
-                                    transformMatrix = matrix,
-                                });
                             }
                             if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout))
                             {

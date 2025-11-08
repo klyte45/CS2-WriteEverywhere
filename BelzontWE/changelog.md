@@ -1,9 +1,13 @@
-# v0.5.4r2 (06-NOV-25)
+# v0.5.4r3 (08-NOV-25)
+- Fixed issue that was preventing lod from custom meshes to be correctly calculated, preventing their formulaes to update.
+- Optimizing quantity of items rendered, ignoring while they are yet processing
+
+## FROM v0.5.4r2 (06-NOV-25)
 
 - Fixed errors relative to reloading default layouts.
 - Fixed garbage from disposed templates causing slowdown on long run.
 
-## FROM v0.5.4r1 (05-NOV-25)
+# v0.5.4r1 (05-NOV-25)
 
 - Fixed issue related to template disposal causing errors and crashes
 
