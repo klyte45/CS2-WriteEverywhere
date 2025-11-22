@@ -239,7 +239,7 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
             return <Scrollable className="k45_we_moduleOptionsTab">
                 <FocusDisabled>
                     {currentOptions.map(([i18n, optionObj], i) => {
-                        return <OptionRow key={i} selectedModule={selectedMod!} i18n={i18n} optionObj={optionObj} tabBuildIdx={tabBuildIdx} />;
+                        return <OptionRow key={selectedMod + "_" + i} selectedModule={selectedMod!} i18n={i18n} optionObj={optionObj} tabBuildIdx={tabBuildIdx} />;
                     })}
                 </FocusDisabled>
             </Scrollable>

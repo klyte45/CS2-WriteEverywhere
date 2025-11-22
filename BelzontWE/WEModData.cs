@@ -72,15 +72,26 @@ namespace BelzontWE
         public const string kActionToggleLockCameraRotation = "K45_WE_ToggleLockCameraRotation";
 
         private static readonly int[] m_qualityArray = new[] { 50, 75, 100, 125, 150, 200, 400, 800 };
-        private static readonly int[] m_framesUpdate = new[] { 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff };
+        private static readonly int[] m_framesUpdate = new[] { 0xf, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff };
 
         public static WEModData InstanceWE => Instance as WEModData;
         public WEModData(IMod mod) : base(mod)
         {
+            RequiredLodForFormulaesUpdate = 150;
+            FramesCheckUpdate = 1;
         }
         public override void OnSetDefaults()
         {
+            RequiredLodForFormulaesUpdate = 150;
+            FramesCheckUpdate = 1;
         }
+        [SettingsUISection(kSourcesTab, null)]
+        public bool TempDisableRendering { get; set; } = false;
+
+        [SettingsUISlider(min = 110, max = 160, step = 2.5f, scalarMultiplier = 1)]
+        [SettingsUISection(kSourcesTab, null)]
+        public float RequiredLodForFormulaesUpdate { get; set; } = 150;
+
 
         [SettingsUIDropdown(typeof(WEModData), nameof(StartTextureSizeFontValues))]
         [SettingsUISection(kSourcesTab, kFontsSection)]
@@ -111,9 +122,9 @@ namespace BelzontWE
 
         [SettingsUIDropdown(typeof(WEModData), nameof(FramesCheckUpdateValues))]
         [SettingsUISection(kSourcesTab, kFontsSection)]
-        public int FramesCheckUpdate { get; set; } = 0;
+        public int FramesCheckUpdate { get; set; } = 1;
         public int FramesCheckUpdateVal => m_framesUpdate[FramesCheckUpdate];
-        private DropdownItem<int>[] FramesCheckUpdateValues() => m_framesUpdate.Select((x, i) => new DropdownItem<int> { value = i, displayName = $"{x + 1:0} Frames {(i == 0 ? $" (Default)" : "")}" }).ToArray();
+        private DropdownItem<int>[] FramesCheckUpdateValues() => m_framesUpdate.Select((x, i) => new DropdownItem<int> { value = i, displayName = i == 0 ? "32 Frames (Fixed)" : $"{x + 1:0} ~ {(x + 1) * 2:0} Frames {(i == 1 ? $" (Default)" : "")}" }).ToArray();
 
         [SettingsUIButton]
         [SettingsUISection(kSourcesTab, kFontsSection)]

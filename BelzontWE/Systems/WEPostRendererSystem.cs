@@ -48,7 +48,6 @@ namespace BelzontWE
                     {
                         ComponentType.ReadOnly<Temp>(),
                         ComponentType.ReadOnly<Deleted>(),
-                        ComponentType.ReadOnly<WEPlaceholderToBeProcessedInMain>(),
                     }
                 }
             });
@@ -59,11 +58,11 @@ namespace BelzontWE
         protected override void OnUpdate()
         {
             if (GameManager.instance.isGameLoading) return;
-            var cmdBuff = m_endFrameBarrier.CreateCommandBuffer();
-            if (!m_pendingQueueEntities.IsEmptyIgnoreFilter)
+            if (!m_pendingQueueEntities.IsEmpty)
             {
+                var cmdBuff = m_endFrameBarrier.CreateCommandBuffer();
                 var layoutsAvailable = new NativeArray<FixedString128Bytes>(m_templateManager.GetTemplateAvailableKeys(), Allocator.TempJob);
-                Dependency = new WETextImageDataUpdateJob
+                new WETextImageDataUpdateJob
                 {
                     m_EntityType = GetEntityTypeHandle(),
                     m_entityLookup = GetEntityStorageInfoLookup(),
@@ -76,13 +75,13 @@ namespace BelzontWE
                     m_WeMainLkp = GetComponentLookup<WETextDataMain>(true),
                     m_WeIsPlaceholderLkp = GetComponentLookup<WEIsPlaceholder>(true),
                     m_templateManagerEntries = layoutsAvailable
-                }.Schedule(m_pendingQueueEntities, Dependency);
+                }.Schedule(m_pendingQueueEntities, Dependency).Complete();
 
-                layoutsAvailable.Dispose(Dependency);
+                layoutsAvailable.Dispose();
             }
-            Dependency.Complete();
         }
 
+        private static IBasicRenderInformation cachedEmpty;
 
         private unsafe struct WETextImageDataUpdateJob : IJobChunk
         {
@@ -117,22 +116,23 @@ namespace BelzontWE
                         return;
                     }
 
+                    weMeshData.ClearTemplateDirty();
                     switch (weMeshData.TextType)
                     {
                         case WESimulationTextType.Text:
                             if (UpdateTextMesh(entity, ref weMeshData, weMeshData.ValueData.EffectiveValue.ToString(), unfilteredChunkIndex, m_CommandBuffer, fontDict))
                             {
-                                if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.RemoveComponent<WEIsPlaceholder>(unfilteredChunkIndex, entity);
+                                if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.SetComponentEnabled<WEIsPlaceholder>(unfilteredChunkIndex, entity, false);
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
-                                m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
+                                m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
                             }
                             break;
                         case WESimulationTextType.Image:
                             if (UpdateImageMesh(entity, ref weMeshData, weMeshData.ValueData.EffectiveValue.ToString(), unfilteredChunkIndex, m_CommandBuffer))
                             {
-                                if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.RemoveComponent<WEIsPlaceholder>(unfilteredChunkIndex, entity);
+                                if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.SetComponentEnabled<WEIsPlaceholder>(unfilteredChunkIndex, entity, false);
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
-                                m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
+                                m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
                             }
                             break;
                         case WESimulationTextType.Placeholder:
@@ -141,15 +141,19 @@ namespace BelzontWE
                                 if (!m_WeIsPlaceholderLkp.HasComponent(entity))
                                 {
                                     m_CommandBuffer.AddComponent<WEIsPlaceholder>(unfilteredChunkIndex, entity);
+                                    m_CommandBuffer.SetComponentEnabled<WEIsPlaceholder>(unfilteredChunkIndex, entity, true);
                                     m_CommandBuffer.AddComponent<WETemplateDirtyInstancing>(unfilteredChunkIndex, entity);
+                                    m_CommandBuffer.SetComponentEnabled<WETemplateDirtyInstancing>(unfilteredChunkIndex, entity, true);
                                 }
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weCustomData);
-                                m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
+                                m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
+                                m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
                             }
                             break;
                         default:
-                            if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.RemoveComponent<WEIsPlaceholder>(unfilteredChunkIndex, entity);
-                            m_CommandBuffer.RemoveComponent<WEWaitingRendering>(unfilteredChunkIndex, entity);
+                            if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.SetComponentEnabled<WEIsPlaceholder>(unfilteredChunkIndex, entity, false);
+                            m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
+                            m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
                             break;
 
                     }
@@ -219,12 +223,13 @@ namespace BelzontWE
             }
 
 
+
             private bool UpdateTextMesh(Entity e, ref WETextDataMesh weCustomData, string text, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, Dictionary<FixedString64Bytes, FontSystemData> fontDict)
             {
                 if (m_templateUpdaterLkp.HasBuffer(e)) cmd.RemoveComponent<WETemplateUpdater>(unfilteredChunkIndex, e);
                 if (text.Trim() == "")
                 {
-                    weCustomData = weCustomData.UpdateBRI(new PrimitiveRenderInformation("", new UnityEngine.Vector3[0], new int[0], new UnityEngine.Vector2[0], default, null), "");
+                    weCustomData = weCustomData.UpdateBRI(cachedEmpty ??= new PrimitiveRenderInformation("", [], [], [], default, null), "");
                     return true;
                 }
                 var font = fontDict.TryGetValue(weCustomData.FontName, out var fsd) ? fsd : FontServer.Instance.DefaultFont;

@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <TargetFramework>net472</TargetFramework>
     <Configurations>Debug;Release</Configurations>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>12.0</LangVersion>
     <DebugType Condition="'$(Configuration)'=='Release'">None</DebugType>
     <DebugSymbols Condition="'$(Configuration)'=='Release'">False</DebugSymbols>
     <DebugType Condition="'$(Configuration)'=='Debug'">embedded</DebugType>

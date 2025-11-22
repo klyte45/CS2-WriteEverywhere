@@ -10,7 +10,6 @@ using Unity.Collections;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using System;
-using static Game.Rendering.Debug.RenderPrefabRenderer;
 
 
 
@@ -100,7 +99,7 @@ namespace BelzontWE
             }
         }
 #if BURST
-        [BurstCompile]
+        [Unity.Burst.BurstCompile]
 #endif
         private struct NodeCacheCalculation : IJobChunk
         {

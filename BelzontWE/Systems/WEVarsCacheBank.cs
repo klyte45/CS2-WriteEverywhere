@@ -20,7 +20,7 @@ namespace BelzontWE
                 if (!dictStorage.TryGetValue(str, out var index))
                 {
                     index = listStorage.Count;
-                    listStorage.Add(str.ToString().Split(WERendererSystem.VARIABLE_ITEM_SEPARATOR).Select(x => x.Split(WERendererSystem.VARIABLE_KV_SEPARATOR, 2))
+                    listStorage.Add(str.ToString().Split(WEPreCullingSystem.VARIABLE_ITEM_SEPARATOR).Select(x => x.Split(WEPreCullingSystem.VARIABLE_KV_SEPARATOR, 2))
                         .Where(x => x.Length == 2).GroupBy(x => x[0]).ToDictionary(x => x.Key, x => x.Last()[1]));
                     dictStorage[str] = index;
                 }

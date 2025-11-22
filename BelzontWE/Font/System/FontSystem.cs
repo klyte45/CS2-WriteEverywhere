@@ -4,17 +4,17 @@ using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Font.Utility;
 using BelzontWE.Sprites;
+using Colossal.OdinSerializer.Utilities;
 using Game.SceneFlow;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
+using static Unity.Collections.Unicode;
 using Color = UnityEngine.Color;
 
 namespace BelzontWE.Font
@@ -128,30 +128,6 @@ namespace BelzontWE.Font
             }
         }
 
-        private static void AddTriangleIndices(IList<int> triangles)
-        {
-            int count = triangles.Count * 2 / 3;
-            for (int i = 0; i < kTriangleIndices.Length; i++)
-            {
-                triangles.Add(count + kTriangleIndices[i]);
-            }
-        }
-        private static void AddTriangleIndicesCube(IList<int> triangles)
-        {
-            int verricesCount = triangles.Count * 2 / 3;
-            for (int i = WERenderingHelper.kTriangleIndicesCube.Length - 1; i >= 0; i--)
-            {
-                triangles.Add(verricesCount + WERenderingHelper.kTriangleIndicesCube[i]);
-            }
-        }
-        private readonly static int[] kTriangleIndices = new int[]{
-                0,
-                1,
-                3,
-                3,
-                1,
-                2
-        };
 
         public void ResetCache()
         {
@@ -182,6 +158,14 @@ namespace BelzontWE.Font
 
         private static int GetCodepointIndex(int codepoint, Font f) => f.GetGlyphIndex(codepoint);
 
+        private static void EnsureAllGlyphsWithoutBitmap(NativeHashMap<int, FontGlyph> glyphs, IEnumerable<int> codepoints, FontSystemData data)
+        {
+            foreach (var cp in codepoints)
+            {
+                GetGlyphWithoutBitmap(glyphs, cp, data);
+            }
+        }
+
 
         private static FontGlyph GetGlyphWithoutBitmap(NativeHashMap<int, FontGlyph> glyphs, int codepoint, FontSystemData data)
         {
@@ -192,7 +176,7 @@ namespace BelzontWE.Font
 
             if (data.Font?.GetGlyphIndex(codepoint) is not int g || g == 0)
             {
-                return FontGlyph.Null;
+                return glyphs[codepoint] = FontGlyph.Null;
             }
             var font = data.Font;
             int advance = 0, lsb = 0, x0 = 0, y0 = 0, x1 = 0, y1 = 0;
@@ -278,7 +262,7 @@ namespace BelzontWE.Font
                 }
                 break;
             } while (true);
-            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Rendered glyph #{glyph} @ texture {CurrentAtlas.Texture}");
+            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Rendered glyph #{glyph} (unicode 0x{codepoint:X}) @ texture {CurrentAtlas.Texture}");
 
             glyph.AtlasGenerated = true;
 
@@ -287,37 +271,13 @@ namespace BelzontWE.Font
             return glyph;
         }
 
-        private FontGlyph GetGlyph(NativeHashMap<int, FontGlyph> glyphs, int codepoint, out bool hasResetted, bool ignoreDefaultChar = false)
+        private FontGlyph GetGlyph(NativeHashMap<int, FontGlyph> glyphs, int codepoint, out bool hasResetted)
         {
             FontGlyph result = GetGlyphInternal(glyphs, codepoint, out hasResetted);
-            if (!ignoreDefaultChar && DefaultCharacter != null)
-            {
-                result = GetGlyphInternal(glyphs, DefaultCharacter.Value, out hasResetted);
-            }
 
             return result;
         }
 
-        private unsafe static void GetQuad(ref FontGlyph glyph, ref FontGlyph prevGlyph, float spacingFactor, ref float x, ref float y, ref FontGlyphBounds q)
-        {
-            if (prevGlyph.IsValid)
-            {
-                float adv = prevGlyph.GetKerning(glyph) * glyph.Font.Scale;
-
-                x += (int)((adv + 0) * spacingFactor + 0.5f);
-            }
-            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"'{char.ConvertFromUtf32(glyph.Codepoint)}' = {glyph}");
-            float rx = x + glyph.XOffset;
-            float ry = y - glyph.YOffset - (glyph.Font.Capital * .5f);
-            q.X0 = rx;
-            q.Y1 = ry;
-            q.X1 = rx + glyph.width;
-            q.Y0 = ry - glyph.height;
-
-            x += glyph.XAdvance * .1f * spacingFactor;
-
-            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"x={x} y={y} Q={q}");
-        }
         private NativeHashMap<int, FontGlyph> GetGlyphsCollection(int size)
         {
             if (!_glyphs.IsCreated)
@@ -339,7 +299,9 @@ namespace BelzontWE.Font
         {
 
             var originalText = brij.originalText.ToString();
+
             if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] Post job for {originalText} ");
+
             if (brij.vertices.Length == 0)
             {
                 if (originalText.TrimToNull() is not null)
@@ -350,11 +312,14 @@ namespace BelzontWE.Font
             }
             if (brij.Invalid || brij.AtlasVersion != CurrentAtlas.Version)
             {
+
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] removing {originalText} since atlas changed");
+
                 m_textCache[originalText] = null;
                 itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
                 return;
             }
+
             var result = PrimitiveRenderInformation.Fill(brij, CurrentAtlas.Texture);
             if (result is null)
             {
@@ -389,7 +354,7 @@ namespace BelzontWE.Font
             _currentAtlas?.Dispose();
         }
 
-        private const int queueConsumptionFrame = 256;
+        private const int QUEUE_CONSUMPTION_FRAME = 256;
         private byte framesBuffering = 0;
 
         public unsafe struct StringRenderingQueueItem
@@ -397,30 +362,22 @@ namespace BelzontWE.Font
             public FixedString512Bytes text;
         }
 
-        private static IEnumerable Enumerate(IEnumerator enumerator)
-        {
-            while (enumerator.MoveNext())
-            {
-                yield return enumerator.Current;
-            }
-            ;
-        }
         public JobHandle RunJobs(JobHandle dependency)
         {
             if (!m_textCache.ContainsKey(""))
             {
                 m_textCache[""] = new PrimitiveRenderInformation("", new Vector3[0], new int[0], new Vector2[0], default, null);
             }
-            if (itemsQueue.Count >= queueConsumptionFrame || framesBuffering++ > 60)
+            if (itemsQueue.Count >= QUEUE_CONSUMPTION_FRAME || framesBuffering++ > 60)
             {
                 framesBuffering = 0;
                 if (itemsQueue.Count != 0)
                 {
                     NativeArray<StringRenderingQueueItem> itemsStarted;
-                    if (itemsQueue.Count > queueConsumptionFrame)
+                    if (itemsQueue.Count > QUEUE_CONSUMPTION_FRAME)
                     {
-                        itemsStarted = new(queueConsumptionFrame, Allocator.TempJob);
-                        for (int i = 0; i < queueConsumptionFrame; i++)
+                        itemsStarted = new(QUEUE_CONSUMPTION_FRAME, Allocator.TempJob);
+                        for (int i = 0; i < QUEUE_CONSUMPTION_FRAME; i++)
                         {
                             itemsStarted[i] = itemsQueue.Dequeue();
                         }
@@ -432,13 +389,27 @@ namespace BelzontWE.Font
                     }
                     var glyphs = GetGlyphsCollection(FontHeight);
                     if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Gliphs collection size = {glyphs.Count}");
-                    var charsToRender = itemsStarted.ToArray().SelectMany(x => Enumerate(StringInfo.GetTextElementEnumerator(x.text.ToString())).Cast<string>()).GroupBy(x => x).Select(x => x.Key);
+                    var wordsToRender = itemsStarted.Select(x => GetRunes(x.text)).ToArray();
+                    var charsToRender = wordsToRender.SelectMany(x => x).GroupBy(x => x.value).Select(x => x.Key);
+
+                    static (Rune prev, Rune next) GetPairs(Rune current, int index, List<Rune> list) => index > 0 ? (list[index - 1], current) : default;
+
                     if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"charsToRender = ['{string.Join("', '", charsToRender)}']");
 
                     var countSucceeded = 0;
                     foreach (var charact in charsToRender)
                     {
-                        var result = GetGlyph(glyphs, char.ConvertToUtf32(charact, 0), out bool hasReseted);
+                        var result = GetGlyph(glyphs, charact, out bool hasReseted);
+                        if (!result.IsValid)
+                        {
+                            var normalizedChar = char.ConvertFromUtf32(charact).Normalize(System.Text.NormalizationForm.FormKD);
+                            if (BasicIMod.DebugMode) LogUtils.DoLog($"[FontSystem: {Name}] Normalizing char ID 0x{charact:X} ({char.ConvertFromUtf32(charact)}) got: {string.Join(", ", normalizedChar.ToArray().Select(x => "0x" + ((int)x).ToString("X")))}");
+                            if (normalizedChar.Length > 1)
+                            {
+                                result = GetGlyph(glyphs, char.ConvertToUtf32(normalizedChar, 0), out hasReseted);
+                                glyphs[charact] = result;
+                            }
+                        }
                         if (result.IsValid)
                         {
                             if (hasReseted)
@@ -452,17 +423,32 @@ namespace BelzontWE.Font
                         }
                     }
                     if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Glyphs rendered: {countSucceeded}");
+                    EnsureAllGlyphsWithoutBitmap(glyphs, charsToRender, Data);
+                    wordsToRender.SelectMany((x) => x.Select((y, i) => GetPairs(y, i, x))).Distinct().ForEach(x =>
+                    {
+                        if (glyphs[x.prev.value].IsValid && glyphs[x.next.value].IsValid)
+                        {
+                            glyphs[x.prev.value].GetKerning(glyphs[x.next.value]);
+                        }
+                    });
                     var job = new StringRenderingJob
                     {
-                        fsd = dataPointer,
+                        ascent = Data.Font.Ascent,
+                        descent = Data.Font.Descent,
+                        lineHeight = Data.Font.LineHeight,
+                        capital = Data.Font.Capital,
+                        fontScale = Data.Font.Scale,
                         CurrentAtlasSize = new Vector3(CurrentAtlas.Width, CurrentAtlas.Height),
                         inputArray = itemsStarted.AsReadOnly(),
-                        glyphs = GetGlyphsCollection(FontHeight),
+                        glyphs = glyphs,
                         output = results.AsParallelWriter(),
                         AtlasVersion = CurrentAtlas.Version,
-                        scale = FontServer.Instance.ScaleEffective
+                        scale = FontServer.Instance.ScaleEffective,
+                        TriangleIndices = TriangleIndices,
+                        VerticesPositionsCube = VerticesPositionsCube,
+                        TriangleIndicesCube = TriangleIndicesCube,
                     };
-                    dependency = job.Schedule(itemsStarted.Length, 32, dependency);
+                    dependency = job.ScheduleParallel(itemsStarted.Length, 32, dependency);
                     itemsStarted.Dispose(dependency);
                     dependency.Complete();
                 }
@@ -471,13 +457,37 @@ namespace BelzontWE.Font
             while (results.TryDequeue(out var result))
             {
                 PostJob(result);
-                if (++postJobCounter > queueConsumptionFrame)
+                if (++postJobCounter > QUEUE_CONSUMPTION_FRAME)
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Skipping next frame; strings yet to process at font {Name}: {results.Count}");
                     break;
                 }
             }
             return dependency;
+        }
+
+
+        private List<Rune> GetRunes(FixedString512Bytes text)
+        {
+            var runes = new List<Rune>();
+            var enumerator = text.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                runes.Add(enumerator.Current);
+            }
+            return runes;
+        }
+        private static readonly NativeArray<int> TriangleIndicesCube;
+        private static readonly NativeArray<Vector3> VerticesPositionsCube;
+        private static readonly NativeArray<int> TriangleIndices;
+
+
+
+        static FontSystem()
+        {
+            TriangleIndicesCube = new NativeArray<int>(WERenderingHelper.kTriangleIndicesCube.Reverse().ToArray(), Allocator.Persistent);
+            VerticesPositionsCube = new NativeArray<Vector3>(WERenderingHelper.kVerticesPositionsCube, Allocator.Persistent);
+            TriangleIndices = new(WERenderingHelper.kTriangleIndices.Reverse().ToArray(), Allocator.Persistent);
         }
     }
 }

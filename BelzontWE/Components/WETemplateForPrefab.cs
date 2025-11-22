@@ -9,8 +9,8 @@ namespace BelzontWE
         public Colossal.Hash128 templateRef;
         public Entity childEntity;
     }
-    public struct WETemplateForPrefabDirty : IComponentData, IQueryTypeParameter { }
-    public struct WETemplateDirtyInstancing : IComponentData, IQueryTypeParameter { }
+    public struct WETemplateForPrefabDirty : IComponentData, IQueryTypeParameter, IEnableableComponent  { }
+    public struct WETemplateDirtyInstancing : IComponentData, IQueryTypeParameter, IEnableableComponent { }
     public struct WETemplateForPrefabEmpty : IComponentData, IQueryTypeParameter { }
-    public struct WETemplateForPrefabToRunOnMain : IComponentData, IQueryTypeParameter { }
+    public struct WETemplateForPrefabToRunOnMain : IComponentData, IQueryTypeParameter, IEnableableComponent { }
 }

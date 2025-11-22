@@ -53,7 +53,7 @@ namespace BelzontWE.Bridge
         {
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly);
             modIdentifier = modData.asset.identifier;
-            displayName = modData.asset.mod.displayName;
+            displayName = modData.asset.GetMeta().displayName;
             targetAtlasName = WEModIntegrationUtility.GetModAccessName(mainAssembly, atlasName);
             notifGroup = $"{WEAtlasesLibrary.LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX}:{targetAtlasName}";
             args = new()

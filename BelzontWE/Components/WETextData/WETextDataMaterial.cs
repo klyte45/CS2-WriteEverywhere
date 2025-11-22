@@ -233,7 +233,7 @@ namespace BelzontWE
             if (mesh.TextType == WESimulationTextType.MatrixTransform)
             {
                 result = default;
-                return true;
+                return false;
             }
             var bri = (mesh.TextType) switch
             {
@@ -264,8 +264,7 @@ namespace BelzontWE
                     case WESimulationTextType.Text:
                         if (!bri.IsValid())
                         {
-                            mesh.ResetBri();
-                            return true;
+                            return false;
                         }
                         break;
                 }

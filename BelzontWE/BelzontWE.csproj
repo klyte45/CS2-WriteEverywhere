@@ -15,13 +15,14 @@
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
   <Import Project="$(SolutionDir)\_Build\belzont_public.targets" />
+  <Import Project="$(SolutionDir)\..\_Shared\local_shared.targets" />
 
   <!--Mod data-->
   <PropertyGroup>
     <ModId>92908</ModId>
-    <Version>0.5.0.1</Version>
+    <Version>0.6.0.0</Version>
     <Version Condition="'$(Configuration)'=='Debug'">65534.$([System.DateTime]::Now.ToString("yyyy.Mdd.HHmm"))</Version>
-    <GameVersion>1.3.*</GameVersion>
+    <GameVersion>1.5.*</GameVersion>
     <ThumbnailPath>Properties/Thumbnail.png</ThumbnailPath>
     <DisplayName>Write Everywhere</DisplayName> 
     <ShortDescription>Write texts in the CS2 world!</ShortDescription>
@@ -119,6 +120,9 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.VirtualTexturingModule">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Cinemachine">
       <Private>False</Private>
     </Reference>
   </ItemGroup>

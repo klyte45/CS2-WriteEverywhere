@@ -590,10 +590,11 @@ namespace BelzontWE.Sprites
 
         internal record struct ModAtlasRegistry(string ModId, string ModName, string[] Atlases) { }
         internal ModAtlasRegistry[] ListModAtlases() => RegisteredModsAtlases
-            .Select(x => new ModAtlasRegistry(WEModIntegrationUtility.GetModIdentifier(x.Value.info.asset.assembly), x.Value.info.asset.mod.displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
+            .Select(x => new ModAtlasRegistry(WEModIntegrationUtility.GetModIdentifier(x.Value.info.asset.assembly), x.Value.info.asset.GetMeta().displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
 
-
-        [BurstCompile]
+#if BURST
+        [Unity.Burst.BurstCompile]
+#endif
         private unsafe struct WEPlaceholcerAtlasesUsageCount : IJobChunk
         {
             public FixedString512Bytes atlasToCheck;
@@ -610,7 +611,7 @@ namespace BelzontWE.Sprites
             }
 
         }
-        #endregion
+#endregion
 
     }
 }
