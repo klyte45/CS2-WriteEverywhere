@@ -31,7 +31,7 @@ namespace BelzontWE
         {
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
             var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
-            var modName = modData.mod.displayName;
+            var modName = modData.GetMeta().displayName;
 
             if (m_modsTemplatesFolder.TryGetValue(modId, out var folder) && folder.rootFolder == folderTemplatesSource) return;
             m_modsTemplatesFolder[modId] = (modName, modId, folderTemplatesSource);

@@ -16,8 +16,8 @@ namespace BelzontWE.Font
 {
     public partial class FontSystem
     {
-#if !JOBS_DEBUG
-        [BurstCompile]
+#if !JOBS_DEBUG && BURST
+        [Unity.Burst.BurstCompile]
 #endif
         private unsafe struct StringRenderingJob : IJobParallelForBatch
         {

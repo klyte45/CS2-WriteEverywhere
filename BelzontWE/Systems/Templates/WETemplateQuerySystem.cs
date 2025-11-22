@@ -1,7 +1,5 @@
 using Belzont.Utils;
-using Game;
 using Game.Common;
-using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Entities;
 
@@ -21,7 +19,7 @@ namespace BelzontWE
         {
             base.OnCreate();
             m_manager = World.GetExistingSystemManaged<WETemplateManager>();
-            
+
             m_templateBasedEntities = GetEntityQuery(new EntityQueryDesc[]
             {
                 new ()
@@ -51,10 +49,10 @@ namespace BelzontWE
         public unsafe int GetCityTemplateUsageCount(string name)
         {
             if (m_templateBasedEntities.IsEmpty) return 0;
-            
-            if (!m_manager.TryGetCityTemplate(name, out var templateEntity)) 
+
+            if (!m_manager.TryGetCityTemplate(name, out var templateEntity))
                 return 0;
-            
+
             var counterResult = 0;
             var job = new WEPlaceholderTemplateUsageCount
             {
@@ -62,7 +60,7 @@ namespace BelzontWE
                 m_updaterHdl = GetBufferTypeHandle<WETemplateUpdater>(),
                 m_counter = &counterResult
             };
-            
+
             job.Schedule(m_templateBasedEntities, Dependency).Complete();
             return counterResult;
         }
@@ -75,13 +73,13 @@ namespace BelzontWE
         /// <summary>
         /// Validates if a template tree can be used as a prefab layout
         /// </summary>
-        public int CanBePrefabLayout(WETextDataXmlTree data, bool isRoot) 
+        public int CanBePrefabLayout(WETextDataXmlTree data, bool isRoot)
             => CanBePrefabLayout(data.self, data.children, isRoot);
 
         /// <summary>
         /// Validates if a selfless template tree can be used as a prefab layout
         /// </summary>
-        public int CanBePrefabLayout(WESelflessTextDataTree data) 
+        public int CanBePrefabLayout(WESelflessTextDataTree data)
             => CanBePrefabLayout(null, data.children, true);
 
         private int CanBePrefabLayout(WETextDataXml self, WETextDataXmlTree[] children, bool isRoot)
@@ -107,13 +105,13 @@ namespace BelzontWE
             }
             else
             {
-                if (self.layoutMesh is null && self.imageMesh is null && self.textMesh is null 
+                if (self.layoutMesh is null && self.imageMesh is null && self.textMesh is null
                     && self.whiteMesh is null && self.whiteCubeMesh is null && self.matrixTransform is null)
                 {
                     LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: All children must have type 'Placeholder', 'WhiteTexture', 'MatrixTransform', 'WhiteCube', 'Image' or 'Text'.");
                     return 4;
                 }
-                
+
                 if (self.layoutMesh is not null && children?.Length > 0)
                 {
                     LogUtils.DoInfoLog($"Failed validation to transform to Prefab Default: The node must not have children, as any Placeholder item don't.");
@@ -123,14 +121,16 @@ namespace BelzontWE
             return 0;
         }
 
-        [BurstCompile]
+#if BURST
+        [Unity.Burst.BurstCompile]
+#endif
         private unsafe struct WEPlaceholderTemplateUsageCount : IJobChunk
         {
             public Colossal.Hash128 m_templateToCheck;
             public BufferTypeHandle<WETemplateUpdater> m_updaterHdl;
             public int* m_counter;
 
-            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, 
+            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex,
                 bool useEnabledMask, in v128 chunkEnabledMask)
             {
                 var templates = chunk.GetBufferAccessor(ref m_updaterHdl);
@@ -138,7 +138,7 @@ namespace BelzontWE
                 {
                     for (int j = 0; j < templates[i].Length; j++)
                     {
-                        if (templates[i][j].templateEntity == m_templateToCheck) 
+                        if (templates[i][j].templateEntity == m_templateToCheck)
                             *m_counter += 1;
                     }
                 }

@@ -99,7 +99,7 @@ namespace BelzontWE
             }
         }
 #if BURST
-        [BurstCompile]
+        [Unity.Burst.BurstCompile]
 #endif
         private struct NodeCacheCalculation : IJobChunk
         {

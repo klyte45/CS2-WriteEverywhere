@@ -1,12 +1,14 @@
 
-using Unity.Burst;
+
 using Unity.Collections;
 using Unity.Entities;
 
 namespace BelzontWE.Utils
 {
 
-    [BurstCompile]
+#if BURST
+        [Unity.Burst.BurstCompile]
+#endif
     public struct WEAddAndEnableComponentJob<T> : IJobChunk where T : unmanaged, IComponentData, IEnableableComponent
     {
         [ReadOnly]

@@ -22,7 +22,7 @@ namespace BelzontWE.Bridge
         {
             if (!Directory.Exists(rootFolder)) return;
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
-            WETemplateManager.Instance.RegisterLoadableTemplatesFolder(mainAssembly, new() { ModName = modData.mod.displayName, Location = rootFolder });
+            WETemplateManager.Instance.RegisterLoadableTemplatesFolder(mainAssembly, new() { ModName = modData.GetMeta().displayName, Location = rootFolder });
         }
 
         public static void ForceReloadLayouts() => (templateManager ??= World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<WETemplateManager>()).MarkPrefabsDirty();

@@ -192,7 +192,9 @@ namespace BelzontWE
 
         }
 
-        [BurstCompile]
+#if BURST
+        [Unity.Burst.BurstCompile]
+#endif
         private struct WEReadFirstEntities : IJobChunk
         {
             public NativeArray<Entity> output;

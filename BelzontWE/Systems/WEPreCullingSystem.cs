@@ -152,7 +152,7 @@ namespace BelzontWE
 
         private readonly FixedString32Bytes indexStartString = new($"$idx{VARIABLE_KV_SEPARATOR}");
 #if BURST
-        [BurstCompile]
+        [Unity.Burst.BurstCompile]
 #endif
         private struct WERenderingJob : IJobParallelFor
         {
@@ -669,7 +669,7 @@ namespace BelzontWE
         }
 
 #if BURST
-        [BurstCompile]
+        [Unity.Burst.BurstCompile]
 #endif
         private struct WERenderFilterUnmodifiedEntitiesJob : IJobParallelFor
         {

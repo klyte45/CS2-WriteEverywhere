@@ -18,7 +18,7 @@ namespace BelzontWE
     public partial class WETemplateUpdateSystem
     {
 #if BURST
-        [BurstCompile]
+        [Unity.Burst.BurstCompile]
 #endif
         private unsafe struct WEPrefabTemplateDirtyJob : IJobChunk
         {
@@ -86,7 +86,7 @@ namespace BelzontWE
         }
 
 #if BURST
-        [BurstCompile]
+        [Unity.Burst.BurstCompile]
 #endif
         private unsafe struct WEPrefabTemplateFilterJob : IJobChunk
         {

@@ -84,8 +84,8 @@ namespace BelzontWE
             if (m_componentsToDispose.CalculateChunkCount() > 0)
             {
                 // Create temporary queues for collecting dispose operations
-                var disposeQueueMesh = new NativeQueue<WETextDataMesh>(Allocator.Temp);
-                var disposeQueueMaterial = new NativeQueue<WETextDataMaterial>(Allocator.Temp);
+                var disposeQueueMesh = new NativeQueue<WETextDataMesh>(Allocator.Persistent);
+                var disposeQueueMaterial = new NativeQueue<WETextDataMaterial>(Allocator.Persistent);
 
                 // Schedule the disposal job
                 new WEComponentDisposalJob
@@ -98,16 +98,21 @@ namespace BelzontWE
                     m_DisposeQueueMaterial = disposeQueueMaterial.AsParallelWriter(),
                 }.ScheduleParallel(m_componentsToDispose, Dependency).Complete();
 
-                // Process disposal queues on main thread
-                while (disposeQueueMesh.TryDequeue(out var meshData))
+                if (!disposeQueueMesh.IsEmpty())
                 {
-                    meshData.Dispose();
+                    // Process disposal queues on main thread
+                    while (disposeQueueMesh.TryDequeue(out var meshData))
+                    {
+                        meshData.Dispose();
+                    }
                 }
                 disposeQueueMesh.Dispose();
-
-                while (disposeQueueMaterial.TryDequeue(out var materialData))
+                if (!disposeQueueMaterial.IsEmpty())
                 {
-                    materialData.Dispose();
+                    while (disposeQueueMaterial.TryDequeue(out var materialData))
+                    {
+                        materialData.Dispose();
+                    }
                 }
                 disposeQueueMaterial.Dispose();
             }
