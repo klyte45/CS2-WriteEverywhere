@@ -59,7 +59,9 @@ namespace BelzontWE
                 if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas))
                 {
                     response.SetStatus(200);
-                    var data = textureAtlas.Main.MakeReadable().EncodeToPNG();
+                    var temp = textureAtlas.Main_preview.MakeReadable();
+                    var data = temp.EncodeToPNG();
+                    GameObject.Destroy(temp);
                     var size = (ulong)data.Length;
                     var space = response.GetSpace(size);
                     Marshal.Copy(data, 0, space, data.Length);
@@ -101,7 +103,7 @@ namespace BelzontWE
 
                 if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas))
                 {
-                    response.SetStreamReader(new StreamReader(textureAtlas.Main.EncodeToPNG()));
+                    response.SetStreamReader(new StreamReader(textureAtlas.Main_preview.EncodeToPNG()));
                     response.Finish(ResourceStreamResponse.Status.Success);
                     return false;
                 }

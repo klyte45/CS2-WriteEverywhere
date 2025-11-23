@@ -4,7 +4,6 @@ using Belzont.Utils;
 using BelzontWE.IO;
 using BelzontWE.Sprites;
 using Colossal.Entities;
-using Colossal.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +34,7 @@ namespace BelzontWE.Controllers
             eventCaller($"{PREFIX}createSpecialMeshBRI", CreateSpecialMeshBRI);
         }
 
-      
+
 
         private void CreateSpecialMeshBRI(Entity targetEntity, string meshLocation)
         {
@@ -46,7 +45,7 @@ namespace BelzontWE.Controllers
                 WEAtlasesLibrary.Instance.TryGetAtlas(meshData.Atlas.ToString(), out var atlasInfo);
                 var spriteInfo = atlasInfo.Sprites[meshData.Text];
                 var dimensions = new float2(atlasInfo.Width, atlasInfo.Height);
-                testingMesh = new CustomMeshRenderInformation(parsedMesh, (float2)spriteInfo.Region.min / dimensions, (float2)spriteInfo.Region.max / dimensions, atlasInfo.Main, atlasInfo.Normal, atlasInfo.Control, atlasInfo.Emissive, atlasInfo.Mask);
+                testingMesh = new CustomMeshRenderInformation(atlasInfo, parsedMesh, (float2)spriteInfo.Region.min / dimensions, (float2)spriteInfo.Region.max / dimensions);
                 EntityManager.SetComponentData(targetEntity, meshData.UpdateBRI(testingMesh, null));
             }
             catch (Exception e)
@@ -74,7 +73,7 @@ namespace BelzontWE.Controllers
             return null;
         }
 
-        
+
 
 
         private string SetCurrentMaterialSettings(Entity targetEntity, string propertyIdxStr, string value)

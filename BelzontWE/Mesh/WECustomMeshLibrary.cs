@@ -164,8 +164,7 @@ namespace BelzontWE
             {
                 var spriteData = atlas.Sprites[imageName];
                 var imgSize = new float2(atlas.Width, atlas.Height);
-                var newMeshInfo = new CustomMeshRenderInformation(targetMesh, (float2)spriteData.Region.min / imgSize, (float2)spriteData.Region.max / imgSize, atlas.Main,
-                    imgInfo.Normal, imgInfo.Control, imgInfo.Emissive, imgInfo.Mask);
+                var newMeshInfo = new CustomMeshRenderInformation(atlas, targetMesh, (float2)spriteData.Region.min / imgSize, (float2)spriteData.Region.max / imgSize);
                 meshDict[atlasName + "|" + imageName] = newMeshInfo;
                 return newMeshInfo;
             }

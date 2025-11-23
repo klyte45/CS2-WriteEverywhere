@@ -57,7 +57,14 @@ namespace BelzontWE
 
         public void ResetBri()
         {
-            if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
+            if (basicRenderInformation.IsAllocated)
+            {
+                if (basicRenderInformation.Target is IBasicRenderInformation ibri)
+                {
+                    ibri.Dispose();
+                }
+                basicRenderInformation.Free();
+            }
             basicRenderInformation = default;
             MinLod = 0;
             Bounds = new Bounds3(new float3(-.5f, -.5f, 0), new float3(.5f, .5f, 0));

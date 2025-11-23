@@ -1,5 +1,4 @@
 ﻿using Colossal.OdinSerializer.Utilities;
-using System;
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -61,7 +60,7 @@ namespace BelzontWE
                         : new float3(float.NaN, float.NaN, float.NaN)
                     : defaultValue;
             }
-            catch (Exception e)
+            catch
             {
                 EffectiveValue = new float3(float.NaN, float.NaN, float.NaN);
             }

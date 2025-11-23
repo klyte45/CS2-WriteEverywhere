@@ -1,11 +1,15 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
+using Colossal.Core;
 using Colossal.IO.AssetDatabase.Internal;
+using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Colossal.Mathematics;
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Xml.Serialization;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -20,7 +24,7 @@ namespace BelzontWE.Font.Utility
 
         public PrimitiveRenderInformation(string refText,
             Vector3[] vertices, int[] triangles, Vector2[] uv, bool2 invertUv,
-            Texture main, Texture normal = null, Texture control = null, Texture emissive = null, Texture mask = null)
+        Texture main, Texture normal = null, Texture control = null, Texture emissive = null, Texture mask = null)
         {
             m_refText = refText ?? throw new ArgumentNullException("refText");
             m_invertUv = invertUv;
@@ -43,13 +47,51 @@ namespace BelzontWE.Font.Utility
             {
                 LogUtils.DoWarnLog($"m_vertices.Length = {m_vertices?.Length} | m_triangles: [{string.Join(",", m_triangles ?? new int[0])}]");
             }
-            Main = main;
-            Normal = normal;
-            Emissive = emissive;
-            Control = control;
-            Mask = mask;
+            MainThreadDispatcher.RunOnMainThread(() =>
+            {
+                BaseMaterialDecal = WERenderingHelper.GenerateMaterial(WEShader.Decal, main, normal, mask, control, emissive);
+                BaseMaterialDefault = WERenderingHelper.GenerateMaterial(WEShader.Default, main, normal, mask, control, emissive);
+                BaseMaterialGlass = WERenderingHelper.GenerateMaterial(WEShader.Glass, main, normal, mask, control, emissive);
+            });
             Guid = System.Guid.NewGuid();
+            handleCheck = GCHandle.Alloc(main, GCHandleType.Weak);
         }
+
+        public PrimitiveRenderInformation(WETextureAtlas textureAtlas, string refText,
+           Vector3[] vertices, int[] triangles, Vector2[] uv, bool2 invertUv)
+        {
+            m_refText = refText ?? throw new ArgumentNullException("refText");
+            m_invertUv = invertUv;
+            if (vertices != null && (triangles?.All(x => x < vertices.Length) ?? false))
+            {
+                m_vertices = vertices;
+                m_triangles = triangles;
+                m_uv = uv;
+                var minUv = new Vector2(float.MaxValue, float.MaxValue);
+                var maxUv = new Vector2(float.MinValue, float.MinValue);
+                foreach (var uvI in uv)
+                {
+                    minUv = Vector2.Min(minUv, uvI);
+                    maxUv = Vector2.Max(maxUv, uvI);
+                }
+                BoundsUV = new Bounds2(minUv, maxUv);
+                Bounds = vertices.Length == 0 ? default : new Bounds3(vertices.Aggregate((x, y) => Vector3.Min(x, y)), vertices.Aggregate((x, y) => Vector3.Max(x, y)));
+            }
+            else if (triangles != null && vertices != null)
+            {
+                LogUtils.DoWarnLog($"m_vertices.Length = {m_vertices?.Length} | m_triangles: [{string.Join(",", m_triangles ?? [])}]");
+            }
+            MainThreadDispatcher.RunOnMainThread(() =>
+            {
+                var tss = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<TextureStreamingSystem>();
+                BaseMaterialDecal = textureAtlas.GenerateMaterial(WEShader.Decal, tss);
+                BaseMaterialDefault = textureAtlas.GenerateMaterial(WEShader.Default, tss);
+                BaseMaterialGlass = textureAtlas.GenerateMaterial(WEShader.Glass, tss);
+            });
+            Guid = System.Guid.NewGuid();
+            handleCheck = GCHandle.Alloc(textureAtlas, GCHandleType.Weak);
+        }
+
         public static PrimitiveRenderInformation Fill(BasicRenderInformationJob brij, Texture main)
         {
             if (brij.Invalid)
@@ -77,13 +119,8 @@ namespace BelzontWE.Font.Utility
         private Mesh m_mesh;
         private Mesh[] m_meshCube;
         private Matrix4x4[] m_meshCubeOffsets;
+        private GCHandle handleCheck;
 
-        [XmlIgnore]
-        public Texture Main { get; private set; }
-        public Texture Normal { get; private set; }
-        public Texture Emissive { get; private set; }
-        public Texture Control { get; private set; }
-        public Texture Mask { get; private set; }
 
         public Bounds2 BoundsUV { get; }
 
@@ -174,6 +211,11 @@ namespace BelzontWE.Font.Utility
 
         public bool IsError { get; set; } = false;
 
+        public Material BaseMaterialDefault { get; private set; }
+
+        public Material BaseMaterialDecal { get; private set; }
+
+        public Material BaseMaterialGlass { get; private set; }
 
         public Vector2 m_sizeMetersUnscaled;
         public readonly string m_refText;
@@ -184,27 +226,27 @@ namespace BelzontWE.Font.Utility
 
         internal long GetSize() => GetMeshSize();
 
-        public bool IsValid() => Main || m_refText.TrimToNull() == null;
+        public bool IsValid() => (handleCheck.IsAllocated && handleCheck.Target is not null) || m_refText.TrimToNull() == null;
 
         private long GetMeshSize()
         {
             unsafe
             {
                 return
-                    sizeof(Color32) * (Mesh.colors32?.Length ?? 0)
-                    + sizeof(int) * 4
+                    (sizeof(Color32) * (Mesh.colors32?.Length ?? 0))
+                    + (sizeof(int) * 4)
                     + sizeof(Bounds)
-                    + sizeof(BoneWeight) * (Mesh.boneWeights?.Length ?? 0)
-                    + sizeof(Matrix4x4) * (Mesh.bindposes?.Length ?? 0)
-                    + sizeof(Vector3) * (Mesh.vertices?.Length ?? 0)
-                    + sizeof(Vector3) * (Mesh.normals?.Length ?? 0)
-                    + sizeof(Vector4) * (Mesh.tangents?.Length ?? 0)
-                    + sizeof(Vector2) * (Mesh.uv?.Length ?? 0)
-                    + sizeof(Vector2) * (Mesh.uv2?.Length ?? 0)
-                    + sizeof(Vector2) * (Mesh.uv3?.Length ?? 0)
-                    + sizeof(Vector2) * (Mesh.uv4?.Length ?? 0)
-                    + sizeof(Color) * (Mesh.colors?.Length ?? 0)
-                    + sizeof(int) * (Mesh.triangles?.Length ?? 0)
+                    + (sizeof(BoneWeight) * (Mesh.boneWeights?.Length ?? 0))
+                    + (sizeof(Matrix4x4) * (Mesh.bindposes?.Length ?? 0))
+                    + (sizeof(Vector3) * (Mesh.vertices?.Length ?? 0))
+                    + (sizeof(Vector3) * (Mesh.normals?.Length ?? 0))
+                    + (sizeof(Vector4) * (Mesh.tangents?.Length ?? 0))
+                    + (sizeof(Vector2) * (Mesh.uv?.Length ?? 0))
+                    + (sizeof(Vector2) * (Mesh.uv2?.Length ?? 0))
+                    + (sizeof(Vector2) * (Mesh.uv3?.Length ?? 0))
+                    + (sizeof(Vector2) * (Mesh.uv4?.Length ?? 0))
+                    + (sizeof(Color) * (Mesh.colors?.Length ?? 0))
+                    + (sizeof(int) * (Mesh.triangles?.Length ?? 0))
                     + sizeof(bool)
                     ;
             }
@@ -214,6 +256,7 @@ namespace BelzontWE.Font.Utility
         {
             if (Mesh) GameObject.Destroy(Mesh);
             MeshCube?.ForEach(x => GameObject.Destroy(x));
+            if (handleCheck.IsAllocated) handleCheck.Free();
         }
     }
 

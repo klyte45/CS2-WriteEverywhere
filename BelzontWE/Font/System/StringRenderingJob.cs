@@ -32,7 +32,6 @@ namespace BelzontWE.Font
 
             public NativeHashMap<int, FontGlyph> glyphs;
             public Vector3 CurrentAtlasSize;
-            public int FontId;
             public uint AtlasVersion;
             public Vector3 scale;
             public float ascent;
@@ -300,7 +299,7 @@ namespace BelzontWE.Font
                 {
                     float adv = prevGlyph.GetKerningCached(glyph) * fontScale;
 
-                    x += (int)((adv + 0) * spacingFactor + 0.5f);
+                    x += (int)(((adv + 0) * spacingFactor) + 0.5f);
                 }
 #if JOBS_DEBUG
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"'{char.ConvertFromUtf32(glyph.Codepoint)}' = {glyph}");

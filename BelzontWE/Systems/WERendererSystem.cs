@@ -72,7 +72,7 @@ namespace BelzontWE
                     || !EntityManager.TryGetComponent(item.textDataEntity, out WETextDataMaterial materialData)
                     || item.transformMatrix == default
                     || main.nextUpdateFrame == 0) continue;
-                    
+
                     bool willCheckUpdate = ((FrameCounter + item.textDataEntity.Index) & 0x1f) == 0;
 
                     bool isPlaceholder = false;
@@ -93,8 +93,14 @@ namespace BelzontWE
                     };
                     if (doRender)
                     {
-                        IBasicRenderInformation bri;
-                        if ((bri = mesh.RenderInformation) == null)
+                        IBasicRenderInformation bri = mesh.RenderInformation;
+                        if (bri != null && !bri.IsValid())
+                        {
+                            mesh.ResetBri();
+                            bri = null;
+                            EntityManager.SetComponentData(item.textDataEntity, mesh);
+                        }
+                        if (bri == null)
                         {
                             switch (mesh.TextType)
                             {
@@ -160,7 +166,7 @@ namespace BelzontWE
 #if DEBUG
                                 DrawCallsLastFrame++;
 #endif
-                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {geomMesh?.vertices?.Length} | {!!bri.Main} | M= {item.transformMatrix}");
+                                if (dumpNextFrame) LogUtils.DoInfoLog($"DUMP! G = {item.geometryEntity} E = {item.textDataEntity}; T: {main.TargetEntity} P: {main.ParentEntity}\n{main.ItemName} - {mesh.TextType} - '{mesh.ValueData.EffectiveValue}'\nBRI: {geomMesh?.vertices?.Length} | {bri.IsValid()} | M= {item.transformMatrix}");
                             }
 
                             if (materialChanged) EntityManager.SetComponentData(item.textDataEntity, materialData);

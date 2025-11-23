@@ -1,12 +1,13 @@
 ﻿using Belzont.Utils;
-using BelzontWE;
+using Colossal.AssetPipeline.Importers;
 using Colossal.IO.AssetDatabase;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Game.AssetPipeline;
-using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
+using Unity.Entities;
 using UnityEngine;
-using TextureAsset = Colossal.IO.AssetDatabase.TextureAsset;
+
 public class VTSurfaceUtility
 {
     /// <summary>
@@ -17,92 +18,124 @@ public class VTSurfaceUtility
     /// <param name="assetName">Name for the asset</param>
     /// <returns>VT-enabled SurfaceAsset</returns>
     public static void CreateVTSurfaceAsset(
-        Texture main,
-        Texture normal,
-        Texture mask,
-        Texture control,
-        Texture emissive,
+        Texture2D main,
+        Texture2D normal,
+        Texture2D mask,
+        Texture2D control,
+        Texture2D emissive,
         ILocalAssetDatabase assetDatabase,
         string assetName,
-        out SurfaceAsset defMat,
-        out SurfaceAsset glsMat,
-        out SurfaceAsset dclMat)
+        out VTTextureAsset mainVt,
+        out VTTextureAsset normalVt,
+        out VTTextureAsset maskVt,
+        out VTTextureAsset controlVt,
+        out VTTextureAsset emissiveVt
+    )
     {
+        using var mainImporter = new TextureImporter.Texture($"{assetName}_Main", $"K45_we://{assetName}_Main", main);
+        mainImporter.ComputeMips(true, true); 
+        mainImporter.CompressBC(3);
 
+        using var normalImporter = new TextureImporter.Texture($"{assetName}_Normal", $"K45_we://{assetName}_Normal", normal);
+        normalImporter.ComputeMips(true, false);
+        normalImporter.CompressBC(3);
+
+        using var maskImporter = new TextureImporter.Texture($"{assetName}_MaskMap", $"K45_we://{assetName}_MaskMap", mask);
+        maskImporter.ComputeMips(true, false);
+        maskImporter.CompressBC(3);
+
+        using var controlImporter = new TextureImporter.Texture($"{assetName}_ControlMask", $"K45_we://{assetName}_ControlMask", control);
+        controlImporter.ComputeMips(true, false);
+        controlImporter.CompressBC(3);
+
+        using var emissiveImporter = new TextureImporter.Texture($"{assetName}_Emissive", $"K45_we://{assetName}_Emissive", emissive);
+        emissiveImporter.ComputeMips(true, true);
+        emissiveImporter.CompressBC(3);
 
         // 1. Create SurfaceAsset from Surface
-        var assetControlMask = assetDatabase.AddAsset<TextureAsset, Texture>(AssetDataPath.Create($"{assetName}_ControlMask", EscapeStrategy.Filename), control);
-        var assetEmissive = assetDatabase.AddAsset<TextureAsset, Texture>(AssetDataPath.Create($"{assetName}_Emissive", EscapeStrategy.Filename), emissive);
-        var assetMaskMap = assetDatabase.AddAsset<TextureAsset, Texture>(AssetDataPath.Create($"{assetName}_MaskMap", EscapeStrategy.Filename), mask);
-        var assetNormal = assetDatabase.AddAsset<TextureAsset, Texture>(AssetDataPath.Create($"{assetName}_Normal", EscapeStrategy.Filename), normal);
-        var assetMain = assetDatabase.AddAsset<TextureAsset, Texture>(AssetDataPath.Create($"{assetName}_Main", EscapeStrategy.Filename), main);
+        var assetControlMask = assetDatabase.AddAsset(AssetDataPath.Create($"{assetName}_ControlMask", EscapeStrategy.Filename), controlImporter);
+        var assetEmissive = assetDatabase.AddAsset(AssetDataPath.Create($"{assetName}_Emissive", EscapeStrategy.Filename), emissiveImporter);
+        var assetMaskMap = assetDatabase.AddAsset(AssetDataPath.Create($"{assetName}_MaskMap", EscapeStrategy.Filename), maskImporter);
+        var assetNormal = assetDatabase.AddAsset(AssetDataPath.Create($"{assetName}_Normal", EscapeStrategy.Filename), normalImporter);
+        var assetMain = assetDatabase.AddAsset(AssetDataPath.Create($"{assetName}_Main", EscapeStrategy.Filename), mainImporter);
 
-        assetControlMask.Save();
-        assetEmissive.Save();
-        assetMaskMap.Save();
-        assetNormal.Save();
-        assetMain.Save();
+        VirtualTexturingConfig vtConfig = UnityEngine.Resources.Load<VirtualTexturingConfig>("VirtualTexturingConfig");
+
+        var nbReq = 0;
+
+        mainVt = assetDatabase.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{assetName}_Main", EscapeStrategy.Filename));
+        mainVt.Save(assetMain.mipBias, assetMain, 512, nbReq, vtConfig);
+
+        normalVt = assetDatabase.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{assetName}_Normal", EscapeStrategy.Filename));
+        normalVt.Save(assetNormal.mipBias, assetNormal, 512, nbReq, vtConfig);
+
+        maskVt = assetDatabase.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{assetName}_MaskMap", EscapeStrategy.Filename));
+        maskVt.Save(assetMaskMap.mipBias, assetMaskMap, 512, nbReq, vtConfig);
+
+        controlVt = assetDatabase.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{assetName}_ControlMask", EscapeStrategy.Filename));
+        controlVt.Save(assetControlMask.mipBias, assetControlMask, 512, nbReq, vtConfig);
+
+        emissiveVt = assetDatabase.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{assetName}_Emissive", EscapeStrategy.Filename));
+        emissiveVt.Save(assetEmissive.mipBias, assetEmissive, 512, nbReq, vtConfig);
+    }
+
+    /**
+     * Default:
+     *
+     * _BaseColorMap
+     * _NormalMap
+     * _MaskMap
+     * _ControlMask
+     * _EmissiveColorMap
+     *
+     * Decal:
+     * _BaseColorMap
+     * _NormalMap
+     * _MaskMap
+     *
+     */
+    public static void AAAA(Material newMaterial,
+        VTTextureAsset mainVt,
+        VTTextureAsset normalVt,
+        VTTextureAsset maskVt,
+        VTTextureAsset controlVt,
+        VTTextureAsset emissivVtd
+    )
+    {
+        var templateHash = AssetDatabase.global.resources.materialLibrary.GetMaterialHash(newMaterial);
+        var templateDescription = AssetDatabase.global.resources.materialLibrary.GetMaterialDescription(templateHash);
+        LogUtils.DoInfoLog($"Material Template: {templateDescription.m_Material} ({templateHash})");
+
+        var vtSys = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<TextureStreamingSystem>();
 
 
-        defMat = assetDatabase.AddAsset(AssetDataPath.Create($"{assetName}_Def"), WERenderingHelper.GenerateMaterial(WEShader.Default, main, normal, mask, control, emissive));
-        glsMat = assetDatabase.AddAsset(AssetDataPath.Create($"{assetName}_Gls"), WERenderingHelper.GenerateMaterial(WEShader.Glass, main, normal, mask, control, emissive));
-        dclMat = assetDatabase.AddAsset(AssetDataPath.Create($"{assetName}_Dcl"), WERenderingHelper.GenerateMaterial(WEShader.Decal, main, normal, mask, control, emissive));
-
-
-        // 2. Save initial surface (non-VT)
-        foreach (var surfaceAsset in new[] { defMat, glsMat, dclMat })
-        {
-            surfaceAsset.UpdateTextures(new Dictionary<string, TextureAsset>
-            {
-                { "_BaseColorMap", assetMain },
-                { "_NormalMap", assetNormal },
-                { "_MaskMap", assetMaskMap },
-                { "_ControlMask", assetControlMask },
-                { "_Emissive", assetEmissive }
-            });
-            surfaceAsset.Save(
-                mipBias: 0,
-                force: false,
-                saveTextures: true,
-                vt: false,  // Initially false
-                virtualTexturingConfig: null,
-                textureReferencesMap: null,
-                tileSize: null,
-                nbMidMipLevelsRequested: null
-            );
-            surfaceAsset.Load();
-        }
-
-        // 3. Convert to VT format
-        ConvertToVT(assetDatabase, defMat, glsMat, dclMat);
+        NativeArray<byte> textureData = vtSys.GetTextureData(mainVt.id.guid);
     }
 
     private static void ConvertToVT(ILocalAssetDatabase assetDatabase, params SurfaceAsset[] surfaces)
     {
-        // Get VT configuration
-        VirtualTexturingConfig vtConfig = UnityEngine.Resources.Load<VirtualTexturingConfig>("VirtualTexturingConfig");
-
-
         // Use AssetImportPipeline for VT conversion
         var report = new Colossal.AssetPipeline.Diagnostic.Report();
 
-        using (var importStep = report.AddImportStep("Convert to VT"))
-        {
-            AssetImportPipeline.ConvertSurfacesToVT(
-                surfacesToConvert: surfaces,
-                allSurfaces: surfaces.Select(x => assetDatabase.GetAsset<SurfaceAsset>(x.id.guid)),
-                force: false,
-                tileSize: 512,
-                midMipsCount: 3,
-                mipBias: 20,
-                writeVTSettings: false,
-                report: importStep
-            );
-        }
+
+        using var importStep = report.AddImportStep("Convert to VT");
+
+        AssetImportPipeline.ConvertSurfacesToVT(
+            surfacesToConvert: surfaces,
+            allSurfaces: surfaces.Select(x => assetDatabase.GetAsset<SurfaceAsset>(x.id.guid)),
+            force: true,
+            report: importStep
+        );
+
+        AssetImportPipeline.BuildMidMipsCache(surfaces, 512, 3, assetDatabase);
+        AssetImportPipeline.HideVTSourceTextures(surfaces);
+
+        var vtSys = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<TextureStreamingSystem>();
         foreach (var surface in surfaces)
         {
+            surface.RegisterToVT(vtSys);
+            surface.LoadVTAsync(vtSys, 3, 512, 0);
             LogUtils.DoInfoLog($"VT Conversion completed for {surface.name}. Is VT Material: {surface.isVTMaterial}");
         }
     }
-
 }

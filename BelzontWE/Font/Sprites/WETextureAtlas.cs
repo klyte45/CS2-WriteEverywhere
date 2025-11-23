@@ -3,10 +3,12 @@ using Belzont.Utils;
 using BelzontWE.AssetDatabases;
 using BelzontWE.Layout;
 using BelzontWE.Sprites;
+using Colossal.Core;
 using Colossal.IO.AssetDatabase;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Colossal.Serialization.Entities;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -26,26 +28,32 @@ namespace BelzontWE.Font
         public int Size { get; private set; }
 
         public Dictionary<FixedString32Bytes, WESpriteInfo> Sprites { get; } = new();
-        public Texture2D Main
+
+        public Texture2D Main_preview
         {
-            get => IsWritable ? main : mainVT.Load() as Texture2D;
+            get => IsWritable ? m_main : mainVT.Load() as Texture2D;
         }
-        public Texture2D Emissive
+
+        public Texture2D Emissive_preview
         {
-            get => IsWritable ? emissive : emissiveVT?.Load() as Texture2D;
+            get => IsWritable ? m_emissive : emissiveVT?.Load() as Texture2D;
         }
-        public Texture2D Control
+
+        public Texture2D Control_preview
         {
-            get => IsWritable ? control : controlVT?.Load() as Texture2D;
+            get => IsWritable ? m_control : controlVT?.Load() as Texture2D;
         }
-        public Texture2D Mask
+
+        public Texture2D Mask_preview
         {
-            get => IsWritable ? mask : maskVT?.Load() as Texture2D;
+            get => IsWritable ? m_mask : maskVT?.Load() as Texture2D;
         }
-        public Texture2D Normal
+
+        public Texture2D Normal_preview
         {
-            get => IsWritable ? normal : normalVT?.Load() as Texture2D;
+            get => IsWritable ? m_normal : normalVT?.Load() as Texture2D;
         }
+
         public uint Version { get; set; }
         public bool IsApplied { get; private set; }
         public HeuristicMethod Method { get; private set; }
@@ -58,29 +66,21 @@ namespace BelzontWE.Font
 
         public bool IsWritable { get; private set; } = true;
 
-        public Material DefaultMaterial => defaultSurface?.Load();
-        public Material GlassMaterial => glassSurface?.Load();
-        public Material DecalMaterial => decalSurface?.Load();
-
 
         public IEnumerable<FixedString32Bytes> Keys => Sprites.Keys;
 
         private MaxRectsBinPack rectsPack;
-        private Texture2D main;
-        private Texture2D emissive;
-        private Texture2D control;
-        private Texture2D mask;
-        private Texture2D normal;
+        private Texture2D m_main;
+        private Texture2D m_emissive;
+        private Texture2D m_control;
+        private Texture2D m_mask;
+        private Texture2D m_normal;
 
         private VTTextureAsset mainVT;
         private VTTextureAsset emissiveVT;
         private VTTextureAsset controlVT;
         private VTTextureAsset maskVT;
         private VTTextureAsset normalVT;
-
-        private SurfaceAsset defaultSurface;
-        private SurfaceAsset glassSurface;
-        private SurfaceAsset decalSurface;
 
         internal WETextureAtlas()
         {
@@ -93,25 +93,26 @@ namespace BelzontWE.Font
             {
                 throw new ArgumentOutOfRangeException(nameof(size), "Size must be between 18 (512x512) and 28 (16384x16384, inclusive). This is to ensure the atlas is not too small or too large for practical use.");
             }
+
             Size = size;
             Width = 1 << Mathf.FloorToInt(size / 2f);
             Height = 1 << Mathf.CeilToInt(size / 2f);
-            main = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-            emissive = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-            control = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-            mask = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-            normal = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+            m_main = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+            m_emissive = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+            m_control = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
+            m_mask = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
+            m_normal = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
             var pixelsToSet = new Color[Width * Height];
-            main.SetPixels(pixelsToSet);
-            main.name = "Main";
-            emissive.SetPixels(pixelsToSet);
-            emissive.name = "Emissive";
-            control.SetPixels(pixelsToSet);
-            control.name = "Control";
-            mask.SetPixels(pixelsToSet);
-            mask.name = "Mask";
-            normal.SetPixels(pixelsToSet.Select(x => new Color(.5f, .5f, 1f)).ToArray());
-            normal.name = "Normal";
+            m_main.SetPixels(pixelsToSet);
+            m_main.name = "Main";
+            m_emissive.SetPixels(pixelsToSet);
+            m_emissive.name = "Emissive";
+            m_control.SetPixels(pixelsToSet);
+            m_control.name = "Control";
+            m_mask.SetPixels(pixelsToSet);
+            m_mask.name = "Mask";
+            m_normal.SetPixels(pixelsToSet.Select(x => new Color(.5f, .5f, 1f)).ToArray());
+            m_normal.name = "Normal";
             Method = method;
             rectsPack = new MaxRectsBinPack(Width, Height, false);
             WillSerialize = willSerialize;
@@ -129,10 +130,10 @@ namespace BelzontWE.Font
             Assert.IsNotNull(mainVT);
 
             mainVT.Load();
-            controlVT?.LoadHeader();
-            emissiveVT?.LoadHeader();
-            maskVT?.LoadHeader();
-            normalVT?.LoadHeader();
+            controlVT.Load();
+            emissiveVT.Load();
+            maskVT.Load();
+            normalVT.Load();
 
             LogUtils.DoInfoLog($"State main = {mainVT.state}");
             LogUtils.DoInfoLog($"State control = {controlVT?.state}");
@@ -150,7 +151,6 @@ namespace BelzontWE.Font
                     HasEmissive = x.HasEmissive,
                     HasMaskMap = x.HasMaskMap,
                     HasNormal = x.HasNormal,
-
                 };
                 spriteInfo.CachedBRI = WERenderingHelper.GenerateBri(this, spriteInfo);
                 return spriteInfo;
@@ -159,7 +159,6 @@ namespace BelzontWE.Font
             Width = mainVT.width;
             Height = mainVT.height;
             IsApplied = true;
-
         }
 
         #region Write
@@ -187,29 +186,30 @@ namespace BelzontWE.Font
         public void Apply()
         {
             if (!IsWritable) return;
-            Main.Apply();
-            Emissive.Apply();
-            Control.Apply();
-            Mask.Apply();
-            Normal.Apply();
+            m_main.Apply();
+            m_emissive.Apply();
+            m_control.Apply();
+            m_mask.Apply();
+            m_normal.Apply();
             if (WillSerialize)
             {
-                m_serializationOrder = new byte[][] {
-                    Main.EncodeToPNG(),
-                    Emissive.EncodeToPNG(),
-                    Control.EncodeToPNG(),
-                    Mask.EncodeToPNG(),
-                    Normal.EncodeToPNG(),
+                m_serializationOrder = new byte[][]
+                {
+                    m_main.EncodeToPNG(),
+                    m_emissive.EncodeToPNG(),
+                    m_control.EncodeToPNG(),
+                    m_mask.EncodeToPNG(),
+                    m_normal.EncodeToPNG(),
                 };
             }
 
             IsApplied = true;
         }
 
-        private WESpriteInfo Write(Texture2D main, Texture2D emissive, Texture2D control, Texture2D mask, Texture2D normal)
+        private WESpriteInfo Write(Texture2D newMain, Texture2D newEmissive, Texture2D newControl, Texture2D newMask, Texture2D newNormal)
         {
             var offset = rectsPack.usedRectangles.Count == 0 ? 0 : 2;
-            Rect newRect = rectsPack.Insert(main.width + offset, main.height + offset, Method);
+            Rect newRect = rectsPack.Insert(newMain.width + offset, newMain.height + offset, Method);
             if (newRect.height == 0)
                 return default;
 
@@ -218,33 +218,33 @@ namespace BelzontWE.Font
             newRect.yMin += offset / 2;
             newRect.yMax -= offset / 2;
 
-            Main.SetPixels((int)newRect.x, (int)newRect.y, (int)newRect.width, (int)newRect.height, main.GetPixels());
+            m_main.SetPixels((int)newRect.x, (int)newRect.y, (int)newRect.width, (int)newRect.height, newMain.GetPixels());
             var spriteInfo = new WESpriteInfo
             {
                 Region = newRect,
-                HasEmissive = emissive && emissive.width == main.width && emissive.height == main.height,
-                HasControl = control && control.width == main.width && control.height == main.height,
-                HasMaskMap = mask && mask.width == main.width && mask.height == main.height,
-                HasNormal = normal && normal.width == main.width && normal.height == main.height,
+                HasEmissive = newEmissive && newEmissive.width == newMain.width && newEmissive.height == newMain.height,
+                HasControl = newControl && newControl.width == newMain.width && newControl.height == newMain.height,
+                HasMaskMap = newMask && newMask.width == newMain.width && newMask.height == newMain.height,
+                HasNormal = newNormal && newNormal.width == newMain.width && newNormal.height == newMain.height,
             };
-            if (spriteInfo.HasEmissive) Emissive.SetPixels((int)newRect.x, (int)newRect.y, (int)newRect.width, (int)newRect.height, emissive.GetPixels());
-            if (spriteInfo.HasControl) Control.SetPixels((int)newRect.x, (int)newRect.y, (int)newRect.width, (int)newRect.height, control.GetPixels());
-            if (spriteInfo.HasMaskMap) Mask.SetPixels((int)newRect.x, (int)newRect.y, (int)newRect.width, (int)newRect.height, mask.GetPixels());
-            if (spriteInfo.HasNormal) Normal.SetPixels((int)newRect.x, (int)newRect.y, (int)newRect.width, (int)newRect.height, normal.GetPixels());
+            m_emissive.SetPixels((int)newRect.x, (int)newRect.y, (int)newRect.width, (int)newRect.height, spriteInfo.HasEmissive ? newEmissive.GetPixels() : newMain.GetPixels());
+            m_control.SetPixels((int)newRect.x, (int)newRect.y, (int)newRect.width, (int)newRect.height, spriteInfo.HasControl ? newControl.GetPixels() : [.. new Color[(int)newRect.width * (int)newRect.height].Select(x => Color.clear)]);
+            m_mask.SetPixels((int)newRect.x, (int)newRect.y, (int)newRect.width, (int)newRect.height, spriteInfo.HasMaskMap ? newMask.GetPixels() : [.. new Color[(int)newRect.width * (int)newRect.height].Select(x => Color.clear)]);
+            m_normal.SetPixels((int)newRect.x, (int)newRect.y, (int)newRect.width, (int)newRect.height, spriteInfo.HasNormal ? newNormal.GetPixels() : [.. new Color[(int)newRect.width * (int)newRect.height].Select(x => new Color(.5f, .5f, 1f))]);
 
             IsApplied = false;
             return spriteInfo;
         }
 
-
         #endregion
+
         public void Dispose()
         {
-            if (Main && Main.isReadable) GameObject.Destroy(Main);
-            if (Emissive && Emissive.isReadable) GameObject.Destroy(Emissive);
-            if (Control && Control.isReadable) GameObject.Destroy(Control);
-            if (Mask && Mask.isReadable) GameObject.Destroy(Mask);
-            if (Normal && Normal.isReadable) GameObject.Destroy(Normal);
+            if (m_main && m_main.isReadable) GameObject.Destroy(m_main);
+            if (m_emissive && m_emissive.isReadable) GameObject.Destroy(m_emissive);
+            if (m_control && m_control.isReadable) GameObject.Destroy(m_control);
+            if (m_mask && m_mask.isReadable) GameObject.Destroy(m_mask);
+            if (m_normal && m_normal.isReadable) GameObject.Destroy(m_normal);
             ClearSprites();
         }
 
@@ -254,6 +254,7 @@ namespace BelzontWE.Font
             {
                 spriteInfo.Dispose();
             }
+
             Sprites.Clear();
         }
 
@@ -271,27 +272,41 @@ namespace BelzontWE.Font
             var offsetY = (int)spriteInfo.Region.position.y;
 
             main = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            main.SetPixels(Main.MakeReadable().GetPixels(offsetX, offsetY, width, height));
+            var tempMain = m_main.MakeReadable();
+            main.SetPixels(tempMain.GetPixels(offsetX, offsetY, width, height));
+            GameObject.Destroy(tempMain);
             if (spriteInfo.HasControl)
             {
-                control = new Texture2D(width, height, TextureFormat.RGBA32, false);
-                control.SetPixels(Control.MakeReadable().GetPixels(offsetX, offsetY, width, height));
+                control = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
+                Texture2D texture2D = m_control.MakeReadable();
+                control.SetPixels(texture2D.GetPixels(offsetX, offsetY, width, height));
+                GameObject.Destroy(texture2D);
             }
+
             if (spriteInfo.HasEmissive)
             {
                 emissive = new Texture2D(width, height, TextureFormat.RGBA32, false);
-                emissive.SetPixels(Emissive.MakeReadable().GetPixels(offsetX, offsetY, width, height));
+                Texture2D texture2D = m_emissive.MakeReadable();
+                emissive.SetPixels(texture2D.GetPixels(offsetX, offsetY, width, height));
+                GameObject.Destroy(texture2D);
             }
+
             if (spriteInfo.HasMaskMap)
             {
-                mask = new Texture2D(width, height, TextureFormat.RGBA32, false);
-                mask.SetPixels(Mask.MakeReadable().GetPixels(offsetX, offsetY, width, height));
+                mask = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
+                Texture2D texture2D = m_mask.MakeReadable();
+                mask.SetPixels(texture2D.GetPixels(offsetX, offsetY, width, height));
+                GameObject.Destroy(texture2D);
             }
+
             if (spriteInfo.HasNormal)
             {
-                normal = new Texture2D(width, height, TextureFormat.RGBA32, false);
-                normal.SetPixels(Normal.MakeReadable().GetPixels(offsetX, offsetY, width, height));
+                normal = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
+                Texture2D texture2D = m_normal.MakeReadable();
+                normal.SetPixels(texture2D.GetPixels(offsetX, offsetY, width, height));
+                GameObject.Destroy(texture2D);
             }
+
             return true;
         }
 
@@ -301,6 +316,7 @@ namespace BelzontWE.Font
             {
                 throw new InvalidOperationException("This texture atlas is not writable.");
             }
+
             foreach (var spriteInfo in other.Sprites.Values)
             {
                 if (Sprites.TryGetValue(spriteInfo.Name, out var value))
@@ -315,6 +331,7 @@ namespace BelzontWE.Font
                         continue;
                     }
                 }
+
                 other.GetAsSingleImage(spriteInfo.Name, out var main, out var emissive, out var control, out var mask, out var normal);
                 Insert(spriteInfo.Name, main, emissive, control, mask, normal);
                 if (main) GameObject.Destroy(main);
@@ -323,10 +340,12 @@ namespace BelzontWE.Font
                 if (mask) GameObject.Destroy(mask);
                 if (normal) GameObject.Destroy(normal);
             }
+
             Apply();
         }
 
         #region Serialization
+
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
             if (!WillSerialize) throw new NotSupportedException("This texture atlas isn't marked to serialize");
@@ -345,11 +364,13 @@ namespace BelzontWE.Font
                 writer.Write(mainTexBytes);
                 mainTexBytes.Dispose();
             }
+
             writer.Write(Sprites.Count);
             foreach (var spriteInfo in Sprites)
             {
                 writer.Write(spriteInfo.Value);
             }
+
             writer.Write(Version);
         }
 
@@ -357,10 +378,12 @@ namespace BelzontWE.Font
         {
             throw new InvalidOperationException("Use the method that returns the actions to load the images");
         }
+
         private struct ImageLoadInfo
         {
             public byte[] pngData;
         }
+
         public bool Deserialize<TReader>(TReader reader, FixedString32Bytes name, out Action imageLoadAction) where TReader : IReader
         {
             reader.Read(out uint version);
@@ -370,6 +393,7 @@ namespace BelzontWE.Font
                 imageLoadAction = null;
                 return false;
             }
+
             reader.Read(out int method);
             Method = (HeuristicMethod)method;
             rectsPack = new MaxRectsBinPack();
@@ -387,6 +411,7 @@ namespace BelzontWE.Font
             {
                 Size = Convert.ToString(Width - 1, 2).Length + Convert.ToString(Height - 1, 2).Length;
             }
+
             var bytesArrays = new ImageLoadInfo[5];
             for (int i = 0; i < bytesArrays.Length; i++)
             {
@@ -397,6 +422,7 @@ namespace BelzontWE.Font
                 bytesArrays[i].pngData = texBytes.ToArray();
                 texBytes.Dispose();
             }
+
             ClearSprites();
             reader.Read(out int spriteCount);
             for (int i = 0; i < spriteCount; i++)
@@ -405,30 +431,42 @@ namespace BelzontWE.Font
                 reader.Read(info);
                 Sprites[info.Name] = info;
             }
+
             imageLoadAction = () =>
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Loading texture atlas '{name}'!");
-                if (main) GameObject.Destroy(main); main = new Texture2D(Width, Height, TextureFormat.RGBA32, false); main.LoadImage(bytesArrays[0].pngData);
-                if (emissive) GameObject.Destroy(emissive); emissive = new Texture2D(Width, Height, TextureFormat.RGBA32, false); emissive.LoadImage(bytesArrays[1].pngData);
-                if (control) GameObject.Destroy(control); control = new Texture2D(Width, Height, TextureFormat.RGBA32, false); control.LoadImage(bytesArrays[2].pngData);
-                if (mask) GameObject.Destroy(mask); mask = new Texture2D(Width, Height, TextureFormat.RGBA32, false); mask.LoadImage(bytesArrays[3].pngData);
-                if (normal) GameObject.Destroy(normal); normal = new Texture2D(Width, Height, TextureFormat.RGBA32, false); normal.LoadImage(bytesArrays[4].pngData);
+                if (m_main) GameObject.Destroy(m_main);
+                m_main = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+                m_main.LoadImage(bytesArrays[0].pngData);
+                if (m_emissive) GameObject.Destroy(m_emissive);
+                m_emissive = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+                m_emissive.LoadImage(bytesArrays[1].pngData);
+                if (m_control) GameObject.Destroy(m_control);
+                m_control = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
+                m_control.LoadImage(bytesArrays[2].pngData);
+                if (m_mask) GameObject.Destroy(m_mask);
+                m_mask = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
+                m_mask.LoadImage(bytesArrays[3].pngData);
+                if (m_normal) GameObject.Destroy(m_normal);
+                m_normal = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
+                m_normal.LoadImage(bytesArrays[4].pngData);
                 foreach (var sprite in Sprites)
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Calculating BRI for sprite {name}.{sprite.Key}");
                     sprite.Value.CachedBRI = WERenderingHelper.GenerateBri(this, sprite.Value);
                 }
+
                 Apply();
             };
-            if (version >= 1)
-            {
-                reader.Read(out uint versionAtlas);
-                Version = versionAtlas;
-            }
+            if (version < 1) return true;
+            reader.Read(out uint versionAtlas);
+            Version = versionAtlas;
+
             return true;
         }
 
         #endregion
+
         public bool ContainsKey(FixedString32Bytes spriteName) => Sprites.ContainsKey(spriteName);
 
         public bool TryGetValue(FixedString32Bytes spriteName, out IBasicRenderInformation cachedInfo)
@@ -455,7 +493,6 @@ namespace BelzontWE.Font
             //File.WriteAllBytes(Path.Combine(baseFolder, "__Mask.png"), Mask.MakeReadable().EncodeToPNG());
             //File.WriteAllBytes(Path.Combine(baseFolder, "__Normal.png"), Normal.MakeReadable().EncodeToPNG());
             //File.WriteAllText(Path.Combine(baseFolder, "__AtlasData.xml"), XmlUtils.DefaultXmlSerialize(Sprites.Values.ToArray()));
-
         }
 
         public WEImageInfo[] ToImageInfoArray()
@@ -477,8 +514,9 @@ namespace BelzontWE.Font
 
         internal void Init()
         {
-
         }
+
+        #region VT
 
         internal XmlVTAtlasInfo GetVTDataXml(AssetDatabase<K45WE_VTLocalDatabase> db, string atlasName, string fullName, ulong checksum)
         {
@@ -487,80 +525,117 @@ namespace BelzontWE.Font
                 Apply();
                 Checksum = checksum;
 
-                LogUtils.DoInfoLog($"Creating virtual textures for atlas {atlasName} - original size: {main.width}x{main.height}");
-
-                VirtualTexturingConfig virtualTexturingConfig = Resources.Load<VirtualTexturingConfig>("VirtualTexturingConfig");
-
-                //mainVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_Main", EscapeStrategy.Filename), default);
-                //    mainVT.Save(0, db.AddAsset(main), main.width, 0, virtualTexturingConfig);
-                ////if (mask)
-                //{
-                //    File.WriteAllBytes(Path.Combine(K45WE_VTLocalDatabase.EffectivePath, $"{atlasName}__Mask.png"), mask.EncodeToPNG());
-                //    maskVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_Mask", EscapeStrategy.Filename), default);
-                //    var textureAsset = db.AddAsset(mask);
-                //    //     maskVT.Save(0, textureAsset, mask.width, 0, virtualTexturingConfig);
-                //}
-                ////if (normal)
-                //{
-                //    normalVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_Normal", EscapeStrategy.Filename), default);
-                //    //    normalVT.Save(0, db.AddAsset(normal), normal.width, 0, virtualTexturingConfig);
-                //}
-                //if (control)
-                //{
-                //    controlVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_ControlMask", EscapeStrategy.Filename), default);
-                //    var textureAsset = db.AddAsset(control);
-                //    //   controlVT.Save(0, textureAsset, control.width, 0, virtualTexturingConfig);
-                //}
-                ////if (emissive)
-                //{
-                //    emissiveVT = db.AddAsset<VTTextureAsset>(AssetDataPath.Create($"{atlasName}_Emissive", EscapeStrategy.Filename), default);
-                //    var textureAsset = db.AddAsset(emissive);
-                //    //        emissiveVT.Save(0, textureAsset, emissive.width, 0, virtualTexturingConfig);
-                //}
-
-                var assetControlMask = AssetDataPath.Create($"{atlasName}_ControlMask", EscapeStrategy.Filename);
-                var assetEmissive = AssetDataPath.Create($"{atlasName}_Emissive", EscapeStrategy.Filename);
-                var assetMaskMap = AssetDataPath.Create($"{atlasName}_MaskMap", EscapeStrategy.Filename);
-                var assetNormal = AssetDataPath.Create($"{atlasName}_Normal", EscapeStrategy.Filename);
-                var assetMain = AssetDataPath.Create($"{atlasName}_Main", EscapeStrategy.Filename);
-
-                VTSurfaceUtility.CreateVTSurfaceAsset(main, normal, mask, control, emissive, db, $"{atlasName}_DefMat", out defaultSurface, out glassSurface, out decalSurface);
-
+                LogUtils.DoInfoLog($"Creating virtual textures for atlas {atlasName} - original size: {m_main.width}x{m_main.height}");
+                VTSurfaceUtility.CreateVTSurfaceAsset(m_main, m_normal, m_mask, m_control, m_emissive, db, atlasName,
+                    out mainVT, out normalVT, out maskVT, out controlVT, out emissiveVT);
 
                 IsWritable = false;
-                GameObject.Destroy(main);
-                GameObject.Destroy(control);
-                GameObject.Destroy(emissive);
-                GameObject.Destroy(mask);
-                GameObject.Destroy(normal);
-
+                GameObject.Destroy(m_main);
+                GameObject.Destroy(m_control);
+                GameObject.Destroy(m_emissive);
+                GameObject.Destroy(m_mask);
+                GameObject.Destroy(m_normal);
             }
+
             return new XmlVTAtlasInfo
             {
                 Checksum = Checksum,
-                MainTex = default,// mainVT.id.guid,
-                ControlMap = default,// controlVT.id.guid,
-                Emissive = default,// emissiveVT.id.guid,
-                MaskMap = default,//maskVT.id.guid,
-                Normal = default,//normalVT.id.guid,
-                SurfDcl = decalSurface.id.guid,
-                SurfDef = defaultSurface.id.guid,
-                SurfGls = glassSurface.id.guid,
+                MainTex = mainVT.id.guid,
+                ControlMap = controlVT.id.guid,
+                Emissive = emissiveVT.id.guid,
+                MaskMap = maskVT.id.guid,
+                Normal = normalVT.id.guid,
                 Name = atlasName,
                 FullName = fullName,
-                Sprites = Sprites.Values.Select(x => new XmlVTAtlasInfo.XmlSpriteEntry
-                {
-                    Name = x.Name,
-                    MinX = x.Region.x,
-                    MinY = x.Region.y,
-                    Width = x.Region.width,
-                    Height = x.Region.height,
-                    HasControl = x.HasControl,
-                    HasEmissive = x.HasEmissive,
-                    HasMaskMap = x.HasMaskMap,
-                    HasNormal = x.HasNormal,
-                }).ToArray()
+                Sprites =
+                [
+                    .. Sprites.Values.Select(x => new XmlVTAtlasInfo.XmlSpriteEntry
+                    {
+                        Name = x.Name,
+                        MinX = x.Region.x,
+                        MinY = x.Region.y,
+                        Width = x.Region.width,
+                        Height = x.Region.height,
+                        HasControl = x.HasControl,
+                        HasEmissive = x.HasEmissive,
+                        HasMaskMap = x.HasMaskMap,
+                        HasNormal = x.HasNormal,
+                    })
+                ]
             };
         }
+
+        private VTAtlassingInfo[] m_VTAtlassingInfos;
+
+        public void RegisterToVT(TextureStreamingSystem vtSys)
+        {
+            m_VTAtlassingInfos = new VTAtlassingInfo[2];
+
+            AtlassedSize unbiasedStackTextureSize = new(Width, Height);
+
+            for (int i = 0; i < m_VTAtlassingInfos.Length; i++)
+            {
+                List<int> list = vtSys.ReserveMultipleTextureRect(i, unbiasedStackTextureSize.x, unbiasedStackTextureSize.y, i == 0 ? 4 : 1, 64, out var globalStackIdx);
+                m_VTAtlassingInfos[i] = new VTAtlassingInfo(globalStackIdx, list[0], VTAddressMode.Clamp);
+                LogUtils.DoInfoLog($"i = {i} | globalStackIdx = {globalStackIdx} | list = [{string.Join(", ", list.Select(x => x.ToString()))}]");
+                for (int j = 0; j < VT_PROPERTIES.Length - (i * 4) && j < 4; j++)
+                {
+                    VTTextureAsset asset = PropertyToVT(VT_PROPERTIES[j]);
+                    if (asset == null) continue;
+                    var texturesAsyncLoader = new TexturesAsyncLoader
+                    {
+                        m_TextureHeight = Height,
+                        m_TextureWidth = Width,
+                        m_StackGlobalIndex = globalStackIdx,
+                        m_TextureIndex = list[j]
+                    };
+                    asset.LoadHeader();
+                    asset.Load(unbiasedStackTextureSize, vtSys, texturesAsyncLoader, j % 4, asset.textureAsset.mipsCount);
+                    MainThreadDispatcher.RegisterUpdater(() => texturesAsyncLoader.CompleteIfReady(vtSys));
+                }
+            }
+        }
+
+        public Material GenerateMaterial(WEShader shader, TextureStreamingSystem tss)
+        {
+            if (IsWritable)
+            {
+                return WERenderingHelper.GenerateMaterial(shader, m_main, m_normal, m_mask, m_control, m_emissive);
+            }
+
+            if (shader == WEShader.Glass) return null;
+
+            var newMaterial = WERenderingHelper.CreateDefaultMaterial(shader);
+            var templateHash = AssetDatabase.global.resources.materialLibrary.GetMaterialHash(newMaterial);
+            var templateDescription = AssetDatabase.global.resources.materialLibrary.GetMaterialDescription(templateHash);
+
+            newMaterial.EnableKeyword("ENABLE_VT");
+            tss.BindMaterial(newMaterial, m_VTAtlassingInfos, 0);
+
+            return newMaterial;
+        }
+
+        private static readonly string[] VT_PROPERTIES = [
+            "_BaseColorMap",
+            "_NormalMap",
+            "_MaskMap",
+            "_ControlMask",
+            "_EmissiveColorMap"
+        ];
+
+        private VTTextureAsset PropertyToVT(string property)
+        {
+            return property switch
+            {
+                "_BaseColorMap" => mainVT,
+                "_NormalMap" => normalVT,
+                "_MaskMap" => maskVT,
+                "_ControlMask" => controlVT,
+                "_EmissiveColorMap" => emissiveVT,
+                _ => null,
+            };
+        }
+
+        #endregion
     }
 }

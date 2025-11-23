@@ -15,7 +15,6 @@
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
   <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
   <Import Project="$(SolutionDir)\_Build\belzont_public.targets" />
-  <Import Project="$(SolutionDir)\..\_Shared\local_shared.targets" />
 
   <!--Mod data-->
   <PropertyGroup>
@@ -120,6 +119,9 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.VirtualTexturingModule">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Colossal.AssetPipeline.Native">
       <Private>False</Private>
     </Reference>
     <Reference Include="Cinemachine">

@@ -6,6 +6,7 @@ using BelzontWE.Font;
 using BelzontWE.Layout;
 using Colossal;
 using Colossal.IO.AssetDatabase;
+using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Colossal.OdinSerializer.Utilities;
 using Colossal.Serialization.Entities;
 using Game;
@@ -21,7 +22,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
@@ -45,6 +45,7 @@ namespace BelzontWE.Sprites
         public static WEAtlasesLibrary Instance { get; private set; }
         private readonly Queue<Action> actionQueue = new();
         private EntityQuery m_atlasUsageQuery;
+        private TextureStreamingSystem m_textureStreamingSystem;
 
         public WEAtlasesLibrary() : base()
         {
@@ -73,6 +74,7 @@ namespace BelzontWE.Sprites
                         }
                     }
               });
+            m_textureStreamingSystem = World.GetOrCreateSystemManaged<TextureStreamingSystem>();
         }
 
         protected override void OnStartRunning()
@@ -138,8 +140,8 @@ namespace BelzontWE.Sprites
         {
             cachedInfo = null;
             var isValidAtlas = dictionary.TryGetValue(atlasName, out var resultDicCache);
-            var result = isValidAtlas && resultDicCache.TryGetValue(spriteName, out cachedInfo) && cachedInfo != null && cachedInfo.Main;
-            if (!result && fallback == null && isValidAtlas && resultDicCache.TryGetValue("_FALLBACK", out var fallbackItem) && fallbackItem != null && fallbackItem.Main)
+            var result = isValidAtlas && resultDicCache.TryGetValue(spriteName, out cachedInfo) && cachedInfo != null && cachedInfo.IsValid();
+            if (!result && fallback == null && isValidAtlas && resultDicCache.TryGetValue("_FALLBACK", out var fallbackItem) && fallbackItem != null && fallbackItem.IsValid())
             {
                 fallback = fallbackItem;
             }
@@ -178,19 +180,29 @@ namespace BelzontWE.Sprites
                 };
                 NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * i / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
                 yield return 0;
-                var vtXmlFilePath = Path.Combine(CACHED_VT_FOLDER, $"~{Path.GetFileNameWithoutExtension(dir)}_vt.xml");
+                string vtXmlName = $"~{Path.GetFileNameWithoutExtension(dir)}_vt.xml";
+                var vtXmlFilePath = Path.Combine(CACHED_VT_FOLDER, vtXmlName);
                 var directoryChecksum = WEAtlasLoadingUtils.CalculateCheckshumForDirectory(dir);
                 if (File.Exists(vtXmlFilePath))
                 {
                     var vtInfo = XmlUtils.DefaultXmlDeserialize<XmlVTAtlasInfo>(File.ReadAllText(vtXmlFilePath));
                     if (vtInfo != null && vtInfo.Checksum == directoryChecksum)
                     {
-                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Loading VT atlas from cache for folder {dir}");
-                        var loaded = new WETextureAtlas(vtInfo, LocalAtlasDatabase);
-                        LocalAtlases[Path.GetFileNameWithoutExtension(dir)] = loaded;
+                        try
+                        {
+                            if (BasicIMod.DebugMode) LogUtils.DoLog($"Loading VT atlas from cache for folder {dir}");
+                            var loaded = new WETextureAtlas(vtInfo, LocalAtlasDatabase);
+                            loaded.RegisterToVT(m_textureStreamingSystem);
+                            LocalAtlases[Path.GetFileNameWithoutExtension(dir)] = loaded;
 
-                        NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * (i + 1) / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
-                        continue;
+                            NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * (i + 1) / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
+                            continue;
+                        }
+                        catch (Exception e)
+                        {
+                            LogUtils.DoWarnLog($"Invalid VT file for {vtXmlName}; cleaning: {e.Message}");
+                            File.Delete(vtXmlFilePath);
+                        }
                     }
                     else
                     {
@@ -204,6 +216,7 @@ namespace BelzontWE.Sprites
                 {
                     var vtInfo = generatedAtlas.GetVTDataXml(LocalAtlasDatabase, Path.GetFileNameWithoutExtension(dir), $"{Path.GetFileNameWithoutExtension(dir)}", directoryChecksum);
                     File.WriteAllText(vtXmlFilePath, XmlUtils.DefaultXmlSerialize(vtInfo, true));
+                    generatedAtlas.RegisterToVT(m_textureStreamingSystem);
                 }
             }
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
@@ -611,7 +624,7 @@ namespace BelzontWE.Sprites
             }
 
         }
-#endregion
+        #endregion
 
     }
 }
