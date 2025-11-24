@@ -8,7 +8,6 @@ using Colossal.IO.AssetDatabase;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Colossal.Serialization.Entities;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -565,23 +564,24 @@ namespace BelzontWE.Font
             };
         }
 
-        private VTAtlassingInfo[] m_VTAtlassingInfos;
+        private VTAtlassingInfo[] m_preReservedAtlassingInfo;
 
         public void RegisterToVT(TextureStreamingSystem vtSys)
         {
-            m_VTAtlassingInfos = new VTAtlassingInfo[2];
+            m_preReservedAtlassingInfo = new VTAtlassingInfo[5];
 
             AtlassedSize unbiasedStackTextureSize = new(Width, Height);
 
-            for (int i = 0; i < m_VTAtlassingInfos.Length; i++)
+            for (int i = 0; i < 2; i++)
             {
                 List<int> list = vtSys.ReserveMultipleTextureRect(i, unbiasedStackTextureSize.x, unbiasedStackTextureSize.y, i == 0 ? 4 : 1, 64, out var globalStackIdx);
-                m_VTAtlassingInfos[i] = new VTAtlassingInfo(globalStackIdx, list[0], VTAddressMode.Clamp);
                 LogUtils.DoInfoLog($"i = {i} | globalStackIdx = {globalStackIdx} | list = [{string.Join(", ", list.Select(x => x.ToString()))}]");
-                for (int j = 0; j < VT_PROPERTIES.Length - (i * 4) && j < 4; j++)
+                for (int j = 0; j < list.Count; j++)
                 {
-                    VTTextureAsset asset = PropertyToVT(VT_PROPERTIES[j]);
+                    VTTextureAsset asset = PropertyToVT(VT_PROPERTIES[j + (i * 4)]);
                     if (asset == null) continue;
+                    m_preReservedAtlassingInfo[(i * 4) + j] = new VTAtlassingInfo(globalStackIdx, list[j], VTAddressMode.Clamp);
+
                     var texturesAsyncLoader = new TexturesAsyncLoader
                     {
                         m_TextureHeight = Height,
@@ -590,7 +590,7 @@ namespace BelzontWE.Font
                         m_TextureIndex = list[j]
                     };
                     asset.LoadHeader();
-                    asset.Load(unbiasedStackTextureSize, vtSys, texturesAsyncLoader, j % 4, asset.textureAsset.mipsCount);
+                    asset.Load(unbiasedStackTextureSize, vtSys, texturesAsyncLoader, j, asset.textureAsset.mipsCount);
                     MainThreadDispatcher.RegisterUpdater(() => texturesAsyncLoader.CompleteIfReady(vtSys));
                 }
             }
@@ -610,8 +610,11 @@ namespace BelzontWE.Font
             var templateDescription = AssetDatabase.global.resources.materialLibrary.GetMaterialDescription(templateHash);
 
             newMaterial.EnableKeyword("ENABLE_VT");
-            tss.BindMaterial(newMaterial, m_VTAtlassingInfos, 0);
-
+            for (int j = 0; j < 2; j++)
+            {
+                var paramBlock = tss.GetTextureParamBlock(this.m_preReservedAtlassingInfo[j * 4]);
+                tss.BindMaterial(newMaterial, m_preReservedAtlassingInfo[j].stackGlobalIndex, j, paramBlock);
+            }
             return newMaterial;
         }
 

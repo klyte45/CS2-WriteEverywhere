@@ -14,6 +14,7 @@ namespace BelzontWE
         private WESimulationTextType textType;
 
         private GCHandle basicRenderInformation;
+        public Colossal.Hash128 BriGuid { get; private set; }
         private FixedString64Bytes atlas;
         public FixedString128Bytes originalName;
         private FixedString64Bytes fontName;
@@ -59,13 +60,14 @@ namespace BelzontWE
         {
             if (basicRenderInformation.IsAllocated)
             {
-                if (basicRenderInformation.Target is IBasicRenderInformation ibri)
+                if (basicRenderInformation.Target is IBasicRenderInformation ibri && !ibri.IsValid())
                 {
                     ibri.Dispose();
                 }
                 basicRenderInformation.Free();
             }
             basicRenderInformation = default;
+            BriGuid = default;
             MinLod = 0;
             Bounds = new Bounds3(new float3(-.5f, -.5f, 0), new float3(.5f, .5f, 0));
         }
@@ -100,6 +102,7 @@ namespace BelzontWE
                 if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
                 basicRenderInformation = default;
                 basicRenderInformation = GCHandle.Alloc(bri, GCHandleType.Weak);
+                BriGuid = bri.Guid;
                 Bounds = bri.Bounds;
                 BriWidthMetersUnscaled = bri.m_sizeMetersUnscaled.x;
                 LastErrorStr = bri.IsError ? (FixedString512Bytes)text : default;
@@ -111,6 +114,7 @@ namespace BelzontWE
             {
                 if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
                 basicRenderInformation = GCHandle.Alloc(ibri, GCHandleType.Weak);
+                BriGuid = ibri.Guid;
                 Bounds = ibri.Bounds;
                 BriWidthMetersUnscaled = 1;
                 LastErrorStr = default;
@@ -123,17 +127,27 @@ namespace BelzontWE
         {
             if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
             basicRenderInformation = default;
+            BriGuid = default;
 
         }
 
         public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr)
         {
-            if (HasBRI && (basicRenderInformation.Target is not IBasicRenderInformation ibri || !ibri.IsValid()))
+            if (HasBRI)
             {
-                basicRenderInformation.Free();
-                basicRenderInformation = default;
-                dirty = true;
-                return true;
+                IBasicRenderInformation ibri = basicRenderInformation.Target as IBasicRenderInformation;
+                if (ibri is null || !ibri.IsValid() || ibri.Guid != BriGuid)
+                {
+                    if (ibri != null && !ibri.IsValid())
+                    {
+                        ibri.Dispose();
+                    }
+                    basicRenderInformation.Free();
+                    basicRenderInformation = default;
+                    BriGuid = default;
+                    dirty = true;
+                    return true;
+                }
             }
             bool result = false;
             var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[varsStr]];
@@ -204,7 +218,6 @@ namespace BelzontWE
                 }
                 else
                 {
-                    if (basicRenderInformation.IsAllocated) basicRenderInformation.Free();
                     return null;
                 }
             }

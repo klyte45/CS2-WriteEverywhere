@@ -104,7 +104,7 @@ namespace BelzontWE
 
         public void Dispose()
         {
-            GameObject.Destroy(mesh);
+            if (mesh) GameObject.Destroy(mesh);
             if (handleCheck.IsAllocated) handleCheck.Free();
 
         }

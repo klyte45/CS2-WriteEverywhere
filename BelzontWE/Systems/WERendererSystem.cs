@@ -94,7 +94,7 @@ namespace BelzontWE
                     if (doRender)
                     {
                         IBasicRenderInformation bri = mesh.RenderInformation;
-                        if (bri != null && !bri.IsValid())
+                        if (bri != null && (!bri.IsValid() || bri.Guid != mesh.BriGuid))
                         {
                             mesh.ResetBri();
                             bri = null;
