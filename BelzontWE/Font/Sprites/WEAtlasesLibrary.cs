@@ -1,10 +1,8 @@
 using Belzont.Interfaces;
 using Belzont.Serialization;
 using Belzont.Utils;
-using BelzontWE.AssetDatabases;
 using BelzontWE.Font;
 using BelzontWE.Layout;
-using Colossal;
 using Colossal.IO.AssetDatabase;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Colossal.OdinSerializer.Utilities;
@@ -21,7 +19,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
@@ -46,11 +43,6 @@ namespace BelzontWE.Sprites
         private readonly Queue<Action> actionQueue = new();
         private EntityQuery m_atlasUsageQuery;
         private TextureStreamingSystem m_textureStreamingSystem;
-
-        public WEAtlasesLibrary() : base()
-        {
-            KFileUtils.EnsureFolderCreation(K45WE_VTLocalDatabase.EffectivePath);
-        }
 
         protected override void OnCreate()
         {
@@ -97,18 +89,17 @@ namespace BelzontWE.Sprites
 
         private const string INTERNAL_ATLAS_NAME = @"\/INTERNAL\/";
 
-        private Dictionary<FixedString32Bytes, WETextureAtlas> LocalAtlases { get; } = new();
-        private AssetDatabase<K45WE_VTLocalDatabase> LocalAtlasDatabase { get; } = AssetDatabase<K45WE_VTLocalDatabase>.instance;
-        private Dictionary<FixedString32Bytes, WETextureAtlas> CityAtlases { get; } = new();
-        private Dictionary<string, WETextureAtlas> ModAtlases { get; } = new();
+        private Dictionary<FixedString32Bytes, WETextureAtlas> LocalAtlases { get; } = [];
+        private Dictionary<FixedString32Bytes, WETextureAtlas> CityAtlases { get; } = [];
+        private Dictionary<string, WETextureAtlas> ModAtlases { get; } = [];
 
-        private Dictionary<string, (ModInfo info, Dictionary<string, Action> registerCallback)> RegisteredModsAtlases { get; } = new();
+        private Dictionary<string, (ModInfo info, Dictionary<string, Action> registerCallback)> RegisteredModsAtlases { get; } = [];
 
         #region Getters
 
         public Dictionary<string, bool> ListAvailableAtlases() => LocalAtlases.Where(x => x.Key != INTERNAL_ATLAS_NAME && !CityAtlases.ContainsKey(x.Key) && x.Value.Count > 0).Select(x => (x.Key.ToString(), false)).Concat(CityAtlases.Select(x => (x.Key.ToString(), true))).ToDictionary(x => x.Item1, x => x.Item2);
 
-        public string[] ListAvailableAtlasImages(string atlasName) => !atlasName.IsNullOrWhitespace() && (CityAtlases.TryGetValue(atlasName, out var arr) || LocalAtlases.TryGetValue(atlasName, out arr) || ModAtlases.TryGetValue(atlasName, out arr)) ? arr.Keys.Select(x => x.ToString()).ToArray() : new string[0];
+        public string[] ListAvailableAtlasImages(string atlasName) => !atlasName.IsNullOrWhitespace() && (CityAtlases.TryGetValue(atlasName, out var arr) || LocalAtlases.TryGetValue(atlasName, out arr) || ModAtlases.TryGetValue(atlasName, out arr)) ? [.. arr.Keys.Select(x => x.ToString())] : [];
 
         internal IBasicRenderInformation GetFromLocalAtlases(WEImages image)
         {
@@ -162,14 +153,6 @@ namespace BelzontWE.Sprites
             ClearAtlasDict(LocalAtlases);
             var errors = new Dictionary<string, string>();
             var folders = Directory.GetDirectories(IMAGES_FOLDER);
-            LocalAtlasDatabase.RemoveAllAssets();
-            var loadingProgress = new TaskProgress((x) => NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((5f * x.progress / folders.Length) + 20), textI18n: "generatingAtlasesCache.reloadingVT"));
-            var taskReloading = LocalAtlasDatabase.PopulateFromDataSource(false, CancellationToken.None, loadingProgress);
-            do
-            {
-                yield return 0;
-            } while (!taskReloading.IsCompleted);
-            LogUtils.DoInfoLog($"Loaded {LocalAtlasDatabase.count} items into local VT database");
             for (int i = 0; i < folders.Length; i++)
             {
                 string dir = folders[i];
@@ -182,7 +165,7 @@ namespace BelzontWE.Sprites
                 yield return 0;
                 var spritesToAdd = new List<WEImageInfo>();
                 WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, (img, msg) => errors[img] = msg);
-                var generatedAtlas = RegisterLocalAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25);              
+                var generatedAtlas = RegisterLocalAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25);
             }
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
             yield return 0;
@@ -193,7 +176,7 @@ namespace BelzontWE.Sprites
                 while (LocalAtlases[INTERNAL_ATLAS_NAME].Insert(img.ToString(), Texture) == 2)
                 {
                     var currentSize = LocalAtlases[INTERNAL_ATLAS_NAME].Size;
-                    if (currentSize >= 28) break;
+                    if (currentSize >= 24) break;
                     var newAtlas = new WETextureAtlas(currentSize + 1);
                     newAtlas.InsertAll(LocalAtlases[INTERNAL_ATLAS_NAME]);
                     LocalAtlases[INTERNAL_ATLAS_NAME].Dispose();
@@ -255,10 +238,7 @@ namespace BelzontWE.Sprites
         internal void LoadImagesToAtlas(Assembly mainAssembly, string atlasName, string[] imagePaths, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args)
         {
             var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
-            EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) =>
-            {
-                WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, (img, msg) => errors.Add($"{img}: {msg}"));
-            });
+            EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, (img, msg) => errors.Add($"{img}: {msg}")));
         }
 
         internal void LoadImagesAsDynamicAtlas(Assembly mainAssembly, string atlasName,
@@ -309,7 +289,7 @@ namespace BelzontWE.Sprites
                     if (spritesToAdd.Count == 0) return;
                     RegisterAtlas(ModAtlases, WEModIntegrationUtility.GetModAccessName(mainAssembly, atlasName), spritesToAdd, notifGroup, "generatingAtlasesCacheMod.loading", args, args, LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, 100, 0);
                 }
-                if (!RegisteredModsAtlases.ContainsKey(modId)) RegisteredModsAtlases[modId] = (ModManagementUtils.GetModDataFromMainAssembly(mainAssembly), new());
+                if (!RegisteredModsAtlases.ContainsKey(modId)) RegisteredModsAtlases[modId] = (ModManagementUtils.GetModDataFromMainAssembly(mainAssembly), []);
                 RegisteredModsAtlases[modId].registerCallback[atlasName] = RegisterCallback;
                 RegisteredModsAtlases[modId].registerCallback[atlasName]();
             });
@@ -350,7 +330,7 @@ namespace BelzontWE.Sprites
                     while (targetDict[atlasName].Insert(entry) == 2)
                     {
                         var currentSize = targetDict[atlasName].Size;
-                        if (currentSize >= 28) break;
+                        if (currentSize >= 24) break;
                         var newAtlas = new WETextureAtlas(currentSize + 1);
                         newAtlas.InsertAll(targetDict[atlasName]);
                         targetDict[atlasName].Dispose();
@@ -564,11 +544,10 @@ namespace BelzontWE.Sprites
         }
         public bool AtlasExistsInSavegame(string name) => name != null && CityAtlases.ContainsKey(name);
 
-        public float[] GetAtlasImageSize(string name) => TryGetAtlas(name, out var atlas) ? new float[] { atlas.Width, atlas.Height } : new float[0];
+        public float[] GetAtlasImageSize(string name) => TryGetAtlas(name, out var atlas) ? [atlas.Width, atlas.Height] : [];
 
         internal record struct ModAtlasRegistry(string ModId, string ModName, string[] Atlases) { }
-        internal ModAtlasRegistry[] ListModAtlases() => RegisteredModsAtlases
-            .Select(x => new ModAtlasRegistry(WEModIntegrationUtility.GetModIdentifier(x.Value.info.asset.assembly), x.Value.info.asset.GetMeta().displayName, ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":")).ToArray())).ToArray();
+        internal ModAtlasRegistry[] ListModAtlases() => [.. RegisteredModsAtlases.Select(x => new ModAtlasRegistry(WEModIntegrationUtility.GetModIdentifier(x.Value.info.asset.assembly), x.Value.info.asset.GetMeta().displayName, [.. ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":"))]))];
 
 #if BURST
         [Unity.Burst.BurstCompile]

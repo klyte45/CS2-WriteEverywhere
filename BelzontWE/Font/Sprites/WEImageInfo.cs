@@ -10,7 +10,8 @@ namespace BelzontWE.Layout
 {
     public class WEImageInfo : IDisposable
     {
-        public const int MAX_SIZE_IMAGE_IMPORT = 2048;
+        public const int MAX_SIZE_IMAGE_IMPORT = 1000;
+        public const int MAX_SIZE_IMAGE_IMPORT_MODULES = 4094;
         public const string CONTROL_MASK_MAP_EXTENSION = "_ControlMask.png";
         public const string NORMAL_MAP_EXTENSION = "_Normal.png";
         public const string EMISSIVE_MAP_EXTENSION = "_Emissive.png";
@@ -58,7 +59,7 @@ namespace BelzontWE.Layout
             //}
             if (tex.LoadImage(data.Main))
             {
-                if (tex.height <= MAX_SIZE_IMAGE_IMPORT && tex.width <= MAX_SIZE_IMAGE_IMPORT)
+                if (tex.height <= MAX_SIZE_IMAGE_IMPORT_MODULES && tex.width <= MAX_SIZE_IMAGE_IMPORT_MODULES)
                 {
                     return new WEImageInfo()
                     {
@@ -72,7 +73,7 @@ namespace BelzontWE.Layout
                 }
                 else
                 {
-                    errors.Add($"{data.Name}: IMAGE TOO LARGE (max: {MAX_SIZE_IMAGE_IMPORT}x{MAX_SIZE_IMAGE_IMPORT}, have: {tex.width}x{tex.height})");
+                    errors.Add($"{data.Name}: IMAGE TOO LARGE (max: {MAX_SIZE_IMAGE_IMPORT_MODULES}x{MAX_SIZE_IMAGE_IMPORT_MODULES}, have: {tex.width}x{tex.height})");
                     GameObject.Destroy(tex);
                 }
             }

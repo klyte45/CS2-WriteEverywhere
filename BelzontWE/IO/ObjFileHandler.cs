@@ -11,7 +11,7 @@ namespace BelzontWE.IO
 {
     public static class ObjFileHandler
     {
-        private static CultureInfo convertCulture = new System.Globalization.CultureInfo("en");
+        private readonly static CultureInfo convertCulture = new("en");
         public class WEMeshDescriptor
         {
 
@@ -22,10 +22,10 @@ namespace BelzontWE.IO
 
             public WEMeshDescriptor(WEMeshDescriptor mesh)
             {
-                Vertices = mesh.Vertices.ToArray();
-                Normals = mesh.Normals.ToArray();
-                UVs = mesh.UVs.ToArray();
-                Triangles = mesh.Triangles.ToArray();
+                Vertices = [.. mesh.Vertices];
+                Normals = [.. mesh.Normals];
+                UVs = [.. mesh.UVs];
+                Triangles = [.. mesh.Triangles];
             }
 
             public WEMeshDescriptor(Vector3[] vertices, Vector3[] normals, Vector2[] uVs, int[] triangles)
@@ -121,11 +121,16 @@ namespace BelzontWE.IO
                             break;
                     }
                 }
+
+                if (triangles.Count > 4000)
+                {
+                    throw new Exception("OBJ files can only have up to 4000 triangles!");
+                }
                 mesh = new WEMeshDescriptor(
-                    outputVertices.ToArray(),
-                    outputNormals.ToArray(),
-                    outputUv.ToArray(),
-                    triangles.ToArray()
+                    [.. outputVertices],
+                    [.. outputNormals],
+                    [.. outputUv],
+                    [.. triangles]
                 );
             }
             catch (Exception ex)

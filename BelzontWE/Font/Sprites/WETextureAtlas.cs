@@ -53,9 +53,9 @@ namespace BelzontWE.Font
 
         public WETextureAtlas(int size, HeuristicMethod method = HeuristicMethod.RectBestShortSideFit, bool willSerialize = false)
         {
-            if (size < 18 || size > 28)
+            if (size < 18 || size > 24)
             {
-                throw new ArgumentOutOfRangeException(nameof(size), "Size must be between 18 (512x512) and 28 (16384x16384, inclusive). This is to ensure the atlas is not too small or too large for practical use.");
+                throw new ArgumentOutOfRangeException(nameof(size), "Size must be between 18 (512x512) and 24 (4096x4096, inclusive). This is to ensure the atlas is not too small or too large for practical use.");
             }
 
             Size = size;
@@ -75,7 +75,7 @@ namespace BelzontWE.Font
             m_control.name = "Control";
             m_mask.SetPixels(pixelsToSet);
             m_mask.name = "Mask";
-            m_normal.SetPixels(pixelsToSet.Select(x => new Color(.5f, .5f, 1f)).ToArray());
+            m_normal.SetPixels([.. pixelsToSet.Select(x => new Color(.5f, .5f, 1f))]);
             m_normal.name = "Normal";
             Method = method;
             rectsPack = new MaxRectsBinPack(Width, Height, false);
