@@ -1,9 +1,7 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
-using BelzontWE.AssetDatabases;
 using BelzontWE.Layout;
 using BelzontWE.Sprites;
-using Colossal.Core;
 using Colossal.IO.AssetDatabase;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Colossal.Serialization.Entities;
@@ -11,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Unity.Assertions;
 using Unity.Collections;
 using UnityEngine;
 using Color = UnityEngine.Color;
@@ -26,32 +23,9 @@ namespace BelzontWE.Font
         public int Height { get; private set; }
         public int Size { get; private set; }
 
-        public Dictionary<FixedString32Bytes, WESpriteInfo> Sprites { get; } = new();
+        public Dictionary<FixedString32Bytes, WESpriteInfo> Sprites { get; } = [];
 
-        public Texture2D Main_preview
-        {
-            get => IsWritable ? m_main : mainVT.Load() as Texture2D;
-        }
-
-        public Texture2D Emissive_preview
-        {
-            get => IsWritable ? m_emissive : emissiveVT?.Load() as Texture2D;
-        }
-
-        public Texture2D Control_preview
-        {
-            get => IsWritable ? m_control : controlVT?.Load() as Texture2D;
-        }
-
-        public Texture2D Mask_preview
-        {
-            get => IsWritable ? m_mask : maskVT?.Load() as Texture2D;
-        }
-
-        public Texture2D Normal_preview
-        {
-            get => IsWritable ? m_normal : normalVT?.Load() as Texture2D;
-        }
+        public Texture2D Main_preview => m_main;
 
         public uint Version { get; set; }
         public bool IsApplied { get; private set; }
@@ -60,9 +34,6 @@ namespace BelzontWE.Font
         public int Count => Sprites.Count;
         public bool WillSerialize { get; private set; }
         private byte[][] m_serializationOrder;
-
-        private ulong Checksum;
-
         public bool IsWritable { get; private set; } = true;
 
 
@@ -74,12 +45,6 @@ namespace BelzontWE.Font
         private Texture2D m_control;
         private Texture2D m_mask;
         private Texture2D m_normal;
-
-        private VTTextureAsset mainVT;
-        private VTTextureAsset emissiveVT;
-        private VTTextureAsset controlVT;
-        private VTTextureAsset maskVT;
-        private VTTextureAsset normalVT;
 
         internal WETextureAtlas()
         {
@@ -115,49 +80,6 @@ namespace BelzontWE.Font
             Method = method;
             rectsPack = new MaxRectsBinPack(Width, Height, false);
             WillSerialize = willSerialize;
-        }
-
-        public WETextureAtlas(XmlVTAtlasInfo atlasInfo, IAssetDatabase db)
-        {
-            IsWritable = false;
-            mainVT = db.GetAsset<VTTextureAsset>(atlasInfo.MainTex);
-            controlVT = db.GetAsset<VTTextureAsset>(atlasInfo.ControlMap);
-            emissiveVT = db.GetAsset<VTTextureAsset>(atlasInfo.Emissive);
-            maskVT = db.GetAsset<VTTextureAsset>(atlasInfo.MaskMap);
-            normalVT = db.GetAsset<VTTextureAsset>(atlasInfo.Normal);
-
-            Assert.IsNotNull(mainVT);
-
-            mainVT.Load();
-            controlVT.Load();
-            emissiveVT.Load();
-            maskVT.Load();
-            normalVT.Load();
-
-            LogUtils.DoInfoLog($"State main = {mainVT.state}");
-            LogUtils.DoInfoLog($"State control = {controlVT?.state}");
-            LogUtils.DoInfoLog($"State emissive = {emissiveVT?.state}");
-            LogUtils.DoInfoLog($"State mask = {maskVT?.state}");
-            LogUtils.DoInfoLog($"State normal = {normalVT?.state}");
-
-            Sprites = atlasInfo.Sprites.ToDictionary(x => (FixedString32Bytes)x.Name, x =>
-            {
-                var spriteInfo = new WESpriteInfo
-                {
-                    Name = x.Name,
-                    Region = new Rect(x.MinX, x.MinY, x.Width, x.Height),
-                    HasControl = x.HasControl,
-                    HasEmissive = x.HasEmissive,
-                    HasMaskMap = x.HasMaskMap,
-                    HasNormal = x.HasNormal,
-                };
-                spriteInfo.CachedBRI = WERenderingHelper.GenerateBri(this, spriteInfo);
-                return spriteInfo;
-            });
-
-            Width = mainVT.width;
-            Height = mainVT.height;
-            IsApplied = true;
         }
 
         #region Write
@@ -514,131 +436,6 @@ namespace BelzontWE.Font
         internal void Init()
         {
         }
-
-        #region VT
-
-        internal XmlVTAtlasInfo GetVTDataXml(AssetDatabase<K45WE_VTLocalDatabase> db, string atlasName, string fullName, ulong checksum)
-        {
-            if (IsWritable)
-            {
-                Apply();
-                Checksum = checksum;
-
-                LogUtils.DoInfoLog($"Creating virtual textures for atlas {atlasName} - original size: {m_main.width}x{m_main.height}");
-                VTSurfaceUtility.CreateVTSurfaceAsset(m_main, m_normal, m_mask, m_control, m_emissive, db, atlasName,
-                    out mainVT, out normalVT, out maskVT, out controlVT, out emissiveVT);
-
-                IsWritable = false;
-                GameObject.Destroy(m_main);
-                GameObject.Destroy(m_control);
-                GameObject.Destroy(m_emissive);
-                GameObject.Destroy(m_mask);
-                GameObject.Destroy(m_normal);
-            }
-
-            return new XmlVTAtlasInfo
-            {
-                Checksum = Checksum,
-                MainTex = mainVT.id.guid,
-                ControlMap = controlVT.id.guid,
-                Emissive = emissiveVT.id.guid,
-                MaskMap = maskVT.id.guid,
-                Normal = normalVT.id.guid,
-                Name = atlasName,
-                FullName = fullName,
-                Sprites =
-                [
-                    .. Sprites.Values.Select(x => new XmlVTAtlasInfo.XmlSpriteEntry
-                    {
-                        Name = x.Name,
-                        MinX = x.Region.x,
-                        MinY = x.Region.y,
-                        Width = x.Region.width,
-                        Height = x.Region.height,
-                        HasControl = x.HasControl,
-                        HasEmissive = x.HasEmissive,
-                        HasMaskMap = x.HasMaskMap,
-                        HasNormal = x.HasNormal,
-                    })
-                ]
-            };
-        }
-
-        private VTAtlassingInfo[] m_preReservedAtlassingInfo;
-
-        public void RegisterToVT(TextureStreamingSystem vtSys)
-        {
-            m_preReservedAtlassingInfo = new VTAtlassingInfo[5];
-
-            AtlassedSize unbiasedStackTextureSize = new(Width, Height);
-
-            for (int i = 0; i < 2; i++)
-            {
-                List<int> list = vtSys.ReserveMultipleTextureRect(i, unbiasedStackTextureSize.x, unbiasedStackTextureSize.y, i == 0 ? 4 : 1, 64, out var globalStackIdx);
-                LogUtils.DoInfoLog($"i = {i} | globalStackIdx = {globalStackIdx} | list = [{string.Join(", ", list.Select(x => x.ToString()))}]");
-                for (int j = 0; j < list.Count; j++)
-                {
-                    VTTextureAsset asset = PropertyToVT(VT_PROPERTIES[j + (i * 4)]);
-                    if (asset == null) continue;
-                    m_preReservedAtlassingInfo[(i * 4) + j] = new VTAtlassingInfo(globalStackIdx, list[j], VTAddressMode.Clamp);
-
-                    var texturesAsyncLoader = new TexturesAsyncLoader
-                    {
-                        m_TextureHeight = Height,
-                        m_TextureWidth = Width,
-                        m_StackGlobalIndex = globalStackIdx,
-                        m_TextureIndex = list[j]
-                    };
-                    asset.LoadHeader();
-                    asset.Load(unbiasedStackTextureSize, vtSys, texturesAsyncLoader, j, asset.textureAsset.mipsCount);
-                    MainThreadDispatcher.RegisterUpdater(() => texturesAsyncLoader.CompleteIfReady(vtSys));
-                }
-            }
-        }
-
-        public Material GenerateMaterial(WEShader shader, TextureStreamingSystem tss)
-        {
-            if (IsWritable)
-            {
-                return WERenderingHelper.GenerateMaterial(shader, m_main, m_normal, m_mask, m_control, m_emissive);
-            }
-
-            if (shader == WEShader.Glass) return null;
-
-            var newMaterial = WERenderingHelper.CreateDefaultMaterial(shader);
-            var templateHash = AssetDatabase.global.resources.materialLibrary.GetMaterialHash(newMaterial);
-            var templateDescription = AssetDatabase.global.resources.materialLibrary.GetMaterialDescription(templateHash);
-
-            newMaterial.EnableKeyword("ENABLE_VT");
-            for (int j = 0; j < 2; j++)
-            {
-                var paramBlock = tss.GetTextureParamBlock(this.m_preReservedAtlassingInfo[j * 4]);
-                tss.BindMaterial(newMaterial, m_preReservedAtlassingInfo[j].stackGlobalIndex, j, paramBlock);
-            }
-            return newMaterial;
-        }
-
-        private static readonly string[] VT_PROPERTIES = [
-            "_BaseColorMap",
-            "_NormalMap",
-            "_MaskMap",
-            "_ControlMask",
-            "_EmissiveColorMap"
-        ];
-
-        private VTTextureAsset PropertyToVT(string property)
-        {
-            return property switch
-            {
-                "_BaseColorMap" => mainVT,
-                "_NormalMap" => normalVT,
-                "_MaskMap" => maskVT,
-                "_ControlMask" => controlVT,
-                "_EmissiveColorMap" => emissiveVT,
-                _ => null,
-            };
-        }
-
-        #endregion
+        public Material GenerateMaterial(WEShader shader, TextureStreamingSystem tss) => WERenderingHelper.GenerateMaterial(shader, m_main, m_normal, m_mask, m_control, m_emissive);
     }
 }

@@ -180,44 +180,9 @@ namespace BelzontWE.Sprites
                 };
                 NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * i / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
                 yield return 0;
-                string vtXmlName = $"~{Path.GetFileNameWithoutExtension(dir)}_vt.xml";
-                var vtXmlFilePath = Path.Combine(CACHED_VT_FOLDER, vtXmlName);
-                var directoryChecksum = WEAtlasLoadingUtils.CalculateCheckshumForDirectory(dir);
-                if (File.Exists(vtXmlFilePath))
-                {
-                    var vtInfo = XmlUtils.DefaultXmlDeserialize<XmlVTAtlasInfo>(File.ReadAllText(vtXmlFilePath));
-                    if (vtInfo != null && vtInfo.Checksum == directoryChecksum)
-                    {
-                        try
-                        {
-                            if (BasicIMod.DebugMode) LogUtils.DoLog($"Loading VT atlas from cache for folder {dir}");
-                            var loaded = new WETextureAtlas(vtInfo, LocalAtlasDatabase);
-                            loaded.RegisterToVT(m_textureStreamingSystem);
-                            LocalAtlases[Path.GetFileNameWithoutExtension(dir)] = loaded;
-
-                            NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * (i + 1) / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
-                            continue;
-                        }
-                        catch (Exception e)
-                        {
-                            LogUtils.DoWarnLog($"Invalid VT file for {vtXmlName}; cleaning: {e.Message}");
-                            File.Delete(vtXmlFilePath);
-                        }
-                    }
-                    else
-                    {
-                        File.Delete(vtXmlFilePath);
-                    }
-                }
                 var spritesToAdd = new List<WEImageInfo>();
                 WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, (img, msg) => errors[img] = msg);
-                var generatedAtlas = RegisterLocalAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25);
-                if (generatedAtlas != null)
-                {
-                    var vtInfo = generatedAtlas.GetVTDataXml(LocalAtlasDatabase, Path.GetFileNameWithoutExtension(dir), $"{Path.GetFileNameWithoutExtension(dir)}", directoryChecksum);
-                    File.WriteAllText(vtXmlFilePath, XmlUtils.DefaultXmlSerialize(vtInfo, true));
-                    generatedAtlas.RegisterToVT(m_textureStreamingSystem);
-                }
+                var generatedAtlas = RegisterLocalAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25);              
             }
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
             yield return 0;
