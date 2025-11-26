@@ -2,6 +2,7 @@
 using Belzont.Utils;
 using BelzontWE.IO;
 using BelzontWE.Sprites;
+using Colossal.IO.AssetDatabase;
 using Colossal.Serialization.Entities;
 using Game;
 using Game.SceneFlow;
@@ -53,23 +54,23 @@ namespace BelzontWE
             }
         }
         #region Mods integration
-        internal bool LoadMeshToMod(Assembly mainAssembly, string meshName, string objPath)
+        internal bool LoadMeshToMod(AssetData mainAssembly, string meshName, string objPath)
         {
             var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
             if (meshName.TrimToNull() == null)
             {
-                LogUtils.DoWarnLog($"Mesh name is null or empty for mod identified by '{modId}' ({mainAssembly.GetName().Name})");
+                LogUtils.DoWarnLog($"Mesh name is null or empty for mod identified by '{modId}' ({mainAssembly.name})");
                 return false;
             }
             if (!File.Exists(objPath))
             {
-                LogUtils.DoWarnLog($"Mesh file '{objPath}' does not exist for mod identified by '{modId}' mesh '{meshName}' ({mainAssembly.GetName().Name})");
+                LogUtils.DoWarnLog($"Mesh file '{objPath}' does not exist for mod identified by '{modId}' mesh '{meshName}' ({mainAssembly.name})");
                 return false;
             }
             var mesh = ObjFileHandler.ImportFromObj(objPath);
             if (mesh == null)
             {
-                LogUtils.DoWarnLog($"Failed to load mesh from {objPath} for mod identified by '{modId}' mesh '{meshName}' ({mainAssembly.GetName().Name})");
+                LogUtils.DoWarnLog($"Failed to load mesh from {objPath} for mod identified by '{modId}' mesh '{meshName}' ({mainAssembly.name})");
                 return false;
             }
             if (!MeshSources.TryGetValue(modId, out var meshSources))

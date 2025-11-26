@@ -52,8 +52,8 @@ namespace BelzontWE.Bridge
         private static void AtlasDataSetup(Assembly mainAssembly, string atlasName, out string modIdentifier, out string displayName, out string targetAtlasName, out string notifGroup, out Dictionary<string, ILocElement> args)
         {
             var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly);
-            modIdentifier = modData.asset.identifier;
-            displayName = modData.asset.GetMeta().displayName;
+            modIdentifier = modData.identifier;
+            displayName = modData.GetMeta().displayName;
             targetAtlasName = WEModIntegrationUtility.GetModAccessName(mainAssembly, atlasName);
             notifGroup = $"{WEAtlasesLibrary.LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX}:{targetAtlasName}";
             args = new()
@@ -75,7 +75,7 @@ namespace BelzontWE.Bridge
                 GameManager.instance.userInterface.appBindings.ShowMessageDialog(dialog, (x) => NotificationHelper.RemoveNotification(notifGroup));
             }
             NotificationHelper.NotifyWithCallback(notifGroup, ProgressState.Failed, onNotifClick, titleI18n: WEAtlasesLibrary.LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, argsText: args, argsTitle: args, textI18n: "generatingAtlasesCacheMod.error");
-            LogUtils.DoWarnLog("Error with WE integrable mod:", e);
+            LogUtils.DoWarnLog($"Error with WE integrable mod: {e}");
         }
 
         private static void CommonAtlasValidation(Assembly mainAssembly, string atlasName, string targetAtlasName)

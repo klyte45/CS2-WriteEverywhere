@@ -3,7 +3,6 @@ using Game.Common;
 using Game.Prefabs;
 using Game.Rendering;
 using Game.Tools;
-using Unity.Burst;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
@@ -398,10 +397,11 @@ namespace BelzontWE
                     var mesh = meshData[i];
                     var dirtyData = dirtyFormulae[i];
 
-                    var anyChanged = material.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
+                    var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[dirtyData.vars]];
+                    var anyChanged = material.UpdateFormulaes(em, dirtyData.geometry, vars);
                     var canMultiply = mesh.TextType == WESimulationTextType.Placeholder;
-                    var transformChanged = transform.UpdateFormulae(em, dirtyData.geometry, dirtyData.vars, canMultiply);
-                    anyChanged |= transformChanged | mesh.UpdateFormulaes(em, dirtyData.geometry, dirtyData.vars);
+                    var transformChanged = transform.UpdateFormulae(em, dirtyData.geometry, vars, canMultiply);
+                    anyChanged |= transformChanged | mesh.UpdateFormulaes(em, dirtyData.geometry, vars);
                     if (anyChanged)
                     {
                         main.lastChangeFrame = main.nextUpdateFrame;

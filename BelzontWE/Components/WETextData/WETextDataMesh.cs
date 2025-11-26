@@ -2,6 +2,7 @@
 using Colossal.Entities;
 using Colossal.Mathematics;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
@@ -131,7 +132,7 @@ namespace BelzontWE
 
         }
 
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, Dictionary<string, string> vars)
         {
             if (HasBRI)
             {
@@ -150,7 +151,6 @@ namespace BelzontWE
                 }
             }
             bool result = false;
-            var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[varsStr]];
             switch (textType)
             {
                 case WESimulationTextType.Text:

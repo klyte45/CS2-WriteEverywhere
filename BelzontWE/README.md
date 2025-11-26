@@ -1,4 +1,3 @@
-# IT'S BETA AND IT MAY BREAK YOUR GAME. USE AT YOUR OWN RISK!
 
 This is the Cities Skylines 2 version of Write Everywhere ([CS1 mod version here](https://steamcommunity.com/sharedfiles/filedetails/?id=2887458944)). 
 It keep some of the features from the CS1 version plus some new features that are only possible in CS2.
@@ -21,6 +20,8 @@ This mod is simpler to understand when compared with its CS1 version, but it sti
 More documentation will be added in the future.
 
 ## Write Everywhere modules
+
+**IMPORTANT NOTE:** Be awared that WE modules may be publish by anyone, and I'm not responsible by the content of these modules. Use them at your own risk. **Always verify the sources of any modules you decide to use.**
 
 They are designed to add automatically new content into the Write Everywhere, like:
 
@@ -63,7 +64,7 @@ Image atlases are a group of images stored together in a folder, and since 0.4 c
 - These images shall not be bigger than **2048x2048** pixels in size
 - All images shall be in PNG format
 - The images can have other special images like the asset textures of the game have.
-  - The naming convention follow the same shown [at CS2 official Wiki page about asset creation](https://cs2.paradoxwikis.com/Asset_Creation_Guide) - except that the `_Base_Color` isn't used because it is the default image name.
+  - The naming convention follow the same shown [at CS2 official Wiki page about asset creation](https://cs2.paradoxwikis.com/Asset_Creation_Guide) - except that the `_BaseColor` isn't used because it is the default image name.
   - EX: a normal image for the file `ABC.png` (a base color image) shall be named `ABC_Normal.png` to be loaded as normal map of the first image.
   - The same details of each image applies to WE planes.
 - It's not required to all images to follow the texture good practices about sizing (always power of 2 size, not less than 512px each side, etc). All images in an Image Atlas are joined into an image that follow that rules.

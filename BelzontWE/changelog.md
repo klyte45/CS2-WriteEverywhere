@@ -1,49 +1,11 @@
-# v0.5.4r3 (08-NOV-25)
-- Fixed issue that was preventing lod from custom meshes to be correctly calculated, preventing their formulaes to update.
-- Optimizing quantity of items rendered, ignoring while they are yet processing
+# v1.0.0r0 (04-DEC-25)
 
-## FROM v0.5.4r2 (06-NOV-25)
-
-- Fixed errors relative to reloading default layouts.
-- Fixed garbage from disposed templates causing slowdown on long run.
-
-# v0.5.4r1 (05-NOV-25)
-
-- Fixed issue related to template disposal causing errors and crashes
-
-# v0.5.4r0 (05-NOV-25)
-
-- Fixed bugs related to degradation of performance over time
-- Reduced mesh flashing issue when there are so many templates being loaded in parallel
-
-# v0.5.3r3 (04-NOV-25)
-
-- Fixed issue with template indexes variable not being assigned correctly
-
-# v0.5.3r2 (04-NOV-25)
-
-- Removed some obsolete code (was causing some issues for some players when loading a city)
-- More minor performance improvemnts
-- No more fonts listed that are a copy from default font
-
-# v0.5.3r1 (04-NOV-25)
-
-- HUGE performance boost update. Now it shall weight almost nothing on fps, some hiccups may still occur due intensive usage of formulaes.
-- Now formulaes only are updated when the camera is next to them (except first time, that is always). Added a setting to configure the distance. (defaults to 150)
-- Fixed issue related to cross-mesh leak.
-
-# v0.5.2r1 (02-NOV-25)
-
-- Improved general mod performance; The formulas update rate now is variable
-
-# v0.5.2r0 (30-OCT-25)
-
-- Improved general mod performance (raising fps up to 50% in some cases)
-
-# v0.5.1r1 (29-OCT-25)
-
-- Fixes for Bridge & Ports update
-- Added support for options tab of modules inside of WE window
-- Fixed issue related to pixel leak on atlases when using it as decal
-- Optimizing texts rendering process; now fully bursted.
-- Fixing fallback characters rendering
+- Allowing non-assembly mods (i.e. Assets) to register WE stuff: (beta feature, may change in future)
+ - Need to add files into a folder "K45_WE" at same level of the prefab root
+ - Subfolder structure is the same from the WE Module template project ( https://github.com/klyte45/CS2-WEModuleTemplate/tree/master/_BaseModule/Resources ), but fonts are not supported
+- Setting up new limits for WE stuff:
+ - Maximum atlas size (with all images filling it) will be lowered from 16384x16384 to 4096x4096
+ - Maximum image size for the atlas (each entry) will be lowered from 2048x2048 to 1000x1000 - except mod integrations that will allow 4094x4094 when using byte arrays signature
+- Added support to local variables: variables starting with "!" will not be passed to children node trees
+- Added support to multilevel variables: variables starting with "$" (like array index variable "$idx") will not erase older values if more than once at variable stack. It will generate numbered entries for deeper stack values (ex: "$idx_0", "$idx_1", ...). The latest value will still being presented on original variable name.
+- Fixed minor issues related to cross-reference renderings

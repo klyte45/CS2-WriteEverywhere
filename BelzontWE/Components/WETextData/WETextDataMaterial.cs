@@ -2,6 +2,7 @@
 using BelzontWE.Sprites;
 using BelzontWE.Utils;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
@@ -106,9 +107,8 @@ namespace BelzontWE
         public int SetFormulaeColorMask2(string value, out string[] cmpErr) => colorMask2.SetFormulae(value, out cmpErr);
         public int SetFormulaeColorMask3(string value, out string[] cmpErr) => colorMask3.SetFormulae(value, out cmpErr);
 
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, Dictionary<string,string> vars)
         {
-            var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[varsStr]];
             return dirty |= color.UpdateEffectiveValue(em, geometryEntity, vars)
               | emissiveColor.UpdateEffectiveValue(em, geometryEntity, vars)
               | glassColor.UpdateEffectiveValue(em, geometryEntity, vars)

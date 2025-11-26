@@ -121,11 +121,6 @@ namespace BelzontWE.IO
                             break;
                     }
                 }
-
-                if (triangles.Count > 4000)
-                {
-                    throw new Exception("OBJ files can only have up to 4000 triangles!");
-                }
                 mesh = new WEMeshDescriptor(
                     [.. outputVertices],
                     [.. outputNormals],

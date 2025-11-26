@@ -1,4 +1,5 @@
-﻿using Unity.Collections;
+﻿using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -146,9 +147,8 @@ namespace BelzontWE
         public int SetFormulaeMustDraw(string value, out string[] cmpErr) => mustDrawFn.SetFormulae(value, out cmpErr);
         public int SetFormulaeInstanceCount(string value, out string[] cmpErr) => instanceCount.SetFormulae(value, out cmpErr);
 
-        public bool UpdateFormulae(EntityManager em, Entity geometryEntity, FixedString512Bytes varsStr, bool updateCounter)
+        public bool UpdateFormulae(EntityManager em, Entity geometryEntity, Dictionary<string, string> vars, bool updateCounter)
         {
-            var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[varsStr]];
             var changed = useFormulaeToCheckIfDraw && mustDrawFn.UpdateEffectiveValue(em, geometryEntity, vars);
             if (updateCounter)
             {

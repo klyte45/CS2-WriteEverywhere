@@ -2,6 +2,8 @@
 using Belzont.Utils;
 using BelzontWE.Sprites;
 using BelzontWE.UI;
+using BelzontWE.Utils;
+using Colossal.Core;
 using Game;
 using Game.Modding;
 using Game.UI.InGame;
@@ -40,6 +42,7 @@ namespace BelzontWE
 
             updateSystem.UpdateAfter<WERendererSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateAfter<WEPostRendererSystem>(SystemUpdatePhase.MainLoop);
+            MainThreadDispatcher.RegisterUpdater(WEAssetsSettingsLoaderUtility.ReloadAssetsSettings);
         }
 
         public override void OnDispose()
@@ -52,6 +55,7 @@ namespace BelzontWE
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<GamePanelUISystem>().SetDefaultArgs(new WEMainPanel());
             LogUtils.DoInfoLog($"Registered panel: {typeof(WEMainPanel).FullName}");
             initFrame = Time.frameCount;
+
         }
 
         internal static int initFrame = 0;

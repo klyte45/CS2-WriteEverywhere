@@ -34,18 +34,6 @@ namespace BelzontWE
             }
             ParentEntity = e;
             return true;
-        }
-        public void CheckDirtyFormulae(Entity geometry, Entity textData, FixedString512Bytes vars, EntityCommandBuffer cmdBuffer)
-        {
-            if (nextUpdateFrame <= Time.frameCount)
-            {
-                cmdBuffer.AddComponent(textData, new WETextDataDirtyFormulae
-                {
-                    vars = vars,
-                    geometry = geometry,
-                });
-                cmdBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(textData, true);
-            }
-        }
+        }        
     }
 }

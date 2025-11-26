@@ -1,5 +1,4 @@
 using Belzont.Interfaces;
-using Belzont.Serialization;
 using Belzont.Utils;
 using BelzontWE.Font;
 using BelzontWE.Layout;
@@ -25,11 +24,10 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using static Game.Modding.ModManager;
 
 namespace BelzontWE.Sprites
 {
-    public partial class WEAtlasesLibrary : GameSystemBase, IBelzontSerializableSingleton<WEAtlasesLibrary>
+    public partial class WEAtlasesLibrary : GameSystemBase, IDefaultSerializable
     {
         internal const string LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX = "generatingAtlasesCacheMod";
         public static string IMAGES_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "imageAtlases");
@@ -93,7 +91,7 @@ namespace BelzontWE.Sprites
         private Dictionary<FixedString32Bytes, WETextureAtlas> CityAtlases { get; } = [];
         private Dictionary<string, WETextureAtlas> ModAtlases { get; } = [];
 
-        private Dictionary<string, (ModInfo info, Dictionary<string, Action> registerCallback)> RegisteredModsAtlases { get; } = [];
+        private Dictionary<string, (AssetData info, Dictionary<string, Action> registerCallback)> RegisteredModsAtlases { get; } = [];
 
         #region Getters
 
@@ -248,9 +246,18 @@ namespace BelzontWE.Sprites
             var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
             EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(producer(), spritesToAdd, errors));
         }
-
-        private void EnqueueModAtlasLoader(Assembly mainAssembly, string atlasName, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args, string modId, Action<List<WEImageInfo>, List<string>> loaderEnqueue)
+        internal void LoadImagesToAtlas(AssetData metadata, string atlasName, string[] imagePaths, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args)
         {
+            var modId = WEModIntegrationUtility.GetModIdentifier(metadata);
+            EnqueueModAtlasLoader(metadata, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, (img, msg) => errors.Add($"{img}: {msg}")));
+        }
+
+        private void EnqueueModAtlasLoader(object mainAssembly, string atlasName, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args, string modId, Action<List<WEImageInfo>, List<string>> loaderEnqueue)
+        {
+            if (mainAssembly is not Assembly and not AssetData)
+            {
+                throw new ArgumentException("mainAssembly must be of type Assembly or AssetData");
+            }
             actionQueue.Enqueue(() =>
             {
                 void RegisterCallback()
@@ -260,10 +267,15 @@ namespace BelzontWE.Sprites
                     loaderEnqueue(spritesToAdd, errors);
                     if (errors.Count > 0)
                     {
+                        var paramsTitle = new Dictionary<string, ILocElement>()
+                        {
+                            ["atlasName"] = LocalizedString.Value(atlasName),
+                            ["mod"] = LocalizedString.Value(displayName),
+                        };
                         NotificationHelper.NotifyWithCallback($"{ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID}.{modId}.{atlasName}", Colossal.PSI.Common.ProgressState.Warning, () =>
                         {
                             var dialog2 = new MessageDialog(
-                                LocalizedString.Id(NotificationHelper.GetModDefaultNotificationTitle(ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID)),
+                                LocalizedString.Id(NotificationHelper.GetModDefaultNotificationTitle(ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID), [.. paramsTitle.Select(x => (x.Key, x.Value))]),
                                 LocalizedString.Id("K45::WE.ATLAS_MANAGER[errorDialogHeader]"),
                                 LocalizedString.Value($"Errors on {atlasName} images from mod '{displayName}' ({modIdentifier}):\n" + string.Join("\n", errors)),
                                 true,
@@ -280,16 +292,16 @@ namespace BelzontWE.Sprites
                                 }
                                 NotificationHelper.RemoveNotification($"{ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID}.{modId}.{atlasName}");
                             });
-                        }, titleI18n: ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID);
+                        }, titleI18n: ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID, argsTitle: paramsTitle, textI18n: ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID);
                     }
                     else if (spritesToAdd.Count == 0)
                     {
                         throw new Exception($"There are no images to load. Check with the developer from the module for a fix");
                     }
                     if (spritesToAdd.Count == 0) return;
-                    RegisterAtlas(ModAtlases, WEModIntegrationUtility.GetModAccessName(mainAssembly, atlasName), spritesToAdd, notifGroup, "generatingAtlasesCacheMod.loading", args, args, LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, 100, 0);
+                    RegisterAtlas(ModAtlases, mainAssembly is Assembly a ? WEModIntegrationUtility.GetModAccessName(a, atlasName) : WEModIntegrationUtility.GetModAccessName(mainAssembly as AssetData, atlasName), spritesToAdd, notifGroup, "generatingAtlasesCacheMod.loading", args, args, LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, 100, 0);
                 }
-                if (!RegisteredModsAtlases.ContainsKey(modId)) RegisteredModsAtlases[modId] = (ModManagementUtils.GetModDataFromMainAssembly(mainAssembly), []);
+                if (!RegisteredModsAtlases.ContainsKey(modId)) RegisteredModsAtlases[modId] = (mainAssembly is Assembly a ? ModManagementUtils.GetModDataFromMainAssembly(a) : mainAssembly as AssetData, []);
                 RegisteredModsAtlases[modId].registerCallback[atlasName] = RegisterCallback;
                 RegisteredModsAtlases[modId].registerCallback[atlasName]();
             });
@@ -518,10 +530,9 @@ namespace BelzontWE.Sprites
             }
         }
 
-        public JobHandle SetDefaults(Context context)
+        public void SetDefaults(Context context)
         {
             ClearAtlasDict(CityAtlases);
-            return Dependency;
         }
         #endregion
 
@@ -547,7 +558,7 @@ namespace BelzontWE.Sprites
         public float[] GetAtlasImageSize(string name) => TryGetAtlas(name, out var atlas) ? [atlas.Width, atlas.Height] : [];
 
         internal record struct ModAtlasRegistry(string ModId, string ModName, string[] Atlases) { }
-        internal ModAtlasRegistry[] ListModAtlases() => [.. RegisteredModsAtlases.Select(x => new ModAtlasRegistry(WEModIntegrationUtility.GetModIdentifier(x.Value.info.asset.assembly), x.Value.info.asset.GetMeta().displayName, [.. ModAtlases.Keys.Where(y => y.StartsWith(x.Key + ":"))]))];
+        internal ModAtlasRegistry[] ListModAtlases() => [.. RegisteredModsAtlases.Select(kv => new ModAtlasRegistry(WEModIntegrationUtility.GetModIdentifier(kv.Value.info), kv.Value.info.GetMeta().displayName, [.. ModAtlases.Keys.Where(y => y.StartsWith(kv.Key + ":"))]))];
 
 #if BURST
         [Unity.Burst.BurstCompile]

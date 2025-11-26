@@ -1,4 +1,5 @@
 using Belzont.Utils;
+using Colossal.IO.AssetDatabase;
 using Game.SceneFlow;
 using MonoMod.Utils;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace BelzontWE
     {
         #region Modules integration
 
-        private readonly Dictionary<Assembly, ModFolder> integrationLoadableTemplatesFromMod = new();
+        private readonly Dictionary<AssetData, ModFolder> integrationLoadableTemplatesFromMod = new();
         private readonly Dictionary<string, HashSet<string>> m_atlasesMapped = new();
         private readonly Dictionary<string, HashSet<string>> m_fontsMapped = new();
         private readonly Dictionary<string, HashSet<string>> m_subtemplatesMapped = new();
@@ -29,7 +30,7 @@ namespace BelzontWE
 
         public void RegisterModTemplatesForLoading(Assembly mainAssembly, string folderTemplatesSource)
         {
-            var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly).asset;
+            var modData = ModManagementUtils.GetModDataFromMainAssembly(mainAssembly);
             var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
             var modName = modData.GetMeta().displayName;
 
@@ -41,8 +42,8 @@ namespace BelzontWE
 
         public FixedString128Bytes[] GetTemplateAvailableKeys() => RegisteredTemplates.Keys.Union(ModsSubTemplates.SelectMany(x => x.Value.Keys.Select(y => new FixedString128Bytes($"{x.Key}:{y}")))).ToArray();
 
-        internal void RegisterLoadableTemplatesFolder(Assembly mainAssembly, ModFolder fontFolder) { integrationLoadableTemplatesFromMod[mainAssembly] = fontFolder; }
-        internal List<ModFolder> ListModsExtraFolders() => integrationLoadableTemplatesFromMod.Values.ToList();
+        internal void RegisterLoadableTemplatesFolder(AssetData assetData, ModFolder fontFolder) { integrationLoadableTemplatesFromMod[assetData] = fontFolder; }
+        internal List<ModFolder> ListModsExtraFolders() => [.. integrationLoadableTemplatesFromMod.Values];
 
         internal FixedString64Bytes GetFontFor(string strOriginal, FixedString64Bytes currentFont, ref bool haveChanges)
         {
