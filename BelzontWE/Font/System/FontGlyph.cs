@@ -49,6 +49,7 @@ namespace BelzontWE.Font
 
         public int GetKerning(FontGlyph nextGlyph)
         {
+            if (Font?._font is null) return 0;
             if (!_kernings.IsCreated)
             {
                 _kernings = new NativeHashMap<int, int>(1, Allocator.Persistent);
