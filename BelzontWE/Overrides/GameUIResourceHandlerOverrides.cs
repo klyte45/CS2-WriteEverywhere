@@ -61,7 +61,6 @@ namespace BelzontWE
                     response.SetStatus(200);
                     var temp = textureAtlas.Main_preview.MakeReadable();
                     var data = temp.EncodeToPNG();
-                    GameObject.Destroy(temp);
                     var size = (ulong)data.Length;
                     var space = response.GetSpace(size);
                     Marshal.Copy(data, 0, space, data.Length);

@@ -1,4 +1,8 @@
-# v1.0.0r2 (04-DEC-25)
+# v1.0.0r3 (04-DEC-25)
+
+- Fix for atlas visualization in UI erasing it from the game (causing NullPointerException on UI)
+
+## FROM v1.0.0r2 (04-DEC-25)
 
 - Possible fix for vanilla bug that prevented WE UI to be loaded
 - Fixing issue for sometimes text get broken in some situations
