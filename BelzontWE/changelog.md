@@ -1,4 +1,8 @@
-# v1.0.0r0 (04-DEC-25)
+# v1.0.0r1 (04-DEC-25)
+
+- Possible fix for vanilla bug that prevented WE UI to be loaded
+
+## FROM v1.0.0r0 (04-DEC-25)
 
 - Allowing non-assembly mods (i.e. Assets) to register WE stuff: (beta feature, may change in future)
  - Need to add files into a folder "K45_WE" at same level of the prefab root

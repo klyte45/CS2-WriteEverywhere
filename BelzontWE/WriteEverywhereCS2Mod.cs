@@ -4,8 +4,10 @@ using BelzontWE.Sprites;
 using BelzontWE.UI;
 using BelzontWE.Utils;
 using Colossal.Core;
+using Colossal.IO.AssetDatabase;
 using Game;
 using Game.Modding;
+using Game.SceneFlow;
 using Game.UI.InGame;
 using Unity.Entities;
 using UnityEngine;
@@ -56,6 +58,9 @@ namespace BelzontWE
             LogUtils.DoInfoLog($"Registered panel: {typeof(WEMainPanel).FullName}");
             initFrame = Time.frameCount;
 
+            var asset = AssetDatabase.global.GetAsset(SearchFilter<UIModuleAsset>.ByCondition(asset => asset.name == "k45-we-vuio"));
+            LogUtils.DoInfoLog($"Forcing loading UI asset: {asset?.name} ({asset?.path})");
+            GameManager.instance.modManager.AddUIModule(asset);
         }
 
         internal static int initFrame = 0;
