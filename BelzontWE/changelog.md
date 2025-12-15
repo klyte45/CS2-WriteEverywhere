@@ -1,4 +1,16 @@
-# v1.0.0r3 (04-DEC-25)
+# v1.0.0r5 (14-DEC-25)
+
+- Fixed loading K45_WE folder contents for assets
+- Now prevents UI erasing font name data if it was not changed
+- Fix for null reference exception due WEDisposalJob issue
+- Fixed more locations when atlases were disposed incorrectly
+- KNOWN ISSUE: The WE camera that goes close to edited node seems to be broken on some custom assets. It's under investigation.
+
+## FROM v1.0.0r4 (08-DEC-25)
+
+- Fix for atlas exporing erasing it from the game (causing rendering issues)
+
+## FROM v1.0.0r3 (04-DEC-25)
 
 - Fix for atlas visualization in UI erasing it from the game (causing NullPointerException on UI)
 

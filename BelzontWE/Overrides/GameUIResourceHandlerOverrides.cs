@@ -59,8 +59,9 @@ namespace BelzontWE
                 if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas))
                 {
                     response.SetStatus(200);
-                    var temp = textureAtlas.Main_preview.MakeReadable();
+                    var temp = textureAtlas.Main_preview.MakeReadable(out var isCopy);
                     var data = temp.EncodeToPNG();
+                    if(isCopy) GameObject.Destroy(temp);
                     var size = (ulong)data.Length;
                     var space = response.GetSpace(size);
                     Marshal.Copy(data, 0, space, data.Length);

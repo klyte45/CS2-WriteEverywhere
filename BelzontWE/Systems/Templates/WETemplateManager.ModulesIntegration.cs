@@ -42,7 +42,14 @@ namespace BelzontWE
 
         public FixedString128Bytes[] GetTemplateAvailableKeys() => RegisteredTemplates.Keys.Union(ModsSubTemplates.SelectMany(x => x.Value.Keys.Select(y => new FixedString128Bytes($"{x.Key}:{y}")))).ToArray();
 
-        internal void RegisterLoadableTemplatesFolder(AssetData assetData, ModFolder fontFolder) { integrationLoadableTemplatesFromMod[assetData] = fontFolder; }
+        internal void RegisterLoadableTemplatesFolder(AssetData assetData, ModFolder root)
+        {
+            integrationLoadableTemplatesFromMod[assetData] = root;
+        }
+        internal void RegisterAssetsLayoutsFolder(AssetData assetData, string templatesRoot)
+        {
+            m_modsTemplatesFolder[assetData.uniqueName] = (assetData.GetMeta().displayName, assetData.uniqueName, templatesRoot);
+        }
         internal List<ModFolder> ListModsExtraFolders() => [.. integrationLoadableTemplatesFromMod.Values];
 
         internal FixedString64Bytes GetFontFor(string strOriginal, FixedString64Bytes currentFont, ref bool haveChanges)

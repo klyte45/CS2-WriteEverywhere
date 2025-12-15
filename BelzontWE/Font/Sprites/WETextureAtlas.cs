@@ -2,7 +2,6 @@
 using Belzont.Utils;
 using BelzontWE.Layout;
 using BelzontWE.Sprites;
-using Colossal.IO.AssetDatabase;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Colossal.Serialization.Entities;
 using System;
@@ -193,39 +192,39 @@ namespace BelzontWE.Font
             var offsetY = (int)spriteInfo.Region.position.y;
 
             main = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            var tempMain = m_main.MakeReadable();
+            var tempMain = m_main.MakeReadable(out var isCopy);
             main.SetPixels(tempMain.GetPixels(offsetX, offsetY, width, height));
-            GameObject.Destroy(tempMain);
+            if (isCopy) GameObject.Destroy(tempMain);
             if (spriteInfo.HasControl)
             {
                 control = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
-                Texture2D texture2D = m_control.MakeReadable();
+                Texture2D texture2D = m_control.MakeReadable(out isCopy);
                 control.SetPixels(texture2D.GetPixels(offsetX, offsetY, width, height));
-                GameObject.Destroy(texture2D);
+                if (isCopy) GameObject.Destroy(texture2D);
             }
 
             if (spriteInfo.HasEmissive)
             {
                 emissive = new Texture2D(width, height, TextureFormat.RGBA32, false);
-                Texture2D texture2D = m_emissive.MakeReadable();
+                Texture2D texture2D = m_emissive.MakeReadable(out isCopy);
                 emissive.SetPixels(texture2D.GetPixels(offsetX, offsetY, width, height));
-                GameObject.Destroy(texture2D);
+                if (isCopy) GameObject.Destroy(texture2D);
             }
 
             if (spriteInfo.HasMaskMap)
             {
                 mask = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
-                Texture2D texture2D = m_mask.MakeReadable();
+                Texture2D texture2D = m_mask.MakeReadable(out isCopy);
                 mask.SetPixels(texture2D.GetPixels(offsetX, offsetY, width, height));
-                GameObject.Destroy(texture2D);
+                if (isCopy) GameObject.Destroy(texture2D);
             }
 
             if (spriteInfo.HasNormal)
             {
                 normal = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
-                Texture2D texture2D = m_normal.MakeReadable();
+                Texture2D texture2D = m_normal.MakeReadable(out isCopy);
                 normal.SetPixels(texture2D.GetPixels(offsetX, offsetY, width, height));
-                GameObject.Destroy(texture2D);
+                if (isCopy) GameObject.Destroy(texture2D);
             }
 
             return true;

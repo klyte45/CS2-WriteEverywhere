@@ -44,7 +44,14 @@ namespace BelzontWE
 
             updateSystem.UpdateAfter<WERendererSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateAfter<WEPostRendererSystem>(SystemUpdatePhase.MainLoop);
-            MainThreadDispatcher.RegisterUpdater(WEAssetsSettingsLoaderUtility.ReloadAssetsSettings);
+
+            var reloadAssetsWeStuff = () =>
+            {
+                WEAssetsSettingsLoaderUtility.ResetCooldown();
+                MainThreadDispatcher.RegisterUpdater(WEAssetsSettingsLoaderUtility.ReloadAssetsSettings);
+            };
+            (AssetDatabase<ParadoxMods>.instance.dataSource as ParadoxModsDataSource).onAfterActivePlaysetOrModStatusChanged += reloadAssetsWeStuff;
+            reloadAssetsWeStuff();
         }
 
         public override void OnDispose()

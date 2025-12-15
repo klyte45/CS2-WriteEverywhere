@@ -227,7 +227,7 @@ namespace BelzontWE
                     return;
                 }
 
-                if (!m_dirtyWePrefabLayoutQuery.IsEmpty)
+                if (m_dirtyWePrefabLayoutQuery.CalculateChunkCount() > 0)
                 {
                     var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
                     foreach (var i in m_manager.GetPrefabTemplatesReadOnly())
@@ -246,10 +246,11 @@ namespace BelzontWE
                         m_templateUpdaterLkp = GetBufferLookup<WETemplateUpdater>(true),
                     }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
                     keysWithTemplate.Dispose(Dependency);
+                    Dependency.Complete();
                     return;
                 }
 
-                if (!m_prefabArchetypesToBeUpdatedInMain.IsEmpty)
+                if (m_prefabArchetypesToBeUpdatedInMain.CalculateChunkCount() > 0)
                 {
                     NativeArray<Entity> outputArray;
                     if (m_prefabArchetypesToBeUpdatedInMain.CalculateEntityCount() > 10_000)
@@ -296,7 +297,7 @@ namespace BelzontWE
                     outputArray.Dispose();
                     return;
                 }
-                if (!m_uncheckedWePrefabLayoutQuery.IsEmpty)
+                if (m_uncheckedWePrefabLayoutQuery.CalculateChunkCount() > 0)
                 {
                     var keysWithTemplate = new NativeHashMap<long, Colossal.Hash128>(0, Allocator.TempJob);
                     foreach (var i in m_manager.GetPrefabTemplatesReadOnly())
@@ -315,7 +316,7 @@ namespace BelzontWE
                     keysWithTemplate.Dispose(Dependency);
                 }
 
-                if (!m_dirtyInstancingWeQuery.IsEmpty)
+                if (m_dirtyInstancingWeQuery.CalculateChunkCount() > 0)
                 {
                     var chunks = m_dirtyInstancingWeQuery.ToArchetypeChunkArray(Allocator.Persistent);
                     EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
@@ -339,7 +340,7 @@ namespace BelzontWE
                     }
                     chunks.Dispose();
                 }
-                if (!m_textDataDirtyQuery.IsEmpty)
+                if (m_textDataDirtyQuery.CalculateChunkCount() > 0)
                 {
                     using var tempArr = m_textDataDirtyQuery.ToArchetypeChunkArray(Allocator.Temp);
                     var job = new WEUpdateFormulaesJob

@@ -92,11 +92,11 @@ namespace BelzontWE
                 {
                     m_EntityType = GetEntityTypeHandle(),
                     m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
-                    m_MaterialDataHdl = GetComponentTypeHandle<WETextDataMaterial>(true),
-                    m_MeshDataHdl = GetComponentTypeHandle<WETextDataMesh>(true),
+                    m_MaterialDataLkp = GetComponentLookup<WETextDataMaterial>(true),
+                    m_MeshDataLkp = GetComponentLookup<WETextDataMesh>(true),
                     m_DisposeQueueMesh = disposeQueueMesh.AsParallelWriter(),
                     m_DisposeQueueMaterial = disposeQueueMaterial.AsParallelWriter(),
-                }.ScheduleParallel(m_componentsToDispose, Dependency).Complete();
+                }.Schedule(m_componentsToDispose, Dependency).Complete();
 
                 if (!disposeQueueMesh.IsEmpty())
                 {
@@ -144,8 +144,8 @@ namespace BelzontWE
         private unsafe struct WEComponentDisposalJob : IJobChunk
         {
             public EntityTypeHandle m_EntityType;
-            [ReadOnly] public ComponentTypeHandle<WETextDataMaterial> m_MaterialDataHdl;
-            [ReadOnly] public ComponentTypeHandle<WETextDataMesh> m_MeshDataHdl;
+            [ReadOnly] public ComponentLookup<WETextDataMaterial> m_MaterialDataLkp;
+            [ReadOnly] public ComponentLookup<WETextDataMesh> m_MeshDataLkp;
             public NativeQueue<WETextDataMesh>.ParallelWriter m_DisposeQueueMesh;
             public NativeQueue<WETextDataMaterial>.ParallelWriter m_DisposeQueueMaterial;
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
@@ -153,19 +153,14 @@ namespace BelzontWE
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
                 var entities = chunk.GetNativeArray(m_EntityType);
-                var materialData = chunk.GetNativeArray(ref m_MaterialDataHdl);
-                var meshData = chunk.GetNativeArray(ref m_MeshDataHdl);
 
-                for (int i = 0; i < materialData.Length; i++)
+                for (int i = 0; i < entities.Length; i++)
                 {
-                    var data = materialData[i];
-                    m_DisposeQueueMaterial.Enqueue(data);
-                }
-
-                for (int i = 0; i < meshData.Length; i++)
-                {
-                    var data = meshData[i];
-                    m_DisposeQueueMesh.Enqueue(data);
+                    var data = entities[i];
+                    if (m_MaterialDataLkp.TryGetComponent(data, out var materialData))
+                        m_DisposeQueueMaterial.Enqueue(materialData);
+                    if (m_MeshDataLkp.TryGetComponent(data, out var meshData))
+                        m_DisposeQueueMesh.Enqueue(meshData);
                 }
 
                 // Queue component removal and entity destruction commands
