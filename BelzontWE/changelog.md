@@ -1,4 +1,8 @@
-# v1.0.0r6 (15-DEC-25)
+# v1.0.0r7 (15-DEC-25)
+
+- Fixed issue related to camera zooming into text layout not working properly on moveable assets (like vehicles)
+
+## FROM v1.0.0r6 (15-DEC-25)
 
 - Fixed uploader for assets layouts. The folder K45_WE shall be present at same folder where the main prefab is located.  
 
@@ -8,7 +12,6 @@
 - Now prevents UI erasing font name data if it was not changed
 - Fix for null reference exception due WEDisposalJob issue
 - Fixed more locations when atlases were disposed incorrectly
-- KNOWN ISSUE: The WE camera that goes close to edited node seems to be broken on some custom assets. It's under investigation.
 
 ## FROM v1.0.0r4 (08-DEC-25)
 

@@ -78,12 +78,7 @@ namespace BelzontWE
                     bool isPlaceholder = false;
 
 
-                    if (m_pickerTool.Enabled && m_pickerController.CameraLocked.Value
-                        && m_pickerController.CurrentSubEntity.Value == item.textDataEntity
-                        && item.transformMatrix.ValidTRS())
-                    {
-                        m_pickerController.SetCurrentTargetMatrix(item.transformMatrix);
-                    }
+
 
                     bool doRender = mesh.TextType switch
                     {
@@ -151,7 +146,12 @@ namespace BelzontWE
                                 var interpolatedMatrix = Matrix4x4.TRS(transformInterpolated.m_Position, transformInterpolated.m_Rotation, Vector3.one);
                                 baseMatrix = interpolatedMatrix * item.transformMatrix;
                             }
-
+                            if (m_pickerTool.Enabled && (m_pickerController.CameraLocked.Value || m_pickerController.CurrentSubEntity.Value != m_pickerController.CurrentItemMatrixEntity)
+                                                     && m_pickerController.CurrentSubEntity.Value == item.textDataEntity
+                                                     && item.transformMatrix.ValidTRS())
+                            {
+                                m_pickerController.SetCurrentTargetMatrix(m_pickerController.CurrentSubEntity.Value, baseMatrix);
+                            }
                             for (int i = 0; i < meshCount; i++)
                             {
                                 var geomMesh = bri2 is not null ? (mesh.TextType == WESimulationTextType.WhiteCube ? bri2.MeshCube[0] : bri2.GetMesh(materialData.Shader, i)) : bri.GetMesh(materialData.Shader);

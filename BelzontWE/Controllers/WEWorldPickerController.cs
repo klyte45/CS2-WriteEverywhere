@@ -12,7 +12,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Entities;
 using UnityEngine;
-using SubObject = Game.Objects.SubObject;
 
 namespace BelzontWE
 {
@@ -423,12 +422,17 @@ namespace BelzontWE
         }
 
         public Matrix4x4 CurrentItemMatrix { get; private set; }
+        public Entity CurrentItemMatrixEntity { get; private set; }
 
-        internal void SetCurrentTargetMatrix(Matrix4x4 transformMatrix)
+        internal void SetCurrentTargetMatrix(Entity currentEntity, Matrix4x4 transformMatrix)
         {
             if (transformMatrix.ValidTRS())
             {
-                m_executionQueue.Enqueue(() => CurrentItemMatrix = transformMatrix);
+                m_executionQueue.Enqueue(() =>
+                {
+                    CurrentItemMatrix = transformMatrix;
+                    CurrentItemMatrixEntity = currentEntity;
+                });
             }
         }
 
