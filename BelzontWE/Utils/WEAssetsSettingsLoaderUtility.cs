@@ -10,10 +10,10 @@ namespace BelzontWE.Utils
 {
     public static class WEAssetsSettingsLoaderUtility
     {
-        private const string WE_FOLDER_ROOT = "K45_WE";
-        private const string WE_FOLDER_LAYOUTS = "layouts";
-        private const string WE_FOLDER_ATLASES = "atlases";
-        private const string WE_FOLDER_MESHES = "objMeshes";
+        public const string WE_FOLDER_ROOT = "K45_WE";
+        public const string WE_FOLDER_LAYOUTS = "layouts";
+        public const string WE_FOLDER_ATLASES = "atlases";
+        public const string WE_FOLDER_MESHES = "objMeshes";
 
         private static readonly HashSet<string> loadedAssets = [];
 

@@ -1,4 +1,8 @@
-# v1.0.0r5 (14-DEC-25)
+# v1.0.0r6 (15-DEC-25)
+
+- Fixed uploader for assets layouts. The folder K45_WE shall be present at same folder where the main prefab is located.  
+
+## FROM v1.0.0r5 (14-DEC-25)
 
 - Fixed loading K45_WE folder contents for assets
 - Now prevents UI erasing font name data if it was not changed
