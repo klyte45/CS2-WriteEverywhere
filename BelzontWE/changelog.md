@@ -1,4 +1,8 @@
-# v1.0.0r7 (15-DEC-25)
+# v1.0.0r8 (20-DEC-25)
+
+- Possible fix for "0 != 0" assertion error
+
+## FROM v1.0.0r7 (15-DEC-25)
 
 - Fixed issue related to camera zooming into text layout not working properly on moveable assets (like vehicles)
 
