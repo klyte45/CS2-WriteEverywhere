@@ -437,9 +437,10 @@ namespace BelzontWE
 
         public class DefaultStyleXml : ISerializable
         {
-            private const int CURRENT_VERSION = 0;
+            private const int CURRENT_VERSION = 1;
             [XmlIgnore] public WEShader shader => WEShader.Default;
             [XmlAttribute][DefaultValue(WETextDataMaterial.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextDataMaterial.DEFAULT_DECAL_FLAGS;
+            [XmlAttribute][DefaultValue(false)] public bool renderBackface = false;
             [XmlElement] public FormulaeColorRgbaXml color = new() { defaultValue = Color.white };
             [XmlElement] public FormulaeColorRgbaXml emissiveColor = new() { defaultValue = Color.white };
             [XmlElement] public FormulaeFloatXml metallic;
@@ -464,6 +465,7 @@ namespace BelzontWE
                 writer.WriteNullCheck(colorMask1);
                 writer.WriteNullCheck(colorMask2);
                 writer.WriteNullCheck(colorMask3);
+                writer.Write(renderBackface);
             }
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
             {
@@ -484,12 +486,20 @@ namespace BelzontWE
                 reader.ReadNullCheck(out colorMask1);
                 reader.ReadNullCheck(out colorMask2);
                 reader.ReadNullCheck(out colorMask3);
+                if (version >= 1)
+                {
+                    reader.Read(out renderBackface);
+                }
+                else
+                {
+                    renderBackface = false;
+                }
             }
         }
 
         public class DecalStyleXml : ISerializable
         {
-            private const int CURRENT_VERSION = 1;
+            private const int CURRENT_VERSION = 2;
             [XmlIgnore] public WEShader shader => WEShader.Decal;
             [XmlAttribute][DefaultValue(WETextDataMaterial.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextDataMaterial.DEFAULT_DECAL_FLAGS;
             [XmlElement] public FormulaeColorRgbaXml color = new() { defaultValue = Color.white };
@@ -499,6 +509,7 @@ namespace BelzontWE
             [XmlElement] public FormulaeFloatXml metallicOpacity;
             [XmlAttribute] public bool affectSmoothness;
             [XmlAttribute] public float drawOrder;
+            [XmlAttribute][DefaultValue(false)] public bool renderBackface = false;
 
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
@@ -510,7 +521,8 @@ namespace BelzontWE
                 writer.Write(affectSmoothness);
                 writer.Write(drawOrder);
                 writer.WriteNullCheck(normalOpacity);
-                writer.WriteNullCheck(metallicOpacity);
+                writer.WriteNullCheck(metallicOpacity);                
+                writer.Write(renderBackface);
             }
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
             {
@@ -536,11 +548,19 @@ namespace BelzontWE
                     reader.ReadNullCheck(out normalOpacity);
                     reader.ReadNullCheck(out metallicOpacity);
                 }
+                if (version >= 2)
+                {
+                    reader.Read(out renderBackface);
+                }
+                else
+                {
+                    renderBackface = false;
+                }
             }
         }
         public class GlassStyleXml : ISerializable
         {
-            private const int CURRENT_VERSION = 1;
+            private const int CURRENT_VERSION = 2;
             [XmlIgnore] public WEShader shader => WEShader.Glass;
             [XmlAttribute][DefaultValue(WETextDataMaterial.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextDataMaterial.DEFAULT_DECAL_FLAGS;
             [XmlElement] public FormulaeColorRgbaXml color = new() { defaultValue = Color.clear };
@@ -549,7 +569,8 @@ namespace BelzontWE
             [XmlElement] public FormulaeFloatXml metallic;
             [XmlElement] public FormulaeFloatXml smoothness;
             [XmlElement] public FormulaeFloatXml normalStrength;
-            [XmlElement] public FormulaeFloatXml glassThickness = new() { defaultValue = .5f };
+            [XmlElement] public FormulaeFloatXml glassThickness = new() { defaultValue = .5f }; 
+            [XmlAttribute][DefaultValue(false)] public bool renderBackface = false;
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
                 writer.Write(CURRENT_VERSION);
@@ -561,6 +582,7 @@ namespace BelzontWE
                 writer.WriteNullCheck(smoothness);
                 writer.WriteNullCheck(normalStrength);
                 writer.WriteNullCheck(glassThickness);
+                writer.Write(renderBackface);
             }
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
             {
@@ -570,7 +592,7 @@ namespace BelzontWE
                     LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
                     return;
                 }
-                if (version == 1)
+                if (version >= 1)
                 {
                     reader.Read(out decalFlags);
                 }
@@ -581,6 +603,14 @@ namespace BelzontWE
                 reader.ReadNullCheck(out smoothness);
                 reader.ReadNullCheck(out normalStrength);
                 reader.ReadNullCheck(out glassThickness);
+                if (version >= 2)
+                {
+                    reader.Read(out renderBackface);
+                }
+                else
+                {
+                    renderBackface = false;
+                }
             }
         }
 

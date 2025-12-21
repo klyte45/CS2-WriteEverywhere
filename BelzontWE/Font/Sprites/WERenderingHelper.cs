@@ -184,25 +184,12 @@ namespace BelzontWE
             {
                 case WEShader.Default:
                     material = new Material(Shader.Find(defaultShaderName));
-                    // material.EnableKeyword("_GPU_ANIMATION_OFF");
-                    //HDMaterial.SetAlphaClipping(material, true);
-                    //HDMaterial.SetAlphaCutoff(material, .7f);
-                    //HDMaterial.SetUseEmissiveIntensity(material, true);
-                    //HDMaterial.SetEmissiveColor(material, UnityEngine.Color.white);
-                    //HDMaterial.SetEmissiveIntensity(material, 0, UnityEditor.Rendering.HighDefinition.EmissiveIntensityUnit.Nits);
-                    material.SetFloat("_DoubleSidedEnable", 1);
-                    material.SetVector("_DoubleSidedConstants", new Vector4(1, 1, -1, 0));
-                    material.SetFloat("_Smoothness", .5f);
-                    material.SetFloat("_ZTestGBuffer", 7);
                     material.SetFloat(DecalLayerMask, math.asfloat(8));
                     material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
                     break;
                 case WEShader.Glass:
                     material = new Material(Shader.Find(defaultGlassShaderName));
-                    material.SetFloat("_DoubleSidedEnable", 1);
-                    material.SetVector("_DoubleSidedConstants", new Vector4(1, 1, -1, 0));
                     material.SetFloat(DecalLayerMask, math.asfloat(8));
-                    material.SetTexture("_EmissiveColorMap", Texture2D.whiteTexture);
                     break;
                 case WEShader.Decal:
                     material = new Material(Shader.Find(defaultDecalShaderName));

@@ -19,6 +19,7 @@ namespace BelzontWE
         public MultiUIValueBinding<float> CoatStrength { get; private set; }
         public MultiUIValueBinding<float> EmissiveExposureWeight { get; private set; }
         public MultiUIValueBinding<int> DecalFlags { get; private set; }
+        public MultiUIValueBinding<bool> RenderBackface { get; private set; }
         public MultiUIValueBinding<WEShader, int> ShaderType { get; private set; }
         public MultiUIValueBinding<Color, UIColorRGBA> GlassColor { get; private set; }
         public MultiUIValueBinding<float> GlassRefraction { get; private set; }
@@ -102,6 +103,7 @@ namespace BelzontWE
             NormalStrength = new(default, $"{PREFIX}{nameof(NormalStrength)}", EventCaller, CallBinder);
             AffectSmoothness = new(default, $"{PREFIX}{nameof(AffectSmoothness)}", EventCaller, CallBinder);
             DrawOrder = new(default, $"{PREFIX}{nameof(DrawOrder)}", EventCaller, CallBinder);
+            RenderBackface = new(default, $"{PREFIX}{nameof(RenderBackface)}", EventCaller, CallBinder);
 
 
             MainColorFormulaeStr = new(default, $"{PREFIX}{nameof(MainColorFormulaeStr)}", EventCaller, CallBinder);
@@ -172,6 +174,7 @@ namespace BelzontWE
             NormalStrength.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.NormalStrength = x; return currentItem; });
             AffectSmoothness.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMaterial>(x, (x, currentItem) => { currentItem.AffectSmoothness = x; return currentItem; });
             DrawOrder.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.DrawOrder = x; return currentItem; });
+            RenderBackface.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMaterial>(x, (x, currentItem) => { currentItem.RenderBackface = x; return currentItem; });
 
 
 
@@ -217,7 +220,7 @@ namespace BelzontWE
             GlassThickness.Value = material.GlassThickness;
             AffectSmoothness.Value = material.AffectSmoothness;
             DrawOrder.Value = material.DrawOrder;
-
+            RenderBackface.Value = material.RenderBackface;
 
             ResetScreenFormulaeValue(material.ColorFormulae, MainColorFormulaeStr, MainColorFormulaeCompileResult, MainColorFormulaeCompileResultErrorArgs);
             ResetScreenFormulaeValue(material.EmissiveColorFormulae, EmissiveColorFormulaeStr, EmissiveColorFormulaeCompileResult, EmissiveColorFormulaeCompileResultErrorArgs);

@@ -1,4 +1,4 @@
-import { LocElementType, replaceArgs, VanillaWidgets } from "@klyte45/vuio-commons";
+import { LocElementType, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { Panel, Portal, Scrollable } from "cs2/ui";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
@@ -17,6 +17,8 @@ export const WETextShaderProperties = (props: { initialPosition?: { x: number, y
     const T_supportCreatureDecals = translate("shaderProperties.supportCreatureDecals"); //"Emission Color"
     const T_supportOtherDecals = translate("shaderProperties.supportOtherDecals"); //"Emission Color"
     const T_shaderType = translate("shaderProperties.shaderType"); //"Emission Color"
+    const T_renderBackface = translate("shaderProperties.renderBackface"); //     
+    const T_renderBackfaceAlwaysEnabledInverseZ = translate("shaderProperties.renderBackfaceAlwaysEnabledInverseZ"); //     
 
 
 
@@ -30,6 +32,7 @@ export const WETextShaderProperties = (props: { initialPosition?: { x: number, y
 
     const material = WorldPickerService.instance.bindingList.material;
     const mesh = WorldPickerService.instance.bindingList.mesh;
+    const transform = WorldPickerService.instance.bindingList.transform;
     const EditorItemRow = VanillaWidgets.instance.EditorItemRow;
     const DropdownField = VanillaWidgets.instance.DropdownField<number>();
 
@@ -52,6 +55,11 @@ export const WETextShaderProperties = (props: { initialPosition?: { x: number, y
                     style={{ flexGrow: 1, width: "inherit" }}
                 />
             </EditorItemRow>
+            {[WESimulationTextType.WhiteCube, WESimulationTextType.WhiteTexture, WESimulationTextType.Text, WESimulationTextType.Image].includes(mesh.TextSourceType.value) &&
+                <VanillaComponentResolver.instance.Tooltip tooltip={transform.CurrentScale.value[2] <= 0 ? T_renderBackfaceAlwaysEnabledInverseZ : ""}>
+                    <VanillaWidgets.instance.ToggleField disabled={transform.CurrentScale.value[2] <= 0} label={T_renderBackface} value={transform.CurrentScale.value[2] <= 0 || material.RenderBackface.value} onChange={(x) => material.RenderBackface.set(x)} />
+                </VanillaComponentResolver.instance.Tooltip>
+            }
             <Scrollable style={{ maxHeight: "225rem" }}>
                 <VanillaWidgets.instance.ToggleField value={(material.DecalFlags.value & 8) != 0} onChange={(x) => { material.DecalFlags.set(!x ? material.DecalFlags.value & ~8 : material.DecalFlags.value | 8) }} label={isDecalShader ? T_dynamicObjectsDecalFilter_useOn : T_dynamicObjectsDecalFilter} />
                 <VanillaWidgets.instance.ToggleField value={(material.DecalFlags.value & 4) != 0} onChange={(x) => { material.DecalFlags.set(!x ? material.DecalFlags.value & ~4 : material.DecalFlags.value | 4) }} label={isDecalShader ? T_supportDecals_useOn : T_supportDecals} />

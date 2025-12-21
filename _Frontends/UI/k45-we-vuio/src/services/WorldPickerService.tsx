@@ -186,6 +186,7 @@ const WETextDataMaterialController = {
     AffectAO: MultiUIValueBinding<boolean>,
     AffectEmission: MultiUIValueBinding<boolean>,
     DrawOrder: MultiUIValueBinding<number>,
+    RenderBackface: MultiUIValueBinding<boolean>,
 }
 
 type FormulableMaterialKeys =

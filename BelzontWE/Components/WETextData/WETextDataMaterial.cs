@@ -4,7 +4,6 @@ using BelzontWE.Utils;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -30,6 +29,7 @@ namespace BelzontWE
         private WETextDataValueColor colorMask1;
         private WETextDataValueColor colorMask2;
         private WETextDataValueColor colorMask3;
+        private bool renderBackface;
         private WEShader shader;
         private int decalFlags;
 
@@ -55,6 +55,7 @@ namespace BelzontWE
         public Color ColorMask1 { readonly get => colorMask1.defaultValue; set { colorMask1.defaultValue = value; } }
         public Color ColorMask2 { readonly get => colorMask2.defaultValue; set { colorMask2.defaultValue = value; } }
         public Color ColorMask3 { readonly get => colorMask3.defaultValue; set { colorMask3.defaultValue = value; } }
+        public bool RenderBackface { readonly get => renderBackface; set { renderBackface = value; dirty = true; } }
 
 
         public string ColorFormulae => color.Formulae;
@@ -107,7 +108,7 @@ namespace BelzontWE
         public int SetFormulaeColorMask2(string value, out string[] cmpErr) => colorMask2.SetFormulae(value, out cmpErr);
         public int SetFormulaeColorMask3(string value, out string[] cmpErr) => colorMask3.SetFormulae(value, out cmpErr);
 
-        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, Dictionary<string,string> vars)
+        public bool UpdateFormulaes(EntityManager em, Entity geometryEntity, Dictionary<string, string> vars)
         {
             return dirty |= color.UpdateEffectiveValue(em, geometryEntity, vars)
               | emissiveColor.UpdateEffectiveValue(em, geometryEntity, vars)
@@ -127,6 +128,8 @@ namespace BelzontWE
 
         public readonly void UpdateDefaultMaterial(Material material, WESimulationTextType textType)
         {
+            material.SetFloat("_DoubleSidedEnable", renderBackface ? 1 : 0);
+            material.SetVector("_DoubleSidedConstants", renderBackface ? new Vector4(1, 1, -1, 0) : default);
             material.SetColor("_BaseColor", color.EffectiveValue);
             material.SetFloat("_Metallic", metallic.EffectiveValue);
             material.SetColor("_EmissiveColor", emissiveColor.EffectiveValue);
@@ -151,6 +154,8 @@ namespace BelzontWE
 
         public readonly void UpdateDecalMaterial(Material material, WESimulationTextType textType, DecalCharCoordinates coordinates)
         {
+            material.SetFloat("_DoubleSidedEnable", renderBackface ? 1 : 0);
+            material.SetVector("_DoubleSidedConstants", renderBackface ? new Vector4(1, 1, -1, 0) : default);
             material.SetColor("_BaseColor", color.EffectiveValue);
             material.SetFloat("_Metallic", metallic.EffectiveValue);
             material.SetFloat("_Smoothness", smoothness.EffectiveValue);
@@ -166,8 +171,10 @@ namespace BelzontWE
             material.SetVector("colossal_MeshSize", coordinates.meshSize);
         }
 
-        public readonly void UpdateGlassMaterial(Material material)
+        public readonly void UpdateGlassMaterial(Material material, bool isZScaleNegative)
         {
+            material.SetFloat("_DoubleSidedEnable", renderBackface ? 1 : 0);
+            material.SetVector("_DoubleSidedConstants", renderBackface ? new Vector4(1, 1, -1, 0) : default);
             material.SetColor("_BaseColor", color.EffectiveValue);
             material.SetFloat("_Metallic", metallic.EffectiveValue);
             material.SetFloat("_Smoothness", smoothness.EffectiveValue);
@@ -276,6 +283,7 @@ namespace BelzontWE
             if (dirty)
             {
                 var baseMaterial = materialArray[0] ??= WERenderingHelper.GenerateMaterial(bri, shader);
+
                 switch (shader)
                 {
                     case WEShader.Default:
@@ -327,7 +335,8 @@ namespace BelzontWE
                 colorMask1 = colorMask1.ToRgbXml(),
                 colorMask2 = colorMask2.ToRgbXml(),
                 colorMask3 = colorMask3.ToRgbXml(),
-                decalFlags = decalFlags
+                decalFlags = decalFlags,
+                renderBackface = renderBackface
 
             };
         public WETextDataXml.DecalStyleXml ToDecalXml()
@@ -341,6 +350,7 @@ namespace BelzontWE
                 decalFlags = decalFlags,
                 metallicOpacity = coatStrength.ToXml(),
                 normalOpacity = normalStrength.ToXml(),
+                renderBackface = renderBackface
             };
         public WETextDataXml.GlassStyleXml ToGlassXml()
             => new()
@@ -352,7 +362,8 @@ namespace BelzontWE
                 smoothness = smoothness.ToXml(),
                 normalStrength = normalStrength.ToXml(),
                 glassThickness = glassThickness.ToXml(),
-                decalFlags = decalFlags
+                decalFlags = decalFlags,
+                renderBackface = renderBackface
             };
         public static WETextDataMaterial ToComponent(WETextDataXml.DefaultStyleXml value)
             => new()
@@ -368,7 +379,8 @@ namespace BelzontWE
                 colorMask2 = value.colorMask2.ToComponent(),
                 colorMask3 = value.colorMask3.ToComponent(),
                 shader = value.shader,
-                DecalFlags = value.decalFlags
+                DecalFlags = value.decalFlags,
+                renderBackface = value.renderBackface
             };
         public static WETextDataMaterial ToComponent(WETextDataXml.DecalStyleXml value)
             => new()
@@ -383,6 +395,7 @@ namespace BelzontWE
                 DecalFlags = value.decalFlags,
                 coatStrength = value.metallicOpacity.ToComponent(),
                 normalStrength = value.normalOpacity.ToComponent(),
+                renderBackface = value.renderBackface
             };
         public static WETextDataMaterial ToComponent(WETextDataXml.GlassStyleXml value)
             => new()
@@ -395,7 +408,8 @@ namespace BelzontWE
                 normalStrength = value.normalStrength.ToComponent(),
                 glassThickness = value.glassThickness.ToComponent(),
                 shader = value.shader,
-                DecalFlags = value.decalFlags
+                DecalFlags = value.decalFlags,
+                renderBackface = value.renderBackface
             };
     }
 }
