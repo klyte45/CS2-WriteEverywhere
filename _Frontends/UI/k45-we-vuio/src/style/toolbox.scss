@@ -1,0 +1,25 @@
+.cameraView {
+    display: flex;
+    width: 90rem;
+    flex-wrap: wrap;
+
+    .br {
+        width: 100%;
+        height: 3rem;
+    }
+
+    .inverted img {
+        transform: scale3d(-1, -1, 1);
+    }
+}
+
+.leftCameraOptions {
+    display: flex;
+    width: 90rem;
+    flex-wrap: wrap;
+
+    .br {
+        width: 100%;
+        height: 3rem;
+    }
+}

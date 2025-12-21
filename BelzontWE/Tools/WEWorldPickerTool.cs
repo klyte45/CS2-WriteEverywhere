@@ -247,9 +247,9 @@ namespace BelzontWE
                 //if (m_nextText.WasPressedThisFrame()) m_Controller.CurrentItemIdx.ChangeValueWithEffects((m_Controller.CurrentItemIdx.Value + m_Controller.CurrentItemCount.Value - 1) % m_Controller.CurrentItemCount.Value);
                 //if (m_prevText.WasPressedThisFrame()) m_Controller.CurrentItemIdx.ChangeValueWithEffects((m_Controller.CurrentItemIdx.Value + 1) % m_Controller.CurrentItemCount.Value);
 
-                if (m_useXY.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)ToolEditMode.PlaneXY);
-                if (m_useXZ.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)ToolEditMode.PlaneXZ);
-                if (m_useZY.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)ToolEditMode.PlaneZY);
+                if (m_useXY.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)(m_Controller.CurrentPlaneMode.Value == (int)ToolEditMode.PlaneXY ? ToolEditMode.PlaneBackXY : ToolEditMode.PlaneXY));
+                if (m_useXZ.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)(m_Controller.CurrentPlaneMode.Value == (int)ToolEditMode.PlaneXZ ? ToolEditMode.PlaneBackXZ : ToolEditMode.PlaneXZ));
+                if (m_useZY.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)(m_Controller.CurrentPlaneMode.Value == (int)ToolEditMode.PlaneZY ? ToolEditMode.PlaneBackZY : ToolEditMode.PlaneZY));
                 if (m_alternateFixedCamera.WasPressedThisFrame()) m_Controller.CameraLocked.ChangeValueWithEffects(!m_Controller.CameraLocked.Value);
                 if (m_cycleAxisLock.WasPressedThisFrame()) m_Controller.CurrentMoveMode.ChangeValueWithEffects((1 + m_Controller.CurrentMoveMode.Value) % 3);
                 if (m_Controller.CameraLocked.Value && m_ToggleLockCameraRotation.WasPressedThisFrame()) m_Controller.CameraRotationLocked.ChangeValueWithEffects(!m_Controller.CameraRotationLocked.Value);
@@ -341,19 +341,10 @@ namespace BelzontWE
 #pragma warning restore CS0252 // Possível comparação de referência inesperada; o lado esquerdo precisa de conversão
                         m_cameraDisabledHere = cameraDisabledThisFrame = true;
                         m_cameraDistance = math.clamp(m_cameraDistance + (m_CameraZoomAction.ReadValue<float>() * 4f), 1f, 30f);
-                        var isDecal = m_MaterialController.ShaderType.Value == WEShader.Decal;
-                        var itemAngles = m_TransformController.CurrentRotation.Value;
-                        var isRotationLocked = m_Controller.CameraRotationLocked.Value;
-                        var targetMatrix = (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
-                        {
-                            ToolEditMode.PlaneZY => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(isDecal ? Quaternion.Euler(-90, 180, 0) * Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 225, 0) : Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 255, 0)),
-                            ToolEditMode.PlaneXZ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(isDecal ? Quaternion.Euler(-90, 180, 0) * Quaternion.Euler(75, (isRotationLocked ? -itemAngles.y : 0) + 180, 0) : Quaternion.Euler(75, (isRotationLocked ? -itemAngles.y : 0) + 180, 0)),
-                            _ => m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(isDecal ? Quaternion.Euler(-90, 180, 0) * Quaternion.Euler(0, 180, isRotationLocked ? -itemAngles.z : 0) : Quaternion.Euler(0, 180, isRotationLocked ? -itemAngles.z : 0)),
-                        };
+
+                        var targetMatrix = CalculateCameraMatrix();
 
                         m_cameraSystem.cinematicCameraController.pivot = m_Controller.CurrentItemMatrix.GetPosition() + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));
-
-
                         m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;
 
                     }
@@ -417,6 +408,12 @@ namespace BelzontWE
                 ToolEditMode.PlaneXY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 0, 0))).rotation, new float3(offsetWithAdjust, 0)),
                 ToolEditMode.PlaneXZ => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, isRotationLocked ? -itemAngles.y : 0, 0))).rotation, new float3(offsetWithAdjust.x, 0, -offsetWithAdjust.y)),
                 ToolEditMode.PlaneZY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, 0, isRotationLocked ? -itemAngles.z : 0))).rotation, new float3(0, offsetWithAdjust.y, -offsetWithAdjust.x)),
+
+                // Back planes - inverted horizontal movement
+                ToolEditMode.PlaneBackXY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 0, 0))).rotation, new float3(-offsetWithAdjust.x, offsetWithAdjust.y, 0)),
+                ToolEditMode.PlaneBackXZ => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, isRotationLocked ? -itemAngles.y : 0, 0))).rotation, new float3(-offsetWithAdjust.x, 0, -offsetWithAdjust.y)),
+                ToolEditMode.PlaneBackZY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, 0, isRotationLocked ? -itemAngles.z : 0))).rotation, new float3(0, offsetWithAdjust.y, offsetWithAdjust.x)),
+
                 _ => default
             };
             EntityManager.SetComponentData(m_Controller.CurrentSubEntity.Value, currentItem);
@@ -451,6 +448,12 @@ namespace BelzontWE
                 ToolEditMode.PlaneXY => new float3(0, 0, offsetWithAdjust),
                 ToolEditMode.PlaneXZ => new float3(0, offsetWithAdjust, 0),
                 ToolEditMode.PlaneZY => new float3(offsetWithAdjust, 0, 0),
+
+                // Back planes - inverted rotation
+                ToolEditMode.PlaneBackXY => new float3(0, 0, -offsetWithAdjust),
+                ToolEditMode.PlaneBackXZ => new float3(0, -offsetWithAdjust, 0),
+                ToolEditMode.PlaneBackZY => new float3(-offsetWithAdjust, 0, 0),
+
                 _ => default
             };
             currentItem.offsetRotation = Quaternion.Euler(m_TransformController.CurrentRotation.Value);
@@ -494,6 +497,76 @@ namespace BelzontWE
             }
         }
 
+        private Matrix4x4 CalculateCameraMatrix()
+        {
+            var isDecal = m_MaterialController.ShaderType.Value == WEShader.Decal;
+            var itemAngles = m_TransformController.CurrentRotation.Value;
+            var isRotationLocked = m_Controller.CameraRotationLocked.Value;
+            var planeMode = (ToolEditMode)m_Controller.CurrentPlaneMode.Value;
+
+            var cameraRotation = GetCameraRotationForPlane(planeMode, isDecal, itemAngles, isRotationLocked);
+            return m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(cameraRotation);
+        }
+
+        private Quaternion GetCameraRotationForPlane(ToolEditMode planeMode, bool isDecal, float3 itemAngles, bool isRotationLocked)
+        {
+            var decalBaseRotation = Quaternion.Euler(-90, 180, 0);
+
+            return planeMode switch
+            {
+                // Front planes
+                ToolEditMode.PlaneXY => GetPlaneXYRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, false),
+                ToolEditMode.PlaneXZ => GetPlaneXZRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, false),
+                ToolEditMode.PlaneZY => GetPlaneZYRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, false),
+
+                // Back planes
+                ToolEditMode.PlaneBackXY => GetPlaneXYRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, true),
+                ToolEditMode.PlaneBackXZ => GetPlaneXZRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, true),
+                ToolEditMode.PlaneBackZY => GetPlaneZYRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, true),
+
+                _ => Quaternion.identity
+            };
+        }
+
+        private Quaternion GetPlaneXYRotation(bool isDecal, float3 itemAngles, bool isRotationLocked, Quaternion decalBaseRotation, bool isBackFacing)
+        {
+            var baseYaw = isBackFacing ? 0f : 180f;
+            var rotationZ = isRotationLocked ? -itemAngles.z : 0f;
+
+            if (isDecal)
+            {
+                return decalBaseRotation * Quaternion.Euler(0, baseYaw, rotationZ);
+            }
+            return Quaternion.Euler(0, baseYaw, rotationZ);
+        }
+
+        private Quaternion GetPlaneXZRotation(bool isDecal, float3 itemAngles, bool isRotationLocked, Quaternion decalBaseRotation, bool isBackFacing)
+        {
+            var zFlippedAmmount = Math.Sign(m_TransformController.CurrentScale.Value.z);
+            var basePitch = (isBackFacing ? 90f : -90f) - (m_Controller.PlaneTilt.Value * zFlippedAmmount);
+            var baseYaw = isBackFacing ? 180f : 0f;
+            var rotationY = (isRotationLocked ? -itemAngles.y : 0f) + baseYaw;
+
+            if (isDecal)
+            {
+                return decalBaseRotation * Quaternion.Euler(basePitch, rotationY, 0);
+            }
+            return Quaternion.Euler(basePitch, rotationY, 0);
+        }
+
+        private Quaternion GetPlaneZYRotation(bool isDecal, float3 itemAngles, bool isRotationLocked, Quaternion decalBaseRotation, bool isBackFacing)
+        {
+            var zFlippedAmmount = Math.Sign(m_TransformController.CurrentScale.Value.z);
+            var baseYaw = (isBackFacing ? -1 : 1) * (90 + (m_Controller.PlaneTilt.Value * zFlippedAmmount));
+            var rotationX = isRotationLocked ? -itemAngles.x : 0f;
+
+            if (isDecal)
+            {
+                return decalBaseRotation * Quaternion.Euler(rotationX, baseYaw, 0);
+            }
+            return Quaternion.Euler(rotationX, baseYaw, 0);
+        }
+
         internal enum ChangeMode
         {
             AddHighlight,
@@ -509,7 +582,10 @@ namespace BelzontWE
         {
             PlaneXY,
             PlaneZY,
-            PlaneXZ
+            PlaneXZ,
+            PlaneBackXY,
+            PlaneBackZY,
+            PlaneBackXZ
         }
     }
 

@@ -49,6 +49,7 @@ const WEWorldPickerController = {
     CurrentEntity: MultiUIValueBinding<Entity | null>,
     MouseSensibility: MultiUIValueBinding<number>,
     CurrentPlaneMode: MultiUIValueBinding<number>,
+    PlaneTilt: MultiUIValueBinding<number>,
     CurrentMoveMode: MultiUIValueBinding<number>,
     CurrentItemIsValid: MultiUIValueBinding<boolean>,
     CameraLocked: MultiUIValueBinding<boolean>,

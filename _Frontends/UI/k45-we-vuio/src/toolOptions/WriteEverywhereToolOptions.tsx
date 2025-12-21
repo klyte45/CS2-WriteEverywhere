@@ -16,6 +16,7 @@ import { ObjectTyped } from "object-typed";
 import { WELayoutVariablesView } from "./WELayoutVariablesView";
 import { WEInstancingView } from "./WEInstancingView";
 import { WESimulationTextType } from "services/WEFormulaeElement";
+import "../style/toolbox.scss"
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
 
@@ -71,6 +72,11 @@ const WEWorldPickerToolPanel = () => {
     const T_editingPlane_XY = translate("toolOption.editingPlane_XY.tooltip"); //"move in XY, rotate in Z (front)"
     const T_editingPlane_ZY = translate("toolOption.editingPlane_ZY.tooltip"); //"move in ZY, rotate in X (right)"
     const T_editingPlane_XZ = translate("toolOption.editingPlane_XZ.tooltip"); //"move in XZ, rotate in Y (top)"
+    const T_editingPlane_BackXY = translate("toolOption.editingPlane_BackXY.tooltip"); //"move in XY, rotate in Z (front)"
+    const T_editingPlane_BackZY = translate("toolOption.editingPlane_BackZY.tooltip"); //"move in ZY, rotate in X (right)"
+    const T_editingPlane_BackXZ = translate("toolOption.editingPlane_BackXZ.tooltip"); //"move in XZ, rotate in Y (top)"
+    const T_planeTiltUp = translate("toolOption.planeTilt.up");
+    const T_planeTiltDown = translate("toolOption.planeTilt.down");
     const T_ProjectionCube = translate("toolOption.decalProjectionCube.tooltip"); //"move in XZ, rotate in Y (top)"
     const T_picker = translate("toolOption.picker.tooltip"); //"Pick another object"
     const T_lockCamera = translate("toolOption.lockCamera.tooltip"); //"Lock camera to editing plane area and angle"
@@ -127,6 +133,7 @@ const WEWorldPickerToolPanel = () => {
     const transform = WorldPickerService.instance.bindingList.transform;
     const Locale = VanillaFnResolver.instance.localization.useCachedLocalization();
     const decimalsFormat = (value: number) => VanillaFnResolver.instance.localizedNumber.formatFloat(Locale, value, false, 3, true, false, Infinity);
+    const decimalsFormat1 = (value: number) => VanillaFnResolver.instance.localizedNumber.formatFloat(Locale, value, false, 1, true, false, Infinity);
 
     const currentItemIsValid = wps.CurrentSubEntity.value?.Index != 0;
 
@@ -189,12 +196,41 @@ const WEWorldPickerToolPanel = () => {
                         <VanillaComponentResolver.instance.ToolButton selected={wps.ShowProjectionCube.value} onSelect={() => wps.ShowProjectionCube.set(!wps.ShowProjectionCube.value)} src={i_ProjectionCube} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ProjectionCube}></VanillaComponentResolver.instance.ToolButton>
                         <div style={{ width: "10rem" }}></div>
                     </>}
-                    <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 0} onSelect={() => wps.CurrentPlaneMode.set(0)} src={i_XYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XY}></VanillaComponentResolver.instance.ToolButton>
-                    <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 1} onSelect={() => wps.CurrentPlaneMode.set(1)} src={i_ZYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_ZY}></VanillaComponentResolver.instance.ToolButton>
-                    <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 2} onSelect={() => wps.CurrentPlaneMode.set(2)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XZ}></VanillaComponentResolver.instance.ToolButton>
+                    <div className="cameraView">
+                        <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 0} onSelect={() => wps.CurrentPlaneMode.set(0)} src={i_XYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XY}></VanillaComponentResolver.instance.ToolButton>
+                        <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 1} onSelect={() => wps.CurrentPlaneMode.set(1)} src={i_ZYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_ZY}></VanillaComponentResolver.instance.ToolButton>
+                        <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 2} onSelect={() => wps.CurrentPlaneMode.set(2)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XZ}></VanillaComponentResolver.instance.ToolButton>
+                        <div className="br" />
+                        <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 3} onSelect={() => wps.CurrentPlaneMode.set(3)} src={i_XYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button + " inverted"} tooltip={T_editingPlane_BackXY}></VanillaComponentResolver.instance.ToolButton>
+                        <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 4} onSelect={() => wps.CurrentPlaneMode.set(4)} src={i_ZYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button + " inverted"} tooltip={T_editingPlane_BackZY}></VanillaComponentResolver.instance.ToolButton>
+                        <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 5} onSelect={() => wps.CurrentPlaneMode.set(5)} src={i_XZplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button + " inverted"} tooltip={T_editingPlane_BackXZ}></VanillaComponentResolver.instance.ToolButton>
+                    </div>
                     <div style={{ width: "10rem" }}></div>
-                    <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentMoveMode.value > 0} onSelect={() => wps.CurrentMoveMode.set((wps.CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[wps.CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[wps.CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
-                    <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
+                    <div className="leftCameraOptions">
+                        <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentMoveMode.value > 0} onSelect={() => wps.CurrentMoveMode.set((wps.CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[wps.CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[wps.CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
+                        <div style={{ flexGrow: 1 }}></div>
+                        <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
+                        <div className="br" />
+
+
+                        <AmountValueSection
+                            widthContent={30}
+                            valueGetter={() => `${decimalsFormat1(wps.PlaneTilt.value)}°`}
+                            up={{
+                                tooltip: T_planeTiltUp,
+                                onSelect: () => wps.PlaneTilt.set(wps.PlaneTilt.value + 2.5),
+                                disabledFn: () => wps.PlaneTilt.value >= 45
+                            }}
+                            down={{
+                                tooltip: T_planeTiltDown,
+                                onSelect: () => wps.PlaneTilt.set(wps.PlaneTilt.value - 2.5),
+                                disabledFn: () => wps.PlaneTilt.value <= -45
+                            }}
+                            sectionless
+                            disabled={wps.CurrentPlaneMode.value % 3 == 0 || !wps.CameraLocked.value}
+                        />
+
+                    </div>
                 </VanillaComponentResolver.instance.Section>
                 <VanillaComponentResolver.instance.Section title={L_pivot}>
                     {ObjectTyped.values(WEPlacementPivot)

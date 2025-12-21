@@ -234,6 +234,7 @@ namespace BelzontWE
         public MultiUIValueBinding<bool> CameraLocked { get; private set; }
         public MultiUIValueBinding<bool> CameraRotationLocked { get; private set; }
         public MultiUIValueBinding<bool> ShowProjectionCube { get; private set; }
+        public MultiUIValueBinding<float> PlaneTilt { get; private set; }
         public MultiUIValueBinding<string[]> FontList { get; private set; }
         private void InitValueBindings()
         {
@@ -243,7 +244,7 @@ namespace BelzontWE
             CurrentEntity = new(default, $"{PREFIX}{nameof(CurrentEntity)}", m_eventCaller, m_callBinder);
 
             CurrentItemIsValid = new(default, $"{PREFIX}{nameof(CurrentItemIsValid)}", m_eventCaller, m_callBinder);
-            CurrentPlaneMode = new(default, $"{PREFIX}{nameof(CurrentPlaneMode)}", m_eventCaller, m_callBinder, (x, _) => x % 3); // WEWorldPickerTool.ToolEditMode Count
+            CurrentPlaneMode = new(default, $"{PREFIX}{nameof(CurrentPlaneMode)}", m_eventCaller, m_callBinder, (x, _) => x % 6); // WEWorldPickerTool.ToolEditMode Count
             CurrentMoveMode = new(default, $"{PREFIX}{nameof(CurrentMoveMode)}", m_eventCaller, m_callBinder, (x, _) => x % 3); // All, Horizontal, Vertical
 
             MouseSensibility = new(6, $"{PREFIX}{nameof(MouseSensibility)}", m_eventCaller, m_callBinder, (x, _) => x % WEWorldPickerTool.precisionIdx.Length);
@@ -251,6 +252,7 @@ namespace BelzontWE
             CameraRotationLocked = new(default, $"{PREFIX}{nameof(CameraRotationLocked)}", m_eventCaller, m_callBinder);
             ShowProjectionCube = new(true, $"{PREFIX}{nameof(ShowProjectionCube)}", m_eventCaller, m_callBinder);
             FontList = new(default, $"{PREFIX}{nameof(FontList)}", m_eventCaller, m_callBinder);
+            PlaneTilt = new(22.5f, $"{PREFIX}{nameof(PlaneTilt)}", m_eventCaller, m_callBinder, (x, _) => Math.Clamp(x, -45, 45)); // All, Horizontal, Vertical
             CurrentSubEntity.OnScreenValueChanged += (x) => OnCurrentItemChanged();
             FontList.Value = FontServer.Instance.GetLoadedFontsNames();
             FontList.UpdateUIs();
