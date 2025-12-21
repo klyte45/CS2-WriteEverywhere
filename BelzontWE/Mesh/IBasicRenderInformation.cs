@@ -12,7 +12,7 @@ namespace BelzontWE
         public Material BaseMaterialDecal { get; }
         public Material BaseMaterialGlass { get; }
 
-        Mesh GetMesh(WEShader shader, int idx = 0);
+        Mesh GetMesh(WEShader shader, bool isBackface, int idx = 0);
         bool IsValid();
         bool IsError { get; set; }
         Bounds3 Bounds { get; }

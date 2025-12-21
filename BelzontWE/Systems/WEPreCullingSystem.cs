@@ -403,6 +403,9 @@ namespace BelzontWE
                             if (!mesh.ValueData.InitializedEffectiveText || lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
                                 var scale2 = transform.scale;
+                                // Apply absolute Z-scale for placeholder
+                                if (scale2.z < 0) scale2.z = -scale2.z;
+                                
                                 // Optimize: Use already loaded mesh instead of re-looking up
                                 var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
 
@@ -434,13 +437,17 @@ namespace BelzontWE
                         break;
                     case WESimulationTextType.WhiteCube:
                         {
+                            // Apply absolute Z-scale for white cube
+                            var localScale = transform.scale;
+                            if (localScale.z < 0) localScale.z = -localScale.z;
+                            
                             // Optimize: Cache material and main lookups
                             var cubeMaterial = m_weMaterialLookup[nextEntity];
                             var effRot = (Quaternion)transform.offsetRotation;
                             // Optimize: Calculate effectiveOffsetPosition using already loaded mesh
                             var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
 
-                            var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(transform.scale.xyz);
+                            var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(localScale.xyz);
                             var lumMultiplier = GetEmissiveMultiplier(ref cubeMaterial);
                             int lod = CalculateLod(whiteCubeBounds * lumMultiplier, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod, ref this);
                             CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, lod);
@@ -458,7 +465,7 @@ namespace BelzontWE
 
                             if (m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayoutWt))
                             {
-                                var itemMatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, mesh.childrenRefersToFrontFace ? (transform.scale.z * .5f) + .001f : .001f)), transform.offsetRotation, Vector3.one);
+                                var itemMatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition + (float3)Matrix4x4.Rotate(transform.offsetRotation).MultiplyPoint(new float3(0, 0, mesh.childrenRefersToFrontFace ? (math.abs(transform.scale.z) * .5f) + .001f : .001f)), transform.offsetRotation, Vector3.one);
                                 for (int j = 0; j < subLayoutWt.Length; j++)
                                 {
                                     DrawTree(geometryEntity, subLayoutWt[j].m_weTextData, itemMatrix, geomMatrix, unfilteredChunkIndex, in inheritableVars, nthCall + 1);
@@ -468,6 +475,10 @@ namespace BelzontWE
                         return;
                     case WESimulationTextType.WhiteTexture:
                         {
+                            // Apply absolute Z-scale for white texture
+                            var localScale = transform.scale;
+                            if (localScale.z < 0) localScale.z = -localScale.z;
+                            
                             // Optimize: Cache material lookup and calculations
                             var textureMaterial = m_weMaterialLookup[nextEntity];
                             var isDecal = textureMaterial.CheckIsDecal(mesh);
@@ -475,7 +486,7 @@ namespace BelzontWE
                             // Optimize: Use already loaded mesh instead of re-looking up
                             var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
 
-                            var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? transform.scale.xzy : new float3(transform.scale.xy, math.sign(transform.scale.z)));
+                            var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? localScale.xzy : new float3(localScale.xy, math.sign(localScale.z)));
                             var lumMultiplier = GetEmissiveMultiplier(ref textureMaterial);
                             int lod = CalculateLod(whiteTextureBounds * lumMultiplier, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod, ref this);
                             CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, lod);
@@ -519,6 +530,9 @@ namespace BelzontWE
                                 return;
                             }
                             var scale = transform.scale;
+                            // Apply absolute Z-scale for text/image
+                            if (scale.z < 0) scale.z = -scale.z;
+                            
                             var defaultMaterial = m_weMaterialLookup[nextEntity];
                             var isDecal = defaultMaterial.CheckIsDecal(mesh);
                             // Optimize: Cache frequently accessed values

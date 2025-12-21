@@ -117,6 +117,7 @@ namespace BelzontWE.Font.Utility
         public readonly Bounds3 m_boundsCube;
 
         private Mesh m_mesh;
+        private Mesh m_meshBack;
         private Mesh[] m_meshCube;
         private Matrix4x4[] m_meshCubeOffsets;
         private GCHandle handleCheck;
@@ -126,7 +127,7 @@ namespace BelzontWE.Font.Utility
 
         //  public Mesh GetMesh(WEShader shader) => shader == WEShader.Decal ? MeshCube : Mesh;
         public int MeshCount(WEShader shader) => shader == WEShader.Decal ? MeshCube.Length : 1;
-        public Mesh GetMesh(WEShader shader, int idx = 0) => shader == WEShader.Decal ? MeshCube[idx] : Mesh;
+        public Mesh GetMesh(WEShader shader, bool backface, int idx = 0) => shader == WEShader.Decal ? MeshCube[idx] : backface ? MeshBack : Mesh;
         public Matrix4x4 GetMeshTranslation(WEShader shader, int idx = 0) => shader == WEShader.Decal ? m_meshCubeOffsets[idx] : Matrix4x4.identity;
 
         [XmlIgnore]
@@ -148,6 +149,27 @@ namespace BelzontWE.Font.Utility
                     m_mesh.tangents = m_vertices.Select(x => Vector4.zero).ToArray();
                 }
                 return m_mesh;
+            }
+        }
+        [XmlIgnore]
+        private Mesh MeshBack
+        {
+            get
+            {
+                if (m_meshBack is null && m_vertices?.Length > 0)
+                {
+                    m_meshBack = new Mesh
+                    {
+                        vertices = m_vertices,
+                        triangles = m_triangles.Reverse().ToArray(),
+                        colors32 = m_colors32,
+                        uv = m_uv,
+                    };
+                    m_meshBack.RecalculateBounds();
+                    m_meshBack.RecalculateNormals();
+                    m_meshBack.tangents = m_vertices.Select(x => Vector4.zero).ToArray();
+                }
+                return m_meshBack;
             }
         }
         [XmlIgnore]

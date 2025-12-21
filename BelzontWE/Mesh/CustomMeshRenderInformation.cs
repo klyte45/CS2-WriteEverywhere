@@ -96,7 +96,7 @@ namespace BelzontWE
             GameObject.Destroy(mesh);
         }
 
-        public Mesh GetMesh(WEShader shader, int idx = 0) => CachedMesh;
+        public Mesh GetMesh(WEShader shader, bool isBackface, int idx = 0) => CachedMesh;
         public bool IsValid() => handleCheck.IsAllocated && handleCheck.Target is not null;
         public bool IsError { get => false; set { } }
 

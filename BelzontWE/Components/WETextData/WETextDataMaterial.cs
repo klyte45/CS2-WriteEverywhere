@@ -171,7 +171,7 @@ namespace BelzontWE
             material.SetVector("colossal_MeshSize", coordinates.meshSize);
         }
 
-        public readonly void UpdateGlassMaterial(Material material, bool isZScaleNegative)
+        public readonly void UpdateGlassMaterial(Material material)
         {
             material.SetFloat("_DoubleSidedEnable", renderBackface ? 1 : 0);
             material.SetVector("_DoubleSidedConstants", renderBackface ? new Vector4(1, 1, -1, 0) : default);
