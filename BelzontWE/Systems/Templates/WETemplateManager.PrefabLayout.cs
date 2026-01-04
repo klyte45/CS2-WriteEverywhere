@@ -117,9 +117,9 @@ namespace BelzontWE
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.11f * totalStepPrefabTemplates)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.searchingForFiles");
             yield return 0;
             var files = modName != null
-                ? Directory.GetFiles(m_modsTemplatesFolder[modName].rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => (y, m_modsTemplatesFolder[modName].id, $"{m_modsTemplatesFolder[modName].name}: {y[m_modsTemplatesFolder[modName].rootFolder.Length..]}")).ToArray()
-                : Directory.GetFiles(SAVED_PREFABS_FOLDER, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(x => (x, (string)null, x[SAVED_PREFABS_FOLDER.Length..]))
-                    .Union(m_modsTemplatesFolder.Values.SelectMany(x => Directory.GetFiles(x.rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => (y, x.id, $"{x.name}: {y[x.rootFolder.Length..]}"))))
+                ? [.. Directory.GetFiles(m_modsTemplatesFolder[modName].rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => new LayoutLoadingData(y, m_modsTemplatesFolder[modName].id, m_modsTemplatesFolder[modName].prefix, $"{m_modsTemplatesFolder[modName].name}: {y[m_modsTemplatesFolder[modName].rootFolder.Length..]}"))]
+                : Directory.GetFiles(SAVED_PREFABS_FOLDER, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(x => new LayoutLoadingData(x, null, null, x[SAVED_PREFABS_FOLDER.Length..]))
+                    .Union(m_modsTemplatesFolder.Values.SelectMany(x => Directory.GetFiles(x.rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => new LayoutLoadingData(y, x.id, x.prefix, $"{x.name}: {y[x.rootFolder.Length..]}"))))
                     .ToArray();
             var errorsList = new Dictionary<string, LocalizedString>();
             for (int i = 0; i < files.Length; i++)
@@ -186,12 +186,13 @@ namespace BelzontWE
         }
 
 
-        private IEnumerator LoadPrefabFileTemplate(int offsetPercentage, float totalStep, (string, string, string)[] files, Dictionary<string, LocalizedString> errorsList, int i)
+        private IEnumerator LoadPrefabFileTemplate(int offsetPercentage, float totalStep, LayoutLoadingData[] files, Dictionary<string, LocalizedString> errorsList, int i)
         {
             var fileItemFull = files[i];
-            var fileItem = fileItemFull.Item1;
-            var modId = fileItemFull.Item2;
-            var displayName = fileItemFull.Item3;
+            var fileItem = fileItemFull.FileItem;
+            var modId = fileItemFull.ModId;
+            var prefix = fileItemFull.Prefix;
+            var displayName = fileItemFull.DisplayName;
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + ((.11f + (.89f * ((i + 1f) / files.Length))) * totalStep)),
                     textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.loadingPrefabLayoutFile", argsText: new()
                     {
@@ -225,9 +226,9 @@ namespace BelzontWE
             var validationResults = CanBePrefabLayout(tree);
             if (validationResults == 0)
             {
-                if (modId is string effectiveModId)
+                if (prefix is string effectivePrefix)
                 {
-                    ExtractReplaceableContent(tree, effectiveModId);
+                    ExtractReplaceableContent(tree, modId, effectivePrefix);
                 }
                 foreach (var idx in idxArray)
                 {
@@ -274,27 +275,34 @@ namespace BelzontWE
             }
         }
 
-        private void ExtractReplaceableContent(WETextDataXmlTree tree, string effectiveModId)
+        private void ExtractReplaceableContent(WETextDataXmlTree tree, string modId, string effectivePrefix)
         {
-            if (!m_atlasesMapped.TryGetValue(effectiveModId, out var dictAtlases))
+
+            if (!m_atlasesMapped.TryGetValue(effectivePrefix, out var dictAtlases))
             {
-                dictAtlases = m_atlasesMapped[effectiveModId] = new();
+                dictAtlases = m_atlasesMapped[effectivePrefix] = new();
             }
-            if (!m_fontsMapped.TryGetValue(effectiveModId, out var dictFonts))
+            if (!m_fontsMapped.TryGetValue(effectivePrefix, out var dictFonts))
             {
-                dictFonts = m_fontsMapped[effectiveModId] = new();
+                dictFonts = m_fontsMapped[effectivePrefix] = new();
             }
-            if (!m_subtemplatesMapped.TryGetValue(effectiveModId, out var dictSubTemplates))
+            if (!m_subtemplatesMapped.TryGetValue(effectivePrefix, out var dictSubTemplates))
             {
-                dictSubTemplates = m_subtemplatesMapped[effectiveModId] = new();
+                dictSubTemplates = m_subtemplatesMapped[effectivePrefix] = new();
             }
-            if (!m_meshesMapped.TryGetValue(effectiveModId, out var dictMeshes))
+            if (!m_meshesMapped.TryGetValue(effectivePrefix, out var dictMeshes))
             {
-                dictMeshes = m_meshesMapped[effectiveModId] = new();
+                dictMeshes = m_meshesMapped[effectivePrefix] = new();
             }
-            tree.MapFontAtlasesTemplates(effectiveModId, dictAtlases, dictFonts, dictSubTemplates, dictMeshes);
-            tree.ModSource = effectiveModId.TrimToNull();
+
+
+            tree.MapFontAtlasesTemplates(effectivePrefix, dictAtlases, dictFonts, dictSubTemplates, dictMeshes);
+            tree.ModSource = modId.TrimToNull();
         }
         #endregion
+    }
+
+    internal record struct LayoutLoadingData(string FileItem, string ModId, string Prefix, string DisplayName)
+    {
     }
 }

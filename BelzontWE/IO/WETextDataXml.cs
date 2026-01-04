@@ -124,7 +124,7 @@ namespace BelzontWE
                     imageMesh.mesh.defaultValue = $"{modId}:{targetMesh}";
                 }
             }
-            else if (textMesh != null && textMesh.fontName.TrimToNull() != null && (textMesh.fontName.StartsWith($"{modId}:") || !textMesh.fontName.Contains(":")))
+            else if (!modId.StartsWith(WEModIntegrationUtility.PREFIX_ASSET_STUFF) && textMesh != null && textMesh.fontName.TrimToNull() != null && (textMesh.fontName.StartsWith($"{modId}:") || !textMesh.fontName.Contains(":")))
             {
                 var targetFont = textMesh.fontName.Split(":").Last();
                 dictFonts.Add(targetFont);

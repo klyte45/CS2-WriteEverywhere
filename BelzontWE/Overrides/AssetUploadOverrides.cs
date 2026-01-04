@@ -1,10 +1,9 @@
 ﻿using Belzont.Utils;
 using BelzontWE.Utils;
-using Colossal.IO.AssetDatabase;
 using Game.UI.Menu;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEngine;
 
 namespace BelzontWE
 {
@@ -20,6 +19,20 @@ namespace BelzontWE
             var targetRootFolder = __instance.GetAbsoluteContentPath();
             LogUtils.DoInfoLog($"Package folder is: {__instance.mainAsset.path}");
             var weFolder = Path.Combine(Path.GetDirectoryName(__instance.mainAsset.path), WEAssetsSettingsLoaderUtility.WE_FOLDER_ROOT);
+            if (__instance.mainAsset.path.EndsWith(".cok"))
+            {
+                var assetNameOriginal = Path.GetFileNameWithoutExtension(__instance.mainAsset.path);
+                var backupFolder = Path.Combine(Path.GetDirectoryName(__instance.mainAsset.path), $".{assetNameOriginal}_Backup");
+                if (Directory.Exists(backupFolder))
+                {
+                    var originalPrefabPath = Directory.GetFiles(backupFolder, $"{assetNameOriginal}.prefab", SearchOption.AllDirectories).FirstOrDefault();
+                    if (originalPrefabPath != null)
+                    {
+                        originalPrefabPath = originalPrefabPath.Replace(backupFolder, Application.persistentDataPath);
+                        weFolder = Path.Combine(Path.GetDirectoryName(originalPrefabPath), WEAssetsSettingsLoaderUtility.WE_FOLDER_ROOT);
+                    }
+                }
+            }
             if (Directory.Exists(weFolder))
             {
                 var layoutsSrc = Path.Combine(weFolder, WEAssetsSettingsLoaderUtility.WE_FOLDER_LAYOUTS);

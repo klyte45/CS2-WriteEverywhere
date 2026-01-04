@@ -47,8 +47,9 @@ namespace BelzontWE.Utils
                     var atlases = Directory.GetDirectories(baseFolder, "*", SearchOption.TopDirectoryOnly);
                     foreach (var atlasFolder in atlases)
                     {
-                        AtlasDataSetup(item, atlasFolder, out string modIdentifier, out string displayName, out string targetAtlasName, out string notifGroup, out Dictionary<string, ILocElement> args);
-                        WEAtlasesLibrary.Instance.LoadImagesToAtlas(item, targetAtlasName, Directory.GetFiles(atlasFolder, "*.png"), modIdentifier, displayName, notifGroup, args);
+                        var atlasName = Path.GetFileName(atlasFolder);
+                        AtlasDataSetup(item, atlasName, out string modIdentifier, out string displayName, out string targetAtlasName, out string notifGroup, out Dictionary<string, ILocElement> args);
+                        WEAtlasesLibrary.Instance.LoadImagesToAtlas(item, atlasName, Directory.GetFiles(atlasFolder, "*.png"), modIdentifier, displayName, notifGroup, args);
                     }
                 }
                 if (Directory.Exists(Path.Combine(sourceFolderLoc, WE_FOLDER_MESHES)))

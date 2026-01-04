@@ -33,14 +33,14 @@ namespace BelzontWE
             for (int i = 0; i < mods.Length; i++)
             {
                 string modId = mods[i];
-                GameManager.instance.StartCoroutine(LoadModSubtemplates_Item(0, 100, modId, true));
+                GameManager.instance.StartCoroutine(LoadModSubtemplates_Item(0, 100, modId, modId, true));
             }
             m_templatesDirty = true;
             reloadingSubtemplatesCoroutine = null;
         }
 
 
-        private IEnumerator LoadModSubtemplates_Item(float offsetPercentage, float totalStep, string modId, bool isStandalone = false)
+        private IEnumerator LoadModSubtemplates_Item(float offsetPercentage, float totalStep, string modId, string modPrefix, bool isStandalone = false)
         {
             var groupId = isStandalone ? $"{LOADING_SUBTEMPLATES_NOTIFICATION_ID}:{modId}" : LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID;
 
@@ -78,7 +78,7 @@ namespace BelzontWE
                     {
                         var tree = WETextDataXmlTree.FromXML(File.ReadAllText(fileItem));
                         if (tree is null) yield break;
-                        ExtractReplaceableContent(tree, modId);
+                        ExtractReplaceableContent(tree, modId, modPrefix);
 
 
                         var templateName = Path.GetFileName(fileItem)[..^(SIMPLE_LAYOUT_EXTENSION.Length + 1)];

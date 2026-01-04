@@ -249,7 +249,14 @@ namespace BelzontWE.Sprites
         internal void LoadImagesToAtlas(AssetData metadata, string atlasName, string[] imagePaths, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args)
         {
             var modId = WEModIntegrationUtility.GetModIdentifier(metadata);
-            EnqueueModAtlasLoader(metadata, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, (img, msg) => errors.Add($"{img}: {msg}")));
+            EnqueueModAtlasLoader(metadata, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) =>
+            {
+                WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, (img, msg) => errors.Add($"{img}: {msg}"));
+
+                LogUtils.DoLog($"Loaded images to atlas '{atlasName}' from paths: {string.Join(", ", imagePaths)}");
+            });
+
+            LogUtils.DoLog($"Enqueued images for atlas: '{atlasName}'");
         }
 
         private void EnqueueModAtlasLoader(object mainAssembly, string atlasName, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args, string modId, Action<List<WEImageInfo>, List<string>> loaderEnqueue)

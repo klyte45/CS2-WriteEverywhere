@@ -26,7 +26,7 @@ namespace BelzontWE
         private readonly Dictionary<string, Dictionary<string, string>> m_meshesReplacements = new();
         public ushort SpritesAndLayoutsDataVersion { get; private set; } = 0;
 
-        private Dictionary<string, (string name, string id, string rootFolder)> m_modsTemplatesFolder = new();
+        private Dictionary<string, ModTemplateRegistrationData> m_modsTemplatesFolder = new();
 
         public void RegisterModTemplatesForLoading(Assembly mainAssembly, string folderTemplatesSource)
         {
@@ -35,8 +35,8 @@ namespace BelzontWE
             var modName = modData.GetMeta().displayName;
 
             if (m_modsTemplatesFolder.TryGetValue(modId, out var folder) && folder.rootFolder == folderTemplatesSource) return;
-            m_modsTemplatesFolder[modId] = (modName, modId, folderTemplatesSource);
-            GameManager.instance.StartCoroutine(LoadModSubtemplates_Item(0, 100, modId));
+            m_modsTemplatesFolder[modId] = new(modName, modId, modId, folderTemplatesSource, false);
+            GameManager.instance.StartCoroutine(LoadModSubtemplates_Item(0, 100, modId, modId));
             MarkPrefabsDirty();
         }
 
@@ -48,7 +48,7 @@ namespace BelzontWE
         }
         internal void RegisterAssetsLayoutsFolder(AssetData assetData, string templatesRoot)
         {
-            m_modsTemplatesFolder[assetData.uniqueName] = (assetData.GetMeta().displayName, assetData.uniqueName, templatesRoot);
+            m_modsTemplatesFolder[assetData.uniqueName] = new(assetData.GetMeta().displayName, assetData.uniqueName, WEModIntegrationUtility.GetModAtlasesPrefix(assetData), templatesRoot, true);
         }
         internal List<ModFolder> ListModsExtraFolders() => [.. integrationLoadableTemplatesFromMod.Values];
 
@@ -137,7 +137,7 @@ namespace BelzontWE
         }
 
         internal ModReplacementData[] GetModsReplacementData()
-            => m_modsTemplatesFolder.Select(x =>
+            => m_modsTemplatesFolder.Where(x => !x.Value.isAsset).Select(x =>
             {
                 var modId = x.Key;
                 var modName = x.Value.name;
@@ -304,5 +304,9 @@ namespace BelzontWE
         }
 
         #endregion
+    }
+
+    internal record struct ModTemplateRegistrationData(string name, string id, string prefix, string rootFolder, bool isAsset)
+    {
     }
 }

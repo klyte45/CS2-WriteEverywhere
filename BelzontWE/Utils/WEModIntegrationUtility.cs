@@ -17,6 +17,9 @@ namespace BelzontWE
             return modId.platformID == 0 ? "H+" + modId.GetHashCode().ToString("X16") : $"{modId.platformID}";
         }
 
-        public static string GetModAccessName(AssetData asset, string itemName) => asset is ExecutableAsset ea ? GetModAccessName(ea.assembly, itemName) : $"PREF_{GetModIdentifier(asset)}:{itemName}";
+        public static string GetModAccessName(AssetData asset, string itemName) => asset is ExecutableAsset ea ? GetModAccessName(ea.assembly, itemName) : $"{GetModAtlasesPrefix(asset)}:{itemName}";
+        public static string GetModAtlasesPrefix(AssetData asset) => $"{PREFIX_ASSET_STUFF}{GetModIdentifier(asset)}";
+
+        public const string PREFIX_ASSET_STUFF = "∂REF_";
     }
 }
