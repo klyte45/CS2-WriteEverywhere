@@ -2,6 +2,7 @@ using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Utils;
 using Colossal.Entities;
+using Colossal.IO.AssetDatabase;
 using Game.Objects;
 using Game.Prefabs;
 using Game.SceneFlow;
@@ -117,9 +118,9 @@ namespace BelzontWE
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + (.11f * totalStepPrefabTemplates)), textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.searchingForFiles");
             yield return 0;
             var files = modName != null
-                ? [.. Directory.GetFiles(m_modsTemplatesFolder[modName].rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => new LayoutLoadingData(y, m_modsTemplatesFolder[modName].id, m_modsTemplatesFolder[modName].prefix, $"{m_modsTemplatesFolder[modName].name}: {y[m_modsTemplatesFolder[modName].rootFolder.Length..]}"))]
-                : Directory.GetFiles(SAVED_PREFABS_FOLDER, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(x => new LayoutLoadingData(x, null, null, x[SAVED_PREFABS_FOLDER.Length..]))
-                    .Union(m_modsTemplatesFolder.Values.SelectMany(x => Directory.GetFiles(x.rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => new LayoutLoadingData(y, x.id, x.prefix, $"{x.name}: {y[x.rootFolder.Length..]}"))))
+                ? [.. Directory.GetFiles(m_modsTemplatesFolder[modName].rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => new LayoutLoadingData(y, m_modsTemplatesFolder[modName].id, m_modsTemplatesFolder[modName].sourceDB, m_modsTemplatesFolder[modName].prefix, $"{m_modsTemplatesFolder[modName].name}: {y[m_modsTemplatesFolder[modName].rootFolder.Length..]}"))]
+                : Directory.GetFiles(SAVED_PREFABS_FOLDER, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(x => new LayoutLoadingData(x, null, null, null, x[SAVED_PREFABS_FOLDER.Length..]))
+                    .Union(m_modsTemplatesFolder.Values.SelectMany(x => Directory.GetFiles(x.rootFolder, $"*.{PREFAB_LAYOUT_EXTENSION}", SearchOption.AllDirectories).Select(y => new LayoutLoadingData(y, x.id, x.sourceDB, x.prefix, $"{x.name}: {y[x.rootFolder.Length..]}"))))
                     .ToArray();
             var errorsList = new Dictionary<string, LocalizedString>();
             for (int i = 0; i < files.Length; i++)
@@ -191,6 +192,7 @@ namespace BelzontWE
             var fileItemFull = files[i];
             var fileItem = fileItemFull.FileItem;
             var modId = fileItemFull.ModId;
+            var sourceDb = fileItemFull.DB;
             var prefix = fileItemFull.Prefix;
             var displayName = fileItemFull.DisplayName;
             NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, Mathf.RoundToInt(offsetPercentage + ((.11f + (.89f * ((i + 1f) / files.Length))) * totalStep)),
@@ -230,8 +232,16 @@ namespace BelzontWE
                 {
                     ExtractReplaceableContent(tree, modId, effectivePrefix);
                 }
+
+                var prefabs = PrefabSystemOverrides.LoadedPrefabBaseList(m_prefabSystem);
                 foreach (var idx in idxArray)
                 {
+                    if (sourceDb != null)
+                    {
+                        var prefabInfo = prefabs[(int)idx];
+                        if (prefabInfo.asset?.database != sourceDb) continue;
+                    }
+
                     if (PrefabTemplates.ContainsKey(idx))
                     {
                         PrefabTemplates[idx].MergeChildren(tree);
@@ -302,7 +312,7 @@ namespace BelzontWE
         #endregion
     }
 
-    internal record struct LayoutLoadingData(string FileItem, string ModId, string Prefix, string DisplayName)
+    internal record struct LayoutLoadingData(string FileItem, string ModId, ILocalAssetDatabase DB, string Prefix, string DisplayName)
     {
     }
 }

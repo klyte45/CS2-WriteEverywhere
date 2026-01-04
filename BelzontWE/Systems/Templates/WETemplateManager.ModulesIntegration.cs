@@ -35,7 +35,7 @@ namespace BelzontWE
             var modName = modData.GetMeta().displayName;
 
             if (m_modsTemplatesFolder.TryGetValue(modId, out var folder) && folder.rootFolder == folderTemplatesSource) return;
-            m_modsTemplatesFolder[modId] = new(modName, modId, modId, folderTemplatesSource, false);
+            m_modsTemplatesFolder[modId] = new(modName, modId, null, modId, folderTemplatesSource, false);
             GameManager.instance.StartCoroutine(LoadModSubtemplates_Item(0, 100, modId, modId));
             MarkPrefabsDirty();
         }
@@ -48,7 +48,7 @@ namespace BelzontWE
         }
         internal void RegisterAssetsLayoutsFolder(AssetData assetData, string templatesRoot)
         {
-            m_modsTemplatesFolder[assetData.uniqueName] = new(assetData.GetMeta().displayName, assetData.uniqueName, WEModIntegrationUtility.GetModAtlasesPrefix(assetData), templatesRoot, true);
+            m_modsTemplatesFolder[assetData.uniqueName] = new(assetData.GetMeta().displayName, assetData.uniqueName, assetData.database, WEModIntegrationUtility.GetModAtlasesPrefix(assetData), templatesRoot, true);
         }
         internal List<ModFolder> ListModsExtraFolders() => [.. integrationLoadableTemplatesFromMod.Values];
 
@@ -306,7 +306,7 @@ namespace BelzontWE
         #endregion
     }
 
-    internal record struct ModTemplateRegistrationData(string name, string id, string prefix, string rootFolder, bool isAsset)
+    internal record struct ModTemplateRegistrationData(string name, string id, ILocalAssetDatabase sourceDB, string prefix, string rootFolder, bool isAsset)
     {
     }
 }
