@@ -61,7 +61,7 @@ Like images, you can reload the meshes from the Options menu while in game.
 ### Image atlases
 
 Image atlases are a group of images stored together in a folder, and since 0.4 can have a custom shape:
-- These images shall not be bigger than **2048x2048** pixels in size
+- These images shall not be bigger than **1000x1000** pixels in size
 - All images shall be in PNG format
 - The images can have other special images like the asset textures of the game have.
   - The naming convention follow the same shown [at CS2 official Wiki page about asset creation](https://cs2.paradoxwikis.com/Asset_Creation_Guide) - except that the `_BaseColor` isn't used because it is the default image name.

@@ -1,10 +1,15 @@
-# v1.0.1r0 (21-DEC-25)
+# v1.0.1r1 (04-JAN-26)
+- Fixes for atlases loaded from assets
+- Fixes for uploading WE data when the packaging process is done before the publishing process
+- Scoping layouts from assets to their own database only. It means layouts loaded along assets only will apply to assets from that package.
+
+## FROM  v1.0.1r0 (21-DEC-25)
 
 - Now meshes backface are not rendered by default. You can enable it from the shader window, but it's not recommended.
 - Added new view angles for the fixed camera (bottom, left and back)
 - Bottom, top, left and right perspectives now can have their tilt adjusted as needed
 
-## FROM v1.0.0r0-8
+#v1.0.0r0-8
 
 - Allowing non-assembly mods (i.e. Assets) to register WE stuff: (beta feature, may change in future)
  - Need to add files into a folder "K45_WE" at same level of the prefab root
