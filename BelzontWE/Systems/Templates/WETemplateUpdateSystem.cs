@@ -1,8 +1,11 @@
+using Belzont.Interfaces;
+using Belzont.Utils;
 using Game;
 using Game.Common;
 using Game.Prefabs;
 using Game.Rendering;
 using Game.Tools;
+using System;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
@@ -213,12 +216,17 @@ namespace BelzontWE
 
         protected override void OnUpdate()
         {
-            if (m_manager.IsGameLoadingOrInitializing || m_manager.IsLoadingLayouts || !WriteEverywhereCS2Mod.IsInitializationComplete) return;
-
-            // Process entity updates in priority order
-            if (m_manager.UpdatingEntitiesOnMain == null)
+            if (m_manager.IsGameLoadingOrInitializing || m_manager.IsLoadingLayouts || !WriteEverywhereCS2Mod.IsInitializationComplete)
             {
+                if (BasicIMod.TraceMode)
+                {
+                    LogUtils.DoTraceLog($"Not running WETemplateUpdateSystem: IsGameLoadingOrInitializing = {m_manager.IsGameLoadingOrInitializing}, IsLoadingLayouts = {m_manager.IsLoadingLayouts}, !IsInitializationComplete = {!WriteEverywhereCS2Mod.IsInitializationComplete}");
+                }
+                return;
+            }
 
+            try
+            {
                 if (m_manager.TemplatesDirty && m_entitiesWaitingRendering.IsEmpty)
                 {
                     EntityManager.AddComponent<WEWaitingRendering>(m_templateBasedEntities);
@@ -247,6 +255,10 @@ namespace BelzontWE
                     }.ScheduleParallel(m_dirtyWePrefabLayoutQuery, Dependency);
                     keysWithTemplate.Dispose(Dependency);
                     Dependency.Complete();
+                    if (BasicIMod.TraceMode)
+                    {
+                        LogUtils.DoTraceLog($"Returning: dirty WE prefab layout query > 0");
+                    }
                     return;
                 }
 
@@ -256,8 +268,12 @@ namespace BelzontWE
                     if (m_prefabArchetypesToBeUpdatedInMain.CalculateEntityCount() > 10_000)
                     {
                         var chunkCount = m_prefabArchetypesToBeUpdatedInMain.CalculateChunkCountWithoutFiltering();
-                        var sizeEachIterationPerChunk = 10_000 / chunkCount;
+                        var sizeEachIterationPerChunk = Math.Max(1, 10_000 / chunkCount);
                         outputArray = new NativeArray<Entity>(sizeEachIterationPerChunk * chunkCount, Allocator.Temp);
+                        if (BasicIMod.TraceMode)
+                        {
+                            LogUtils.DoTraceLog($"Calculation: chunkCount = {chunkCount}; sizeEachIteration = {sizeEachIterationPerChunk}");
+                        }
                         new WEReadFirstEntities
                         {
                             entitiesEachChunk = sizeEachIterationPerChunk,
@@ -271,6 +287,10 @@ namespace BelzontWE
                     }
                     m_manager.UpdatePrefabArchetypes(outputArray);
                     outputArray.Dispose();
+                    if (BasicIMod.TraceMode)
+                    {
+                        LogUtils.DoTraceLog($"Returning: prefabs to be updated > 0 ({m_prefabArchetypesToBeUpdatedInMain.CalculateChunkCount()} / {m_prefabArchetypesToBeUpdatedInMain.CalculateEntityCount()})");
+                    }
                     return;
                 }
                 if (!m_entitiesToBeUpdatedInMain.IsEmpty)
@@ -279,7 +299,7 @@ namespace BelzontWE
                     if (m_entitiesToBeUpdatedInMain.CalculateEntityCount() > 10_000)
                     {
                         var chunkCount = m_entitiesToBeUpdatedInMain.CalculateChunkCountWithoutFiltering();
-                        var sizeEachIterationPerChunk = 10_000 / chunkCount;
+                        var sizeEachIterationPerChunk = Math.Max(1, 10_000 / chunkCount);
                         outputArray = new NativeArray<Entity>(sizeEachIterationPerChunk * chunkCount, Allocator.Temp);
                         new WEReadFirstEntities
                         {
@@ -295,6 +315,10 @@ namespace BelzontWE
 
                     m_manager.UpdateLayouts(outputArray);
                     outputArray.Dispose();
+                    if (BasicIMod.TraceMode)
+                    {
+                        LogUtils.DoTraceLog($"Returning: m_entitiesToBeUpdatedInMain > 0");
+                    }
                     return;
                 }
                 if (m_uncheckedWePrefabLayoutQuery.CalculateChunkCount() > 0)
@@ -361,9 +385,12 @@ namespace BelzontWE
                         job.Execute(tempArr[i]);
                     }
                 }
-            }
 
-            Dependency.Complete();
+            }
+            finally
+            {
+                Dependency.Complete();
+            }
         }
 
         /// <summary>

@@ -44,32 +44,38 @@ namespace BelzontWE
         }
         private IEnumerator UpdatePrefabIndexDictionary_Coroutine()
         {
-            isPrefabListDirty = false;
-            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 0);
-            yield return 0;
-            PrefabNameToIndex.Clear();
-            var prefabs = PrefabSystemOverrides.LoadedPrefabBaseList(m_prefabSystem);
-            var entities = PrefabSystemOverrides.LoadedPrefabEntitiesList(m_prefabSystem);
-
-            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 1, textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.gettingPrefabIndexes");
-            yield return 0;
-            foreach (var prefab in prefabs)
+            try
             {
-                var data = EntityManager.GetComponentData<PrefabData>(entities[prefab]);
-                if (!PrefabNameToIndex.ContainsKey(prefab.name)) PrefabNameToIndex[prefab.name] = new();
-                PrefabNameToIndex[prefab.name].Add(data.m_Index);
-                if (EntityManager.TryGetBuffer<PlaceholderObjectElement>(entities[prefab], true, out var buff))
+                isPrefabListDirty = false;
+                NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 0);
+                yield return 0;
+                PrefabNameToIndex.Clear();
+                var prefabs = PrefabSystemOverrides.LoadedPrefabBaseList(m_prefabSystem);
+                var entities = PrefabSystemOverrides.LoadedPrefabEntitiesList(m_prefabSystem);
+
+                NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 1, textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.gettingPrefabIndexes");
+                yield return 0;
+                foreach (var prefab in prefabs)
                 {
-                    for (int j = 0; j < buff.Length; j++)
+                    var data = EntityManager.GetComponentData<PrefabData>(entities[prefab]);
+                    if (!PrefabNameToIndex.ContainsKey(prefab.name)) PrefabNameToIndex[prefab.name] = new();
+                    PrefabNameToIndex[prefab.name].Add(data.m_Index);
+                    if (EntityManager.TryGetBuffer<PlaceholderObjectElement>(entities[prefab], true, out var buff))
                     {
-                        var otherData = EntityManager.GetComponentData<PrefabData>(buff[j].m_Object);
-                        PrefabNameToIndex[prefab.name].Add(otherData.m_Index);
+                        for (int j = 0; j < buff.Length; j++)
+                        {
+                            var otherData = EntityManager.GetComponentData<PrefabData>(buff[j].m_Object);
+                            PrefabNameToIndex[prefab.name].Add(otherData.m_Index);
+                        }
                     }
                 }
+                NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 20, textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.prefabIndexesLoaded");
+                yield return LoadTemplatesFromFolder(20, 80f);
             }
-            NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 20, textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.prefabIndexesLoaded");
-            yield return LoadTemplatesFromFolder(20, 80f);
-            LoadingPrefabLayoutsCoroutine = null;
+            finally
+            {
+                LoadingPrefabLayoutsCoroutine = null;
+            }
         }
 
         private IEnumerator LoadTemplatesFromFolder(int offsetPercentage, float totalStepFull, string modName = null)

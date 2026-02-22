@@ -62,10 +62,6 @@ namespace BelzontWE
         /// </summary>
         internal void ClearTemplatesDirty() => m_templatesDirty = false;
 
-        /// <summary>
-        /// Gets whether entities are currently being updated on main thread
-        /// </summary>
-        internal Coroutine UpdatingEntitiesOnMain { get; private set; }
 
         /// <summary>
         /// Tries to resolve a template by name, checking both city templates and mod subtemplates.
