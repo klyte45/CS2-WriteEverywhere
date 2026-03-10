@@ -192,10 +192,7 @@ const WEWorldPickerToolPanel = () => {
                     }}
                 />
                 <VanillaComponentResolver.instance.Section title={L_editingPlane}>
-                    {material.ShaderType.value == 2 && <>
-                        <VanillaComponentResolver.instance.ToolButton selected={wps.ShowProjectionCube.value} onSelect={() => wps.ShowProjectionCube.set(!wps.ShowProjectionCube.value)} src={i_ProjectionCube} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ProjectionCube}></VanillaComponentResolver.instance.ToolButton>
-                        <div style={{ width: "10rem" }}></div>
-                    </>}
+
                     <div className="cameraView">
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 0} onSelect={() => wps.CurrentPlaneMode.set(0)} src={i_XYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_XY}></VanillaComponentResolver.instance.ToolButton>
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentPlaneMode.value == 1} onSelect={() => wps.CurrentPlaneMode.set(1)} src={i_ZYplaneIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_editingPlane_ZY}></VanillaComponentResolver.instance.ToolButton>
@@ -208,7 +205,9 @@ const WEWorldPickerToolPanel = () => {
                     <div style={{ width: "10rem" }}></div>
                     <div className="leftCameraOptions">
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CurrentMoveMode.value > 0} onSelect={() => wps.CurrentMoveMode.set((wps.CurrentMoveMode.value + 1) % 3)} src={iarr_moveMode[wps.CurrentMoveMode.value]} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={Tarr_moveMode[wps.CurrentMoveMode.value]}></VanillaComponentResolver.instance.ToolButton>
-                        <div style={{ flexGrow: 1 }}></div>
+                        {material.ShaderType.value == 2 ?
+                            <VanillaComponentResolver.instance.ToolButton selected={wps.ShowProjectionCube.value} onSelect={() => wps.ShowProjectionCube.set(!wps.ShowProjectionCube.value)} src={i_ProjectionCube} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ProjectionCube}></VanillaComponentResolver.instance.ToolButton>
+                            : <div style={{ flexGrow: 1 }}></div>}
                         <VanillaComponentResolver.instance.ToolButton selected={wps.CameraLocked.value} onSelect={() => wps.CameraLocked.set(!wps.CameraLocked.value)} src={i_cameraIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_lockCamera}></VanillaComponentResolver.instance.ToolButton>
                         <div className="br" />
 

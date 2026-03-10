@@ -1,5 +1,6 @@
 ﻿using Colossal.Entities;
 using Colossal.Mathematics;
+using Game.Objects;
 using Game.Rendering;
 using Unity.Collections;
 using Unity.Entities;
@@ -113,9 +114,14 @@ namespace BelzontWE
                 m_weWaitingRenderingLookup = GetComponentLookup<WEWaitingRendering>(true),
                 m_weDirtyFormulae = GetComponentLookup<WETextDataDirtyFormulae>(false),
                 m_interpolatedTransformLkp = GetComponentLookup<InterpolatedTransform>(true),
+                m_dependentsLkp = GetBufferLookup<WEDependantRendering>(true),
+                m_ownerLkp = GetComponentLookup<Game.Common.Owner>(true),
+                m_meshesLkp = GetBufferLookup<MeshBatch>(true),
+                m_subObjectsLkp = GetBufferLookup<SubObject>(true),
                 frameCount = UnityEngine.Time.frameCount,
                 minLodUpdateSetting = Mathf.CeilToInt(WriteEverywhereCS2Mod.WeData.RequiredLodForFormulaesUpdate),
                 indexStartString = indexStartString,
+                m_CullInfoLkp = GetComponentLookup<CullingInfo>(true),
             };
 
             cullingActionJob.Schedule(data.Length, 1, JobHandle.CombineDependencies(deps, Dependency)).Complete();
@@ -177,6 +183,11 @@ namespace BelzontWE
             public ComponentLookup<WETextDataTransform> m_weTransformLookup;
             public ComponentLookup<WEDrawing> m_WEDrawingLookup;
             public ComponentLookup<WETextDataDirtyFormulae> m_weDirtyFormulae;
+            public BufferLookup<MeshBatch> m_meshesLkp;
+            public BufferLookup<WEDependantRendering> m_dependentsLkp;
+            public BufferLookup<SubObject> m_subObjectsLkp;
+            public ComponentLookup<Game.Common.Owner> m_ownerLkp;
+            public ComponentLookup<CullingInfo> m_CullInfoLkp;
             public NativeList<PreCullingData> m_CullingActions;
             public int frameCount;
             public int minLodUpdateSetting;
@@ -191,80 +202,135 @@ namespace BelzontWE
             public void Execute(int index)
             {
                 var cullingAction = m_CullingActions[index];
-                if ((cullingAction.m_Flags & PreCullingFlags.PassedCulling) != 0)
+                var entity = cullingAction.m_Entity;
+                if (!m_CullInfoLkp.TryGetComponent(entity, out var cullInfo)) return;
+                var isDependent = (cullInfo.m_Mask & Game.Common.BoundsMask.NormalLayers) == 0 && (!m_meshesLkp.TryGetBuffer(entity, out var buff) || buff.IsEmpty);
+                if (isDependent)
                 {
-                    var entity = cullingAction.m_Entity;
-                    if ((!m_weTemplateForPrefabLookup.TryGetComponent(entity, out var prefabWeLayout) || prefabWeLayout.childEntity == Entity.Null) & (!m_weSubRefLookup.TryGetBuffer(entity, out var subLayout) || subLayout.Length == 0)) return;
-
-                    if (!m_WEDrawingLookup.HasEnabledComponent(entity))
+                    if (m_dependentsLkp.HasBuffer(entity))
                     {
-                        if (m_WEDrawingLookup.HasComponent(cullingAction.m_Entity))
-                        {
-                            m_CommandBuffer.SetComponentEnabled<WEDrawing>(index, entity, true);
-                        }
-                        else
-                        {
-                            m_CommandBuffer.AddComponent<WEDrawing>(index, entity);
-                        }
+                        m_CommandBuffer.RemoveComponent<WEDependantRendering>(index, entity);
                     }
-
-                    if (m_geomEntitiesLastFrame.Contains(entity) && (entity.Index & 0x1f) != (frameCount & 0x1f) && (!isAtWeEditor || entity != m_selectedEntity))
-                    {
-                        m_unmodifiedEntities.Add(entity);
-                        return;
-                    }
-
-
-                    Matrix4x4 itemBaseMatrix;
-                    Matrix4x4 geomMatrix;
-                    if (m_transform.TryGetComponent(entity, out var transform2))
-                    {
-                        var positionRef = transform2.m_Position;
-                        var rotationRef = transform2.m_Rotation;
-
-                        geomMatrix = itemBaseMatrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one);
-                    }
-                    else
-                    {
-                        return;
-                    }
-
-
-                    if (m_interpolatedTransformLkp.HasComponent(entity))
-                    {
-                        itemBaseMatrix = Matrix4x4.identity;
-                    }
-                    else
-                    {
-                        geomMatrix = Matrix4x4.identity;
-                    }
-                    FixedString512Bytes variables = new();
-                    PopulateVars(entity, ref variables, out _);
-                    if (prefabWeLayout.childEntity != Entity.Null)
-                    {
-                        DrawTree(entity, prefabWeLayout.childEntity, itemBaseMatrix, geomMatrix, index, variables, 0);
-                    }
-                    if (subLayout.IsCreated)
-                    {
-                        for (int j = 0; j < subLayout.Length; j++)
-                        {
-                            DrawTree(entity, subLayout[j].m_weTextData, itemBaseMatrix, geomMatrix, index, variables, 0);
-                        }
-                    }
-
                     return;
                 }
                 else
                 {
-                    FailedCulling(cullingAction, index);
+                    if (!m_dependentsLkp.HasBuffer(entity))
+                    {
+                        CatalogSubObjects(index, entity);
+                    }
+
+                }
+
+                var passed = (cullingAction.m_Flags & PreCullingFlags.PassedCulling) != 0;
+
+                AssertPass(index, passed, entity);
+
+                if (m_dependentsLkp.TryGetBuffer(entity, out var deps))
+                {
+                    for (int i = 0; i < deps.Length; i++)
+                    {
+                        AssertPass(index, passed, deps[i].dependentEntity);
+                    }
                 }
             }
 
-            private void FailedCulling(PreCullingData cullingAction, int index)
+            private void CatalogSubObjects(int index, Entity entity)
             {
-                if (m_WEDrawingLookup.HasEnabledComponent(cullingAction.m_Entity))
+                if (m_subObjectsLkp.TryGetBuffer(entity, out var subObjects) && !subObjects.IsEmpty)
                 {
-                    m_CommandBuffer.SetComponentEnabled<WEDrawing>(index, cullingAction.m_Entity, false);
+                    DynamicBuffer<WEDependantRendering> dependentsBuff = m_CommandBuffer.AddBuffer<WEDependantRendering>(index, entity);
+                    dependentsBuff.Clear();
+                    for (int i = 0; i < subObjects.Length; i++)
+                    {
+                        var subObj = subObjects[i].m_SubObject;
+                        var shallBeDep = m_CullInfoLkp.TryGetComponent(subObj, out var cullInfo) && (cullInfo.m_Mask & Game.Common.BoundsMask.NormalLayers) == 0 && (!m_meshesLkp.TryGetBuffer(subObj, out var buffSub) || buffSub.IsEmpty);
+                        if (shallBeDep)
+                        {
+                            dependentsBuff.Add(new WEDependantRendering { dependentEntity = subObj });
+                        }
+                    }
+                }
+            }
+
+            private void AssertPass(int index, bool passed, Entity entity)
+            {
+                if (passed)
+                {
+                    PassedCulling(index, entity);
+                }
+                else
+                {
+                    FailedCulling(entity, index);
+                }
+            }
+
+            private void PassedCulling(int index, Entity entity)
+            {
+                if ((!m_weTemplateForPrefabLookup.TryGetComponent(entity, out var prefabWeLayout) || prefabWeLayout.childEntity == Entity.Null) & (!m_weSubRefLookup.TryGetBuffer(entity, out var subLayout) || subLayout.Length == 0)) return;
+
+                if (!m_WEDrawingLookup.HasEnabledComponent(entity))
+                {
+                    if (m_WEDrawingLookup.HasComponent(entity))
+                    {
+                        m_CommandBuffer.SetComponentEnabled<WEDrawing>(index, entity, true);
+                    }
+                    else
+                    {
+                        m_CommandBuffer.AddComponent<WEDrawing>(index, entity);
+                    }
+                }
+
+                if (m_geomEntitiesLastFrame.Contains(entity) && (entity.Index & 0x1f) != (frameCount & 0x1f) && (!isAtWeEditor || entity != m_selectedEntity))
+                {
+                    m_unmodifiedEntities.Add(entity);
+                    return;
+                }
+
+
+                Matrix4x4 itemBaseMatrix;
+                Matrix4x4 geomMatrix;
+                if (m_transform.TryGetComponent(entity, out var transform2))
+                {
+                    var positionRef = transform2.m_Position;
+                    var rotationRef = transform2.m_Rotation;
+
+                    geomMatrix = itemBaseMatrix = Matrix4x4.TRS(positionRef, rotationRef, Vector3.one);
+                }
+                else
+                {
+                    return;
+                }
+
+
+                if (m_interpolatedTransformLkp.HasComponent(entity))
+                {
+                    itemBaseMatrix = Matrix4x4.identity;
+                }
+                else
+                {
+                    geomMatrix = Matrix4x4.identity;
+                }
+                FixedString512Bytes variables = new();
+                PopulateVars(entity, ref variables, out _);
+                if (prefabWeLayout.childEntity != Entity.Null)
+                {
+                    DrawTree(entity, prefabWeLayout.childEntity, itemBaseMatrix, geomMatrix, index, variables, 0);
+                }
+                if (subLayout.IsCreated)
+                {
+                    for (int j = 0; j < subLayout.Length; j++)
+                    {
+                        DrawTree(entity, subLayout[j].m_weTextData, itemBaseMatrix, geomMatrix, index, variables, 0);
+                    }
+                }
+            }
+
+            private void FailedCulling(Entity entity, int index)
+            {
+                if (m_WEDrawingLookup.HasEnabledComponent(entity))
+                {
+                    m_CommandBuffer.SetComponentEnabled<WEDrawing>(index, entity, false);
                 }
             }
 
@@ -405,7 +471,7 @@ namespace BelzontWE
                                 var scale2 = transform.scale;
                                 // Apply absolute Z-scale for placeholder
                                 if (scale2.z < 0) scale2.z = -scale2.z;
-                                
+
                                 // Optimize: Use already loaded mesh instead of re-looking up
                                 var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
 
@@ -440,7 +506,7 @@ namespace BelzontWE
                             // Apply absolute Z-scale for white cube
                             var localScale = transform.scale;
                             if (localScale.z < 0) localScale.z = -localScale.z;
-                            
+
                             // Optimize: Cache material and main lookups
                             var cubeMaterial = m_weMaterialLookup[nextEntity];
                             var effRot = (Quaternion)transform.offsetRotation;
@@ -478,7 +544,7 @@ namespace BelzontWE
                             // Apply absolute Z-scale for white texture
                             var localScale = transform.scale;
                             if (localScale.z < 0) localScale.z = -localScale.z;
-                            
+
                             // Optimize: Cache material lookup and calculations
                             var textureMaterial = m_weMaterialLookup[nextEntity];
                             var isDecal = textureMaterial.CheckIsDecal(mesh);
@@ -532,7 +598,7 @@ namespace BelzontWE
                             var scale = transform.scale;
                             // Apply absolute Z-scale for text/image
                             if (scale.z < 0) scale.z = -scale.z;
-                            
+
                             var defaultMaterial = m_weMaterialLookup[nextEntity];
                             var isDecal = defaultMaterial.CheckIsDecal(mesh);
                             // Optimize: Cache frequently accessed values
@@ -711,4 +777,8 @@ namespace BelzontWE
     }
 
     public struct WEDrawing : IComponentData, IEnableableComponent { }
+    public struct WEDependantRendering : IBufferElementData
+    {
+        public Entity dependentEntity;
+    }
 }

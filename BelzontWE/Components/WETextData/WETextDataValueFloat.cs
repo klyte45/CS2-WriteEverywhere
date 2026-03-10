@@ -12,6 +12,9 @@ namespace BelzontWE
         public bool InitializedEffectiveText { get; private set; }
         public float EffectiveValue { get; private set; }
         private bool loadingFnDone;
+
+        private static readonly object locker = new();
+
         public string Formulae
         {
             get => WEStringsBank.Instance[formulaeStrBnk];
@@ -50,17 +53,20 @@ namespace BelzontWE
                 loadedFnNow = loadingFnDone = true;
             }
             var oldValue = EffectiveValue;
-            try
+            lock (locker)
             {
-                EffectiveValue = formulaeStrBnk > 0
-                    ? WEFormulaeHelper.GetCachedFloatFn(Formulae) is FormulaeFn<float> fn
-                        ? fn(em, geometryEntity, vars)
-                        : float.NaN
-                    : defaultValue;
-            }
-            catch
-            {
-                EffectiveValue = float.NaN;
+                try
+                {
+                    EffectiveValue = formulaeStrBnk > 0
+                        ? WEFormulaeHelper.GetCachedFloatFn(Formulae) is FormulaeFn<float> fn
+                            ? fn(em, geometryEntity, vars)
+                            : float.NaN
+                        : defaultValue;
+                }
+                catch
+                {
+                    EffectiveValue = float.NaN;
+                }
             }
             return loadedFnNow || EffectiveValue != oldValue;
         }

@@ -406,12 +406,12 @@ namespace BelzontWE
             m_TransformController.CurrentPosition.Value = currentItem.offsetPosition = originalPosition + (ToolEditMode)m_Controller.CurrentPlaneMode.Value switch
             {
                 ToolEditMode.PlaneXY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 0, 0))).rotation, new float3(offsetWithAdjust, 0)),
-                ToolEditMode.PlaneXZ => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, isRotationLocked ? -itemAngles.y : 0, 0))).rotation, new float3(offsetWithAdjust.x, 0, -offsetWithAdjust.y)),
+                ToolEditMode.PlaneXZ => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, isRotationLocked ? -itemAngles.y : 0, 0))).rotation, new float3(-offsetWithAdjust.x, 0, offsetWithAdjust.y)),
                 ToolEditMode.PlaneZY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, 0, isRotationLocked ? -itemAngles.z : 0))).rotation, new float3(0, offsetWithAdjust.y, -offsetWithAdjust.x)),
 
                 // Back planes - inverted horizontal movement
                 ToolEditMode.PlaneBackXY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(isRotationLocked ? -itemAngles.x : 0, 0, 0))).rotation, new float3(-offsetWithAdjust.x, offsetWithAdjust.y, 0)),
-                ToolEditMode.PlaneBackXZ => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, isRotationLocked ? -itemAngles.y : 0, 0))).rotation, new float3(-offsetWithAdjust.x, 0, -offsetWithAdjust.y)),
+                ToolEditMode.PlaneBackXZ => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, isRotationLocked ? -itemAngles.y : 0, 0))).rotation, new float3(offsetWithAdjust.x, 0, offsetWithAdjust.y)),
                 ToolEditMode.PlaneBackZY => math.mul((Matrix4x4.Rotate(currentItem.offsetRotation) * Matrix4x4.Rotate(Quaternion.Euler(0, 0, isRotationLocked ? -itemAngles.z : 0))).rotation, new float3(0, offsetWithAdjust.y, offsetWithAdjust.x)),
 
                 _ => default
@@ -516,12 +516,12 @@ namespace BelzontWE
             {
                 // Front planes
                 ToolEditMode.PlaneXY => GetPlaneXYRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, false),
-                ToolEditMode.PlaneXZ => GetPlaneXZRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, false),
+                ToolEditMode.PlaneXZ => GetPlaneXZRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, true),
                 ToolEditMode.PlaneZY => GetPlaneZYRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, false),
 
                 // Back planes
                 ToolEditMode.PlaneBackXY => GetPlaneXYRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, true),
-                ToolEditMode.PlaneBackXZ => GetPlaneXZRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, true),
+                ToolEditMode.PlaneBackXZ => GetPlaneXZRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, false),
                 ToolEditMode.PlaneBackZY => GetPlaneZYRotation(isDecal, itemAngles, isRotationLocked, decalBaseRotation, true),
 
                 _ => Quaternion.identity
@@ -544,7 +544,7 @@ namespace BelzontWE
         {
             var zFlippedAmmount = Math.Sign(m_TransformController.CurrentScale.Value.z);
             var basePitch = (isBackFacing ? 90f : -90f) - (m_Controller.PlaneTilt.Value * zFlippedAmmount);
-            var baseYaw = isBackFacing ? 180f : 0f;
+            var baseYaw = isBackFacing ? 0f : 180f;
             var rotationY = (isRotationLocked ? -itemAngles.y : 0f) + baseYaw;
 
             if (isDecal)
@@ -557,7 +557,7 @@ namespace BelzontWE
         private Quaternion GetPlaneZYRotation(bool isDecal, float3 itemAngles, bool isRotationLocked, Quaternion decalBaseRotation, bool isBackFacing)
         {
             var zFlippedAmmount = Math.Sign(m_TransformController.CurrentScale.Value.z);
-            var baseYaw = (isBackFacing ? -1 : 1) * (90 + (m_Controller.PlaneTilt.Value * zFlippedAmmount));
+            var baseYaw = (isBackFacing ? 1 : -1) * (90 + (m_Controller.PlaneTilt.Value * zFlippedAmmount));
             var rotationX = isRotationLocked ? -itemAngles.x : 0f;
 
             if (isDecal)

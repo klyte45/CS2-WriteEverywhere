@@ -16,6 +16,7 @@ namespace BelzontWE
         public bool useAbsoluteSizeEditing;
 
         public bool useFormulaeToCheckIfDraw;
+        private bool lastUpdateUseFormulaeToCheckIfDraw;
         private WETextDataValueFloat mustDrawFn;
         private WETextDataValueInt instanceCount;
 
@@ -149,7 +150,9 @@ namespace BelzontWE
 
         public bool UpdateFormulae(EntityManager em, Entity geometryEntity, Dictionary<string, string> vars, bool updateCounter)
         {
-            var changed = useFormulaeToCheckIfDraw && mustDrawFn.UpdateEffectiveValue(em, geometryEntity, vars);
+            var changed = lastUpdateUseFormulaeToCheckIfDraw != useFormulaeToCheckIfDraw;
+            lastUpdateUseFormulaeToCheckIfDraw = useFormulaeToCheckIfDraw;
+            changed |= useFormulaeToCheckIfDraw && mustDrawFn.UpdateEffectiveValue(em, geometryEntity, vars);
             if (updateCounter)
             {
                 changed |= instanceCount.UpdateEffectiveValue(em, geometryEntity, vars);
