@@ -31,6 +31,7 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
     const T_affectSmoothness = translate("appearenceSettings.affectSmoothness");
     const T_metallicOpacity = translate("appearenceSettings.metallicOpacity");
     const T_drawOrder = translate("appearenceSettings.drawOrder");
+    const T_useGlobalLight = translate("appearenceSettings.useGlobalLight");
 
 
     const [buildIdx, setBuild] = useState(0);
@@ -59,6 +60,7 @@ export const WETextAppearenceSettings = (props: { initialPosition?: { x: number,
                 <FormulaeEditorRowColor formulaeModule="material" formulaeField="EmissiveColor" label={T_emissiveColor} />
                 <FormulaeEditorRowFloatLog10 formulaeField="EmissiveIntensity" formulaeModule="material" label={T_EmissiveIntensity} max={3} min={0} />
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="EmissiveExposureWeight" label={T_EmissiveExposureWeight} max={1} min={0} />
+                <ToggleField label={T_useGlobalLight} value={material.UseGlobalLight.value} onChange={(x) => material.UseGlobalLight.set(x)} />
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="Metallic" label={T_Metallic} max={1} min={0} />
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="CoatStrength" label={T_CoatStrength} max={1} min={0} />
                 <FormulaeEditorRowFloat formulaeModule="material" formulaeField="Smoothness" label={T_Smoothness} max={1} min={0} />

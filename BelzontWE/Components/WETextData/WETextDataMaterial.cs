@@ -39,6 +39,7 @@ namespace BelzontWE
 
         private bool affectSmoothness;
         private float drawOrder;
+        private bool useGlobalLight;
 
         public WEShader Shader { readonly get => shader; set { shader = value; ResetMaterial(); } }
         public Color Color { readonly get => color.defaultValue; set { color.defaultValue = value; } }
@@ -93,7 +94,7 @@ namespace BelzontWE
 
         public float DrawOrder { readonly get => drawOrder; set { drawOrder = value; dirty = true; } }
 
-        public bool UseGlobalLight { get; set; }
+        public bool UseGlobalLight { readonly get => useGlobalLight; set { useGlobalLight = value; dirty = true; } }
 
         public int SetFormulaeMainColor(string value, out string[] cmpErr) => color.SetFormulae(value, out cmpErr);
         public int SetFormulaeEmissiveColor(string value, out string[] cmpErr) => emissiveColor.SetFormulae(value, out cmpErr);
@@ -338,8 +339,8 @@ namespace BelzontWE
                 colorMask2 = colorMask2.ToRgbXml(),
                 colorMask3 = colorMask3.ToRgbXml(),
                 decalFlags = decalFlags,
-                renderBackface = renderBackface
-
+                renderBackface = renderBackface,
+                useGlobalLight = useGlobalLight
             };
         public WETextDataXml.DecalStyleXml ToDecalXml()
             => new()
@@ -382,7 +383,8 @@ namespace BelzontWE
                 colorMask3 = value.colorMask3.ToComponent(),
                 shader = value.shader,
                 DecalFlags = value.decalFlags,
-                renderBackface = value.renderBackface
+                renderBackface = value.renderBackface,
+                useGlobalLight = value.useGlobalLight
             };
         public static WETextDataMaterial ToComponent(WETextDataXml.DecalStyleXml value)
             => new()

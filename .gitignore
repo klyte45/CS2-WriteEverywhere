@@ -356,3 +356,4 @@ MigrationBackup/
 *.drawio.bkp
 /BelzontWE/Properties/PublishConfiguration.xml
 .idea/
+/_auxFiles

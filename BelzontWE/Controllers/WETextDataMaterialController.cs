@@ -78,6 +78,7 @@ namespace BelzontWE
         public MultiUIValueBinding<string[]> GlassThicknessFormulaeCompileResultErrorArgs { get; private set; }
         public MultiUIValueBinding<bool> AffectSmoothness { get; private set; }  
         public MultiUIValueBinding<float> DrawOrder { get; private set; }
+        public MultiUIValueBinding<bool> UseGlobalLight { get; private set; }
 
         private WEWorldPickerController m_pickerController;
 
@@ -104,7 +105,7 @@ namespace BelzontWE
             AffectSmoothness = new(default, $"{PREFIX}{nameof(AffectSmoothness)}", EventCaller, CallBinder);
             DrawOrder = new(default, $"{PREFIX}{nameof(DrawOrder)}", EventCaller, CallBinder);
             RenderBackface = new(default, $"{PREFIX}{nameof(RenderBackface)}", EventCaller, CallBinder);
-
+            UseGlobalLight = new(default, $"{PREFIX}{nameof(UseGlobalLight)}", EventCaller, CallBinder);
 
             MainColorFormulaeStr = new(default, $"{PREFIX}{nameof(MainColorFormulaeStr)}", EventCaller, CallBinder);
             MainColorFormulaeCompileResult = new(default, $"{PREFIX}{nameof(MainColorFormulaeCompileResult)}", EventCaller, CallBinder);
@@ -175,6 +176,7 @@ namespace BelzontWE
             AffectSmoothness.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMaterial>(x, (x, currentItem) => { currentItem.AffectSmoothness = x; return currentItem; });
             DrawOrder.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float, WETextDataMaterial>(x, (x, currentItem) => { currentItem.DrawOrder = x; return currentItem; });
             RenderBackface.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMaterial>(x, (x, currentItem) => { currentItem.RenderBackface = x; return currentItem; });
+            UseGlobalLight.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMaterial>(x, (x, currentItem) => { currentItem.UseGlobalLight = x; return currentItem; });
 
 
 
@@ -221,6 +223,7 @@ namespace BelzontWE
             AffectSmoothness.Value = material.AffectSmoothness;
             DrawOrder.Value = material.DrawOrder;
             RenderBackface.Value = material.RenderBackface;
+            UseGlobalLight.Value = material.UseGlobalLight;
 
             ResetScreenFormulaeValue(material.ColorFormulae, MainColorFormulaeStr, MainColorFormulaeCompileResult, MainColorFormulaeCompileResultErrorArgs);
             ResetScreenFormulaeValue(material.EmissiveColorFormulae, EmissiveColorFormulaeStr, EmissiveColorFormulaeCompileResult, EmissiveColorFormulaeCompileResultErrorArgs);

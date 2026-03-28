@@ -437,10 +437,11 @@ namespace BelzontWE
 
         public class DefaultStyleXml : ISerializable
         {
-            private const int CURRENT_VERSION = 1;
+            private const int CURRENT_VERSION = 2;
             [XmlIgnore] public WEShader shader => WEShader.Default;
             [XmlAttribute][DefaultValue(WETextDataMaterial.DEFAULT_DECAL_FLAGS)] public int decalFlags = WETextDataMaterial.DEFAULT_DECAL_FLAGS;
             [XmlAttribute][DefaultValue(false)] public bool renderBackface = false;
+            [XmlAttribute][DefaultValue(false)] public bool useGlobalLight = false;
             [XmlElement] public FormulaeColorRgbaXml color = new() { defaultValue = Color.white };
             [XmlElement] public FormulaeColorRgbaXml emissiveColor = new() { defaultValue = Color.white };
             [XmlElement] public FormulaeFloatXml metallic;
@@ -466,6 +467,7 @@ namespace BelzontWE
                 writer.WriteNullCheck(colorMask2);
                 writer.WriteNullCheck(colorMask3);
                 writer.Write(renderBackface);
+                writer.Write(useGlobalLight);
             }
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
             {
@@ -493,6 +495,14 @@ namespace BelzontWE
                 else
                 {
                     renderBackface = false;
+                }
+                if (version >= 2)
+                {
+                    reader.Read(out useGlobalLight);
+                }
+                else
+                {
+                    useGlobalLight = false;
                 }
             }
         }

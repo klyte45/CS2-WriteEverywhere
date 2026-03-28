@@ -1,8 +1,7 @@
+using Colossal.Entities;
 using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
-using UnityEngine.Rendering;
-using Colossal.Entities;
 using UnityEngine.Rendering.HighDefinition;
 
 namespace BelzontWE
@@ -16,7 +15,7 @@ namespace BelzontWE
     {
         // Scale factor: 1 material emissive unit -> LumensPerUnit lumens.
         // Tune this constant if the emitted light appears too dim or too bright in-game.
-        private const float LumensPerUnit = 10f;
+        private const float LumensPerUnit = 25f;
 
         private WEPreCullingSystem m_wePreCullSys;
 
@@ -64,8 +63,8 @@ namespace BelzontWE
                 if (mesh.TextType == WESimulationTextType.MatrixTransform)
                     continue;
 
-                // Only Default shader with positive emissive intensity emits scene light.
-                if (materialData.Shader != WEShader.Default || materialData.EmissiveIntensityEffective <= 0f)
+                // Only Default shader with positive emissive intensity and UseGlobalLight enabled emits scene light.
+                if (materialData.Shader != WEShader.Default || materialData.EmissiveIntensityEffective <= 0f || !materialData.UseGlobalLight)
                 {
                     if (m_lights.TryGetValue(item.textDataEntity, out var existing))
                         existing.go.SetActive(false);
@@ -125,10 +124,10 @@ namespace BelzontWE
             var hdLight = go.AddHDLight(HDLightTypeAndShape.Point);
 
             // Mirror the defaults CS2 uses in LightCullingSystem for all dynamic lights:
-            hdLight.lightlayersMask     = LightLayerEnum.Everything;
+            hdLight.lightlayersMask = LightLayerEnum.Everything;
             hdLight.includeForRayTracing = false;
-            hdLight.affectDiffuse        = true;
-            hdLight.affectSpecular       = true;
+            hdLight.affectDiffuse = true;
+            hdLight.affectSpecular = true;
             hdLight.applyRangeAttenuation = true;
 
             // Set unit once; only intensity is updated per frame afterwards.
@@ -136,8 +135,8 @@ namespace BelzontWE
 
             var entry = new LightEntry
             {
-                go      = go,
-                light   = go.GetComponent<Light>(),
+                go = go,
+                light = go.GetComponent<Light>(),
                 hdLight = hdLight,
             };
             m_lights[entity] = entry;
