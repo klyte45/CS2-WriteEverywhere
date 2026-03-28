@@ -41,90 +41,119 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Game">
+      <HintPath>$(CSII_MANAGEDPATH)\Game.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Colossal.Core">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.Core.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Colossal.Logging">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.Logging.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Colossal.UI">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.UI.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Colossal.UI.Binding">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.UI.Binding.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Colossal.Localization">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.Localization.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Colossal.IO.AssetDatabase">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.IO.AssetDatabase.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(CSII_MANAGEDPATH)\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.Burst">
+      <HintPath>$(CSII_MANAGEDPATH)\Unity.Burst.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.Collections">
+      <HintPath>$(CSII_MANAGEDPATH)\Unity.Collections.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.Entities">
+      <HintPath>$(CSII_MANAGEDPATH)\Unity.Entities.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.Mathematics">
+      <HintPath>$(CSII_MANAGEDPATH)\Unity.Mathematics.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="cohtml.Net">
+      <HintPath>$(CSII_MANAGEDPATH)\cohtml.Net.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Cohtml.Runtime">
+      <HintPath>$(CSII_MANAGEDPATH)\Cohtml.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.OdinSerializer">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.OdinSerializer.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.AssetPipeline">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.AssetPipeline.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.PSI.Common">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.PSI.Common.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(CSII_MANAGEDPATH)\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.Mono.Cecil">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.Mono.Cecil.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.Mathematics">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.Mathematics.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.ScreenCaptureModule">
+      <HintPath>$(CSII_MANAGEDPATH)\UnityEngine.ScreenCaptureModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.Collections">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.Collections.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(CSII_MANAGEDPATH)\UnityEngine.ImageConversionModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestModule">
+      <HintPath>$(CSII_MANAGEDPATH)\UnityEngine.UnityWebRequestModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.RenderPipelines.HighDefinition.Runtime">
+      <HintPath>$(CSII_MANAGEDPATH)\Unity.RenderPipelines.HighDefinition.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.InputSystem.dll">
+      <HintPath>$(CSII_MANAGEDPATH)\Unity.InputSystem.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.VirtualTexturingModule">
+      <HintPath>$(CSII_MANAGEDPATH)\UnityEngine.VirtualTexturingModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Colossal.AssetPipeline.Native">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.AssetPipeline.Native.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Cinemachine">
+      <HintPath>$(CSII_MANAGEDPATH)\Cinemachine.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

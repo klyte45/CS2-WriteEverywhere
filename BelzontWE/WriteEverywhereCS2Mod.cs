@@ -44,6 +44,7 @@ namespace BelzontWE
 
             updateSystem.UpdateAfter<WERendererSystem>(SystemUpdatePhase.MainLoop);
             updateSystem.UpdateAfter<WEPostRendererSystem>(SystemUpdatePhase.MainLoop);
+           // updateSystem.UpdateAfter<WEEmissiveLightSystem>(SystemUpdatePhase.MainLoop);
 
             var reloadAssetsWeStuff = () =>
             {

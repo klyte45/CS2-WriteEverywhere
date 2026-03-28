@@ -156,7 +156,7 @@ namespace BelzontWE
                             var isBackface = transformData.scale.z < 0;
                             for (int i = 0; i < meshCount; i++)
                             {
-                                var geomMesh = bri2 is not null ? (mesh.TextType == WESimulationTextType.WhiteCube ? bri2.MeshCube[0] : bri2.GetMesh(materialData.Shader, isBackface, i)) : bri.GetMesh(materialData.Shader, isBackface);
+                                var geomMesh = bri2 is not null ? (mesh.TextType == WESimulationTextType.WhiteCube ? bri2.GetMeshCube(isBackface) : bri2.GetMesh(materialData.Shader, isBackface, i)) : bri.GetMesh(materialData.Shader, isBackface);
                                 var effectiveMatrix = bri2 is null ? baseMatrix : baseMatrix * bri2.GetMeshTranslation(materialData.Shader, i);
 
                                 Graphics.DrawMesh(geomMesh, effectiveMatrix, ownMaterial[i], 0, null, 0, null, ShadowCastingMode.TwoSided, true, null, LightProbeUsage.BlendProbes);
