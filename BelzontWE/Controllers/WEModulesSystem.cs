@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace BelzontWE
 {
-    public partial class WEModulesSystem : SystemBase, IBelzontBindable
+    public partial class WEModulesSystem : WEBindableSystemBase
     {
         private const string PREFIX = "modules.";
         private readonly Dictionary<string, Dictionary<string, IWEModuleOptionField>> modulesOptions = new();
@@ -197,7 +197,7 @@ namespace BelzontWE
             modulesOptions[WEModIntegrationUtility.GetModIdentifier(mainAssembly)] = dict;
         }
 
-        public void SetupCallBinder(Action<string, Delegate> callBinder)
+        public override void SetupCallBinder(Action<string, Delegate> callBinder)
         {
             callBinder($"{PREFIX}getFieldValue", GetFieldValue);
             callBinder($"{PREFIX}setFieldValue", SetFieldValue);
@@ -209,14 +209,12 @@ namespace BelzontWE
 
         private Action<string, object[]> eventCaller;
 
-        public void SetupCaller(Action<string, object[]> eventCaller)
+        public override void SetupCaller(Action<string, object[]> eventCaller)
         {
             this.eventCaller = eventCaller;
         }
 
-        public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
-
-        protected override void OnUpdate() { }
+        public override void SetupEventBinder(Action<string, Delegate> eventBinder) { }
 
         private Dictionary<string, Dictionary<string, int>> ListAllOptions()
             => modulesOptions.Select(y => new KeyValuePair<string, Dictionary<string, int>>(y.Key, y.Value.Select(x => new KeyValuePair<string, int>(x.Key, x.Value.GetTypeId())).ToDictionary(x => x.Key, x => x.Value))).ToDictionary(x => x.Key, x => x.Value);

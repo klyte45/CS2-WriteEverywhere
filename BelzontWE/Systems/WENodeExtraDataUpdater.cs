@@ -1,33 +1,33 @@
+using Belzont.Interfaces;
+using Belzont.Utils;
+using Game;
 using Game.Common;
 using Game.Net;
+using Game.Tools;
+using System;
+using System.Collections.Generic;
 using Unity.Burst.Intrinsics;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using Game;
-using Game.Tools;
-using Belzont.Utils;
-using Unity.Collections;
-using System.Collections.Generic;
 using Unity.Mathematics;
-using System;
 
 
 
 
 
 #if BURST
-using Unity.Burst;
 #endif
 namespace BelzontWE
 {
-    public partial class WENodeExtraDataUpdater : GameSystemBase
+    public partial class WENodeExtraDataUpdater : BelzontBasicSystem
     {
+        protected override AllowedPhase UpdatePhase => AllowedPhase.ModificationEnd;
         private EntityQuery m_toBeCalculatedQuery;
-        private EndFrameBarrier m_endFrameBarrier;
-        private readonly Queue<Action> m_actionsToRun = new();
+        private readonly Queue<Action<SafeCommandBufferSystem>> m_actionsToRun = new();
         private static WENodeExtraDataUpdater Instance { get; set; }
 
-        public static void EnqueueToRun(Action action)
+        public static void EnqueueToRun(Action<SafeCommandBufferSystem> action)
         {
             if (Instance == null)
             {
@@ -51,9 +51,8 @@ namespace BelzontWE
         }
 
 
-        protected override void OnCreate()
+        protected override void OnCreateWithBarrier()
         {
-            base.OnCreate();
             Instance = this;
             m_toBeCalculatedQuery = GetEntityQuery(
                 new EntityQueryDesc
@@ -63,7 +62,7 @@ namespace BelzontWE
                         ComponentType.ReadOnly<Node>(),
                         ComponentType.ReadOnly<ConnectedEdge>()
                     },
-                    None = new ComponentType[]
+                    None = new ComponentType[] 
                     {
                         ComponentType.ReadOnly<WENetNodeInformation>(),
                         ComponentType.ReadOnly<Created>(),
@@ -74,23 +73,17 @@ namespace BelzontWE
                 });
         }
 
-        protected override void OnStartRunning()
-        {
-            base.OnStartRunning();
-            m_endFrameBarrier = World.GetExistingSystemManaged<EndFrameBarrier>();
-        }
-
         protected override void OnUpdate()
         {
             while (m_actionsToRun.TryDequeue(out var action))
             {
-                action();
+                action(Barrier);
             }
             if (!m_toBeCalculatedQuery.IsEmpty)
             {
                 new NodeCacheCalculation
                 {
-                    m_CommandBuffer = m_endFrameBarrier.CreateCommandBuffer().AsParallelWriter(),
+                    m_CommandBuffer = Barrier.CreateCommandBuffer().AsParallelWriter(),
                     m_EntityTypeHandle = GetEntityTypeHandle(),
                     m_connectedEdgeLookup = GetBufferLookup<ConnectedEdge>(true),
                     m_curveLookup = GetComponentLookup<Curve>(true),

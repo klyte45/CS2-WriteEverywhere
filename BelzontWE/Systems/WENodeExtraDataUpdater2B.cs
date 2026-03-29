@@ -1,3 +1,4 @@
+using Belzont.Interfaces;
 using Game.Common;
 using Game.Net;
 using Unity.Burst.Intrinsics;
@@ -12,15 +13,14 @@ using Unity.Burst;
 #endif
 namespace BelzontWE
 {
-    public partial class WENodeExtraDataUpdater2B : GameSystemBase
+    public partial class WENodeExtraDataUpdater2B : BelzontBasicSystem
     {
+        protected override AllowedPhase UpdatePhase => AllowedPhase.Modification2B;
         private EntityQuery m_ModifiedQuery;
-        private ModificationBarrier2B m_ModifiedBarrier2B;
 
 
-        protected override void OnCreate()
+        protected override void OnCreateWithBarrier()
         {
-            base.OnCreate();
             this.m_ModifiedQuery = base.GetEntityQuery(new EntityQueryDesc[]
            {
                 new() {
@@ -44,19 +44,13 @@ namespace BelzontWE
             RequireForUpdate(m_ModifiedQuery);
         }
 
-        protected override void OnStartRunning()
-        {
-            base.OnStartRunning();
-            m_ModifiedBarrier2B = World.GetExistingSystemManaged<ModificationBarrier2B>();
-        }
-
         protected override void OnUpdate()
         {
             if (!m_ModifiedQuery.IsEmpty)
             {
                 new NodeCacheEraserFromDeletedAggregated
                 {
-                    m_CommandBuffer = m_ModifiedBarrier2B.CreateCommandBuffer().AsParallelWriter(),
+                    m_CommandBuffer = Barrier.CreateCommandBuffer().AsParallelWriter(),
                     m_EntityTypeHandle = GetEntityTypeHandle(),
                     m_aggregateElementLkp = GetBufferLookup<AggregateElement>(true),
                     m_EdgeLookup = GetComponentLookup<Edge>(true),

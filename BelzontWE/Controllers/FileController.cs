@@ -6,11 +6,11 @@ using Unity.Entities;
 
 namespace BelzontWE
 {
-    public partial class FileController : SystemBase, IBelzontBindable
+    public partial class FileController : WEBindableSystemBase
     {
         private const string PREFIX = "file.";
 
-        public void SetupCallBinder(Action<string, Delegate> callBinder)
+        public override void SetupCallBinder(Action<string, Delegate> callBinder)
         {
             callBinder($"{PREFIX}listFiles", ListFiles);
             callBinder($"{PREFIX}getLayoutFolder", GetLayoutFolder);
@@ -18,10 +18,6 @@ namespace BelzontWE
             callBinder($"{PREFIX}getStoredLayoutExtension", GetStoredLayoutExtension);
             callBinder($"{PREFIX}getFontDefaultLocation", GetFontDefaultLocation);
         }
-
-        public void SetupCaller(Action<string, object[]> eventCaller) { }
-
-        public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
 
         private class ListFileResult
         {
@@ -56,8 +52,5 @@ namespace BelzontWE
         private string GetPrefabLayoutExtension() => WETemplateManager.PREFAB_LAYOUT_EXTENSION;
         private string GetStoredLayoutExtension() => WETemplateManager.SIMPLE_LAYOUT_EXTENSION;
         private string GetFontDefaultLocation() => FontServer.FontFilesPath;
-        protected override void OnUpdate()
-        {
-        }
     }
 }

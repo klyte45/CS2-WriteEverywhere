@@ -1,10 +1,8 @@
 ﻿using Belzont.Utils;
 using Colossal.Entities;
-using Game;
 using Game.Common;
 using Game.Net;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Entities;
 using Unity.Mathematics;
 using Transform = Game.Objects.Transform;
@@ -88,9 +86,9 @@ namespace BelzontWE.Builtin
                     result.VersionHash = nodeInfo[nextRefIdx].m_versionIdentifier;
                     result.ExtraDataBelongingIdx = (byte)nextRefIdx;
                     result.ExtraDataBelongingSideIdx = (byte)prevRefIdx;
-                }               
-                WENodeExtraDataUpdater.EnqueueToRun(() => World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<EndFrameBarrier>().CreateCommandBuffer().AddComponent(reference, result));
-                return doWithCache(result, ref nodeInfo); ;
+                }
+                WENodeExtraDataUpdater.EnqueueToRun((B) => B.CreateCommandBuffer().AddComponent(reference, result));
+                return doWithCache(result, ref nodeInfo);
             }
             return default;
         }

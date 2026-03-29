@@ -9,7 +9,7 @@ using static BelzontWE.Sprites.WEAtlasesLibrary;
 
 namespace BelzontWE
 {
-    public partial class WETextureAtlasController : SystemBase, IBelzontBindable
+    public partial class WETextureAtlasController : WEBindableSystemBase
     {
         private const string PREFIX = "textureAtlas.";
         private WEAtlasesLibrary m_AtlasLibrary;
@@ -19,7 +19,7 @@ namespace BelzontWE
             m_AtlasLibrary = World.GetOrCreateSystemManaged<WEAtlasesLibrary>();
         }
 
-        public void SetupCallBinder(Action<string, Delegate> callBinder)
+        public override void SetupCallBinder(Action<string, Delegate> callBinder)
         {
             callBinder($"{PREFIX}listAvailableLibraries", ListAvailableLibraries);
             callBinder($"{PREFIX}listModAtlases", ListModAtlases);
@@ -31,10 +31,6 @@ namespace BelzontWE
             callBinder($"{PREFIX}openExportFolder", OpenExportFolder);
             callBinder($"{PREFIX}exportModAtlas", ExportModAtlas);
         }
-
-        public void SetupCaller(Action<string, object[]> eventCaller) { }
-
-        public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
 
         private Dictionary<string, bool> ListAvailableLibraries() => m_AtlasLibrary.ListAvailableAtlases();
         private ModAtlasRegistry[] ListModAtlases() => m_AtlasLibrary.ListModAtlases();
@@ -67,9 +63,6 @@ namespace BelzontWE
             public int usages;
             public int imageCount;
             public float[] textureSize;
-        }
-        protected override void OnUpdate()
-        {
         }
     }
 

@@ -13,13 +13,13 @@ using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE
 {
-    public partial class WEFormulaeController : SystemBase, IBelzontBindable
+    public partial class WEFormulaeController : WEBindableSystemBase
     {
         private const string PREFIX = "formulae.";
         private WEWorldPickerController m_weToolController;
         private Dictionary<int, Dictionary<string, Dictionary<string, WEComponentTypeDesc[]>>> m_cachedComponentsList;
 
-        public void SetupCallBinder(Action<string, Delegate> callBinder)
+        public override void SetupCallBinder(Action<string, Delegate> callBinder)
         {
             callBinder($"{PREFIX}listAvailableMethodsForType", ListAvailableMethodsForType);
             callBinder($"{PREFIX}formulaeToPathObjects", FormulaeToPathObjects);
@@ -30,10 +30,6 @@ namespace BelzontWE
             callBinder($"{PREFIX}listVariablesOnCurrentEntity", ListVariablesOnCurrentEntity);
             callBinder($"{PREFIX}setVariablesOnCurrentEntity", SetVariablesOnCurrentEntity);
         }
-
-        public void SetupCaller(Action<string, object[]> eventCaller) { }
-
-        public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
 
         protected override void OnCreate()
         {
@@ -293,8 +289,5 @@ namespace BelzontWE
             return true;
         }
 
-        protected override void OnUpdate()
-        {
-        }
     }
 }

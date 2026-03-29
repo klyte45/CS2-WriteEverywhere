@@ -20,7 +20,6 @@ namespace BelzontWE
 
         public override void DoOnCreateWorld(UpdateSystem updateSystem)
         {
-            updateSystem.UpdateAt<WEWorldPickerTool>(SystemUpdatePhase.ToolUpdate);
             updateSystem.UpdateAfter<WEWorldPickerTooltip>(SystemUpdatePhase.UITooltip);
 
             updateSystem.UpdateAt<WEWorldPickerController>(SystemUpdatePhase.ModificationEnd);
@@ -37,14 +36,7 @@ namespace BelzontWE
             updateSystem.UpdateAfter<WEPrefabLayoutSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateDisposalSystem>(SystemUpdatePhase.Rendering);
 
-            updateSystem.UpdateAt<WENodeExtraDataUpdater2B>(SystemUpdatePhase.Modification2B);
-            updateSystem.UpdateAt<WENodeExtraDataUpdater>(SystemUpdatePhase.Rendering);
-
             updateSystem.UpdateAt<WEPreCullingSystem>(SystemUpdatePhase.PreCulling);
-
-            updateSystem.UpdateAfter<WERendererSystem>(SystemUpdatePhase.MainLoop);
-            updateSystem.UpdateAfter<WEPostRendererSystem>(SystemUpdatePhase.MainLoop);
-            updateSystem.UpdateAfter<WEEmissiveLightSystem>(SystemUpdatePhase.MainLoop);
 
             var reloadAssetsWeStuff = () =>
             {

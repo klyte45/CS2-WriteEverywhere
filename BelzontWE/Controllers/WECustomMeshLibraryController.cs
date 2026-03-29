@@ -5,7 +5,7 @@ using Unity.Entities;
 
 namespace BelzontWE
 {
-    public partial class WECustomMeshLibraryController : SystemBase, IBelzontBindable
+    public partial class WECustomMeshLibraryController : WEBindableSystemBase
     {
         private const string PREFIX = "customMesh.";
         private WECustomMeshLibrary m_MeshLibrary;
@@ -15,7 +15,7 @@ namespace BelzontWE
             m_MeshLibrary = World.GetOrCreateSystemManaged<WECustomMeshLibrary>();
         }
 
-        public void SetupCallBinder(Action<string, Delegate> callBinder)
+        public override void SetupCallBinder(Action<string, Delegate> callBinder)
         {
             callBinder($"{PREFIX}listAvailableLibraries", ListAvailableLibraries);
             //callBinder($"{PREFIX}listModMeshes", ListModMeshes);
@@ -23,17 +23,10 @@ namespace BelzontWE
             callBinder($"{PREFIX}removeFromCity", RemoveFromCity);
         }
 
-        public void SetupCaller(Action<string, object[]> eventCaller) { }
-
-        public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
-
         private Dictionary<string, string> ListAvailableLibraries() => m_MeshLibrary.ListAvailableMeshesUI();
         private bool CopyToCity(string mesh, string newName) => m_MeshLibrary.CopyToCity(mesh ?? "", newName);
         private bool RemoveFromCity(string mesh) => m_MeshLibrary.RemoveFromCity(mesh ?? "");
 
-        protected override void OnUpdate()
-        {
-        }
     }
 
 }

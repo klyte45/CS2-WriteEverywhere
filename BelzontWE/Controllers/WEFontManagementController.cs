@@ -9,12 +9,12 @@ using Unity.Entities;
 
 namespace BelzontWE
 {
-    public partial class WEFontManagementController : SystemBase, IBelzontBindable
+    public partial class WEFontManagementController : WEBindableSystemBase
     {
         private const string PREFIX = "fonts.";
         private FontServer m_fontServer;
 
-        public void SetupCallBinder(Action<string, Delegate> callBinder)
+        public override void SetupCallBinder(Action<string, Delegate> callBinder)
         {
             callBinder($"{PREFIX}requireFontInstallation", RequireFontInstallation);
             callBinder($"{PREFIX}listCityFonts", ListCityFonts);
@@ -27,17 +27,11 @@ namespace BelzontWE
             callBinder($"{PREFIX}cleanFontCache", CleanFontCache);
         }
 
-        public void SetupCaller(Action<string, object[]> eventCaller) { }
-
-        public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
-
         protected override void OnCreate()
         {
             base.OnCreate();
             m_fontServer = World.GetOrCreateSystemManaged<FontServer>();
         }
-
-        protected override void OnUpdate() { }
 
         private bool CheckFontExists(string name) => m_fontServer.FontExists(name);
 

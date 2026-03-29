@@ -15,7 +15,7 @@ using UnityEngine.Rendering;
 using static BelzontWE.Utils.WEMaterialUtils;
 namespace BelzontWE.Controllers
 {
-    public partial class DebugController : SystemBase, IBelzontBindable
+    public partial class DebugController : WEBindableSystemBase
     {
         private const string PREFIX = "debug.";
         private Action<string, object[]> eventCaller;
@@ -24,7 +24,7 @@ namespace BelzontWE.Controllers
 
         public static uint Overlay { get; private set; }
 
-        public void SetupCallBinder(Action<string, Delegate> eventCaller)
+        public override void SetupCallBinder(Action<string, Delegate> eventCaller)
         {
             eventCaller($"{PREFIX}listShaderDatails", ListShadersDetails);
             eventCaller($"{PREFIX}listShader", ListShaders);
@@ -240,20 +240,9 @@ namespace BelzontWE.Controllers
             }
         }
 
-        public void SetupCaller(Action<string, object[]> eventCaller)
+        public override void SetupCaller(Action<string, object[]> eventCaller)
         {
             this.eventCaller = eventCaller;
-        }
-
-        public void SetupEventBinder(Action<string, Delegate> eventCaller)
-        {
-        }
-        protected override void OnCreate()
-        {
-            base.OnCreate();
-        }
-        protected override void OnUpdate()
-        {
         }
 
 

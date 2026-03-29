@@ -1,4 +1,5 @@
-﻿using Belzont.Utils;
+﻿using Belzont.Interfaces;
+using Belzont.Utils;
 using BelzontWE.Font.Utility;
 using BelzontWE.Sprites;
 using Game;
@@ -18,12 +19,12 @@ using UnityEngine.Scripting;
 namespace BelzontWE
 {
 
-    public partial class WERendererSystem : SystemBase
+    public partial class WERendererSystem : BelzontBasicSystem
     {
+        protected override AllowedPhase UpdatePhase => AllowedPhase.EndFrame;
         private WEWorldPickerController m_pickerController;
         private WEWorldPickerTool m_pickerTool;
         internal static bool dumpNextFrame;
-        private EndFrameBarrier m_endFrameBarrier;
         private WEPreCullingSystem m_wePreCullSys;
 
 #if DEBUG
@@ -33,10 +34,8 @@ namespace BelzontWE
 #if BURST
         [Preserve]
 #endif
-        protected unsafe override void OnCreate()
+        protected unsafe override void OnCreateWithBarrier()
         {
-            base.OnCreate();
-            m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
             m_pickerController = World.GetExistingSystemManaged<WEWorldPickerController>();
             m_pickerTool = World.GetExistingSystemManaged<WEWorldPickerTool>();
             m_wePreCullSys = World.GetExistingSystemManaged<WEPreCullingSystem>();
@@ -63,7 +62,7 @@ namespace BelzontWE
             if (m_wePreCullSys.m_availToDraw.Length > 0)
             {
                 var count = m_wePreCullSys.m_availToDraw.Length;
-                EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
+                EntityCommandBuffer cmd = Barrier.CreateCommandBuffer();
                 for (int j = 0; j < count; j++)
                 {
                     var item = m_wePreCullSys.m_availToDraw[j];

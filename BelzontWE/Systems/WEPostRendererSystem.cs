@@ -23,17 +23,14 @@ using Unity.Jobs;
 namespace BelzontWE
 {
     //System that will prepare the next frame meshes
-    public partial class WEPostRendererSystem : SystemBase
+    public partial class WEPostRendererSystem : BelzontBasicSystem
     {
+        protected override AllowedPhase UpdatePhase => AllowedPhase.EndFrame;
         private EntityQuery m_pendingQueueEntities;
-        private EndFrameBarrier m_endFrameBarrier;
         private WETemplateManager m_templateManager;
 
-        protected override void OnCreate()
+        protected override void OnCreateWithBarrier()
         {
-            base.OnCreate();
-
-            m_endFrameBarrier = World.GetExistingSystemManaged<EndFrameBarrier>();
             m_pendingQueueEntities = GetEntityQuery(new EntityQueryDesc[]
             {
                 new ()
@@ -60,7 +57,7 @@ namespace BelzontWE
             if (GameManager.instance.isGameLoading) return;
             if (!m_pendingQueueEntities.IsEmpty)
             {
-                var cmdBuff = m_endFrameBarrier.CreateCommandBuffer();
+                var cmdBuff = Barrier.CreateCommandBuffer();
                 var layoutsAvailable = new NativeArray<FixedString128Bytes>(m_templateManager.GetTemplateAvailableKeys(), Allocator.TempJob);
                 new WETextImageDataUpdateJob
                 {

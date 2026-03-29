@@ -1,4 +1,5 @@
-﻿using Colossal.Entities;
+﻿using Belzont.Interfaces;
+using Colossal.Entities;
 using Game.Common;
 using Game.Input;
 using Game.Net;
@@ -14,7 +15,7 @@ using UnityEngine;
 
 namespace BelzontWE
 {
-    public partial class WEWorldPickerTool : ToolBaseSystem
+    public partial class WEWorldPickerTool : IBelzontToolSystem
     {
         public static readonly float[] precisionIdx = new[] { 1f, 1 / 2f, 1 / 4f, 1 / 10f, 1 / 20f, 1 / 40f, 1 / 100f, 1 / 200f, 1 / 400f, 1 / 1000f };
 
@@ -62,7 +63,6 @@ namespace BelzontWE
         private ProxyAction m_useZY;
         private ProxyAction m_cycleAxisLock;
         private ProxyAction m_ToggleLockCameraRotation;
-        private ToolOutputBarrier m_ToolOutputBarrier;
         private WEWorldPickerController m_Controller;
         private WETextDataMeshController m_MeshDataController;
         private WETextDataTransformController m_TransformController;
@@ -77,7 +77,7 @@ namespace BelzontWE
 
         private byte m_keyMoveRotateCooldown;
 
-        protected override void OnCreate()
+        protected override void OnCreateWithBarrier()
         {
             Enabled = false;
             m_MoveAction = WEModData.Instance.GetAction(WEModData.kActionApplyMouse);
@@ -106,16 +106,11 @@ namespace BelzontWE
             m_ToggleLockCameraRotation = WEModData.Instance.GetAction(WEModData.kActionToggleLockCameraRotation);
 
             m_CameraZoomAction = InputManager.instance.FindAction("Camera", "Zoom");
-            m_ToolOutputBarrier = World.GetOrCreateSystemManaged<ToolOutputBarrier>();
             m_Controller = World.GetOrCreateSystemManaged<WEWorldPickerController>();
             m_MeshDataController = World.GetOrCreateSystemManaged<WETextDataMeshController>();
             m_cameraSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
             m_TransformController = World.GetOrCreateSystemManaged<WETextDataTransformController>();
             m_MaterialController = World.GetOrCreateSystemManaged<WETextDataMaterialController>();
-
-
-
-            base.OnCreate();
         }
         protected override void OnStartRunning()
         {
@@ -395,7 +390,7 @@ namespace BelzontWE
 
         private void ApplyPosition(float3 originalPosition, Vector2 offsetPosition)
         {
-            var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
+            var cmdBuff = Barrier.CreateCommandBuffer();
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value];
             var offsetWithAdjust = offsetPosition * currentPrecision;
             if (!EntityManager.TryGetComponent<WETextDataTransform>(m_Controller.CurrentSubEntity.Value, out var currentItem)) return;
@@ -437,7 +432,7 @@ namespace BelzontWE
         }
         private void ApplyRotation(float3 originalRotation, float value)
         {
-            var cmdBuff = m_ToolOutputBarrier.CreateCommandBuffer();
+            var cmdBuff = Barrier.CreateCommandBuffer();
             var currentPrecision = precisionIdx[m_Controller.MouseSensibility.Value] * 10;
             var offsetWithAdjust = value * currentPrecision;
 

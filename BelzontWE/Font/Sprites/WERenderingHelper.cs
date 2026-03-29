@@ -199,7 +199,7 @@ namespace BelzontWE
                     material.SetFloat("_AffectMetal", 1);
                     material.SetFloat("_AffectAO", 1);
                     material.SetFloat("_AffectSmoothness", 1);
-                    material.SetFloat("_AffectEmissive", 1);
+                    material.SetFloat("_AffectEmission", 1);
                     break;
                 default:
                     return null;

@@ -1,3 +1,4 @@
+using Belzont.Interfaces;
 using Colossal.Entities;
 using System.Collections.Generic;
 using Unity.Entities;
@@ -11,8 +12,9 @@ namespace BelzontWE
     // Mirrors the pattern used by CS2's LightCullingSystem, but uses HDAdditionalLightData
     // GameObjects instead of the internal HDRPDotsInputs DOTS buffer (which is inaccessible
     // from mod code without reflection).
-    public partial class WEEmissiveLightSystem : SystemBase
+    public partial class WEEmissiveLightSystem : BelzontBasicSystem
     {
+        protected override AllowedPhase UpdatePhase => AllowedPhase.EndFrame;
         // Scale factor: 1 material emissive unit -> LumensPerUnit lumens.
         // Tune this constant if the emitted light appears too dim or too bright in-game.
         private const float LumensPerUnit = 25f;
@@ -30,9 +32,8 @@ namespace BelzontWE
         private readonly HashSet<Entity> m_seenThisFrame = new();
         private readonly List<Entity> m_orphaned = new();
 
-        protected override void OnCreate()
+        protected override void OnCreateWithBarrier()
         {
-            base.OnCreate();
             m_wePreCullSys = World.GetExistingSystemManaged<WEPreCullingSystem>();
         }
 

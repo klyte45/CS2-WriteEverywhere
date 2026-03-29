@@ -13,14 +13,14 @@ using static BelzontWE.WETemplateManager;
 
 namespace BelzontWE
 {
-    public partial class WELayoutController : SystemBase, IBelzontBindable
+    public partial class WELayoutController : WEBindableSystemBase
     {
         private const string PREFIX = "layouts.";
         private WETemplateManager m_templateManager;
         private PrefabSystem m_prefabSystem;
         private WEWorldPickerController m_controller;
 
-        public void SetupCallBinder(Action<string, Delegate> callBinder)
+        public override void SetupCallBinder(Action<string, Delegate> callBinder)
         {
             callBinder($"{PREFIX}exportComponentAsXml", ExportComponentAsXml);
             callBinder($"{PREFIX}loadAsChildFromXml", LoadAsChildFromXml);
@@ -50,10 +50,6 @@ namespace BelzontWE
             callBinder($"{PREFIX}listModSubtemplates", ListModSubtemplates);
         }
 
-        public void SetupCaller(Action<string, object[]> eventCaller) { }
-
-        public void SetupEventBinder(Action<string, Delegate> eventBinder) { }
-
         protected override void OnCreate()
         {
             base.OnCreate();
@@ -61,8 +57,6 @@ namespace BelzontWE
             m_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
             m_controller = World.GetOrCreateSystemManaged<WEWorldPickerController>();
         }
-
-        protected override void OnUpdate() { }
         private bool SaveAsCityTemplate(Entity e, string name) => m_templateManager.SaveCityTemplate(name, e);
         private bool CheckCityTemplateExists(string name) => m_templateManager.CityTemplateExists(name);
 
