@@ -1,6 +1,0 @@
-<svg width="96" height="96" version="1.1" viewBox="-16 -16 96 96" xmlns="http://www.w3.org/2000/svg">
- <path d="m72.2 32.2a40 40 0 0 1-40 40 40 40 0 0 1-40-40 40 40 0 0 1 40-40 40 40 0 0 1 40 40z" fill="#e0e0e0" stroke="#363d3b" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"/>
- <g transform="translate(2.42 .105)" fill="#363d3b" stroke-linecap="round" stroke-linejoin="round" stroke-width="48.9" style="font-variant-ligatures:discretionary-ligatures;font-variant-numeric:tabular-nums diagonal-fractions;paint-order:markers stroke fill" aria-label="W">
-  <path d="m6.29 58.2v-52.2h10.4v31l13-16.7 13 16.7v-31h10.4v52.2h-10.4v-3.91l-13-17-13 17v3.91z"/>
- </g>
-</svg>

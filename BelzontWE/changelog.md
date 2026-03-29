@@ -1,4 +1,4 @@
-# v1.1.0r0 (29-MAR-26)
+# v1.1.0r1 (29-MAR-26)
 - Added punctual lights support: set emissive on a WE text mesh and toggle the "Use Global Illumination" checkbox on to enable point light emission from that element
 - New `WEAttachedFn` formula functions for sidewalk-relative offset calculations
 - Added formulae for indirect value getter: reference another formula's result value indirectly within an expression

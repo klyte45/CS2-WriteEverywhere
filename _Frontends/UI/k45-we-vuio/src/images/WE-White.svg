@@ -1,3 +1,6 @@
 <svg width="96" height="96" version="1.1" viewBox="-16 -16 96 96" xmlns="http://www.w3.org/2000/svg">
- <text x="-10.203911" y="47.70866" fill="#ffffff" font-family="'Green Hill Sans'" font-size="52.4px" stroke-linecap="round" stroke-linejoin="round" stroke-width="49.1" style="font-variant-ligatures:discretionary-ligatures;font-variant-numeric:tabular-nums diagonal-fractions;paint-order:markers stroke fill" xml:space="preserve"><tspan x="-10.203911" y="47.70866" stroke-width="49.1">WE</tspan></text>
+ <g fill="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="49.1" style="font-variant-ligatures:discretionary-ligatures;font-variant-numeric:tabular-nums diagonal-fractions;paint-order:markers stroke fill" aria-label="WE">
+  <path d="m-10.2 58.2v-52.4h10.5v31.1l13.1-16.7 13.1 16.7v-31.1h10.5v52.4h-10.5v-3.93l-13.1-17-13.1 17v3.93z"/>
+  <path d="m53.3 47.7h21v10.5h-31.4v-52.4h31.4v10.5h-21v10.5h15.7v10.5h-15.7z"/>
+ </g>
 </svg>
