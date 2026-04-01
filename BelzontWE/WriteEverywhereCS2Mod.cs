@@ -32,7 +32,7 @@ namespace BelzontWE
             updateSystem.UpdateAt<WECustomMeshLibrary>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateManager>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateUpdateSystem>(SystemUpdatePhase.Rendering);
-            updateSystem.UpdateAfter<WETemplateQuerySystem>(SystemUpdatePhase.Rendering);
+            updateSystem.UpdateAt<WETemplateQuerySystem>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAfter<WEPrefabLayoutSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAfter<WETemplateDisposalSystem>(SystemUpdatePhase.Rendering);
 

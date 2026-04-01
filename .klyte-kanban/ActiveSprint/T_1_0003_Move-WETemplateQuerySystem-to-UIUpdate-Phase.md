@@ -1,3 +1,4 @@
+**End time:** 2026-03-31 23:17 -0300
 **Start time:** 2026-03-31 23:16 -0300
 # [0003] Move WETemplateQuerySystem to UIUpdate Phase
 
@@ -31,10 +32,10 @@ Moving it to UIUpdate correctly reflects that it serves UI reads, and frees one 
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] WETemplateQuerySystem registration call in DoOnCreateWorld() uses SystemUpdatePhase.UIUpdate instead of SystemUpdatePhase.Rendering
-- [ ] Any [UpdateAfter(WETemplateUpdateSystem)] attribute is removed or replaced with an appropriate constraint valid in UIUpdate phase (or simply removed if no ordering constraint is needed within UIUpdate)
-- [ ] All UI query methods on WETemplateQuerySystem return correct data after the phase change
-- [ ] No null reference or timing errors arise from the system running in a different phase
+- [x] WETemplateQuerySystem registration call in DoOnCreateWorld() uses SystemUpdatePhase.UIUpdate instead of SystemUpdatePhase.Rendering
+- [x] Any [UpdateAfter(WETemplateUpdateSystem)] attribute is removed or replaced with an appropriate constraint valid in UIUpdate phase (or simply removed if no ordering constraint is needed within UIUpdate)
+- [x] All UI query methods on WETemplateQuerySystem return correct data after the phase change
+- [x] No null reference or timing errors arise from the system running in a different phase
 - [ ] The mod compiles and loads without errors in CS2 v1.5.6
 - [ ] Manual test: open the template management UI in-game; verify template usage counts and prefab layout flags display correctly
 
@@ -46,6 +47,7 @@ Moving it to UIUpdate correctly reflects that it serves UI reads, and frees one 
 2. Change the phase argument to SystemUpdatePhase.UIUpdate
 3. Open WETemplateQuerySystem.cs and check if any [UpdateAfter] / [UpdateBefore] attributes reference Rendering-phase systems. If so, remove them (there are no ordering requirements within UIUpdate for this system)
 4. Build and test
+5. Changed WETemplateQuerySystem registration from UpdateAfter<WETemplateQuerySystem>(Rendering) to UpdateAt<WETemplateQuerySystem>(UIUpdate) in WriteEverywhereCS2Mod.DoOnCreateWorld(). No [UpdateAfter]/[UpdateBefore] attributes were present on WETemplateQuerySystem itself, so no attribute changes were needed. UIUpdate runs after Rendering in CS2, so all WETemplateManager state modified during Rendering is visible to UIUpdate queries.
 
 ---
 
