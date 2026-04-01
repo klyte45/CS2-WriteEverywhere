@@ -232,7 +232,7 @@ namespace BelzontWE.Font
                     CurrentAtlasFull?.Invoke();
                     do
                     {
-                        if (_size.x * _size.y < 8192 * 8192)
+                        if (_size.x * _size.y < WEConstants.MAX_ATLAS_SIZE * WEConstants.MAX_ATLAS_SIZE)
                         {
                             // Expand atlas with copy — preserves existing glyph UV data and text cache
                             _size *= 2;
@@ -359,7 +359,7 @@ namespace BelzontWE.Font
             _currentAtlas?.Dispose();
         }
 
-        private const int QUEUE_CONSUMPTION_FRAME = 256;
+
         private byte framesBuffering = 0;
 
         public unsafe struct StringRenderingQueueItem
@@ -373,16 +373,16 @@ namespace BelzontWE.Font
             {
                 m_textCache[""] = new PrimitiveRenderInformation("", [], [], [], default, null, null);
             }
-            if (itemsQueue.Count >= QUEUE_CONSUMPTION_FRAME || framesBuffering++ > 60)
+            if (itemsQueue.Count >= WEConstants.STRING_RENDERING_BATCH || framesBuffering++ > 60)
             {
                 framesBuffering = 0;
                 if (itemsQueue.Count != 0)
                 {
                     NativeArray<StringRenderingQueueItem> itemsStarted;
-                    if (itemsQueue.Count > QUEUE_CONSUMPTION_FRAME)
+                    if (itemsQueue.Count > WEConstants.STRING_RENDERING_BATCH)
                     {
-                        itemsStarted = new(QUEUE_CONSUMPTION_FRAME, Allocator.TempJob);
-                        for (int i = 0; i < QUEUE_CONSUMPTION_FRAME; i++)
+                        itemsStarted = new(WEConstants.STRING_RENDERING_BATCH, Allocator.TempJob);
+                        for (int i = 0; i < WEConstants.STRING_RENDERING_BATCH; i++)
                         {
                             itemsStarted[i] = itemsQueue.Dequeue();
                         }
@@ -455,7 +455,7 @@ namespace BelzontWE.Font
                         VerticesPositionsCube = VerticesPositionsCube,
                         TriangleIndicesCube = TriangleIndicesCube,
                     };
-                    dependency = job.ScheduleParallel(itemsStarted.Length, 32, dependency);
+                    dependency = job.ScheduleParallel(itemsStarted.Length, WEConstants.FONT_JOB_BATCH_SIZE, dependency);
                     itemsStarted.Dispose(dependency);
                 }
             }
@@ -468,7 +468,7 @@ namespace BelzontWE.Font
             while (results.TryDequeue(out var result))
             {
                 PostJob(result);
-                if (++postJobCounter > QUEUE_CONSUMPTION_FRAME)
+                if (++postJobCounter > WEConstants.STRING_RENDERING_BATCH)
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Skipping next frame; strings yet to process at font {Name}: {results.Count}");
                     break;

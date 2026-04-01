@@ -19,8 +19,7 @@ namespace BelzontWE
         private WEWorldPickerController m_pickerController;
         private PreCullingSystem m_preCullingSystem;
         private WEWorldPickerTool m_pickerTool;
-        internal const char VARIABLE_ITEM_SEPARATOR = '↓';
-        internal const char VARIABLE_KV_SEPARATOR = '→';
+
 
         private bool ready;
 
@@ -155,7 +154,7 @@ namespace BelzontWE
         }
 
 
-        private readonly FixedString32Bytes indexStartString = new($"$idx{VARIABLE_KV_SEPARATOR}");
+        private readonly FixedString32Bytes indexStartString = new($"$idx{WEConstants.VARIABLE_KV_SEPARATOR}");
 #if BURST
         [Unity.Burst.BurstCompile]
 #endif
@@ -281,7 +280,7 @@ namespace BelzontWE
                     }
                 }
 
-                if (m_geomEntitiesLastFrame.Contains(entity) && (entity.Index & 0x1f) != (frameCount & 0x1f) && (!isAtWeEditor || entity != m_selectedEntity))
+                if (m_geomEntitiesLastFrame.Contains(entity) && (entity.Index & WEConstants.RENDERER_FRAME_CHECK_MASK) != (frameCount & WEConstants.RENDERER_FRAME_CHECK_MASK) && (!isAtWeEditor || entity != m_selectedEntity))
                 {
                     m_unmodifiedEntities.Add(entity);
                     return;
@@ -345,14 +344,14 @@ namespace BelzontWE
                         if (variableBuffer[i].Key[0] != '!')
                         {
                             inheritableVars.Append(variableBuffer[i].Key);
-                            inheritableVars.Append(VARIABLE_KV_SEPARATOR);
+                            inheritableVars.Append(WEConstants.VARIABLE_KV_SEPARATOR);
                             inheritableVars.Append(variableBuffer[i].Value);
-                            inheritableVars.Append(VARIABLE_ITEM_SEPARATOR);
+                            inheritableVars.Append(WEConstants.VARIABLE_ITEM_SEPARATOR);
                         }
                         localVars.Append(variableBuffer[i].Key);
-                        localVars.Append(VARIABLE_KV_SEPARATOR);
+                        localVars.Append(WEConstants.VARIABLE_KV_SEPARATOR);
                         localVars.Append(variableBuffer[i].Value);
-                        localVars.Append(VARIABLE_ITEM_SEPARATOR);
+                        localVars.Append(WEConstants.VARIABLE_ITEM_SEPARATOR);
                     }
                 }
             }
@@ -495,7 +494,7 @@ namespace BelzontWE
                                     var layoutVars = new FixedString512Bytes(inheritableVars);
                                     layoutVars.Append(indexStartString);
                                     layoutVars.Append(i);
-                                    layoutVars.Append(VARIABLE_ITEM_SEPARATOR);
+                                    layoutVars.Append(WEConstants.VARIABLE_ITEM_SEPARATOR);
                                     DrawTree(geometryEntity, updater.childEntity, childBaseMatrix, geomMatrix, unfilteredChunkIndex, in layoutVars, nthCall + 1, true);
                                 }
                             }

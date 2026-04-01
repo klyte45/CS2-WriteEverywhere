@@ -75,7 +75,7 @@ namespace BelzontWE
 
         public override int GetUpdateInterval(SystemUpdatePhase phase)
         {
-            return 256;
+            return WEConstants.DISPOSAL_FRAME_INTERVAL;
         }
 
         protected override void OnUpdate()

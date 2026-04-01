@@ -1,3 +1,4 @@
+**End time:** 2026-04-01 02:05 -0300
 **Start time:** 2026-04-01 01:44 -0300
 # [0015] Centralize Magic Constants
 
@@ -30,11 +31,11 @@ Centralizing these into a single WEConstants.cs makes the codebase self-document
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] BelzontWE/WEConstants.cs (or BelzontWE/Utils/WEConstants.cs) is created with: VARIABLE_ITEM_SEPARATOR, VARIABLE_KV_SEPARATOR, REPLACEMENT_ITEM_SEPARATOR, REPLACEMENT_KV_SEPARATOR, REPLACEMENT_SUB_SEPARATOR, REPLACEMENT_SUB_KV_SEPARATOR, MAX_ATLAS_SIZE, MIN_ATLAS_SIZE, FONT_JOB_BATCH_SIZE, STRING_RENDERING_BATCH, RENDERER_FRAME_CHECK_MASK, DISPOSAL_FRAME_INTERVAL
-- [ ] All original inline literals are replaced with references to the named constants
-- [ ] No behavior change — values are identical before and after
-- [ ] Project compiles without errors
-- [ ] Constants are public static readonly or public const (prefer const for compile-time values, static readonly for runtime-computed values)
+- [x] BelzontWE/WEConstants.cs (or BelzontWE/Utils/WEConstants.cs) is created with: VARIABLE_ITEM_SEPARATOR, VARIABLE_KV_SEPARATOR, REPLACEMENT_ITEM_SEPARATOR, REPLACEMENT_KV_SEPARATOR, REPLACEMENT_SUB_SEPARATOR, REPLACEMENT_SUB_KV_SEPARATOR, MAX_ATLAS_SIZE, MIN_ATLAS_SIZE, FONT_JOB_BATCH_SIZE, STRING_RENDERING_BATCH, RENDERER_FRAME_CHECK_MASK, DISPOSAL_FRAME_INTERVAL
+- [x] All original inline literals are replaced with references to the named constants
+- [x] No behavior change — values are identical before and after
+- [x] Project compiles without errors
+- [x] Constants are public static readonly or public const (prefer const for compile-time values, static readonly for runtime-computed values)
 
 ---
 

@@ -73,7 +73,7 @@ namespace BelzontWE
                     || item.transformMatrix == default
                     || main.nextUpdateFrame == 0) continue;
 
-                    bool willCheckUpdate = ((FrameCounter + item.textDataEntity.Index) & 0x1f) == 0;
+                    bool willCheckUpdate = ((FrameCounter + item.textDataEntity.Index) & WEConstants.RENDERER_FRAME_CHECK_MASK) == 0;
 
                     bool isPlaceholder = false;
 
