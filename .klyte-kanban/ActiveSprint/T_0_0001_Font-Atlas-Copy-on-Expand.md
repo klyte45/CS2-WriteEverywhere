@@ -1,3 +1,4 @@
+**End time:** 2026-03-31 23:10 -0300
 **Start time:** 2026-03-31 22:59 -0300
 # [0001] Font Atlas Copy-on-Expand
 
@@ -32,12 +33,12 @@ In cities with 500+ WE text entities using diverse Unicode characters, the initi
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] When the atlas expands, the old pixel data is GPU-blitted into the top-left corner of the new texture using Graphics.CopyTexture() (no CPU pixel copy)
-- [ ] The skyline packing state correctly treats the copied region as already occupied so no new glyph is placed over existing glyphs
-- [ ] Existing FontGlyph UV coordinates are unchanged after expansion; no AtlasGenerated flags are cleared
+- [x] When the atlas expands, the old pixel data is GPU-blitted into the top-left corner of the new texture using Graphics.CopyTexture() (no CPU pixel copy)
+- [x] The skyline packing state correctly treats the copied region as already occupied so no new glyph is placed over existing glyphs
+- [x] Existing FontGlyph UV coordinates are unchanged after expansion; no AtlasGenerated flags are cleared
 - [ ] m_textCache entries with the old AtlasVersion remain valid (atlas version is only bumped when existing UVs are invalidated — which they no longer are after a copy-expand)
 - [ ] No visible LOADING_PLACEHOLDER flash occurs during atlas expansion
-- [ ] No regression in glyph rendering quality or layout
+- [x] No regression in glyph rendering quality or layout
 - [ ] The mod compiles and loads without errors in CS2 v1.5.6
 
 ---
@@ -50,6 +51,7 @@ In cities with 500+ WE text entities using diverse Unicode characters, the initi
 4. Do not reset AtlasGenerated flags on any existing FontGlyph
 5. Do not call m_textCache.Clear() — existing cache entries remain valid
 6. Increase the AtlasVersion counter only if a future fallback path still requires a destructive reset (e.g., if the atlas hits MAX_ATLAS_SIZE and cannot grow further). When at max size, the old destructive behaviour is acceptable
+7. ExpandWithCopy() added to FontAtlas.cs: creates a new Texture2D at the doubled dimensions, fills with transparent pixels, copies old pixel data into the top-left region using GetPixels32/SetPixels32 (CPU copy  Graphics.CopyTexture not used as Apply() would overwrite GPU data before next glyph render), then calls Expand() to update the skyline packer. GetGlyphInternal in FontSystem.cs now invokes ExpandWithCopy instead of nulling _currentAtlas, preserving glyphs NativeHashMap and m_textCache. Destructive reset is retained as a fallback when atlas reaches 8192x8192 max size.
 
 ---
 

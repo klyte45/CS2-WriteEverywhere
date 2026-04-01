@@ -229,24 +229,25 @@ namespace BelzontWE.Font
                     CurrentAtlasFull?.Invoke();
                     do
                     {
-                        // This code will force creation of new atlas with 4x size
-                        this._currentAtlas = null;
                         if (_size.x * _size.y < 8192 * 8192)
                         {
+                            // Expand atlas with copy — preserves existing glyph UV data and text cache
                             _size *= 2;
+                            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Expanding atlas to {_size} (copy-on-expand)");
+                            CurrentAtlas.ExpandWithCopy(_size.x, _size.y);
+                            // glyphs and m_textCache remain valid; hasResetted stays false
                         }
                         else
                         {
-                            throw new Exception(string.Format("Could not add rect to the newly created atlas. gw={0}, gh={1} - MAP REACHED 16K * 16K LIMIT!", gw, gh));
+                            // Max atlas size reached — fall back to destructive reset
+                            this._currentAtlas = null;
+                            glyphs.Clear();
+                            glyphs[codepoint] = glyph;
+                            if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Atlas at max size {_size}, performing destructive reset");
+                            m_textCache.Clear();
+                            hasResetted = true;
                         }
-                        glyphs.Clear();
-                        glyphs[codepoint] = glyph;
-
-                        if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"Resetting size to {_size}");
-                        m_textCache.Clear();
-
-                        hasResetted = true;
-                        // Try to add again
+                        // Try to add rect in expanded/reset atlas
                     } while (!CurrentAtlas.AddRect(gw, gh, ref gx, ref gy));
                 }
 

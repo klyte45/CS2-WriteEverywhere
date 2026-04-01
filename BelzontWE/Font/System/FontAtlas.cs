@@ -79,6 +79,27 @@ namespace BelzontWE.Font
             Height = h;
         }
 
+        public void ExpandWithCopy(int newW, int newH)
+        {
+            var oldTexture = Texture;
+            int oldW = Width;
+            int oldH = Height;
+
+            var newTexture = new Texture2D(newW, newH, TextureFormat.ARGB32, false);
+            newTexture.SetPixels32(new Color32[newW * newH]); // transparent fill
+            if (oldTexture != null)
+            {
+                Color32[] oldPixels = oldTexture.GetPixels32();
+                newTexture.SetPixels32(0, 0, oldW, oldH, oldPixels);
+                UnityEngine.Object.Destroy(oldTexture);
+            }
+
+            Texture = newTexture;
+            IsPendingApply = true;
+            Expand(newW, newH);
+            // Version is NOT incremented — existing glyph UV coordinates remain valid
+        }
+
         public void Reset(int w, int h)
         {
             Width = w;
