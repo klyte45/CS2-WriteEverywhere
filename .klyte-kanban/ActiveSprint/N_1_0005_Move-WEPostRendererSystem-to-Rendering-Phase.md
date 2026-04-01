@@ -1,7 +1,7 @@
+**Start time:** 2026-03-31 23:24 -0300
 # [0005] Move WEPostRendererSystem to Rendering Phase
 
-**Developed by:** 
-
+**Developed by:** Agent-Claude-Sonnet-4.6 <agent@example.com>
 ## Reference
 
 Source: RefsLibrary/20260330_CodeStructureAnalysis/01_ModSystems_vs_GameSystems/02_TimingImprovementAnalysis.md — ID 4
@@ -47,6 +47,7 @@ This introduces a full-frame latency. Moving WEPostRendererSystem to Rendering (
 3. In WEPostRendererSystem.cs, add [UpdateAfter(typeof(WETemplateUpdateSystem))] (or the equivalent BelzontCommons registration-time ordering mechanism) to ensure it runs after template data is updated
 4. Verify that no [UpdateBefore] constraint from another system conflicts with the new position
 5. Build and test
+6. INVESTIGATION: WEPostRendererSystem extends BelzontBasicSystem which uses an AllowedPhase enum that maps each phase to a specific SafeCommandBufferSystem (barrier). Rendering phase is not in the AllowedPhase enum and has no corresponding barrier in the CS2 game framework. The system actively uses Barrier.CreateCommandBuffer() for ECB operations (AddComponent, SetComponent, SetComponentEnabled). Two options: (1) Add Rendering phase to AllowedPhase and map to EndFrameBarrier  risky since ECB playback timing would differ from actual Rendering barrier; (2) Convert to plain SystemBase with manual ECB acquisition  requires refactoring away from BelzontBasicSystem. Both approaches require careful testing. Reverting to N status for manual review.
 
 ---
 
