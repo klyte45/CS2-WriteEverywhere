@@ -7,8 +7,21 @@ Use the `npx kk` CLI tool to manage tasks, sprints, and workspace metadata.
 
 ## Project description and notes
 
-> *This section is editable — add project context, goals, or notes here.*
-> *It will be preserved automatically when running `kk workspace refresh`.*
+This folder contains the taskboard for Write Everywhere mod. Future features studies, design docs, and research notes should be placed in the `RefsLibrary/` subfolder. Tasks can refer them as needed via relative paths.
+
+### Building the project
+
+The project can be built using the command line with MSBuild:
+
+```bash
+    MSBuild.exe BelzontWE.sln /p:Configuration=Debug 
+```
+
+It will run frontend and backends builds, and also copy the mod files into the game mods folder for testing.
+
+### After ending a sprint
+
+Additionally to the usual workflow via `npx kk`, manual testing will be required. So every sprint should end with a testing plan to be run by QA, and the results should be documented in the task files and/or in the `RefsLibrary/` as needed.
 
 ## Folder structure
 
