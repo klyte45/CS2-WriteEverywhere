@@ -1,7 +1,8 @@
+**End time:** 2026-04-01 01:41 -0300
+**Start time:** 2026-04-01 00:47 -0300
 # [0013] BuiltinFn Attribute Registration Pattern
 
-**Developed by:** 
-
+**Developed by:** Agent-Claude-Opus-4.6 <agent@example.com>
 ## Reference
 
 Source: RefsLibrary/20260330_CodeStructureAnalysis/04_OverallModStructure/02_ImprovementOpportunities.md — Improvement 3
@@ -30,13 +31,13 @@ Adding lightweight attributes provides compile-time contract documentation and e
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] A [WEBuiltinFunction(string category)] attribute is defined (in Utils/ or BuiltinFn/)
-- [ ] A [WEFormula(Type returnType)] attribute is defined for individual methods
-- [ ] All 14 built-in function classes have [WEBuiltinFunction] applied
-- [ ] All public formula-callable methods have [WEFormula] applied with the correct return type
-- [ ] The existing reflection-based registration path is unchanged (attributes are additive)
-- [ ] The RefsLibrary/20260330_CodeStructureAnalysis/02_Formulaes/02_BuiltinFunctionsReference.md document is updated to note that attributes now provide IDE-discoverable contracts
-- [ ] The mod compiles and loads without errors in CS2 v1.5.6
+- [x] A [WEBuiltinFunction(string category)] attribute is defined (in Utils/ or BuiltinFn/)
+- [x] A [WEFormula(Type returnType)] attribute is defined for individual methods
+- [x] All 14 built-in function classes have [WEBuiltinFunction] applied
+- [x] All public formula-callable methods have [WEFormula] applied with the correct return type
+- [x] The existing reflection-based registration path is unchanged (attributes are additive)
+- [x] The RefsLibrary/20260330_CodeStructureAnalysis/02_Formulaes/02_BuiltinFunctionsReference.md document is updated to note that attributes now provide IDE-discoverable contracts
+- [x] The mod compiles and loads without errors in CS2 v1.5.6
 
 ---
 

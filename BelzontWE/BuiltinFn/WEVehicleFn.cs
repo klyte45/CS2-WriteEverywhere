@@ -9,6 +9,7 @@ using Target = Game.Common.Target;
 
 namespace BelzontWE.Builtin
 {
+    [WEBuiltinFunction("Vehicle")]
     public static class WEVehicleFn
     {
         public const string LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -58,13 +59,21 @@ namespace BelzontWE.Builtin
         public static Func<Entity, string> GetVehiclePlateLine1_binding = (entity) => { var plate = GetVehiclePlate(entity); return plate[..(plate.Length / 2)]; };
         public static Func<Entity, string> GetVehiclePlateLine2_binding = (entity) => { var plate = GetVehiclePlate(entity); return plate[(plate.Length / 2)..]; };
 
+        [WEFormula(typeof(string))]
         public static string GetTargetDestinationStatic(Entity reference) => GetTargetDestinationStatic_binding?.Invoke(reference) ?? "<???>";
+        [WEFormula(typeof(string))]
         public static string GetTargetDestinationDynamic(Entity reference) => GetTargetDestinationDynamic_binding?.Invoke(reference) ?? "<???>";
+        [WEFormula(typeof(string))]
         public static string GetVehiclePlate(Entity vehicleRef) => GetVehiclePlate_binding?.Invoke(vehicleRef) ?? "<???>";
+        [WEFormula(typeof(string))]
         public static string GetVehiclePlateLine1(Entity vehicleRef) => GetVehiclePlateLine1_binding?.Invoke(vehicleRef) ?? "<???>";
+        [WEFormula(typeof(string))]
         public static string GetVehiclePlateLine2(Entity vehicleRef) => GetVehiclePlateLine2_binding?.Invoke(vehicleRef) ?? "<???>";
+        [WEFormula(typeof(string))]
         public static string GetTransportLineNumber(Entity reference) => GetTargetTransportLineNumber_binding?.Invoke(reference) ?? "<!>";
+        [WEFormula(typeof(string))]
         public static string GetSerialNumber(Entity reference) => GetSerialNumber_binding?.Invoke(reference) ?? "<???>";
+        [WEFormula(typeof(string))]
         public static string GetConvoyId(Entity vehicleRef) => GetConvoyId_binding?.Invoke(vehicleRef) ?? "<???>";
     }
 }

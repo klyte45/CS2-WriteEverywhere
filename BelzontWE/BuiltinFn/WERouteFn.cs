@@ -6,6 +6,7 @@ using Unity.Entities;
 
 namespace BelzontWE.Builtin
 {
+    [WEBuiltinFunction("Route")]
     public static class WERouteFn
     {
         public static Func<Entity, string> GetTransportLineNumber_binding = (entity) =>
@@ -29,10 +30,14 @@ namespace BelzontWE.Builtin
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             return WEUtitlitiesFn.GetEntityName(GetWaypointStaticDestinationEntity_binding(entity));
         };
+        [WEFormula(typeof(string))]
         public static string GetTransportLineNumber(Entity reference) => GetTransportLineNumber_binding?.Invoke(reference) ?? "<!>";
+        [WEFormula(typeof(string))]
         public static string GetWaypointStaticDestinationName(Entity waypointEntity) => GetWaypointStaticDestinationName_binding?.Invoke(waypointEntity) ?? "???";
+        [WEFormula(typeof(Entity))]
         public static Entity GetWaypointStaticDestinationEntity(Entity waypointEntity) => GetWaypointStaticDestinationEntity_binding?.Invoke(waypointEntity) ?? default;
 
+        [WEFormula(typeof(Entity))]
         public static Entity GetNthWaypoint(Entity entity, Dictionary<string, string> vars) => !vars.TryGetValue("!wp#", out var idxStr)
                 ? default
                 : idxStr.StartsWith("~") && !vars.TryGetValue(idxStr[1..], out idxStr)

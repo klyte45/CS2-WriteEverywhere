@@ -6,9 +6,11 @@ using Unity.Mathematics;
 
 namespace BelzontWE.Builtin
 {
+    [WEBuiltinFunction("Calendar")]
     public static class WECalendarFn
     {
         private static TimeSystem timeSystem;
+        [WEFormula(typeof(string))]
         public static string GetTimeStringWeLocale(Entity reference, Dictionary<string, string> vars)
         {
             timeSystem ??= World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<TimeSystem>();
@@ -25,6 +27,7 @@ namespace BelzontWE.Builtin
                 return $"{Math.Floor(time):00}:{math.floor(time * 60 % 60):00}";
             }
         }
+        [WEFormula(typeof(string))]
         public static string GetFormattedDateWeLocale(Entity reference, Dictionary<string, string> vars)
         {
             timeSystem ??= World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<TimeSystem>();

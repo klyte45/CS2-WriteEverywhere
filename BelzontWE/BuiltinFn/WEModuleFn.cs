@@ -4,6 +4,7 @@ using Unity.Entities;
 
 namespace BelzontWE.Builtin
 {
+    [WEBuiltinFunction("Module")]
     public static class WEModuleFn
     {
         private static readonly Dictionary<string, bool> moduleStates = [];
@@ -17,6 +18,7 @@ namespace BelzontWE.Builtin
             }
             return isEnabled;
         }
+        [WEFormula(typeof(int))]
         public static int IsModuleEnabled(Entity _, Dictionary<string, string> vars) => vars.TryGetValue("!module", out var module) && IsModuleEnabled(module) ? 1 : 0;
     }
 }

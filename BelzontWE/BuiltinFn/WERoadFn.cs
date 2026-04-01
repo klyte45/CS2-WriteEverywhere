@@ -9,6 +9,7 @@ using Transform = Game.Objects.Transform;
 
 namespace BelzontWE.Builtin
 {
+    [WEBuiltinFunction("Road")]
     public static class WERoadFn
     {
         public struct WENodeElementCache : IComponentData
@@ -18,9 +19,13 @@ namespace BelzontWE.Builtin
             public byte ExtraDataBelongingSideIdx { get; set; }
         }
 
+        [WEFormula(typeof(WENodeElementCache))]
         public static WENodeElementCache GetNodePropData(Entity reference) => GetRoadCache(reference, Identity);
+        [WEFormula(typeof(WENodeExtraDataUpdater.WENetNodeInformation))]
         public static WENodeExtraDataUpdater.WENetNodeInformation GetRoadSideSegmentForProp(Entity reference) => GetRoadCache(reference, GetSideSegment);
+        [WEFormula(typeof(WENodeExtraDataUpdater.WENetNodeInformation))]
         public static WENodeExtraDataUpdater.WENetNodeInformation GetRoadOwnSegmentForProp(Entity reference) => GetRoadCache(reference, GetRoadOwnSegment);
+        [WEFormula(typeof(WENodeExtraDataUpdater.WENetNodeInformation))]
         public static WENodeExtraDataUpdater.WENetNodeInformation GetFromPropByTargetVar(Entity reference, Dictionary<string, string> vars)
         {
             return vars.GetValueOrDefault("target") switch
@@ -93,6 +98,7 @@ namespace BelzontWE.Builtin
             return default;
         }
 
+        [WEFormula(typeof(Entity))]
         public static Entity GetRoadAggregation(Entity reference) => World.DefaultGameObjectInjectionWorld.EntityManager.TryGetComponent<Aggregated>(reference, out var agg) ? agg.m_Aggregate : Entity.Null;
     }
 }

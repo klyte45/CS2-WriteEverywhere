@@ -5,6 +5,7 @@ using Unity.Entities;
 
 namespace BelzontWE.Builtin
 {
+    [WEBuiltinFunction("Building")]
     public static class WEBuildingFn
     {
         public static Func<Entity, Entity> GetBuildingRoad_binding = (entity)
@@ -21,8 +22,11 @@ namespace BelzontWE.Builtin
             => World.DefaultGameObjectInjectionWorld.EntityManager.TryGetBuffer<Renter>(entity, true, out var renters) && renters.Length > 0
                 ? renters[0].m_Renter
                 : Entity.Null;
+        [WEFormula(typeof(Entity))]
         public static Entity GetBuildingRoad(Entity reference) => GetBuildingRoad_binding?.Invoke(reference) ?? Entity.Null;
+        [WEFormula(typeof(string))]
         public static string GetBuildingRoadNumber(Entity reference) => GetBuildingRoadNumber_binding?.Invoke(reference) ?? "N/A";
+        [WEFormula(typeof(Entity))]
         public static Entity GetBuildingMainRenter(Entity reference) => GetBuildingMainRenter_binding?.Invoke(reference) ?? Entity.Null;
     }
 }

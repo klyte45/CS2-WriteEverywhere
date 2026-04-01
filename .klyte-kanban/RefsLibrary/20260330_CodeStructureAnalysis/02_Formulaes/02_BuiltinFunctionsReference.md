@@ -2,6 +2,17 @@
 
 > **Purpose**: Complete reference of all available built-in static functions that can be used in WE formulae, organized by category.
 
+## Attribute-Based Contracts
+
+As of Sprint 001, all built-in function classes and methods carry lightweight attributes that provide IDE-discoverable contracts:
+
+- **`[WEBuiltinFunction(string category)]`** — Applied to each class, declares its functional category (e.g. `"Vehicle"`, `"Road"`)
+- **`[WEFormula(Type returnType, string description)]`** — Applied to each public formula-callable method, declares its return type
+
+These attributes are purely additive — the existing reflection-based discovery mechanism is unchanged. The attributes enable IDE navigation from formula strings to function declarations and can be used to auto-generate documentation.
+
+Attribute definitions are in `BuiltinFn/WEBuiltinAttributes.cs`.
+
 ## Function Categories
 
 All functions must be public static methods with one of two signatures:

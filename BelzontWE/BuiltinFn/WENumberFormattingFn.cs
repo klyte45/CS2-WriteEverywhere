@@ -4,15 +4,24 @@ using Unity.Mathematics;
 
 namespace BelzontWE.Builtin
 {
+    [WEBuiltinFunction("NumberFormatting")]
     public class WENumberFormattingFn
     {
+        [WEFormula(typeof(string))]
         public static string To4DigitsValue(float value) => DoIntReduction(value, 4);
+        [WEFormula(typeof(string))]
         public static string To3DigitsValue(float value) => DoIntReduction(value, 3);
+        [WEFormula(typeof(string))]
         public static string To4DigitsValue(int value) => DoIntReduction(value, 4);
+        [WEFormula(typeof(string))]
         public static string To3DigitsValue(int value) => DoIntReduction(value, 3);
+        [WEFormula(typeof(string))]
         public static string To4DigitsValue(long value) => DoIntReduction(value, 4);
+        [WEFormula(typeof(string))]
         public static string To3DigitsValue(long value) => DoIntReduction(value, 3);
+        [WEFormula(typeof(string))]
         public static string To4DigitsValue(short value) => DoIntReduction(value, 4);
+        [WEFormula(typeof(string))]
         public static string To3DigitsValue(short value) => DoIntReduction(value, 3);
 
         private static readonly string[] orders = new[] { "", "k", "M", "G", "T", "P", "E" };

@@ -11,11 +11,13 @@ using Unity.Mathematics;
 
 namespace BelzontWE.Builtin
 {
+    [WEBuiltinFunction("Attached")]
     public static class WEAttachedFn
     {
         private static CityConfigurationSystem system;
         private static CityConfigurationSystem System => system ??= World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<CityConfigurationSystem>();
 
+        [WEFormula(typeof(float3))]
         public static float3 GetOffsetForNearestSidewalk(Entity e)
         {
             var outputRef = new NativeReference<float3>(Allocator.TempJob);
