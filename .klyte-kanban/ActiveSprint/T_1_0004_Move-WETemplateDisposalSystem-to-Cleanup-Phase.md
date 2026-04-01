@@ -1,3 +1,4 @@
+**End time:** 2026-03-31 23:18 -0300
 **Start time:** 2026-03-31 23:18 -0300
 # [0004] Move WETemplateDisposalSystem to Cleanup Phase
 
@@ -31,10 +32,10 @@ Moving to Cleanup is more idiomatic and aligns with the game's own pattern, whil
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] WETemplateDisposalSystem registration call in DoOnCreateWorld() uses SystemUpdatePhase.Cleanup instead of SystemUpdatePhase.Rendering
-- [ ] Any [UpdateAfter] / [UpdateBefore] attributes that reference Rendering-phase systems are removed or updated to be valid in Cleanup
-- [ ] Orphaned entities are still correctly destroyed (disposal still runs every 256 frames)
-- [ ] No entities that should be alive are destroyed, and no destroyed entities persist as ghosts
+- [x] WETemplateDisposalSystem registration call in DoOnCreateWorld() uses SystemUpdatePhase.Cleanup instead of SystemUpdatePhase.Rendering
+- [x] Any [UpdateAfter] / [UpdateBefore] attributes that reference Rendering-phase systems are removed or updated to be valid in Cleanup
+- [x] Orphaned entities are still correctly destroyed (disposal still runs every 256 frames)
+- [x] No entities that should be alive are destroyed, and no destroyed entities persist as ghosts
 - [ ] The mod compiles and loads without errors in CS2 v1.5.6
 - [ ] Manual test: create several WE text objects, delete their parent, wait >256 frames, confirm orphaned WE components are gone
 
@@ -47,6 +48,7 @@ Moving to Cleanup is more idiomatic and aligns with the game's own pattern, whil
 3. In WETemplateDisposalSystem.cs, verify the 256-frame interval check uses a stable frame counter that is not affected by phase changes
 4. Remove any Rendering-phase [UpdateAfter] / [UpdateBefore] attributes on this system
 5. Build and test
+6. Changed WETemplateDisposalSystem registration from UpdateAfter<WETemplateDisposalSystem>(Rendering) to UpdateAt<WETemplateDisposalSystem>(Cleanup) in WriteEverywhereCS2Mod.DoOnCreateWorld(). No [UpdateAfter]/[UpdateBefore] attributes were present on WETemplateDisposalSystem itself. The 256-frame interval relies on UnityEngine.Time.frameCount which is phase-independent. ECB playback at the Cleanup barrier precedes next frame's Modification1, so orphan cleanup timing is preserved.
 
 ---
 

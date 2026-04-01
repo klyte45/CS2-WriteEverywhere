@@ -34,7 +34,7 @@ namespace BelzontWE
             updateSystem.UpdateAfter<WETemplateUpdateSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WETemplateQuerySystem>(SystemUpdatePhase.UIUpdate);
             updateSystem.UpdateAfter<WEPrefabLayoutSystem>(SystemUpdatePhase.Rendering);
-            updateSystem.UpdateAfter<WETemplateDisposalSystem>(SystemUpdatePhase.Rendering);
+            updateSystem.UpdateAt<WETemplateDisposalSystem>(SystemUpdatePhase.Cleanup);
 
             updateSystem.UpdateAt<WEPreCullingSystem>(SystemUpdatePhase.PreCulling);
 
