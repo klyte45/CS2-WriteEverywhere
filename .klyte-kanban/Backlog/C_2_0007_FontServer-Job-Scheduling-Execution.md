@@ -1,6 +1,7 @@
 # [0007] FontServer Job Scheduling — Execution
 
 **Developed by:** 
+**Cancellation time:** 2026-03-31 23:28 -0300
 
 ## Reference
 
