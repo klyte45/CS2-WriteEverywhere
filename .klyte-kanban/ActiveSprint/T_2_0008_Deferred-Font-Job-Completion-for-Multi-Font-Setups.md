@@ -1,3 +1,4 @@
+**End time:** 2026-03-31 23:36 -0300
 **Start time:** 2026-03-31 23:33 -0300
 # [0008] Deferred Font Job Completion for Multi-Font Setups
 
@@ -35,13 +36,13 @@ This allows worker threads to process all fonts' StringRenderingJobs in parallel
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] FontServer.OnUpdate() (or FontSystem) is refactored to two passes: schedule-all, then complete-all
-- [ ] All font JobHandles are collected and combined before any Complete() call
-- [ ] Post-completion result processing runs after the single combined Complete() barrier
+- [x] FontServer.OnUpdate() (or FontSystem) is refactored to two passes: schedule-all, then complete-all
+- [x] All font JobHandles are collected and combined before any Complete() call
+- [x] Post-completion result processing runs after the single combined Complete() barrier
 - [ ] With a single font loaded (common case), behaviour is functionally identical to before (one schedule + one complete)
 - [ ] With 3 fonts loaded, the total main-thread stall time is reduced (profiler: one combined stall instead of three sequential stalls)
 - [ ] No visual regression in any loaded font's rendered text
-- [ ] The mod compiles and loads without errors in CS2 v1.5.6
+- [x] The mod compiles and loads without errors in CS2 v1.5.6
 
 ---
 
@@ -50,6 +51,7 @@ This allows worker threads to process all fonts' StringRenderingJobs in parallel
 1. In FontSystem.cs, add a new method ScheduleJobs() → JobHandle that does the scheduling work only (no Complete() call). The existing RunJobs() can delegate to ScheduleJobs() + Complete() for backward compat, or be replaced
 2. In FontServer.OnUpdate(): Pass 1: schedule all (collect JobHandles into NativeArray); Single barrier: JobHandle.CombineDependencies(handles).Complete(); Pass 2: collect results for all fonts
 3. Ensure atlas-state mutations (glyph rasterization, AddRect) still happen on the main thread before the schedule pass (unchanged)
+4. Split FontSystem.RunJobs() into ScheduleJobs() (glyph prep + job scheduling, no Complete) and ProcessResults() (dequeue results). RunJobs() retained as backward-compat wrapper. FontServer.OnUpdate() refactored to two-pass: Pass 1 calls ScheduleFontSystem() for all fonts (chained Dependency handles), single Dependency.Complete() barrier, Pass 2 calls ProcessFontSystem() (result processing + atlas Apply). DoD items 4,5,6 require in-game testing with multiple fonts.
 
 ---
 

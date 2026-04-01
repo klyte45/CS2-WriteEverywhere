@@ -174,15 +174,35 @@ namespace BelzontWE
             EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
             var keysToDispose = new List<FixedString64Bytes>();
             var i = 0;
+            var scheduledFonts = new List<(FontSystemData data, bool updateAtlases)>();
+
+            // Pass 1: Schedule jobs for all fonts (glyph prep + job scheduling, no Complete)
             foreach (var (key, data) in LoadedFonts)
             {
-                if (!UpdateFontSystem(data, UnityEngine.Time.frameCount % 60 == ++i % 60))
+                bool updateAtlases = UnityEngine.Time.frameCount % 60 == ++i % 60;
+                if (!ScheduleFontSystem(data))
                 {
                     data.Dispose();
                     keysToDispose.Add(key);
                 }
+                else
+                {
+                    scheduledFonts.Add((data, updateAtlases));
+                }
             }
-            UpdateFontSystem(DefaultFont, UnityEngine.Time.frameCount % 60 == ++i % 60);
+            bool defaultUpdateAtlases = UnityEngine.Time.frameCount % 60 == ++i % 60;
+            ScheduleFontSystem(DefaultFont);
+            scheduledFonts.Add((DefaultFont, defaultUpdateAtlases));
+
+            // Single barrier: complete all scheduled jobs at once
+            Dependency.Complete();
+
+            // Pass 2: Process results and apply atlases for all fonts
+            foreach (var (data, updateAtlases) in scheduledFonts)
+            {
+                ProcessFontSystem(data, updateAtlases);
+            }
+
             requiresUpdateParameter = false;
             if (keysToDispose.Count > 0)
             {
@@ -192,10 +212,9 @@ namespace BelzontWE
                 }
                 OnFontsLoadedChanged?.Invoke();
             }
-            Dependency.Complete();
         }
 
-        private bool UpdateFontSystem(FontSystemData data, bool updateAtlases)
+        private bool ScheduleFontSystem(FontSystemData data)
         {
             try
             {
@@ -204,14 +223,26 @@ namespace BelzontWE
                     if (BasicIMod.DebugMode) LogUtils.DoLog("Resetting font system!");
                     data.FontSystem.Reset();
                 }
-                Dependency = data.FontSystem.RunJobs(Dependency);
-                if (updateAtlases) data.FontSystem.CurrentAtlas.Apply();
+                Dependency = data.FontSystem.ScheduleJobs(Dependency);
                 return true;
             }
             catch (Exception e)
             {
-                LogUtils.DoWarnLog($"Error on UpdateFontSystem for {data.Name ?? "<Default>"}: {e.Message}\n{e}");
+                LogUtils.DoWarnLog($"Error on ScheduleFontSystem for {data.Name ?? "<Default>"}: {e.Message}\n{e}");
                 return false;
+            }
+        }
+
+        private void ProcessFontSystem(FontSystemData data, bool updateAtlases)
+        {
+            try
+            {
+                data.FontSystem.ProcessResults();
+                if (updateAtlases) data.FontSystem.CurrentAtlas.Apply();
+            }
+            catch (Exception e)
+            {
+                LogUtils.DoWarnLog($"Error on ProcessFontSystem for {data.Name ?? "<Default>"}: {e.Message}\n{e}");
             }
         }
 

@@ -363,7 +363,7 @@ namespace BelzontWE.Font
             public FixedString512Bytes text;
         }
 
-        public JobHandle RunJobs(JobHandle dependency)
+        public JobHandle ScheduleJobs(JobHandle dependency)
         {
             if (!m_textCache.ContainsKey(""))
             {
@@ -451,9 +451,13 @@ namespace BelzontWE.Font
                     };
                     dependency = job.ScheduleParallel(itemsStarted.Length, 32, dependency);
                     itemsStarted.Dispose(dependency);
-                    dependency.Complete();
                 }
             }
+            return dependency;
+        }
+
+        public void ProcessResults()
+        {
             var postJobCounter = 0;
             while (results.TryDequeue(out var result))
             {
@@ -464,6 +468,13 @@ namespace BelzontWE.Font
                     break;
                 }
             }
+        }
+
+        public JobHandle RunJobs(JobHandle dependency)
+        {
+            dependency = ScheduleJobs(dependency);
+            dependency.Complete();
+            ProcessResults();
             return dependency;
         }
 
