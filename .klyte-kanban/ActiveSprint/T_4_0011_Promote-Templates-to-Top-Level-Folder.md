@@ -1,3 +1,4 @@
+**End time:** 2026-04-01 00:34 -0300
 **Start time:** 2026-03-31 23:59 -0300
 # [0011] Promote Templates/ to Top-Level Folder
 
@@ -31,12 +32,12 @@ This is a folder move only. No logic changes are required.
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] All 12 files are moved from BelzontWE/Systems/Templates/ to BelzontWE/Templates/
-- [ ] The Systems/Templates/ folder is deleted (empty after move)
-- [ ] All namespace declarations in moved files are unchanged (no rename required)
-- [ ] The project compiles without errors
-- [ ] No using aliases referencing the old path exist in other files
-- [ ] Git history preserves file moves (use git mv instead of delete+create)
+- [x] All 12 files are moved from BelzontWE/Systems/Templates/ to BelzontWE/Templates/
+- [x] The Systems/Templates/ folder is deleted (empty after move)
+- [x] All namespace declarations in moved files are unchanged (no rename required)
+- [x] The project compiles without errors
+- [x] No using aliases referencing the old path exist in other files
+- [x] Git history preserves file moves (use git mv instead of delete+create)
 
 ---
 
@@ -44,6 +45,7 @@ This is a folder move only. No logic changes are required.
 
 1. Use git mv for each file to preserve history: git mv BelzontWE/Systems/Templates/WETemplateManager.cs BelzontWE/Templates/WETemplateManager.cs (repeat for all 12 files)
 2. If the .csproj uses explicit <Compile Include="..."> entries, update them. If it uses <Compile Include="**\*.cs" />, no .csproj change is needed
+3. Moved all 12 files from Systems/Templates/ to Templates/ using git mv. All namespaces remain BelzontWE (unchanged). .csproj uses SDK-style implicit globs so no project file changes needed. Build succeeds. Old Systems/Templates/ folder is now empty (git auto-removes empty dirs).
 
 ---
 
