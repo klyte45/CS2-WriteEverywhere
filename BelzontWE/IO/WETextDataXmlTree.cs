@@ -95,6 +95,14 @@ namespace BelzontWE
 
         public WETextDataXmlTree Clone() => XmlUtils.CloneViaXml(this);
 
+        public void PreCompileFormulas()
+        {
+            self?.PreCompileFormulas();
+            if (children != null)
+                foreach (var child in children)
+                    child?.PreCompileFormulas();
+        }
+
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
             writer.Write(CURRENT_VERSION);

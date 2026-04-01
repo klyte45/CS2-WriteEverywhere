@@ -78,6 +78,13 @@ namespace BelzontWE
         public static FormulaeFn<Color> GetCachedColorFn(string formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached.Fn : null;
         public static FormulaeFn<IList<Entity>> GetCachedEntityArrayFn(string formulae) => cachedFnsEntityArray.TryGetValue(formulae, out var cached) ? cached.Fn : null;
 
+        public static void WarmCache<T>(string formulaString)
+        {
+            if (string.IsNullOrWhiteSpace(formulaString)) return;
+            try { SetFormulae<T>(formulaString, out _, out _, out _); }
+            catch (Exception e) { LogUtils.DoWarnLog($"[WEFormulaeHelper] Formula pre-compilation warning for '{formulaString}': {e.Message}"); }
+        }
+
         public static byte SetFormulae<T>(string newFormulae512, out string[] errorFmtArgs, out string resultFormulaeStr, out FormulaeFn<T> resultFormulaeFn)
         {
             IDictionary refDic = typeof(T) == typeof(string) ? cachedFnsString

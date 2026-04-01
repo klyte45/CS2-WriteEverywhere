@@ -60,6 +60,18 @@ namespace BelzontWE
         public bool ShouldSerializeglassStyle() => matrixTransform is null && layoutMesh is null && glassStyle != null;
         public bool ShouldSerializedecalStyle() => matrixTransform is null && layoutMesh is null && decalStyle != null;
         public bool ShouldSerializescaler() => matrixTransform != null;
+
+        public void PreCompileFormulas()
+        {
+            transform?.PreCompileFormulas();
+            textMesh?.PreCompileFormulas();
+            imageMesh?.PreCompileFormulas();
+            layoutMesh?.PreCompileFormulas();
+            matrixTransform?.PreCompileFormulas();
+            defaultStyle?.PreCompileFormulas();
+            glassStyle?.PreCompileFormulas();
+            decalStyle?.PreCompileFormulas();
+        }
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
             writer.Write(CURRENT_VERSION);
@@ -152,6 +164,11 @@ namespace BelzontWE
             [XmlAttribute][DefaultValue(false)] public bool useFormulaeToCheckIfDraw;
             [XmlElement] public FormulaeFloatXml mustDraw;
             [XmlElement] public FormulaeIntXml instanceCount = new() { defaultValue = -1 };
+            public void PreCompileFormulas()
+            {
+                WEFormulaeHelper.WarmCache<float>(mustDraw?.formulae);
+                WEFormulaeHelper.WarmCache<int>(instanceCount?.formulae);
+            }
             public Vector3Xml arrayInstances = (Vector3Xml)Vector3.one;
             public Vector3Xml arraySpacing = new();
             [XmlAttribute] public WETextDataTransform.ArrayInstancingAxisOrder arrayAxisOrder;
@@ -278,6 +295,12 @@ namespace BelzontWE
             [XmlElement] public FormulaeFloat3Xml scale = new() { defaultValue = (Vector3Xml)new Vector3(1, 1, 1) };
             [XmlElement] public FormulaeFloat3Xml offsetPosition;
             [XmlElement] public FormulaeFloat3Xml offsetRotation;
+            public void PreCompileFormulas()
+            {
+                WEFormulaeHelper.WarmCache<float3>(scale?.formulae);
+                WEFormulaeHelper.WarmCache<float3>(offsetPosition?.formulae);
+                WEFormulaeHelper.WarmCache<float3>(offsetRotation?.formulae);
+            }
 
             public bool ShouldSerializescale() => scale.defaultValue != Vector3.one || scale.ShouldSerializeformulae();
             public bool ShouldSerializeoffsetPosition() => offsetPosition != null && (offsetPosition.ShouldSerializedefaultValue() || offsetPosition.ShouldSerializeformulae());
@@ -310,6 +333,11 @@ namespace BelzontWE
             [XmlAttribute] public string fontName;
             [XmlAttribute][DefaultValue(false)] public bool rescaleHeightOnTextOverflow;
             [XmlElement] public FormulaeStringXml text;
+            public void PreCompileFormulas()
+            {
+                WEFormulaeHelper.WarmCache<string>(text?.formulae);
+                WEFormulaeHelper.WarmCache<float>(MaxWidthMeters?.formulae);
+            }
             [XmlAttribute("maxWidthMeters")]
             [DefaultValue(default(float))]
             public float maxWidthMeters
@@ -366,6 +394,11 @@ namespace BelzontWE
             private const int CURRENT_VERSION = 2;
             [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.Image;
             [XmlAttribute] public string atlas;
+            public void PreCompileFormulas()
+            {
+                WEFormulaeHelper.WarmCache<string>(mesh?.formulae);
+                WEFormulaeHelper.WarmCache<string>(image?.formulae);
+            }
             [XmlAttribute("mesh")]
             [DefaultValue("")]
             public string meshAttribute
@@ -418,6 +451,7 @@ namespace BelzontWE
             private const int CURRENT_VERSION = 0;
             [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.Placeholder;
             [XmlElement] public FormulaeStringXml layout;
+            public void PreCompileFormulas() => WEFormulaeHelper.WarmCache<string>(layout?.formulae);
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
                 writer.Write(CURRENT_VERSION);
@@ -452,6 +486,19 @@ namespace BelzontWE
             [XmlElement] public FormulaeColorRgbXml colorMask1 = new() { defaultValue = Color.white };
             [XmlElement] public FormulaeColorRgbXml colorMask2 = new() { defaultValue = Color.white };
             [XmlElement] public FormulaeColorRgbXml colorMask3 = new() { defaultValue = Color.white };
+            public void PreCompileFormulas()
+            {
+                WEFormulaeHelper.WarmCache<Color>(color?.formulae);
+                WEFormulaeHelper.WarmCache<Color>(emissiveColor?.formulae);
+                WEFormulaeHelper.WarmCache<float>(metallic?.formulae);
+                WEFormulaeHelper.WarmCache<float>(smoothness?.formulae);
+                WEFormulaeHelper.WarmCache<float>(emissiveIntensity?.formulae);
+                WEFormulaeHelper.WarmCache<float>(emissiveExposureWeight?.formulae);
+                WEFormulaeHelper.WarmCache<float>(coatStrength?.formulae);
+                WEFormulaeHelper.WarmCache<Color>(colorMask1?.formulae);
+                WEFormulaeHelper.WarmCache<Color>(colorMask2?.formulae);
+                WEFormulaeHelper.WarmCache<Color>(colorMask3?.formulae);
+            }
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
                 writer.Write(CURRENT_VERSION);
@@ -520,6 +567,14 @@ namespace BelzontWE
             [XmlAttribute] public bool affectSmoothness;
             [XmlAttribute] public float drawOrder;
             [XmlAttribute][DefaultValue(false)] public bool renderBackface = false;
+            public void PreCompileFormulas()
+            {
+                WEFormulaeHelper.WarmCache<Color>(color?.formulae);
+                WEFormulaeHelper.WarmCache<float>(metallic?.formulae);
+                WEFormulaeHelper.WarmCache<float>(smoothness?.formulae);
+                WEFormulaeHelper.WarmCache<float>(normalOpacity?.formulae);
+                WEFormulaeHelper.WarmCache<float>(metallicOpacity?.formulae);
+            }
 
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {
@@ -576,6 +631,16 @@ namespace BelzontWE
             [XmlElement] public FormulaeColorRgbaXml color = new() { defaultValue = Color.clear };
             [XmlElement] public FormulaeColorRgbXml glassColor = new() { defaultValue = Color.white };
             [XmlElement] public FormulaeFloatXml glassRefraction = new() { defaultValue = 1 };
+            public void PreCompileFormulas()
+            {
+                WEFormulaeHelper.WarmCache<Color>(color?.formulae);
+                WEFormulaeHelper.WarmCache<Color>(glassColor?.formulae);
+                WEFormulaeHelper.WarmCache<float>(glassRefraction?.formulae);
+                WEFormulaeHelper.WarmCache<float>(metallic?.formulae);
+                WEFormulaeHelper.WarmCache<float>(smoothness?.formulae);
+                WEFormulaeHelper.WarmCache<float>(normalStrength?.formulae);
+                WEFormulaeHelper.WarmCache<float>(glassThickness?.formulae);
+            }
             [XmlElement] public FormulaeFloatXml metallic;
             [XmlElement] public FormulaeFloatXml smoothness;
             [XmlElement] public FormulaeFloatXml normalStrength;

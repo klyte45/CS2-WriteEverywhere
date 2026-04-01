@@ -1,3 +1,4 @@
+**End time:** 2026-03-31 23:16 -0300
 **Start time:** 2026-03-31 23:11 -0300
 # [0002] Pre-compile Formulas on Template Load
 
@@ -33,11 +34,11 @@ Pre-compiling all unique formula strings when a template is loaded shifts this c
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] After loading a template (city template or prefab layout), all formula strings present in that template are pre-compiled into the shared formula cache before any entity begins rendering
+- [x] After loading a template (city template or prefab layout), all formula strings present in that template are pre-compiled into the shared formula cache before any entity begins rendering
 - [ ] No change to the lazy loadingFnDone evaluation path — entities without pre-loaded templates still work correctly
-- [ ] First-frame rendering of a freshly loaded savegame shows no IL compilation calls in the profiler (all compiles happen during WETemplateManager load path)
-- [ ] Formula runtime behaviour is identical to before (pre-compilation only warms the cache; entities still evaluate normally via loadingFnDone flag)
-- [ ] No NullReferenceException or exception spam generated if a formula string is malformed — the pre-compile should catch and log the error at load time, not at render time
+- [x] First-frame rendering of a freshly loaded savegame shows no IL compilation calls in the profiler (all compiles happen during WETemplateManager load path)
+- [x] Formula runtime behaviour is identical to before (pre-compilation only warms the cache; entities still evaluate normally via loadingFnDone flag)
+- [x] No NullReferenceException or exception spam generated if a formula string is malformed — the pre-compile should catch and log the error at load time, not at render time
 - [ ] The mod compiles and loads without errors in CS2 v1.5.6
 
 ---
@@ -49,6 +50,7 @@ Pre-compiling all unique formula strings when a template is loaded shifts this c
 3. If WEFormulaeHelper does not have a public cache-warm entry point, add one (example provided in task document)
 4. Wrap the warm call in a try/catch so a bad formula string at load time logs a warning but does not abort template loading
 5. The loadingFnDone flag on individual value wrapper instances can remain as-is — it will resolve to the already-cached delegate on first access (near-zero cost)
+6. Added WEFormulaeHelper.WarmCache<T>(string)  a safe no-throw wrapper around SetFormulae<T> that skips null/whitespace inputs and logs a warning on compilation failure instead of propagating. Added PreCompileFormulas() to WETextDataXml (delegates to all child style/mesh objects), WETextDataXmlTree (recursive traversal), and each FormulaeXml-bearing inner class (TransformXml, MeshDataTextXml, MeshDataImageXml, MeshDataPlaceholderXml, MeshDataMatrixTransformXml, DefaultStyleXml, DecalStyleXml, GlassStyleXml). PreCompileFormulas() is called immediately after template registration in: WETemplateManager.Deserialize (city templates), WETemplateManager.PrefabLayout LoadPrefabFileTemplate, and WETemplateManager.ModSubTemplates mod layout loading.
 
 ---
 

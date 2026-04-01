@@ -83,6 +83,7 @@ namespace BelzontWE
 
                         var templateName = Path.GetFileName(fileItem)[..^(SIMPLE_LAYOUT_EXTENSION.Length + 1)];
                         list[templateName] = tree;
+                        tree.PreCompileFormulas();
 
                         if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded subtemplate \"{displayName}\"");
                     }

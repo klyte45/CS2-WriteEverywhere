@@ -268,7 +268,7 @@ namespace BelzontWE
                     }
                 }
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {tree} from {fileItem[SAVED_PREFABS_FOLDER.Length..]}");
-            }
+                tree.PreCompileFormulas();            }
             else if (modId != null)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"An integration mod have a broken template for prefab '{prefabName}' (File at: '{fileItem}'). Contact the developer of the corrupted file to get assistance ({validationResults})");

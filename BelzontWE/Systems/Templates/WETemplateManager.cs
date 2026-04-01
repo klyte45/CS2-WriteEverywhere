@@ -78,7 +78,11 @@ namespace BelzontWE
             {
                 reader.Read(out string key);
                 reader.ReadNullCheck(out WETextDataXmlTree dataTree);
-                if (dataTree is not null) RegisteredTemplates[key] = dataTree;
+                if (dataTree is not null)
+                {
+                    RegisteredTemplates[key] = dataTree;
+                    dataTree.PreCompileFormulas();
+                }
             }
             reader.Read(out int lengthInstances);
             for (var i = 0; i < lengthInstances; i++)
