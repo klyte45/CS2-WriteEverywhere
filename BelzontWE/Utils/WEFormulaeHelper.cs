@@ -78,6 +78,17 @@ namespace BelzontWE
         public static FormulaeFn<Color> GetCachedColorFn(string formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached.Fn : null;
         public static FormulaeFn<IList<Entity>> GetCachedEntityArrayFn(string formulae) => cachedFnsEntityArray.TryGetValue(formulae, out var cached) ? cached.Fn : null;
 
+        public static FormulaeFn<T> GetCachedFn<T>(string formulae)
+        {
+            if (typeof(T) == typeof(string)) return (FormulaeFn<T>)(object)GetCachedStringFn(formulae);
+            if (typeof(T) == typeof(float)) return (FormulaeFn<T>)(object)GetCachedFloatFn(formulae);
+            if (typeof(T) == typeof(int)) return (FormulaeFn<T>)(object)GetCachedIntFn(formulae);
+            if (typeof(T) == typeof(float3)) return (FormulaeFn<T>)(object)GetCachedFloat3Fn(formulae);
+            if (typeof(T) == typeof(Color)) return (FormulaeFn<T>)(object)GetCachedColorFn(formulae);
+            if (typeof(T) == typeof(IList<Entity>)) return (FormulaeFn<T>)(object)GetCachedEntityArrayFn(formulae);
+            return null;
+        }
+
         public static void WarmCache<T>(string formulaString)
         {
             if (string.IsNullOrWhiteSpace(formulaString)) return;

@@ -1,11 +1,8 @@
-﻿using Belzont.Interfaces;
-using Belzont.Utils;
+﻿using Belzont.Utils;
 using Colossal.OdinSerializer.Utilities;
-using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
-using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE
 {
@@ -18,6 +15,13 @@ namespace BelzontWE
         public FixedString512Bytes EffectiveValue { get; private set; }
         private bool loadingFnDone;
         private bool runtimeErrorLogged;
+
+        private static readonly WEFormulaeEvalCore.EvalConfig<string> s_config = new()
+        {
+            nullFnFallback = "<InvalidFn2>",
+            errorFallback = "<ERROR>",
+            postProcess = v => v?.ToString().Trim().Truncate(500) ?? "<InvlidFn1>",
+        };
 
         public string Formulae
         {
@@ -62,36 +66,15 @@ namespace BelzontWE
         }
         public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity, string oldEffText, Dictionary<string, string> vars)
         {
-            InitializedEffectiveText = true;
-            var loadedFnNow = false;
-            if (!loadingFnDone)
-            {
-                if (formulaeStrBnk > 0)
-                {
-                    formulaeCompilationStatus = SetFormulae(Formulae, out _);
-                }
-                loadedFnNow = loadingFnDone = true;
-                runtimeErrorLogged = false;
-            }
-            try
-            {
-                EffectiveValue = formulaeStrBnk > 0
-                    ? WEFormulaeHelper.GetCachedStringFn(Formulae) is FormulaeFn<string> fn
-                        ? (fn(em, geometryEntity, vars)?.ToString().Trim().Truncate(500) ?? "<InvlidFn1>")
-                        : "<InvalidFn2>"
-                    : DefaultValue;
-            }
-            catch (Exception e)
-            {
-                if (!runtimeErrorLogged)
-                {
-                    runtimeErrorLogged = true;
-                    formulaeCompilationStatus = 255;
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Runtime error in string formulae @{geometryEntity}: {e}");
-                }
-                EffectiveValue = "<ERROR>";
-            }
-            return loadedFnNow || EffectiveValue.ToString() != oldEffText;
+            var initEff = InitializedEffectiveText;
+            string effVal = EffectiveValue.ToString();
+            var loadedOrChanged = WEFormulaeEvalCore.TryEvaluate(
+                ref formulaeStrBnk, ref formulaeCompilationStatus, ref loadingFnDone,
+                ref runtimeErrorLogged, ref initEff, DefaultValue, ref effVal,
+                em, geometryEntity, vars, in s_config);
+            InitializedEffectiveText = initEff;
+            EffectiveValue = effVal;
+            return loadedOrChanged || EffectiveValue.ToString() != oldEffText;
         }
     }
 }

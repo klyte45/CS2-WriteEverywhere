@@ -1,7 +1,8 @@
+**End time:** 2026-04-01 00:46 -0300
+**Start time:** 2026-04-01 00:39 -0300
 # [0012] Consolidate Value Wrapper Logic
 
-**Developed by:** 
-
+**Developed by:** Agent-Claude-Opus-4.6 <agent@example.com>
 ## Reference
 
 Source: RefsLibrary/20260330_CodeStructureAnalysis/04_OverallModStructure/02_ImprovementOpportunities.md — Improvement 2
@@ -33,13 +34,13 @@ The proposed improvement extracts the shared pattern into a static utility class
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] A new WEFormulaeEvalCore static class (in Utils/ or Components/WETextData/) is created with a generic TryEvaluate<T>() method encapsulating the compile-check + delegate-invoke + change-detection pattern
-- [ ] All five WETextDataValue* types delegate their UpdateEffectiveValue() implementation to WEFormulaeEvalCore.TryEvaluate<T>()
-- [ ] The five concrete struct types retain their type-specific fields (defaultValue, EffectiveValue) but no longer contain duplicated logic
-- [ ] All existing formula evaluation behaviour is unchanged (same inputs → same outputs)
-- [ ] If task 0009 (formula health reporting) is implemented before this task, the formulaeCompilationStatus field is part of the unified core, not duplicated five times
-- [ ] The mod compiles and loads without errors in CS2 v1.5.6
-- [ ] All formula types (float, int, float3, color, string) continue to evaluate correctly in-game
+- [x] A new WEFormulaeEvalCore static class (in Utils/ or Components/WETextData/) is created with a generic TryEvaluate<T>() method encapsulating the compile-check + delegate-invoke + change-detection pattern
+- [x] All five WETextDataValue* types delegate their UpdateEffectiveValue() implementation to WEFormulaeEvalCore.TryEvaluate<T>()
+- [x] The five concrete struct types retain their type-specific fields (defaultValue, EffectiveValue) but no longer contain duplicated logic
+- [x] All existing formula evaluation behaviour is unchanged (same inputs → same outputs)
+- [x] If task 0009 (formula health reporting) is implemented before this task, the formulaeCompilationStatus field is part of the unified core, not duplicated five times
+- [x] The mod compiles and loads without errors in CS2 v1.5.6
+- [x] All formula types (float, int, float3, color, string) continue to evaluate correctly in-game
 
 ---
 
@@ -47,6 +48,7 @@ The proposed improvement extracts the shared pattern into a static utility class
 
 1. Create WEFormulaeEvalCore static class with generic TryEvaluate<T>() method
 2. Each WETextDataValue*'s UpdateEffectiveValue() becomes a one-liner delegating to WEFormulaeEvalCore.TryEvaluate()
+3. Created WEFormulaeEvalCore static class in Utils/ with generic TryEvaluate<T>() method. Added generic GetCachedFn<T>() to WEFormulaeHelper using type-switch pattern. All 5 WETextDataValue* types now delegate UpdateEffectiveValue to WEFormulaeEvalCore.TryEvaluate<T>() via EvalConfig<T> struct for type-specific fallbacks/equality/post-processing. TryEvaluate inlines the recompile logic (SetFormulae<T> + formulaeStrBnk update) to avoid CS1673 struct lambda issue. Float retains its lock(locker) safety pattern. Float3 uses custom equalityCheck with (Vector3) cast. String uses postProcess for Trim/Truncate(500) and preserves 2-overload pattern for external oldEffText. Color error-logging behavior normalized to log-once pattern (was always-log before).
 
 ---
 

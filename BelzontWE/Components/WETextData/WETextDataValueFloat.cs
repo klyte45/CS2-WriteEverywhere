@@ -1,6 +1,4 @@
-﻿using Belzont.Interfaces;
-using Belzont.Utils;
-using Colossal.OdinSerializer.Utilities;
+﻿using Colossal.OdinSerializer.Utilities;
 using System;
 using System.Collections.Generic;
 using Unity.Entities;
@@ -19,6 +17,12 @@ namespace BelzontWE
         private bool runtimeErrorLogged;
 
         private static readonly object locker = new();
+
+        private static readonly WEFormulaeEvalCore.EvalConfig<float> s_config = new()
+        {
+            nullFnFallback = float.NaN,
+            errorFallback = float.NaN,
+        };
 
         public string Formulae
         {
@@ -47,40 +51,19 @@ namespace BelzontWE
 
         public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity, Dictionary<string, string> vars)
         {
-            InitializedEffectiveText = true;
-            var loadedFnNow = false;
-            if (!loadingFnDone)
-            {
-                if (formulaeStrBnk > 0)
-                {
-                    formulaeCompilationStatus = SetFormulae(Formulae, out _);
-                }
-                loadedFnNow = loadingFnDone = true;
-                runtimeErrorLogged = false;
-            }
-            var oldValue = EffectiveValue;
+            var initEff = InitializedEffectiveText;
+            var effVal = EffectiveValue;
+            bool result;
             lock (locker)
             {
-                try
-                {
-                    EffectiveValue = formulaeStrBnk > 0
-                        ? WEFormulaeHelper.GetCachedFloatFn(Formulae) is FormulaeFn<float> fn
-                            ? fn(em, geometryEntity, vars)
-                            : float.NaN
-                        : defaultValue;
-                }
-                catch (Exception e)
-                {
-                    EffectiveValue = float.NaN;
-                    if (!runtimeErrorLogged)
-                    {
-                        runtimeErrorLogged = true;
-                        formulaeCompilationStatus = 255;
-                        if (BasicIMod.DebugMode) LogUtils.DoLog($"Runtime error in float formulae @{geometryEntity}: {e}");
-                    }
-                }
+                result = WEFormulaeEvalCore.TryEvaluate(
+                    ref formulaeStrBnk, ref formulaeCompilationStatus, ref loadingFnDone,
+                    ref runtimeErrorLogged, ref initEff, defaultValue, ref effVal,
+                    em, geometryEntity, vars, in s_config);
             }
-            return loadedFnNow || EffectiveValue != oldValue;
+            InitializedEffectiveText = initEff;
+            EffectiveValue = effVal;
+            return result;
         }
     }
 }
