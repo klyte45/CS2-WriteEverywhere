@@ -37,9 +37,9 @@ This analysis task must produce a clear Go / No-Go decision before execution tas
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] All five analysis questions are answered with references to specific files and line numbers
-- [ ] A clear Go or No-Go recommendation is written with rationale
-- [ ] If Go: a concrete implementation plan is written for task 0007 (which methods move, to which phase, how job handles are passed between phases)
+- [x] All five analysis questions are answered with references to specific files and line numbers
+- [x] A clear Go or No-Go recommendation is written with rationale
+- [x] If Go: a concrete implementation plan is written for task 0007 (which methods move, to which phase, how job handles are passed between phases)
 - [ ] If No-Go: task 0007 is marked Canceled (Z) and the reason is documented in this file as an addendum
 - [ ] Analysis findings are written as an addendum section at the bottom of this file
 
@@ -47,7 +47,7 @@ This analysis task must produce a clear Go / No-Go decision before execution tas
 
 ## Implementation Notes
 
-
+1. NO-GO DECISION: FontServer pipeline is tightly coupled via mutating shared state (glyph dictionary, atlas version, atlas texture). No safe split point exists between glyph prep (main-thread write) and job scheduling (reader). Moving entire RunJobs to PreSim might work but provides no overlap benefit since glyph rasterization dominates cost and cannot be parallelized. Full analysis documented in task addendum.
 
 ---
 
@@ -71,3 +71,52 @@ This analysis task must produce a clear Go / No-Go decision before execution tas
 ### Is parent of
 
 - [0007]
+
+---
+
+## Analysis Addendum — FontServer Job Scheduling Deep Dive
+
+### Q1: What data does FontServer mutate before scheduling the job?
+
+**Primary mutations (main-thread only):**
+1. **Glyph rasterization** (FontSystem.cs ~lines 285–305): `GetGlyph()` calls `Font.RenderGlyphBitmap()` (FreeType call), populates `glyphs[codepoint]` hashmap with glyph metadata (position, advance, dimensions, UV bounds).
+2. **Atlas state modifications** (FontAtlas.cs ~lines 162–182): `AddRect()` allocates space in skyline data structure; `RenderGlyph()` writes pixel data to Texture2D via `SetPixels()`; `Version++` incremented after each glyph render; `IsPendingApply = true`.
+3. **Kerning pair computation** (FontSystem.cs ~lines 313–317): `GetKerning()` pre-computes kerning between glyph pairs.
+4. **Text cache state** (FontSystem.cs ~line 317): Sets `m_textCache[text] = LOADING_PLACEHOLDER` before scheduling.
+
+**Critical invariant:** All glyph data, atlas UV coordinates, and atlas texture pixels are complete before job scheduling. The job receives a read-only snapshot.
+
+### Q2: What data does FontServer output, and when is it consumed?
+
+**Output structure** (BasicRenderInformationJob): `vertices[]`, `colors[]`, `uv1[]`, `triangles[]`, `m_YAxisOverflows`, `m_fontBaseLimits`, `AtlasVersion`.
+
+**Consumption timing — same frame, synchronous:**
+1. `dependency.Complete()` blocks main thread until all StringRenderingJobs complete.
+2. `PostJob()` immediately processes results from `results` queue.
+3. Constructs `PrimitiveRenderInformation` wrapper and stores in `m_textCache[originalText]`.
+4. GPU `Apply()` happens via `FontServer.UpdateFontSystem()`.
+
+**Downstream consumer:** `WEPostRendererSystem` (AllowedPhase.EndFrame) queries `WEWaitingRendering` entities, calls `font.FontSystem.DrawText(text)` → retrieves from `m_textCache`.
+
+### Q3: Is the atlas-state mutation separable from job scheduling?
+
+**No.** The job's `Execute()` reads `glyphs[codepoint].x`, `.y`, and `AtlasVersion`. These are written during the pre-schedule glyph prep phase. If they mutate after scheduling but before execution, the job operates on stale data — wrong UV coordinates, corrupted rendering, or atlas version mismatch.
+
+### Q4: Frame-time cost — steady state vs. initial load
+
+**Steady state:** ~0µs per frame. `RunJobs()` returns early when `itemsQueue.Count < 256` and `framesBuffering ≤ 60`.
+
+**Initial load:** Per string (with new characters): glyph prep 1–10 ms (main-thread, FreeType), StringRenderingJob 0.1–2 ms (parallel), PostJob 0.01–0.1 ms (main-thread), GPU Apply 0.5–5 ms (main-thread). Up to 256 strings/frame batched.
+
+### Q5: Thread-safety constraints preventing early scheduling
+
+Multiple critical constraints: glyph hashmap is main-thread write / job read with no synchronization; atlas version is bumped during RenderGlyph and captured at schedule time; m_textCache has no lock and relies on sequential main-thread access; CurrentAtlasFull event (atlas expansion) can fire between schedule and execute, invalidating glyph coordinates.
+
+### Decision: NO-GO
+
+**Rationale:** The pipeline is tightly coupled via mutating shared state (glyph dictionary, atlas version, atlas texture). There is no safe split point. Concrete failure scenarios:
+- Atlas expansion in Rendering phase → job uses old glyph coordinates after resize
+- New glyphs added in Rendering → job's hashmap doesn't contain them → silently skips
+- Version mismatch → PostJob invalidates result → retry increases latency
+
+**Consequence:** Task [0007] (FontServer Job Scheduling Execution) should be cancelled.
