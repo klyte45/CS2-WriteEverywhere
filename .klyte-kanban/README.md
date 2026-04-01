@@ -1,4 +1,4 @@
-<!-- kk-workspace-version: 0.5.0 -->
+<!-- kk-workspace-version: 1.0.0 -->
 # Task project workspace  - Klyte Kanban CLI format
 
 This folder is used to organize all actionable improvement tasks to be done on the project.
@@ -170,6 +170,7 @@ Run `kk schema task` to see the full JSON schema.
 | `TASK_NOT_READY` | The task is not in a state that allows this operation. |
 | `MISSING_ARGUMENT` | A required argument or option was not provided. |
 | `DEVELOPER_CONFLICT` | The developer name conflicts with the existing assignment. |
+| `DOD_INCOMPLETE` |  |
 
 ## Mutable data
 

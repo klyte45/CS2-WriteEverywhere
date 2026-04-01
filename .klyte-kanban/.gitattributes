@@ -1,0 +1,8 @@
+# Enforce consistent LF line endings for all text files in this workspace
+* text=auto eol=lf
+
+# Explicitly mark markdown and config files as text with LF
+*.md text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
