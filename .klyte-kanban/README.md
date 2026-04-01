@@ -1,4 +1,4 @@
-<!-- kk-workspace-version: 0.3.0 -->
+<!-- kk-workspace-version: 0.5.0 -->
 # Task project workspace  - Klyte Kanban CLI format
 
 This folder is used to organize all actionable improvement tasks to be done on the project.
@@ -101,6 +101,32 @@ stateDiagram-v2
     note right of N : unstarted N tasks become U<BR/>(Uninitialized) on sprint close<BR/>and a new N task is created in Backlog
 ```
 
+## `kk task update` — JSON to CLI flag mapping
+
+When using `kk task update <id> --from-json <file>`, the JSON fields map to individual CLI flags as shown below.
+Run `kk schema task` to see the full JSON schema.
+
+| JSON Field | CLI Flag | Example |
+|------------|----------|---------|
+| `background` | `--background <text>` | `--background "Context info"` |
+| `userStory.role` | `--user-story-role <text>` | `--user-story-role "a developer"` |
+| `userStory.want` | `--user-story-want <text>` | `--user-story-want "fast builds"` |
+| `userStory.benefit` | `--user-story-benefit <text>` | `--user-story-benefit "save time"` |
+| `dor` | `--dor-add <text>` / `--dor-remove <idx>` / `--dor-check <idx>` / `--dor-uncheck <idx>` | `--dor-add "Scope confirmed"` |
+| `dod` | `--dod-add <text>` / `--dod-remove <idx>` / `--dod-check <idx>` / `--dod-uncheck <idx>` | `--dod-add "Tests pass"` |
+| `implementationNotes` | `--implementation-note <text>` (repeatable) | `--implementation-note "Add handler"` |
+| `riskAssessment` | *(JSON-only — no individual CLI flag)* | `--from-json patch.json` |
+| `relatedTasks.dependsOn` | `--depends-on <ref>` (repeatable) | `--depends-on "[0042]"` |
+| `relatedTasks.isDependentFor` | `--is-dependent-for <ref>` (repeatable) | `--is-dependent-for "[0043]"` |
+| `relatedTasks.isRelatedTo` | `--is-related-to <ref>` (repeatable) | `--is-related-to "[0044]"` |
+| `relatedTasks.groupsWith` | `--groups-with <ref>` (repeatable) | `--groups-with "[0045]"` |
+| `relatedTasks.isParentOf` | `--is-parent-of <ref>` (repeatable) | `--is-parent-of "[0046]"` |
+| `relatedTasks.isChildOf` | `--is-child-of <ref>` (repeatable) | `--is-child-of "[0047]"` |
+| `relatedTasks.overflownFrom` | *(system-managed — rejected in \`--from-json\`)* | — |
+| `relatedTasks.overflownTo` | *(system-managed — rejected in \`--from-json\`)* | — |
+
+> **Note:** `overflownFrom` and `overflownTo` are system-managed and will be rejected if included in a `--from-json` payload.
+
 ## Error codes reference
 
 | Code | Description |
@@ -135,4 +161,4 @@ stateDiagram-v2
 ## Mutable data
 
 - Last task ID: 0016
-- Last sprint number: 000
+- Last sprint number: 001
