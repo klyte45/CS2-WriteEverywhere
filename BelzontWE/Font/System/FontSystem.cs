@@ -31,6 +31,7 @@ namespace BelzontWE.Font
         private GCHandle dataPointer;
 
         public NativeHashMap<int, NativeHashMap<int, FontGlyph>> _glyphs;
+        private NativeHashMap<long, int> m_kerningTable;
 
         private FontAtlas _currentAtlas;
         private Vector2Int _size;
@@ -77,6 +78,7 @@ namespace BelzontWE.Font
             ClearState();
             itemsQueueWriter = itemsQueue.AsParallelWriter();
             dataPointer = GCHandle.Alloc(data);
+            m_kerningTable = new NativeHashMap<long, int>(512, Allocator.Persistent);
         }
 
         public void ClearState()
@@ -146,6 +148,7 @@ namespace BelzontWE.Font
             Data.Font.RecalculateBasedOnHeight(FontServer.QualitySize);
             CurrentAtlas.Reset(width, height);
             if (_glyphs.IsCreated) _glyphs.Clear();
+            if (m_kerningTable.IsCreated) m_kerningTable.Clear();
             m_textCache.Clear();
             if (width == _size.x && height == _size.y)
             {
@@ -349,6 +352,7 @@ namespace BelzontWE.Font
         public void Dispose()
         {
             if (_glyphs.IsCreated) _glyphs.Dispose();
+            if (m_kerningTable.IsCreated) m_kerningTable.Dispose();
             if (itemsQueue.IsCreated) itemsQueue.Dispose();
             if (results.IsCreated) results.Dispose();
             if (dataPointer.IsAllocated) dataPointer.Free();
@@ -429,7 +433,8 @@ namespace BelzontWE.Font
                     {
                         if (glyphs[x.prev.value].IsValid && glyphs[x.next.value].IsValid)
                         {
-                            glyphs[x.prev.value].GetKerning(glyphs[x.next.value]);
+                            var prevGlyph = glyphs[x.prev.value];
+                            prevGlyph.GetKerning(glyphs[x.next.value], ref m_kerningTable);
                         }
                     });
                     var job = new StringRenderingJob
@@ -442,6 +447,7 @@ namespace BelzontWE.Font
                         CurrentAtlasSize = new Vector3(CurrentAtlas.Width, CurrentAtlas.Height),
                         inputArray = itemsStarted.AsReadOnly(),
                         glyphs = glyphs,
+                        kerningTable = m_kerningTable.AsReadOnly(),
                         output = results.AsParallelWriter(),
                         AtlasVersion = CurrentAtlas.Version,
                         scale = FontServer.Instance.ScaleEffective,

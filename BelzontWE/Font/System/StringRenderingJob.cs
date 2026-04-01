@@ -31,6 +31,7 @@ namespace BelzontWE.Font
             public NativeArray<StringRenderingQueueItem>.ReadOnly inputArray;
 
             public NativeHashMap<int, FontGlyph> glyphs;
+            public NativeHashMap<long, int>.ReadOnly kerningTable;
             public Vector3 CurrentAtlasSize;
             public uint AtlasVersion;
             public Vector3 scale;
@@ -297,7 +298,7 @@ namespace BelzontWE.Font
             {
                 if (prevGlyph.IsValidSimple)
                 {
-                    float adv = prevGlyph.GetKerningCached(glyph) * fontScale;
+                    float adv = prevGlyph.GetKerningCached(glyph, kerningTable) * fontScale;
 
                     x += (int)(((adv + 0) * spacingFactor) + 0.5f);
                 }

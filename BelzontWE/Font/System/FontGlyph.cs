@@ -10,8 +10,6 @@ namespace BelzontWE.Font
 
         public static readonly FontGlyph Null = new FontGlyph();
 
-        private NativeHashMap<int, int> _kernings;
-
         public int Codepoint;
         public int Index;
         public int Height;
@@ -47,37 +45,35 @@ namespace BelzontWE.Font
 
         public bool AtlasGenerated { get; internal set; }
 
-        public int GetKerning(FontGlyph nextGlyph)
+        /// <summary>
+        /// Populates kerning for this glyph pair into the font-level kerning table.
+        /// Key encoding: ((long)this.Index &lt;&lt; 32) | (uint)nextGlyph.Index
+        /// </summary>
+        public int GetKerning(FontGlyph nextGlyph, ref NativeHashMap<long, int> kerningTable)
         {
             if (Font?._font is null) return 0;
-            if (!_kernings.IsCreated)
-            {
-                _kernings = new NativeHashMap<int, int>(1, Allocator.Persistent);
-            }
-            if (_kernings.TryGetValue(nextGlyph.Index, out int result))
+            long key = ((long)Index << 32) | (uint)nextGlyph.Index;
+            if (kerningTable.TryGetValue(key, out int result))
             {
                 return result;
             }
             result = Font._font.stbtt_GetGlyphKernAdvance(Index, nextGlyph.Index);
-            _kernings.Add(nextGlyph.Index, result);
+            kerningTable.Add(key, result);
 
             return result;
         }
 
-        public int GetKerningCached(FontGlyph nextGlyph)
+        public readonly int GetKerningCached(FontGlyph nextGlyph, NativeHashMap<long, int>.ReadOnly kerningTable)
         {
-            if (!_kernings.IsCreated)
-            {
-                _kernings = new NativeHashMap<int, int>(1, Allocator.Persistent);
-            }
-            return _kernings.TryGetValue(nextGlyph.Index, out int result) ? result : 0;
+            long key = ((long)Index << 32) | (uint)nextGlyph.Index;
+            return kerningTable.TryGetValue(key, out int result) ? result : 0;
         }
 
         public static int PadFromBlur(int blur) => blur + 2;
 
         public void Dispose()
         {
-            _kernings.Dispose();
+            if (fontAddr.IsAllocated) fontAddr.Free();
         }
 
         public override string ToString() => $"Glyph#{Index}: x{x} y{y} w{width} h{height} xA{XAdvance} xO{XOffset} yO{YOffset}";
