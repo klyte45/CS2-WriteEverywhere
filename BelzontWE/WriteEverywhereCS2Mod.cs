@@ -20,6 +20,46 @@ namespace BelzontWE
 
         public override void DoOnCreateWorld(UpdateSystem updateSystem)
         {
+            // ┌──────────────────────────────────────────────────────────────────────────┐
+            // │              SYSTEM DEPENDENCY GRAPH — Write Everywhere                  │
+            // │  Update this comment when adding, moving, or removing systems.           │
+            // ├──────────────────────────────────────────────────────────────────────────┤
+            // │                                                                          │
+            // │  Phase: UITooltip                                                        │
+            // │    WEWorldPickerTooltip → reads WEWorldPickerTool hover state            │
+            // │                                                                          │
+            // │  Phase: ModificationEnd                                                  │
+            // │    WEWorldPickerController → reads WEWorldPickerTool selection            │
+            // │                                                                          │
+            // │  Phase: UIUpdate                                                         │
+            // │    WEUISystem          → toggles WEWorldPickerTool via keyboard          │
+            // │    WEMainUISystem      → registers UI panel (no WE deps)                 │
+            // │    WELayoutController  → reads WETemplateManager, WEWorldPickerController│
+            // │    WETemplateQuerySystem → reads WETemplateManager (on-demand queries)   │
+            // │                                                                          │
+            // │  Phase: Rendering (ordered)                                              │
+            // │    FontServer          → produces font data (no WE deps)                 │
+            // │    WEAtlasesLibrary    → produces texture atlases (no WE deps)           │
+            // │    WECustomMeshLibrary → produces custom meshes (no WE deps)             │
+            // │    WETemplateManager   → produces templates; reads WETemplateQuerySystem  │
+            // │      ↓ [UpdateAfter]                                                     │
+            // │    WETemplateUpdateSystem → reads WETemplateManager; writes WETextData   │
+            // │      ↓ [UpdateAfter]                                                     │
+            // │    WEPrefabLayoutSystem  → reads WETemplateManager; loads prefab layouts │
+            // │                                                                          │
+            // │  Phase: PreCulling                                                       │
+            // │    WEPreCullingSystem → reads WEWorldPickerTool, WEWorldPickerController │
+            // │                         produces m_availToDraw for WERendererSystem       │
+            // │                                                                          │
+            // │  Phase: Cleanup                                                          │
+            // │    WETemplateDisposalSystem → disposes orphaned WETextData components    │
+            // │                                                                          │
+            // │  Self-registered (EndFrame via BelzontBasicSystem):                      │
+            // │    WERendererSystem       → reads WEPreCullingSystem, WEWorldPicker*     │
+            // │    WEPostRendererSystem   → reads WETemplateManager; resolves text/image │
+            // │    WEEmissiveLightSystem  → reads WEPreCullingSystem; emissive lighting  │
+            // │                                                                          │
+            // └──────────────────────────────────────────────────────────────────────────┘
             updateSystem.UpdateAfter<WEWorldPickerTooltip>(SystemUpdatePhase.UITooltip);
 
             updateSystem.UpdateAt<WEWorldPickerController>(SystemUpdatePhase.ModificationEnd);

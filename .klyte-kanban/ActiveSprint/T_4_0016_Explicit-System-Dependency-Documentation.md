@@ -1,3 +1,4 @@
+**End time:** 2026-04-01 02:27 -0300
 **Start time:** 2026-04-01 02:06 -0300
 # [0016] Explicit System Dependency Documentation
 
@@ -32,11 +33,11 @@ This is a documentation-only change. Zero behavioral impact.
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] A comment block is added at the top of DoOnCreateWorld() (or immediately before the registration calls) that lists: Each ECS phase used by the mod; Under each phase: the systems registered in that phase, in execution order; For each system: its downstream data consumers (one-line annotation)
-- [ ] The comment is accurate as of the time of writing (matches current system registrations)
-- [ ] If tasks 0003 or 0004 are completed before this task, the comment reflects the updated phase assignments
-- [ ] No code changes — documentation only
-- [ ] Project compiles without errors (comments do not affect compilation)
+- [x] A comment block is added at the top of DoOnCreateWorld() (or immediately before the registration calls) that lists: Each ECS phase used by the mod; Under each phase: the systems registered in that phase, in execution order; For each system: its downstream data consumers (one-line annotation)
+- [x] The comment is accurate as of the time of writing (matches current system registrations)
+- [x] If tasks 0003 or 0004 are completed before this task, the comment reflects the updated phase assignments
+- [x] No code changes — documentation only
+- [x] Project compiles without errors (comments do not affect compilation)
 
 ---
 
