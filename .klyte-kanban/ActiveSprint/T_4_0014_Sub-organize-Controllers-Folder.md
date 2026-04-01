@@ -1,3 +1,4 @@
+**End time:** 2026-04-01 01:43 -0300
 **Start time:** 2026-04-01 01:41 -0300
 # [0014] Sub-organize Controllers/ Folder
 
@@ -33,13 +34,13 @@ This is a folder reorganization only. No logic changes are required.
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Controllers/Base/ contains WEBindableSystemBase.cs and WETextDataBaseController.cs
-- [ ] Controllers/Data/ contains WETextDataMainController.cs, WETextDataMaterialController.cs, WETextDataMeshController.cs, WETextDataTransformController.cs
-- [ ] Controllers/Library/ contains WEFontManagementController.cs, WECustomMeshLibraryController.cs, WETextureAtlasController.cs
-- [ ] Remaining 6 files remain at Controllers/ root level
-- [ ] No namespace declarations are changed
-- [ ] Project compiles without errors
-- [ ] Git history preserves file moves (use git mv)
+- [x] Controllers/Base/ contains WEBindableSystemBase.cs and WETextDataBaseController.cs
+- [x] Controllers/Data/ contains WETextDataMainController.cs, WETextDataMaterialController.cs, WETextDataMeshController.cs, WETextDataTransformController.cs
+- [x] Controllers/Library/ contains WEFontManagementController.cs, WECustomMeshLibraryController.cs, WETextureAtlasController.cs
+- [x] Remaining 6 files remain at Controllers/ root level
+- [x] No namespace declarations are changed
+- [x] Project compiles without errors
+- [x] Git history preserves file moves (use git mv)
 
 ---
 
