@@ -13,9 +13,11 @@ namespace BelzontWE
     {
         private int defaultValueStrBnk;
         private int formulaeStrBnk;
+        public byte formulaeCompilationStatus;
         public bool InitializedEffectiveText { get; private set; }
         public FixedString512Bytes EffectiveValue { get; private set; }
         private bool loadingFnDone;
+        private bool runtimeErrorLogged;
 
         public string Formulae
         {
@@ -46,7 +48,7 @@ namespace BelzontWE
                 errorFmtArgs = null;
                 return 0;
             }
-            var result = WEFormulaeHelper.SetFormulae<string>(newFormulae ?? "", out errorFmtArgs, out var value, out var resultFormulaeFn);
+            var result = formulaeCompilationStatus = WEFormulaeHelper.SetFormulae<string>(newFormulae ?? "", out errorFmtArgs, out var value, out var resultFormulaeFn);
             if (result == 0)
             {
                 Formulae = value;
@@ -66,9 +68,10 @@ namespace BelzontWE
             {
                 if (formulaeStrBnk > 0)
                 {
-                    SetFormulae(Formulae, out _);
+                    formulaeCompilationStatus = SetFormulae(Formulae, out _);
                 }
                 loadedFnNow = loadingFnDone = true;
+                runtimeErrorLogged = false;
             }
             try
             {
@@ -80,9 +83,11 @@ namespace BelzontWE
             }
             catch (Exception e)
             {
-                if (BasicIMod.VerboseMode)
+                if (!runtimeErrorLogged)
                 {
-                    LogUtils.DoWarnLog($"ERROR LOADING VALUE AT ENTITY! {geometryEntity} old = {oldEffText}\n{e}");
+                    runtimeErrorLogged = true;
+                    formulaeCompilationStatus = 255;
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Runtime error in string formulae @{geometryEntity}: {e}");
                 }
                 EffectiveValue = "<ERROR>";
             }

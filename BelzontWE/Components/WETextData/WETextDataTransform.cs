@@ -160,6 +160,12 @@ namespace BelzontWE
             return changed;
         }
 
+        public readonly void CollectFormulaHealth(Dictionary<string, int> result)
+        {
+            result["transform.mustDraw"] = mustDrawFn.formulaeCompilationStatus;
+            result["transform.instanceCount"] = instanceCount.formulaeCompilationStatus;
+        }
+
         public static WETextDataTransform CreateDefault(Entity target, Entity? parent = null)
             => new()
             {

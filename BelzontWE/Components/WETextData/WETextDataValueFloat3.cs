@@ -1,4 +1,7 @@
-﻿using Colossal.OdinSerializer.Utilities;
+﻿using Belzont.Interfaces;
+using Belzont.Utils;
+using Colossal.OdinSerializer.Utilities;
+using System;
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -11,9 +14,11 @@ namespace BelzontWE
     {
         public float3 defaultValue;
         private int formulaeStrBnk;
+        public byte formulaeCompilationStatus;
         public bool InitializedEffectiveText { get; private set; }
         public float3 EffectiveValue { get; private set; }
         private bool loadingFnDone;
+        private bool runtimeErrorLogged;
         public string Formulae
         {
             get => WEStringsBank.Instance[formulaeStrBnk];
@@ -31,7 +36,7 @@ namespace BelzontWE
                 errorFmtArgs = null;
                 return 0;
             }
-            var result = SetFormulae<float3>(newFormulae ?? "", out errorFmtArgs, out var value, out var resultFormulaeFn);
+            var result = formulaeCompilationStatus = SetFormulae<float3>(newFormulae ?? "", out errorFmtArgs, out var value, out var resultFormulaeFn);
             if (result == 0)
             {
                 Formulae = value;
@@ -47,9 +52,10 @@ namespace BelzontWE
             {
                 if (formulaeStrBnk > 0)
                 {
-                    SetFormulae(Formulae, out _);
+                    formulaeCompilationStatus = SetFormulae(Formulae, out _);
                 }
                 loadedFnNow = loadingFnDone = true;
+                runtimeErrorLogged = false;
             }
             var oldValue = EffectiveValue;
             try
@@ -60,9 +66,15 @@ namespace BelzontWE
                         : new float3(float.NaN, float.NaN, float.NaN)
                     : defaultValue;
             }
-            catch
+            catch (Exception e)
             {
                 EffectiveValue = new float3(float.NaN, float.NaN, float.NaN);
+                if (!runtimeErrorLogged)
+                {
+                    runtimeErrorLogged = true;
+                    formulaeCompilationStatus = 255;
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"Runtime error in float3 formulae @{geometryEntity}: {e}");
+                }
             }
             return loadedFnNow || (Vector3)EffectiveValue != (Vector3)oldValue;
         }

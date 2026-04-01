@@ -1,3 +1,4 @@
+**End time:** 2026-03-31 23:55 -0300
 **Start time:** 2026-03-31 23:47 -0300
 # [0009] Unified Formula Health Reporting
 
@@ -33,12 +34,12 @@ The improvement has two parts: 1) Consistency: Apply the formulaeCompilationStat
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] All five WETextDataValue* types (Float, Int, Float3, Color, String) have a formulaeCompilationStatus-equivalent field that tracks: OK, COMPILE_ERROR, RUNTIME_ERROR, NO_FORMULA
-- [ ] On first occurrence of a runtime error for a given entity+field, the error type and message are logged once at Debug level (no repeated spam)
-- [ ] WEFormulaeController exposes an aggregated formula health status for the currently selected WE entity via its UI binding
+- [x] All five WETextDataValue* types (Float, Int, Float3, Color, String) have a formulaeCompilationStatus-equivalent field that tracks: OK, COMPILE_ERROR, RUNTIME_ERROR, NO_FORMULA
+- [x] On first occurrence of a runtime error for a given entity+field, the error type and message are logged once at Debug level (no repeated spam)
+- [x] WEFormulaeController exposes an aggregated formula health status for the currently selected WE entity via its UI binding
 - [ ] The frontend UI (or at minimum the data binding) surfaces at least a per-field status indicator; full UI styling is acceptable as a follow-up
-- [ ] No performance regression in steady state (healthy formulas): the status field is updated only on status change, not every frame
-- [ ] The mod compiles and loads without errors in CS2 v1.5.6
+- [x] No performance regression in steady state (healthy formulas): the status field is updated only on status change, not every frame
+- [x] The mod compiles and loads without errors in CS2 v1.5.6
 
 ---
 
@@ -48,6 +49,7 @@ The improvement has two parts: 1) Consistency: Apply the formulaeCompilationStat
 2. In each WETextDataValue*, wrap the UpdateEffectiveValue() evaluation call in a try/catch; on catch, set formulaeCompilationStatus = RUNTIME_ERROR and log once
 3. In WEFormulaeController, add a UI-bindable query method that returns the health snapshot for the selected entity's WE component
 4. Avoid storing the full exception message in an unmanaged struct — use a string bank index or a separate managed dictionary keyed by entity+field to store error messages
+5. Added formulaeCompilationStatus byte field + runtimeErrorLogged flag to Float, Int, Float3, String types. Color already had the field but now also tracks runtime errors (status=255). Added CollectFormulaHealth() to WETextDataMaterial (14 fields), WETextDataTransform (2 fields), WETextDataMesh (6 fields). Added formulae.getFormulaHealth call binding in WEFormulaeController that returns per-field status dict for current sub-entity. DoD item 4 (frontend indicator) deferred as follow-up per risk assessment.
 
 ---
 

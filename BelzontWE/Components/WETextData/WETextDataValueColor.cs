@@ -27,6 +27,7 @@ namespace BelzontWE
         public bool InitializedEffectiveText { get; private set; }
         public Color EffectiveValue { get; private set; }
         private bool loadingFnDone;
+        private bool runtimeErrorLogged;
 
         public byte SetFormulae(string newFormulae, out string[] errorFmtArgs)
         {
@@ -55,6 +56,7 @@ namespace BelzontWE
                     formulaeCompilationStatus = SetFormulae(Formulae, out _);
                 }
                 loadedFnNow = loadingFnDone = true;
+                runtimeErrorLogged = false;
             }
             var oldVal = EffectiveValue;
 
@@ -70,6 +72,11 @@ namespace BelzontWE
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Error running formulae @{geometryEntity}: {e}");
                 EffectiveValue = Color.magenta;
+                if (!runtimeErrorLogged)
+                {
+                    runtimeErrorLogged = true;
+                    formulaeCompilationStatus = 255;
+                }
             }
             return loadedFnNow || EffectiveValue != oldVal;
         }

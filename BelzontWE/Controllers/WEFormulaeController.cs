@@ -29,6 +29,7 @@ namespace BelzontWE
             callBinder($"{PREFIX}isTypeIndexable", IsTypeIndexable);
             callBinder($"{PREFIX}listVariablesOnCurrentEntity", ListVariablesOnCurrentEntity);
             callBinder($"{PREFIX}setVariablesOnCurrentEntity", SetVariablesOnCurrentEntity);
+            callBinder($"{PREFIX}getFormulaHealth", GetFormulaHealth);
         }
 
         protected override void OnCreate()
@@ -287,6 +288,27 @@ namespace BelzontWE
             }
 
             return true;
+        }
+
+        private Dictionary<string, int> GetFormulaHealth()
+        {
+            var targetEntity = m_weToolController.CurrentSubEntity.Value;
+            if (targetEntity == Entity.Null) return null;
+
+            var result = new Dictionary<string, int>();
+            if (EntityManager.TryGetComponent<WETextDataMaterial>(targetEntity, out var material))
+            {
+                material.CollectFormulaHealth(result);
+            }
+            if (EntityManager.TryGetComponent<WETextDataTransform>(targetEntity, out var transform))
+            {
+                transform.CollectFormulaHealth(result);
+            }
+            if (EntityManager.TryGetComponent<WETextDataMesh>(targetEntity, out var mesh))
+            {
+                mesh.CollectFormulaHealth(result);
+            }
+            return result;
         }
 
     }

@@ -196,6 +196,17 @@ namespace BelzontWE
             if (result) templateDirty = dirty = true;
             return result;
         }
+
+        public readonly void CollectFormulaHealth(Dictionary<string, int> result)
+        {
+            result["mesh.valueData"] = valueData.formulaeCompilationStatus;
+            result["mesh.customMeshName"] = CustomMeshName.formulaeCompilationStatus;
+            result["mesh.maxWidthMeters"] = MaxWidthMeters.formulaeCompilationStatus;
+            result["mesh.offsetPosition"] = OffsetPositionFormulae.formulaeCompilationStatus;
+            result["mesh.offsetRotation"] = OffsetRotationFormulae.formulaeCompilationStatus;
+            result["mesh.scale"] = ScaleFormulae.formulaeCompilationStatus;
+        }
+
         public static Entity GetTargetEntityEffective(Entity target, EntityManager em, bool fullRecursive = false)
         {
             return em.TryGetComponent<WETextDataMain>(target, out var weDataMain) && em.TryGetComponent<WETextDataMesh>(target, out var weDataMesh)

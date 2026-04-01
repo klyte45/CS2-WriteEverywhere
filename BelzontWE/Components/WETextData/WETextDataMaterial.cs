@@ -129,6 +129,24 @@ namespace BelzontWE
               | colorMask3.UpdateEffectiveValue(em, geometryEntity, vars);
         }
 
+        public readonly void CollectFormulaHealth(Dictionary<string, int> result)
+        {
+            result["material.color"] = color.formulaeCompilationStatus;
+            result["material.emissiveColor"] = emissiveColor.formulaeCompilationStatus;
+            result["material.glassColor"] = glassColor.formulaeCompilationStatus;
+            result["material.normalStrength"] = normalStrength.formulaeCompilationStatus;
+            result["material.glassRefraction"] = glassRefraction.formulaeCompilationStatus;
+            result["material.metallic"] = metallic.formulaeCompilationStatus;
+            result["material.smoothness"] = smoothness.formulaeCompilationStatus;
+            result["material.emissiveIntensity"] = emissiveIntensity.formulaeCompilationStatus;
+            result["material.emissiveExposureWeight"] = emissiveExposureWeight.formulaeCompilationStatus;
+            result["material.coatStrength"] = coatStrength.formulaeCompilationStatus;
+            result["material.glassThickness"] = glassThickness.formulaeCompilationStatus;
+            result["material.colorMask1"] = colorMask1.formulaeCompilationStatus;
+            result["material.colorMask2"] = colorMask2.formulaeCompilationStatus;
+            result["material.colorMask3"] = colorMask3.formulaeCompilationStatus;
+        }
+
         public readonly void UpdateDefaultMaterial(Material material, WESimulationTextType textType)
         {
             material.SetFloat("_DoubleSidedEnable", renderBackface ? 1 : 0);
