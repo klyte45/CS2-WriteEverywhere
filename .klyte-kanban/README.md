@@ -19,6 +19,12 @@ The project can be built using the command line with MSBuild:
 
 It will run frontend and backends builds, and also copy the mod files into the game mods folder for testing.
 
+### Self identification e-mail
+
+Shall be an address hosted at @kwyt.com.br. Example: `user@kwyt.com.br`
+
+If you are an AI agent, use your engine name and version as the local part (before the @) to help identify the source of task updates in email notifications.
+
 ### After ending a sprint
 
 Additionally to the usual workflow via `npx kk`, manual testing will be required. So every sprint should end with a testing plan to be run by QA, and the results should be documented in the task files and/or in the `RefsLibrary/` as needed.
