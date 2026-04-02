@@ -29,6 +29,10 @@ If you are an AI agent, use your engine name and version as the local part (befo
 
 Additionally to the usual workflow via `npx kk`, manual testing will be required. So every sprint should end with a testing plan to be run by QA, and the results should be documented in the task files and/or in the `RefsLibrary/` as needed.
 
+### `RefsLibrary/` usage guidelines
+
+When adding a new research conetent here, always name the folder that holds all the related files with the pattern `YYYYMMDDHH_descriptive-title/` to ensure chronological ordering and easy reference from tasks. For example, `2024061509_mod-architecture-research/`.
+
 ## Folder structure
 
 ### ActiveSprint/
