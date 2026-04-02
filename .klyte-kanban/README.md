@@ -1,4 +1,4 @@
-<!-- kk-workspace-version: 1.1.3-0 -->
+<!-- kk-workspace-version: 1.2.0 -->
 # Task project workspace  - Klyte Kanban CLI format
 
 This folder is used to organize all actionable improvement tasks to be done on the project.
@@ -184,5 +184,5 @@ Run `kk schema task` to see the full JSON schema.
 
 ## Mutable data
 
-- Last task ID: 0078
+- Last task ID: 0086
 - Last sprint number: 004
