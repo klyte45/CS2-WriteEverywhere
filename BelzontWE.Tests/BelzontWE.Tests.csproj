@@ -20,19 +20,19 @@
   <ItemGroup Condition="'$(_GameDllsAvailable)' == 'true'">
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(GameManagedPath)\UnityEngine.CoreModule.dll</HintPath>
-      <Private>true</Private>
+      <Private>false</Private>
     </Reference>
     <Reference Include="Unity.Entities">
       <HintPath>$(GameManagedPath)\Unity.Entities.dll</HintPath>
-      <Private>true</Private>
+      <Private>false</Private>
     </Reference>
     <Reference Include="Unity.Collections">
       <HintPath>$(GameManagedPath)\Unity.Collections.dll</HintPath>
-      <Private>true</Private>
+      <Private>false</Private>
     </Reference>
     <Reference Include="Unity.Mathematics">
       <HintPath>$(GameManagedPath)\Unity.Mathematics.dll</HintPath>
-      <Private>true</Private>
+      <Private>false</Private>
     </Reference>
   </ItemGroup>
 
