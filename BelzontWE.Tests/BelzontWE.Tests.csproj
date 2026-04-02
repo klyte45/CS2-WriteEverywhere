@@ -36,10 +36,6 @@
     </Reference>
   </ItemGroup>
 
-  <Target Name="WarnIfGameDllsNotFound" BeforeTargets="BeforeBuild" Condition="'$(_GameDllsAvailable)' != 'true'">
-    <Warning Text="Game DLLs not found at '$(GameManagedPath)'. Set CSII_MANAGEDPATH to the game's Managed/ folder. Game-dependent tests will be skipped." />
-  </Target>
-
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.4.2" />
@@ -55,22 +51,5 @@
     <!-- Project-to-project reference to the production code under test -->
     <ProjectReference Include="..\BelzontWE\BelzontWE.csproj" />
   </ItemGroup>
-
-  <!--
-    Run tests automatically after every Debug build.
-    Set RunTests=false on the command line to skip: dotnet build /p:RunTests=false
-  -->
-  <Target Name="RunTestsAfterBuild" AfterTargets="Build"
-          Condition="'$(Configuration)' == 'Debug' And '$(RunTests)' != 'false'">
-    <!-- Verify dotnet CLI is on PATH before attempting to run tests -->
-    <Exec Command="where.exe dotnet" IgnoreExitCode="true"
-          StandardOutputImportance="low" StandardErrorImportance="low">
-      <Output TaskParameter="ExitCode" PropertyName="_DotnetOnPath" />
-    </Exec>
-    <Warning Text="dotnet CLI not found on PATH; skipping automatic test run."
-             Condition="'$(_DotnetOnPath)' != '0'" />
-    <Exec Command="dotnet test &quot;$(MSBuildProjectFullPath)&quot; --no-build --configuration $(Configuration) --nologo"
-          Condition="'$(_DotnetOnPath)' == '0'" />
-  </Target>
 
 </Project>

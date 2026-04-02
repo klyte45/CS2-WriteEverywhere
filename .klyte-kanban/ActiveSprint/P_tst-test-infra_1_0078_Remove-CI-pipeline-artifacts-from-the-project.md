@@ -22,11 +22,11 @@ During Sprint 002, two tasks (TI-06 and TI-07) created CI/MSBuild pipeline artif
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Delete .github/workflows/tests.yml
-- [ ] Delete .github/workflows/ folder if empty; delete .github/ folder if empty
-- [ ] Remove the RunTestsAfterBuild <Target> block from BelzontWE.Tests.csproj
-- [ ] Remove the WarnIfGameDllsNotFound <Target> block if it was only relevant to CI scenario
-- [ ] MSBuild.exe BelzontWE.sln /p:Configuration=Debug still builds successfully
+- [x] Delete .github/workflows/tests.yml
+- [x] Delete .github/workflows/ folder if empty; delete .github/ folder if empty
+- [x] Remove the RunTestsAfterBuild <Target> block from BelzontWE.Tests.csproj
+- [x] Remove the WarnIfGameDllsNotFound <Target> block if it was only relevant to CI scenario
+- [x] MSBuild.exe BelzontWE.sln /p:Configuration=Debug still builds successfully
 - [ ] dotnet test BelzontWE.Tests/BelzontWE.Tests.csproj reports 1 test passed (smoke test)
 
 ---
