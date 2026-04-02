@@ -1,3 +1,4 @@
+**End time:** 2026-04-02 02:18 -0300
 **Start time:** 2026-04-02 02:16 -0300
 # [0024] Smoke test: validate full test pipeline end-to-end
 
