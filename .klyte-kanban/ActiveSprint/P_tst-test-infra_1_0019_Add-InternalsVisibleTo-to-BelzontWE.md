@@ -1,7 +1,7 @@
+**Start time:** 2026-04-02 01:14 -0300
 # [0019] Add InternalsVisibleTo to BelzontWE
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a test author**, I want **to access internal members of BelzontWE from the test project**, so that I **internal helpers and state can be observed in tests without forcing them to be public**.
