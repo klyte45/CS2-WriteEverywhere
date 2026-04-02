@@ -24,9 +24,9 @@ Task TI-08. Create PipelineSmokeTests.cs with AlwaysPasses() and a toggle-fail s
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] PipelineSmokeTests.cs has AlwaysPasses() returning Assert.Pass()
-- [ ] Running dotnet test shows 1 passed or more
-- [ ] Smoke test file documents what NuGet packages and assemblies were successfully resolved
+- [x] PipelineSmokeTests.cs has AlwaysPasses() returning Assert.Pass()
+- [x] Running dotnet test shows 1 passed or more
+- [x] Smoke test file documents what NuGet packages and assemblies were successfully resolved
 
 ---
 
