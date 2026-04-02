@@ -24,10 +24,10 @@ Task TI-05. Embed a small free-license TTF file in the test assembly. Provide Te
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] A small (~50KB) free-license TTF placed under BelzontWE.Tests/Fixtures/Fonts/
-- [ ] The font file is set as EmbeddedResource in the .csproj
-- [ ] TestFontFixture helper class provides byte[] GetTestFontBytes() using Assembly.GetManifestResourceStream
-- [ ] Verified: Font.FromMemory(TestFontFixture.GetTestFontBytes()) does not throw
+- [x] A small (~50KB) free-license TTF placed under BelzontWE.Tests/Fixtures/Fonts/
+- [x] The font file is set as EmbeddedResource in the .csproj
+- [x] TestFontFixture helper class provides byte[] GetTestFontBytes() using Assembly.GetManifestResourceStream
+- [x] Verified: Font.FromMemory(TestFontFixture.GetTestFontBytes()) does not throw
 
 ---
 
