@@ -1,3 +1,4 @@
+**End time:** 2026-04-02 01:17 -0300
 **Start time:** 2026-04-02 01:16 -0300
 # [0020] Create test folder structure and naming conventions doc
 
