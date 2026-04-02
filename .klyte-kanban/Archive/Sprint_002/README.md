@@ -10,10 +10,10 @@ A working dotnet test pipeline with zero test content — after this sprint, wri
 
 - **Sprint number**: 002
 - **Start date**: 2026-04-02 00:57 -0300
-- **End date**:
+- **End date**: 2026-04-02 02:18 -0300
 - **Original tasks**: 00
 - **Original task IDs**: (none)
-- **Delivered tasks (from original)**:
+- **Delivered tasks (from original)**: 0
 - **Added tasks**: 8
-- **Delivered tasks (from added)**:
-- **Total delivered tasks**:
+- **Delivered tasks (from added)**: 8
+- **Total delivered tasks**: 8
