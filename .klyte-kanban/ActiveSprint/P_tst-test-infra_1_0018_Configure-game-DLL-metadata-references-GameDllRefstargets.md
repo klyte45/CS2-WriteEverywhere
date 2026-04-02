@@ -24,11 +24,11 @@ Task TI-02. Create GameDllRefs.targets MSBuild props file. Reference critical ga
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] GameDllRefs.targets MSBuild props file created under _Build/
-- [ ] Game install path set via environment variable or Directory.Build.props local override (not committed)
-- [ ] BelzontWE.Tests.csproj imports GameDllRefs.targets
-- [ ] UnityEngine.CoreModule.dll, Unity.Entities.dll, Unity.Collections.dll, Unity.Mathematics.dll resolve
-- [ ] If game path not found, build emits warning but does not fail
+- [x] GameDllRefs.targets MSBuild props file created under _Build/
+- [x] Game install path set via environment variable or Directory.Build.props local override (not committed)
+- [x] BelzontWE.Tests.csproj imports GameDllRefs.targets
+- [x] UnityEngine.CoreModule.dll, Unity.Entities.dll, Unity.Collections.dll, Unity.Mathematics.dll resolve
+- [x] If game path not found, build emits warning but does not fail
 
 ---
 
