@@ -1,7 +1,8 @@
+**End time:** 2026-04-02 20:36 -0300
+**Start time:** 2026-04-02 20:34 -0300
 # [0052] Tests for WEImageInfoXml.cs and IO/WETextItemResume.cs
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **tests for the remaining XML/DTO types**, so that I **the IO layer coverage is complete**.
@@ -24,8 +25,8 @@ Task IX-06. Test WEImageInfoXml XML serialization round-trip for sprite info. Te
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Font/Sprites/WEImageInfoXmlTests.cs exists: XML serialization round-trip for sprite info (name, rect, float2 values)
-- [ ] IO/WETextItemResumeTests.cs exists: field assignment verification
+- [x] Font/Sprites/WEImageInfoXmlTests.cs exists: XML serialization round-trip for sprite info (name, rect, float2 values)
+- [x] IO/WETextItemResumeTests.cs exists: field assignment verification
 
 ---
 
