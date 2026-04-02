@@ -16,23 +16,23 @@
     <DefineConstants Condition="'$(_GameDllsAvailable)' == 'true'">GAME_DLLS_AVAILABLE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
-  <!-- Metadata-only game assembly references for compilation; not copied to output -->
+  <!-- Game assembly references — copied to output so tests can load them at runtime -->
   <ItemGroup Condition="'$(_GameDllsAvailable)' == 'true'">
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(GameManagedPath)\UnityEngine.CoreModule.dll</HintPath>
-      <Private>false</Private>
+      <Private>true</Private>
     </Reference>
     <Reference Include="Unity.Entities">
       <HintPath>$(GameManagedPath)\Unity.Entities.dll</HintPath>
-      <Private>false</Private>
+      <Private>true</Private>
     </Reference>
     <Reference Include="Unity.Collections">
       <HintPath>$(GameManagedPath)\Unity.Collections.dll</HintPath>
-      <Private>false</Private>
+      <Private>true</Private>
     </Reference>
     <Reference Include="Unity.Mathematics">
       <HintPath>$(GameManagedPath)\Unity.Mathematics.dll</HintPath>
-      <Private>false</Private>
+      <Private>true</Private>
     </Reference>
   </ItemGroup>
 
@@ -50,6 +50,13 @@
   <ItemGroup>
     <!-- Project-to-project reference to the production code under test -->
     <ProjectReference Include="..\BelzontWE\BelzontWE.csproj" />
+  </ItemGroup>
+
+  <!-- TTF font fixture embedded for font reader tests -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\BelzontWE\Resources\SourceSansPro-Regular.ttf">
+      <LogicalName>TestFont.ttf</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>
