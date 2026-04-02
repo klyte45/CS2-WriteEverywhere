@@ -1,7 +1,8 @@
+**End time:** 2026-04-02 20:33 -0300
+**Start time:** 2026-04-02 20:24 -0300
 # [0049] Tests for WESelflessTextDataTree.cs (round-trip + null safety)
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **tests for the alternative XML tree format**, so that I **the secondary serialization path is equally regression-proof**.
@@ -24,8 +25,8 @@ Task IX-03. Test the alternative XML tree format: round-trip fidelity, null safe
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] IO/WESelflessTextDataTreeTests.cs exists with >=6 tests
-- [ ] Tests cover: round-trip fidelity, null safety on FromXML, structural XML element names
+- [x] IO/WESelflessTextDataTreeTests.cs exists with >=6 tests
+- [x] Tests cover: round-trip fidelity, null safety on FromXML, structural XML element names
 
 ---
 
