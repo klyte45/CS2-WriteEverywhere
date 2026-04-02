@@ -1,0 +1,54 @@
+# [0060] Tests for WEColorsFn.cs - pure color conversion (if any)
+
+**Developed by:** 
+
+## User Story
+
+> Acting as **a developer**, I want **to verify whether WEColorsFn has any pure color conversion logic worth testing**, so that I **pure color conversion logic is tested if present; un-testable code is documented**.
+
+---
+
+## Background
+
+[See epic: tst-builtin-fn](..\RefsLibrary\2026040123_testing-action-plan\epics\06_Epic_builtin-fn.md)
+
+Task BF-07. Review WEColorsFn for any pure color conversion logic (HSV, color math). If found: create WEColorsFnTests.cs. If not: document why file is F-tier in a stub test file.
+
+---
+
+## Definition of Ready (DoR)
+
+
+
+---
+
+## Acceptance Criteria / Definition of Done (DoD)
+
+- [ ] WEColorsFn.cs reviewed for any pure computation (HSV conversion, color math)
+- [ ] If pure logic found: BuiltinFn/WEColorsFnTests.cs created with appropriate tests
+- [ ] If no pure logic found: note added to WEColorsFnTests.cs explaining why file is F-tier
+
+---
+
+## Implementation Notes
+
+
+
+---
+
+## Risk Assessment
+
+| Risk | Likelihood | Mitigation |
+|------|-----------|------------|
+
+---
+
+## Related Tasks
+
+### Depends on
+
+
+
+### Is dependent for
+
+

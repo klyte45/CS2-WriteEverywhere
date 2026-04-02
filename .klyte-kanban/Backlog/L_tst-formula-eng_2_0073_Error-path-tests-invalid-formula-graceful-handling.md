@@ -1,0 +1,53 @@
+# [0073] Error path tests: invalid formula graceful handling
+
+**Developed by:** 
+
+## User Story
+
+> Acting as **a developer**, I want **tests that verify the formulae engine's error handling**, so that I **invalid user formulae fail gracefully (display fallback text, not crash)**.
+
+---
+
+## Background
+
+[See epic: tst-formula-eng](..\RefsLibrary\2026040123_testing-action-plan\epics\08_Epic_formulae-engine.md)
+
+Task FE-06. Test formulae engine error handling: empty formula, non-existent function name, wrong argument count, null result->empty string, deeply nested/recursive formula (cycle or depth limit). Verify error fallback values from WETextDataValueString.s_config.
+
+---
+
+## Definition of Ready (DoR)
+
+
+
+---
+
+## Acceptance Criteria / Definition of Done (DoD)
+
+- [ ] Tests for: empty formula string evaluation, formula referencing non-existent function, formula with wrong argument count, formula producing null result handled as empty string, deeply nested/recursive formula (cycle detection or depth limit)
+- [ ] Error fallback values from WETextDataValueString.s_config are verified
+
+---
+
+## Implementation Notes
+
+
+
+---
+
+## Risk Assessment
+
+| Risk | Likelihood | Mitigation |
+|------|-----------|------------|
+
+---
+
+## Related Tasks
+
+### Depends on
+
+
+
+### Is dependent for
+
+

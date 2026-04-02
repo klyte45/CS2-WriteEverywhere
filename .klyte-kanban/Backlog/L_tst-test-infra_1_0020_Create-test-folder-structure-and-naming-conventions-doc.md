@@ -1,0 +1,54 @@
+# [0020] Create test folder structure and naming conventions doc
+
+**Developed by:** 
+
+## User Story
+
+> Acting as **the team**, I want **a documented, consistent folder structure for test files**, so that I **contributors know exactly where to place new tests**.
+
+---
+
+## Background
+
+[See epic: tst-test-infra](..\RefsLibrary\2026040123_testing-action-plan\epics\01_Epic_testing-infra.md)
+
+Task TI-04. Create BelzontWE.Tests/ folder structure mirroring BelzontWE/, add README.md with naming conventions, and create TestBase.cs with SetUp/TearDown hooks.
+
+---
+
+## Definition of Ready (DoR)
+
+
+
+---
+
+## Acceptance Criteria / Definition of Done (DoD)
+
+- [ ] BelzontWE.Tests/ mirrors BelzontWE/ folder structure (BuiltinFn/, Font/FileReader/, Components/WETextData/)
+- [ ] README.md inside BelzontWE.Tests/ explains: test file naming (<TestedClass>Tests.cs), test method naming (MethodName_Condition_ExpectedResult)
+- [ ] TestBase.cs created with [SetUp]/[TearDown] hooks for shared binding restoration
+
+---
+
+## Implementation Notes
+
+
+
+---
+
+## Risk Assessment
+
+| Risk | Likelihood | Mitigation |
+|------|-----------|------------|
+
+---
+
+## Related Tasks
+
+### Depends on
+
+
+
+### Is dependent for
+
+
