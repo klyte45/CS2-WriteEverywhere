@@ -200,5 +200,159 @@ namespace BelzontWE.Tests.Components
             mat.RenderBackface = false;
             Assert.IsTrue(GetDirty(mat));
         }
+
+        // ── Color setter ──────────────────────────────────────────────────
+
+        [Test]
+        public void Color_Setter_StoresValue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.Color = UnityEngine.Color.red;
+            Assert.AreEqual(UnityEngine.Color.red, mat.Color);
+        }
+
+        [Test]
+        public void Color_Setter_SetsDirtyTrue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.Color = UnityEngine.Color.blue;
+            Assert.IsTrue(GetDirty(mat));
+        }
+
+        [Test]
+        public void Color_Setter_OverwritesPreviousValue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.Color = UnityEngine.Color.red;
+            mat.Color = UnityEngine.Color.green;
+            Assert.AreEqual(UnityEngine.Color.green, mat.Color);
+        }
+
+        // ── EmissiveColor setter ──────────────────────────────────────────
+
+        [Test]
+        public void EmissiveColor_Setter_StoresValue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.EmissiveColor = UnityEngine.Color.yellow;
+            Assert.AreEqual(UnityEngine.Color.yellow, mat.EmissiveColor);
+        }
+
+        [Test]
+        public void EmissiveColor_Setter_SetsDirtyTrue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.EmissiveColor = UnityEngine.Color.cyan;
+            Assert.IsTrue(GetDirty(mat));
+        }
+
+        [Test]
+        public void EmissiveColor_Setter_OverwritesPreviousValue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.EmissiveColor = UnityEngine.Color.red;
+            mat.EmissiveColor = UnityEngine.Color.white;
+            Assert.AreEqual(UnityEngine.Color.white, mat.EmissiveColor);
+        }
+
+        // ── GlassColor, ColorMask setters store value ─────────────────────
+
+        [Test]
+        public void GlassColor_Setter_StoresValue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.GlassColor = UnityEngine.Color.magenta;
+            Assert.AreEqual(UnityEngine.Color.magenta, mat.GlassColor);
+        }
+
+        [Test]
+        public void ColorMask1_Setter_StoresValue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.ColorMask1 = UnityEngine.Color.red;
+            Assert.AreEqual(UnityEngine.Color.red, mat.ColorMask1);
+        }
+
+        [Test]
+        public void ColorMask2_Setter_StoresValue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.ColorMask2 = UnityEngine.Color.green;
+            Assert.AreEqual(UnityEngine.Color.green, mat.ColorMask2);
+        }
+
+        [Test]
+        public void ColorMask3_Setter_StoresValue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.ColorMask3 = UnityEngine.Color.blue;
+            Assert.AreEqual(UnityEngine.Color.blue, mat.ColorMask3);
+        }
+
+        // ── DecalFlags, AffectSmoothness, DrawOrder, UseGlobalLight dirty ─
+
+        [Test]
+        public void DecalFlags_Setter_SetsDirtyTrue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.DecalFlags = 4;
+            Assert.IsTrue(GetDirty(mat));
+        }
+
+        [Test]
+        public void DecalFlags_Setter_StoresValue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.DecalFlags = 12;
+            Assert.AreEqual(12, mat.DecalFlags);
+        }
+
+        [Test]
+        public void AffectSmoothness_Setter_SetsDirtyTrue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.AffectSmoothness = true;
+            Assert.IsTrue(GetDirty(mat));
+        }
+
+        [Test]
+        public void AffectSmoothness_Setter_StoresValue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.AffectSmoothness = true;
+            Assert.IsTrue(mat.AffectSmoothness);
+        }
+
+        [Test]
+        public void DrawOrder_Setter_SetsDirtyTrue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.DrawOrder = 5.5f;
+            Assert.IsTrue(GetDirty(mat));
+        }
+
+        [Test]
+        public void DrawOrder_Setter_StoresValue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.DrawOrder = 3.14f;
+            Assert.AreEqual(3.14f, mat.DrawOrder, 0.001f);
+        }
+
+        [Test]
+        public void UseGlobalLight_Setter_SetsDirtyTrue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.UseGlobalLight = true;
+            Assert.IsTrue(GetDirty(mat));
+        }
+
+        [Test]
+        public void UseGlobalLight_Setter_StoresValue()
+        {
+            var mat = new WETextDataMaterial();
+            mat.UseGlobalLight = true;
+            Assert.IsTrue(mat.UseGlobalLight);
+        }
     }
 }

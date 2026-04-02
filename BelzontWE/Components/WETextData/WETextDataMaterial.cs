@@ -42,8 +42,8 @@ namespace BelzontWE
         private bool useGlobalLight;
 
         public WEShader Shader { readonly get => shader; set { shader = value; ResetMaterial(); } }
-        public Color Color { readonly get => color.defaultValue; set { color.defaultValue = value; } }
-        public Color EmissiveColor { readonly get => emissiveColor.defaultValue; set { emissiveColor.defaultValue = value; } }
+        public Color Color { readonly get => color.defaultValue; set { color.defaultValue = value; dirty = true; } }
+        public Color EmissiveColor { readonly get => emissiveColor.defaultValue; set { emissiveColor.defaultValue = value; dirty = true; } }
         public Color GlassColor { readonly get => glassColor.defaultValue; set { glassColor.defaultValue = value; } }
         public float NormalStrength { readonly get => normalStrength.defaultValue; set { normalStrength.defaultValue = math.clamp(value, 0, 1); } }
         public float GlassRefraction { readonly get => glassRefraction.defaultValue; set { glassRefraction.defaultValue = math.clamp(value, 1, 1000); } }

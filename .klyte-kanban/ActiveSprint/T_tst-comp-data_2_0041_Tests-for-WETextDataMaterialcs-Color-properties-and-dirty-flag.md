@@ -1,7 +1,8 @@
+**End time:** 2026-04-02 18:39 -0300
+**Start time:** 2026-04-02 18:35 -0300
 # [0041] Tests for WETextDataMaterial.cs - Color properties and dirty flag
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **tests for Color and EmissiveColor setters that verify dirty-flag propagation**, so that I **dirty-flag propagation for color changes is verified (requires game DLL metadata reference)**.
@@ -24,9 +25,9 @@ Task CD-02. Tests for Color and EmissiveColor setters verifying dirty-flag propa
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Tests in WETextDataMaterialTests.cs verify: Color setter sets dirty=true, EmissiveColor setter sets dirty=true
-- [ ] Tests are behind #if GAME_DLLS_AVAILABLE if game DLL not present in CI
-- [ ] DEFAULT_DECAL_FLAGS == 8 contract test added
+- [x] Tests in WETextDataMaterialTests.cs verify: Color setter sets dirty=true, EmissiveColor setter sets dirty=true
+- [x] Tests are behind #if GAME_DLLS_AVAILABLE if game DLL not present in CI
+- [x] DEFAULT_DECAL_FLAGS == 8 contract test added
 
 ---
 
