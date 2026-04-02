@@ -11,7 +11,7 @@ namespace BelzontWE
 
         private readonly List<Dictionary<string, string>> listStorage = new() { new Dictionary<string, string>() };
         private readonly Dictionary<FixedString512Bytes, int> dictStorage = new() { [""] = 0 };
-        public Dictionary<string, string> this[int idx] => idx > listStorage.Count || idx < 0 ? null : listStorage[idx];
+        public Dictionary<string, string> this[int idx] => idx >= listStorage.Count || idx < 0 ? null : listStorage[idx];
 
         public int this[FixedString512Bytes str]
         {
