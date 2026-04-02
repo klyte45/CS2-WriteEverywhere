@@ -1,7 +1,7 @@
+**Start time:** 2026-04-02 00:59 -0300
 # [0017] Create BelzontWE.Tests project file (.csproj + solution reference)
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **a .csproj that targets net472, references BelzontWE.csproj, and declares NUnit + NSubstitute NuGet dependencies**, so that I **the build system can compile the test assembly**.
