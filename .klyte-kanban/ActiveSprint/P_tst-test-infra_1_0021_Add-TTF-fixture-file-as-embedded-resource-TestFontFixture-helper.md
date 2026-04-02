@@ -1,7 +1,7 @@
+**Start time:** 2026-04-02 01:18 -0300
 # [0021] Add TTF fixture file as embedded resource (TestFontFixture helper)
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a font test author**, I want **a small, free-license TTF file embedded in the test assembly**, so that I **FontInfo and Font tests can use real glyph data without depending on the game's font files**.
