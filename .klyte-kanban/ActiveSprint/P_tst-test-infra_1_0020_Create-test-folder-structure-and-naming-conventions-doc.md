@@ -24,9 +24,9 @@ Task TI-04. Create BelzontWE.Tests/ folder structure mirroring BelzontWE/, add R
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] BelzontWE.Tests/ mirrors BelzontWE/ folder structure (BuiltinFn/, Font/FileReader/, Components/WETextData/)
-- [ ] README.md inside BelzontWE.Tests/ explains: test file naming (<TestedClass>Tests.cs), test method naming (MethodName_Condition_ExpectedResult)
-- [ ] TestBase.cs created with [SetUp]/[TearDown] hooks for shared binding restoration
+- [x] BelzontWE.Tests/ mirrors BelzontWE/ folder structure (BuiltinFn/, Font/FileReader/, Components/WETextData/)
+- [x] README.md inside BelzontWE.Tests/ explains: test file naming (<TestedClass>Tests.cs), test method naming (MethodName_Condition_ExpectedResult)
+- [x] TestBase.cs created with [SetUp]/[TearDown] hooks for shared binding restoration
 
 ---
 
