@@ -1,3 +1,4 @@
+**End time:** 2026-04-02 05:03 -0300
 **Start time:** 2026-04-02 04:57 -0300
 # [0039] Tests for FontAtlas.cs and FontGlyph.cs (atlas node management)
 
@@ -24,8 +25,8 @@ Task FR-08. Test FontAtlas skyline bin-packer (InsertNode, RemoveNode, Expand, A
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Font/System/FontAtlasTests.cs exists with >=20 tests: InsertNode with array growth, RemoveNode with element shift, Expand (width-only, height-only), AddSkylineLevel node merge, AddRect success and overflow, Version increment on Reset()
-- [ ] Font/System/FontGlyphTests.cs exists with >=8 tests: PadFromBlur(0)==2, PadFromBlur(3)==5, xMax/yMax calculation, Null.IsValid==false, Font property setter/getter via GCHandle
+- [x] Font/System/FontAtlasTests.cs exists with >=20 tests: InsertNode with array growth, RemoveNode with element shift, Expand (width-only, height-only), AddSkylineLevel node merge, AddRect success and overflow, Version increment on Reset()
+- [x] Font/System/FontGlyphTests.cs exists with >=8 tests: PadFromBlur(0)==2, PadFromBlur(3)==5, xMax/yMax calculation, Null.IsValid==false, Font property setter/getter via GCHandle
 
 ---
 

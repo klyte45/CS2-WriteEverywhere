@@ -284,7 +284,8 @@ namespace BelzontWE.Font
 
         public bool IsDirty { get; private set; } = false;
 
-        public static readonly int _BaseColorMap = Shader.PropertyToID("_BaseColorMap");
+        private static int? _baseColorMapCache;
+        public static int _BaseColorMap => _baseColorMapCache ??= Shader.PropertyToID("_BaseColorMap");
 
 
         private void Blur(byte[] dst, int w, int h, int dstStride, int blur)
