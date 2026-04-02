@@ -1,7 +1,7 @@
+**Start time:** 2026-04-02 01:08 -0300
 # [0018] Configure game DLL metadata references (GameDllRefs.targets)
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **the test project to reference critical game assemblies as metadata-only references**, so that I **files with Unity types compile in the test assembly**.
