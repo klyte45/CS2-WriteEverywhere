@@ -1,7 +1,7 @@
+**Start time:** 2026-04-02 01:20 -0300
 # [0022] Integrate dotnet test into MSBuild workflow
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **to run all tests from the same MSBuild command used for the mod build**, so that I **the test suite runs automatically during local development builds**.
