@@ -1,7 +1,8 @@
+**End time:** 2026-04-02 18:50 -0300
+**Start time:** 2026-04-02 18:49 -0300
 # [0044] Tests for WETextDataValueString.cs and WETextDataValueColor.cs
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **tests for the string and color value formulae bindings**, so that I **their distinct behaviors (string default+IsEmpty, color fallbacks) are locked**.
@@ -24,8 +25,8 @@ Task CD-05. Test string DefaultValue round-trip, IsEmpty behavior, error fallbac
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Components/WETextData/WETextDataValueStringTests.cs exists: DefaultValue round-trip through WEStringsBank, IsEmpty true when both bank indices are 0, IsEmpty false after DefaultValue set, s_config errorFallback=="<ERROR>" and nullFnFallback=="<InvalidFn2>"
-- [ ] Components/WETextData/WETextDataValueColorTests.cs exists: Formulae round-trip, SetFormulae("") clears; color fallback values
+- [x] Components/WETextData/WETextDataValueStringTests.cs exists: DefaultValue round-trip through WEStringsBank, IsEmpty true when both bank indices are 0, IsEmpty false after DefaultValue set, s_config errorFallback=="<ERROR>" and nullFnFallback=="<InvalidFn2>"
+- [x] Components/WETextData/WETextDataValueColorTests.cs exists: Formulae round-trip, SetFormulae("") clears; color fallback values
 
 ---
 
