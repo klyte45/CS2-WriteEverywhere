@@ -1,7 +1,7 @@
+**Start time:** 2026-04-02 02:53 -0300
 # [0030] Tests for IO/WEStaticMethodDesc.cs and IO/WETypeMemberDesc.cs
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **tests for the formula/member descriptor factories**, so that I **the reflection-based discovery machinery that powers the formulae system's UI never silently breaks**.
