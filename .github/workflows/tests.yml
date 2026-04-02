@@ -1,0 +1,72 @@
+name: Tests
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  test:
+    name: Build & Test (net48, Windows)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          # .NET 8 SDK provides the dotnet CLI; net48 projects build via the
+          # bundled MSBuild on the windows-latest runner.
+          dotnet-version: '8.0.x'
+
+      # BelzontWE.csproj reads CSII_TOOLPATH and CSII_MANAGEDPATH via
+      # System.Environment.GetEnvironmentVariable(..., EnvironmentVariableTarget.User),
+      # which reads from the Windows registry (HKCU\Environment).
+      # Process-level env vars (workflow `env:`) are NOT visible that way, so we
+      # must write them to the user registry before invoking MSBuild.
+      - name: Point CSII env vars at CI stubs (user registry)
+        shell: pwsh
+        run: |
+          $stubRoot   = "${{ github.workspace }}\_CIStubs"
+          $managedDir = "$stubRoot\Managed"
+          [System.Environment]::SetEnvironmentVariable('CSII_TOOLPATH',    $stubRoot,   'User')
+          [System.Environment]::SetEnvironmentVariable('CSII_MANAGEDPATH', $managedDir, 'User')
+          Write-Host "CSII_TOOLPATH   -> $stubRoot"
+          Write-Host "CSII_MANAGEDPATH -> $managedDir"
+
+      # NOTE: Because CSII_MANAGEDPATH points to an empty folder, the game DLLs
+      # (UnityEngine.CoreModule, Unity.Entities, etc.) will NOT be found.
+      # The test project emits a "Game DLLs not found" MSBuild warning and
+      # the GAME_DLLS_AVAILABLE compile constant is NOT defined.
+      # Any code or tests guarded by  #if GAME_DLLS_AVAILABLE  is excluded
+      # from compilation and will not run in CI — this is intentional.
+      #
+      # WARNING: BelzontWE.csproj itself references game DLLs unconditionally.
+      # Full CI compilation requires either:
+      #   (a) real game DLLs available via a private NuGet feed or artifact, OR
+      #   (b) type-stub assemblies committed to _CIStubs/Managed/ (see that folder's README).
+      # Until then this build step will fail; the workflow structure is correct.
+
+      - name: Restore NuGet packages
+        run: dotnet restore BelzontWE.Tests/BelzontWE.Tests.csproj
+
+      - name: Build test project
+        # /p:RunTests=false prevents the AfterBuild target from running dotnet test
+        # during the build step; tests are run explicitly in the next step.
+        run: dotnet build BelzontWE.Tests/BelzontWE.Tests.csproj --no-restore --configuration Debug /p:RunTests=false
+
+      - name: Run tests
+        run: >
+          dotnet test BelzontWE.Tests/BelzontWE.Tests.csproj
+          --no-build
+          --configuration Debug
+          --logger "trx;LogFileName=test-results.trx"
+          --nologo
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: '**/*.trx'

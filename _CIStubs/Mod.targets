@@ -1,0 +1,8 @@
+# Minimal stub for Cities Skylines II modding SDK (Mod.targets).
+# Used by the CI workflow when the game is not installed.
+# All post-build deployment targets are no-ops here.
+<Project>
+  <!-- DeployWIP and all related targets are intentionally empty in CI. -->
+  <Target Name="DeployWIP" />
+  <Target Name="SetupAttributes" />
+</Project>
