@@ -24,7 +24,7 @@
     </Reference>
     <Reference Include="Unity.Entities">
       <HintPath>$(GameManagedPath)\Unity.Entities.dll</HintPath>
-      <Private>false</Private>
+      <Private>true</Private>
     </Reference>
     <Reference Include="Unity.Collections">
       <HintPath>$(GameManagedPath)\Unity.Collections.dll</HintPath>
@@ -32,7 +32,7 @@
     </Reference>
     <Reference Include="Unity.Mathematics">
       <HintPath>$(GameManagedPath)\Unity.Mathematics.dll</HintPath>
-      <Private>false</Private>
+      <Private>true</Private>
     </Reference>
   </ItemGroup>
 
