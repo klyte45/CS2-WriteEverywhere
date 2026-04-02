@@ -24,9 +24,9 @@ Task TI-03. Add [assembly: InternalsVisibleTo("BelzontWE.Tests")] to BelzontWE s
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] [assembly: InternalsVisibleTo("BelzontWE.Tests")] added to BelzontWE/Properties/AssemblyInfo.cs
-- [ ] No existing public API changes
-- [ ] Verified: at least one internal member is accessible in a test file
+- [x] [assembly: InternalsVisibleTo("BelzontWE.Tests")] added to BelzontWE/Properties/AssemblyInfo.cs
+- [x] No existing public API changes
+- [x] Verified: at least one internal member is accessible in a test file
 
 ---
 
