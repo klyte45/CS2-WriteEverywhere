@@ -10,10 +10,10 @@ Complete stbtt port test coverage (FR-02 through FR-08) and plant first WETextDa
 
 - **Sprint number**: 004
 - **Start date**: 2026-04-02 04:17 -0300
-- **End date**:
+- **End date**: 2026-04-02 05:07 -0300
 - **Original tasks**: 08
 - **Original task IDs**: [0033], [0034], [0035], [0036], [0037], [0038], [0039], [0040]
-- **Delivered tasks (from original)**:
+- **Delivered tasks (from original)**: 8
 - **Added tasks**: 0
-- **Delivered tasks (from added)**:
-- **Total delivered tasks**:
+- **Delivered tasks (from added)**: 0
+- **Total delivered tasks**: 8
