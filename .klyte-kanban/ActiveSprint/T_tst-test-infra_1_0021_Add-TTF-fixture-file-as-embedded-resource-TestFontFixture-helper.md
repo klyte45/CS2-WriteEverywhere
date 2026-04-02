@@ -1,3 +1,4 @@
+**End time:** 2026-04-02 01:20 -0300
 **Start time:** 2026-04-02 01:18 -0300
 # [0021] Add TTF fixture file as embedded resource (TestFontFixture helper)
 
