@@ -1,7 +1,8 @@
+**End time:** 2026-04-02 18:44 -0300
+**Start time:** 2026-04-02 18:39 -0300
 # [0042] Tests for WETextDataTransform.cs (pivot enum mapping, >=35 tests)
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **tests for the pivot and instancing logic in WETextDataTransform**, so that I **text layout spatial calculations are regression-proof**.
@@ -24,11 +25,11 @@ Task CD-03. Test pivot and instancing logic: PivotAsFloat3 for all enum combinat
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Components/WETextData/WETextDataTransformTests.cs exists with >=35 test methods
-- [ ] PivotAsFloat3 tested for all pivot enum combinations (minimum 9 cardinal positions x 2 non-trivial Z variants)
-- [ ] ArrayInstancing clamp: (0,0,0)->(1,1,1), (200,200,200)->(100,100,100), valid input unchanged
-- [ ] SpacingByAxisOrder for each AxisOrder enum value produces correct stride vector
-- [ ] Requires Unity.Mathematics NuGet
+- [x] Components/WETextData/WETextDataTransformTests.cs exists with >=35 test methods
+- [x] PivotAsFloat3 tested for all pivot enum combinations (minimum 9 cardinal positions x 2 non-trivial Z variants)
+- [x] ArrayInstancing clamp: (0,0,0)->(1,1,1), (200,200,200)->(100,100,100), valid input unchanged
+- [x] SpacingByAxisOrder for each AxisOrder enum value produces correct stride vector
+- [x] Requires Unity.Mathematics NuGet
 
 ---
 
