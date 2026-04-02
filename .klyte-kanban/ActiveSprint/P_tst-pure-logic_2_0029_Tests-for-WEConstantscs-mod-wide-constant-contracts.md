@@ -1,7 +1,7 @@
+**Start time:** 2026-04-02 02:52 -0300
 # [0029] Tests for WEConstants.cs (mod-wide constant contracts)
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **tests that pin the specific numeric and character values of mod-wide constants**, so that I **accidental modification is caught before it silently breaks parsing or rendering behavior**.
