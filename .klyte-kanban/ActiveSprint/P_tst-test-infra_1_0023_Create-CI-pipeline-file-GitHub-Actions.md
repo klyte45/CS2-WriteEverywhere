@@ -24,11 +24,11 @@ Task TI-07. Add .github/workflows/tests.yml. CI restores NuGet packages, builds,
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] .github/workflows/tests.yml added
-- [ ] CI restores NuGet packages and builds the test project
-- [ ] CI runs dotnet test and reports exit code
-- [ ] README.md in BelzontWE.Tests/ updated to describe CI status badge
-- [ ] Build matrix note: game DLLs not available in CI — Unity-dep tests skipped via #if or [Ignore]
+- [x] .github/workflows/tests.yml added
+- [x] CI restores NuGet packages and builds the test project
+- [x] CI runs dotnet test and reports exit code
+- [x] README.md in BelzontWE.Tests/ updated to describe CI status badge
+- [x] Build matrix note: game DLLs not available in CI — Unity-dep tests skipped via #if or [Ignore]
 
 ---
 
