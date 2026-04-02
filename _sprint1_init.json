@@ -1,0 +1,5 @@
+{
+  "name": "Sprint 1 — Testing Infrastructure",
+  "description": "Establish the complete BelzontWE.Tests project foundation: .csproj, game DLL reference strategy, InternalsVisibleTo, folder conventions, TTF font fixture, MSBuild integration, CI pipeline, and smoke test pipeline validation.",
+  "objective": "A working dotnet test pipeline with zero test content — after this sprint, writing any test in a later epic must be a matter of create file, write test, run dotnet test with zero further setup friction."
+}
