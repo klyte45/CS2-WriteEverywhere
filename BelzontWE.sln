@@ -12,6 +12,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BelzontWE.Commons", "Belzon
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_Frontends", "_Frontends\_Frontends.csproj", "{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{1E01A68D-81FC-4C63-9D46-AE6A28F2C5A4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BelzontWE.Tests", "BelzontWE.Tests\BelzontWE.Tests.csproj", "{BD9EEF15-2700-4731-A475-145D40C54B6E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +34,13 @@ Global
 		{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{57E99DB3-5CF0-451E-ACC2-0D1CFE93066E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD9EEF15-2700-4731-A475-145D40C54B6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD9EEF15-2700-4731-A475-145D40C54B6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD9EEF15-2700-4731-A475-145D40C54B6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD9EEF15-2700-4731-A475-145D40C54B6E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BD9EEF15-2700-4731-A475-145D40C54B6E} = {1E01A68D-81FC-4C63-9D46-AE6A28F2C5A4}
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

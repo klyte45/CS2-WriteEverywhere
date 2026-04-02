@@ -24,11 +24,11 @@ Task TI-01. Create the .csproj targeting net472, referencing BelzontWE.csproj pr
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] BelzontWE.Tests/BelzontWE.Tests.csproj exists with net472 target
-- [ ] References BelzontWE.csproj project-to-project
-- [ ] NUnit, NUnit3TestAdapter, NSubstitute, NSubstitute.Analyzers.CSharp declared as PackageReference
-- [ ] Added to BelzontWE.sln under a Tests solution folder
-- [ ] dotnet build BelzontWE.Tests.csproj succeeds with zero test files
+- [x] BelzontWE.Tests/BelzontWE.Tests.csproj exists with net472 target
+- [x] References BelzontWE.csproj project-to-project
+- [x] NUnit, NUnit3TestAdapter, NSubstitute, NSubstitute.Analyzers.CSharp declared as PackageReference
+- [x] Added to BelzontWE.sln under a Tests solution folder
+- [x] dotnet build BelzontWE.Tests.csproj succeeds with zero test files
 
 ---
 
