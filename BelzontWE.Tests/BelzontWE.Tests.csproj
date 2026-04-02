@@ -10,10 +10,35 @@
     <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Game DLL resolution: reads CSII_MANAGEDPATH user environment variable -->
+    <GameManagedPath Condition="'$(GameManagedPath)' == ''">$(CSII_MANAGEDPATH)</GameManagedPath>
+    <_GameDllsAvailable Condition="'$(GameManagedPath)' != '' And Exists('$(GameManagedPath)\UnityEngine.CoreModule.dll')">true</_GameDllsAvailable>
+    <DefineConstants Condition="'$(_GameDllsAvailable)' == 'true'">GAME_DLLS_AVAILABLE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
-  <!-- Import game DLL reference strategy (provides GAME_DLLS_AVAILABLE constant) -->
-  <Import Project="$(SolutionDir)\_Build\GameDllRefs.targets" Condition="Exists('$(SolutionDir)\_Build\GameDllRefs.targets')" />
+  <!-- Metadata-only game assembly references for compilation; not copied to output -->
+  <ItemGroup Condition="'$(_GameDllsAvailable)' == 'true'">
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameManagedPath)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Entities">
+      <HintPath>$(GameManagedPath)\Unity.Entities.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Collections">
+      <HintPath>$(GameManagedPath)\Unity.Collections.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Mathematics">
+      <HintPath>$(GameManagedPath)\Unity.Mathematics.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="WarnIfGameDllsNotFound" BeforeTargets="BeforeBuild" Condition="'$(_GameDllsAvailable)' != 'true'">
+    <Warning Text="Game DLLs not found at '$(GameManagedPath)'. Set CSII_MANAGEDPATH to the game's Managed/ folder. Game-dependent tests will be skipped." />
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.13.3" />
