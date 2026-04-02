@@ -24,10 +24,10 @@ Task TI-06. Add AfterBuild target that runs dotnet test for Debug configuration.
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Frontend.targets or Tests.targets adds AfterBuild target running dotnet test --no-build
-- [ ] Tests only run when Configuration=Debug
-- [ ] Build does not fail if test runner is not installed — emits a warning instead
-- [ ] Running MSBuild.exe BelzontWE.sln /p:Configuration=Debug reports test pass/fail
+- [x] Frontend.targets or Tests.targets adds AfterBuild target running dotnet test --no-build
+- [x] Tests only run when Configuration=Debug
+- [x] Build does not fail if test runner is not installed — emits a warning instead
+- [x] Running MSBuild.exe BelzontWE.sln /p:Configuration=Debug reports test pass/fail
 
 ---
 
