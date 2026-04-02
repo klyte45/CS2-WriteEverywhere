@@ -1,7 +1,7 @@
+**Start time:** 2026-04-02 02:35 -0300
 # [0078] Remove CI pipeline artifacts from the project
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a project maintainer**, I want **to remove the automated CI pipeline scaffolding added in Sprint 002**, so that I **the project stays lightweight without unnecessary build automation overhead**.
