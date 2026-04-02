@@ -34,6 +34,10 @@
       <HintPath>$(GameManagedPath)\Unity.Mathematics.dll</HintPath>
       <Private>true</Private>
     </Reference>
+    <Reference Include="Colossal.Core">
+      <HintPath>$(GameManagedPath)\Colossal.Core.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

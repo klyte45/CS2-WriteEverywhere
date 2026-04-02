@@ -1,3 +1,4 @@
+**End time:** 2026-04-02 05:07 -0300
 **Start time:** 2026-04-02 05:03 -0300
 # [0040] Tests for WETextDataMaterial.cs - float clamping properties (40-60 tests)
 
@@ -24,10 +25,10 @@ Task CD-01. Parameterized tests for every clamped float property in WETextDataMa
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Components/WETextData/WETextDataMaterialTests.cs exists
-- [ ] Each clamped property has a [TestCase] table: below-min->min, above-max->max, mid-value unchanged
-- [ ] Properties tested: NormalStrength [0,1], GlassRefraction [1,1000], Metallic [0,1], Smoothness [0,1], EmissiveIntensity [0,1000], EmissiveExposureWeight [0,1], CoatStrength [0,1], GlassThickness [0,10]
-- [ ] Tests for: Shader setter stores value, RenderBackface setter sets dirty=true, DEFAULT_DECAL_FLAGS constant value
+- [x] Components/WETextData/WETextDataMaterialTests.cs exists
+- [x] Each clamped property has a [TestCase] table: below-min->min, above-max->max, mid-value unchanged
+- [x] Properties tested: NormalStrength [0,1], GlassRefraction [1,1000], Metallic [0,1], Smoothness [0,1], EmissiveIntensity [0,1000], EmissiveExposureWeight [0,1], CoatStrength [0,1], GlassThickness [0,10]
+- [x] Tests for: Shader setter stores value, RenderBackface setter sets dirty=true, DEFAULT_DECAL_FLAGS constant value
 
 ---
 
