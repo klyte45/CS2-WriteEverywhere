@@ -1,7 +1,7 @@
+**Start time:** 2026-04-02 02:16 -0300
 # [0024] Smoke test: validate full test pipeline end-to-end
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a QA baseline**, I want **a trivial test that always passes and one I can toggle to always fail**, so that I **I can verify the test runner is wired correctly before writing real tests**.
