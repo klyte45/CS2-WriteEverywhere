@@ -21,7 +21,7 @@ namespace BelzontWE
         public static WEPlacementAlignment GetY(this WEPlacementAlignment alignment) => (WEPlacementAlignment)(((int)alignment >> 4) & 0x3);
         public static WEPlacementAlignment GetZ(this WEPlacementAlignment alignment) => (WEPlacementAlignment)(((int)alignment >> 6) & 0x3);
 
-        public static WEPlacementAlignment Encode(WEPlacementAlignment x, WEPlacementAlignment y, WEPlacementAlignment z) => x.ToX() | x.ToY() | y.ToZ();
+        public static WEPlacementAlignment Encode(WEPlacementAlignment x, WEPlacementAlignment y, WEPlacementAlignment z) => x.ToX() | y.ToY() | z.ToZ();
 
         public static void Decode(this WEPlacementAlignment input, out WEPlacementAlignment x, out WEPlacementAlignment y, out WEPlacementAlignment z)
         {
