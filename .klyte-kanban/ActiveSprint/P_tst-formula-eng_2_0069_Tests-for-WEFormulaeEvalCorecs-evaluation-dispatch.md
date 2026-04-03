@@ -1,7 +1,7 @@
+**Start time:** 2026-04-03 19:26 -0300
 # [0069] Tests for WEFormulaeEvalCore.cs - evaluation dispatch
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **tests for the evaluation dispatch step**, so that I **the formula engine correctly routes evaluated segments to the right registered function**.
