@@ -1,3 +1,4 @@
+**End time:** 2026-04-03 19:54 -0300
 **Start time:** 2026-04-03 19:26 -0300
 # [0069] Tests for WEFormulaeEvalCore.cs - evaluation dispatch
 
@@ -24,8 +25,8 @@ Task FE-02. Test evaluation dispatch: formula->known string, variable replaced f
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Tests cover: formula that evaluates to a known string, formula evaluation with a variable replaced from dict, unknown formula name->error fallback value, type mismatch in chain->error fallback, null/empty dict handling
-- [ ] A minimal TestFormulaeClass with [WEBuiltinFunction]/[WEFormula] attributes created in the test assembly
+- [x] Tests cover: formula that evaluates to a known string, formula evaluation with a variable replaced from dict, unknown formula name->error fallback value, type mismatch in chain->error fallback, null/empty dict handling
+- [x] A minimal TestFormulaeClass with [WEBuiltinFunction]/[WEFormula] attributes created in the test assembly
 
 ---
 
