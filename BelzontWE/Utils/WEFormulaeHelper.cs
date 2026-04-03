@@ -148,9 +148,9 @@ namespace BelzontWE
                     {
                         case '&':
                             {
-                                var parts = codePart[1..].Split(";");
+                                var parts = codePart[1..].Split(new char[] { ';' });
                                 var className = parts[0];
-                                var pathNav = parts[1].Split(".");
+                                var pathNav = parts[1].Split(new char[] { '.' });
                                 var method = pathNav[0];
                                 var navFields = pathNav.Length > 1 ? pathNav[1..] : new string[0];
                                 var candidateMethods = FilterAvailableMethodsForFormulae(currentComponentType, className, method);
@@ -311,7 +311,7 @@ namespace BelzontWE
             }
         }
 
-        public static string[] GetPathParts(string newFormulae) => newFormulae?.Split("/");
+        public static string[] GetPathParts(string newFormulae) => newFormulae?.Split(new char[] { '/' });
 
         private static List<MethodInfo> CACHED_AVAILABLE_STATIC_METHODS;
 
@@ -674,14 +674,14 @@ namespace BelzontWE
                 fieldPath = null;
                 return 4; // Components only can be got from an Entity
             }
-            var itemSplitted = path.Split(";");
+            var itemSplitted = path.Split(new char[] { ';' });
             if (itemSplitted.Length != 2)
             {
                 fieldPath = null;
                 return 6; // Each component getter block must be a pair of component name and field navigation, separated by a semicolon
             }
             var entityTypeName = itemSplitted[0];
-            fieldPath = itemSplitted[1].Split(".").Where(x => x.TrimToNull() != null).ToArray();
+            fieldPath = itemSplitted[1].Split(new char[] { '.' }).Where(x => x.TrimToNull() != null).ToArray();
             var itemComponentType = TypeManager.AllTypes.Where(x => x.Type?.FullName?.EndsWith(entityTypeName) ?? false).ToList();
             if (itemComponentType.Count == 0)
             {

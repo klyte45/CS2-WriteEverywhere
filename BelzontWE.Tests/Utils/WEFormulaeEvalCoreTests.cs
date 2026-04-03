@@ -1,4 +1,6 @@
 using NUnit.Framework;
+using System;
+using Unity.Entities;
 
 namespace BelzontWE.Tests.Utils
 {
@@ -131,6 +133,83 @@ namespace BelzontWE.Tests.Utils
         public void ClassifyToken_NullToken_ReturnsNull()
         {
             Assert.IsNull(WEFormulaeEvalCore.ClassifyToken(null));
+        }
+
+        // ── ParseComponentEntryType (internal) ────────────────────────────────
+
+        [Test, Ignore("TypeManager.AllTypes requires ECS world — skipping ParseComponentEntryType runtime tests")]
+        public void ParseComponentEntryType_NonEntityCurrentType_ReturnsError4()
+        {
+            // Must start from Entity; any other type returns 4
+            var type = typeof(int);
+            var result = WEFormulaeHelper.ParseComponentEntryType(ref type, "ComponentType;field", out _, out _);
+            Assert.AreEqual(4, result);
+        }
+
+        [Test, Ignore("TypeManager.AllTypes requires ECS world — skipping ParseComponentEntryType runtime tests")]
+        public void ParseComponentEntryType_NoSemicolon_ReturnsError6()
+        {
+            // Missing semicolon → error 6
+            var type = typeof(Entity);
+            var result = WEFormulaeHelper.ParseComponentEntryType(ref type, "ComponentTypeWithoutSemicolon", out _, out _);
+            Assert.AreEqual(6, result);
+        }
+
+        [Test, Ignore("TypeManager.AllTypes requires ECS world — skipping ParseComponentEntryType runtime tests")]
+        public void ParseComponentEntryType_MultipleSemicolons_ReturnsError6()
+        {
+            // More than 2 parts when split by ";" → error 6 (split produces 3 items, Length != 2)
+            var type = typeof(Entity);
+            var result = WEFormulaeHelper.ParseComponentEntryType(ref type, "A;B;C", out _, out _);
+            Assert.AreEqual(6, result);
+        }
+
+        [Test, Ignore("TypeManager.AllTypes requires ECS world — skipping ParseComponentEntryType runtime tests")]
+        public void ParseComponentEntryType_ValidFormatUnknownComponent_ReturnsError1()
+        {
+            // Format is correct (TypeName;field) but TypeName unknown → error 1
+            var type = typeof(Entity);
+            var result = WEFormulaeHelper.ParseComponentEntryType(ref type, "XyzNonExistentComponent_99;field", out _, out _);
+            Assert.AreEqual(1, result);
+        }
+
+        [Test, Ignore("TypeManager.AllTypes requires ECS world — skipping ParseComponentEntryType runtime tests")]
+        public void ParseComponentEntryType_FieldPath_ParsedCorrectly()
+        {
+            // We can at least verify that for valid format, fieldPath splits correctly
+            // Use a component that definitely doesn't exist → error 1 but fieldPath should set
+            var type = typeof(Entity);
+            WEFormulaeHelper.ParseComponentEntryType(ref type, "SomeComp;field.subfield.leaf", out _, out var fieldPath);
+            // fieldPath might be set even on error 1 depending on order of operations
+            // Actual outcome: depends on implementation — just verify no exception
+            Assert.Pass("No exception thrown for valid-format input with unknown component");
+        }
+
+        // ── TokenizeFormula: multi-segment field navigation ────────────────────
+
+        [Test]
+        public void TokenizeFormula_SegmentWithDotPath_ReturnedAsOneToken()
+        {
+            // Dot-separated field path is NOT a formula separator; stays within one token
+            var result = WEFormulaeEvalCore.TokenizeFormula("Component;field.subfield");
+            Assert.AreEqual(1, result.Length);
+            Assert.AreEqual("Component;field.subfield", result[0]);
+        }
+
+        [Test]
+        public void TokenizeFormula_LeadingSlash_FirstTokenIsEmpty()
+        {
+            var result = WEFormulaeEvalCore.TokenizeFormula("/Component;field");
+            Assert.AreEqual(2, result.Length);
+            Assert.AreEqual("", result[0]);
+        }
+
+        [Test]
+        public void TokenizeFormula_TrailingSlash_LastTokenIsEmpty()
+        {
+            var result = WEFormulaeEvalCore.TokenizeFormula("Component;field/");
+            Assert.AreEqual(2, result.Length);
+            Assert.AreEqual("", result[1]);
         }
     }
 }

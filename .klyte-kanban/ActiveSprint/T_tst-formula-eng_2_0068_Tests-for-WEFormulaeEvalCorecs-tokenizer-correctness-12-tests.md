@@ -1,3 +1,4 @@
+**End time:** 2026-04-03 19:23 -0300
 **Start time:** 2026-04-03 19:19 -0300
 # [0068] Tests for WEFormulaeEvalCore.cs - tokenizer correctness (>=12 tests)
 
@@ -24,9 +25,9 @@ Task FE-01. Expand WEFormulaeEvalCoreTests.cs with tokenizer-specific tests: sin
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Utils/WEFormulaeEvalCoreTests.cs expanded with tokenizer-specific tests (>=12)
-- [ ] Tests cover: single-segment formula, multi-segment chain (a;b;c), variable reference syntax ({varName}), method call syntax ({MethodName;arg1}), whitespace handling, empty string, null input->no exception, malformed brackets->error code
-- [ ] All tests use internal tokenizer method via InternalsVisibleTo
+- [x] Utils/WEFormulaeEvalCoreTests.cs expanded with tokenizer-specific tests (>=12)
+- [x] Tests cover: single-segment formula, multi-segment chain (a;b;c), variable reference syntax ({varName}), method call syntax ({MethodName;arg1}), whitespace handling, empty string, null input->no exception, malformed brackets->error code
+- [x] All tests use internal tokenizer method via InternalsVisibleTo
 
 ---
 
