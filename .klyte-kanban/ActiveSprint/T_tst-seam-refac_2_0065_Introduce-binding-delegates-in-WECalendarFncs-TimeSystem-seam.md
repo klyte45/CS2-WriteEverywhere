@@ -1,3 +1,4 @@
+**End time:** 2026-04-03 19:14 -0300
 **Start time:** 2026-04-03 19:07 -0300
 # [0065] Introduce binding delegates in WECalendarFn.cs (TimeSystem seam)
 
@@ -24,10 +25,10 @@ Task SR-05. Add static Func<> binding fields for all TimeSystem accesses in WECa
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Static Func<> binding fields added for all TimeSystem accesses in WECalendarFn
-- [ ] Existing WECalendarFnTests.cs updated with new time-seam tests
-- [ ] Date formatting helper logic tested with fixed time values
-- [ ] [TearDown] restores original bindings
+- [x] Static Func<> binding fields added for all TimeSystem accesses in WECalendarFn
+- [x] Existing WECalendarFnTests.cs updated with new time-seam tests
+- [x] Date formatting helper logic tested with fixed time values
+- [x] [TearDown] restores original bindings
 
 ---
 

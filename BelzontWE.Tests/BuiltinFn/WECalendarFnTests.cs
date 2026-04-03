@@ -1,21 +1,39 @@
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using Unity.Entities;
 using BelzontWE.Builtin;
 
 namespace BelzontWE.Tests.BuiltinFn
 {
-    // WECalendarFn has no binding seams — both methods call TimeSystem directly.
-    // TimeSystem is from Game.dll which is unavailable in the test runner.
-    // Testable surface: class/method metadata via reflection.
-    // Behavioural tests are [Ignore]d as best-effort stubs; full coverage requires
-    // extracting a GetTime seam (planned for SR-05 / Sprint 7).
+    // WECalendarFn has binding seams since SR-05: GetNormalizedTime_binding,
+    // GetCurrentDateTime_binding, and GetDateTimeFormatter_binding allow time
+    // and formatter to be injected in tests without a running game TimeSystem.
 
     [TestFixture]
     public class WECalendarFnTests
     {
+        private Func<float> _originalNormTime;
+        private Func<DateTime> _originalDateTime;
+        private Func<System.Globalization.DateTimeFormatInfo> _originalFormatter;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _originalNormTime = WECalendarFn.GetNormalizedTime_binding;
+            _originalDateTime = WECalendarFn.GetCurrentDateTime_binding;
+            _originalFormatter = WECalendarFn.GetDateTimeFormatter_binding;
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            WECalendarFn.GetNormalizedTime_binding = _originalNormTime;
+            WECalendarFn.GetCurrentDateTime_binding = _originalDateTime;
+            WECalendarFn.GetDateTimeFormatter_binding = _originalFormatter;
+        }
         // ── Reflection: class and attribute ────────────────────────────────────
 
         [Test]
@@ -114,6 +132,80 @@ namespace BelzontWE.Tests.BuiltinFn
             var vars = new Dictionary<string, string> { ["dateFormat"] = "yyyy-MM" };
             var result = WECalendarFn.GetFormattedDateWeLocale(Entity.Null, vars);
             Assert.IsNotNull(result);
+        }
+
+        // ── Time seam tests (SR-05) ───────────────────────────────────────────
+
+        [Test]
+        public void GetTimeStringWeLocale_24HFormat_Noon_Returns1200()
+        {
+            WECalendarFn.GetNormalizedTime_binding = () => 0.5f; // 0.5 * 24 = 12.0
+            WECalendarFn.GetDateTimeFormatter_binding = () => CultureInfo.InvariantCulture.DateTimeFormat;
+            var result = WECalendarFn.GetTimeStringWeLocale(Entity.Null, new Dictionary<string, string>());
+            Assert.AreEqual("12:00", result);
+        }
+
+        [Test]
+        public void GetTimeStringWeLocale_24HFormat_Midnight_Returns0000()
+        {
+            WECalendarFn.GetNormalizedTime_binding = () => 0f; // 0 * 24 = 0.0
+            WECalendarFn.GetDateTimeFormatter_binding = () => CultureInfo.InvariantCulture.DateTimeFormat;
+            var result = WECalendarFn.GetTimeStringWeLocale(Entity.Null, new Dictionary<string, string>());
+            Assert.AreEqual("00:00", result);
+        }
+
+        [Test]
+        public void GetTimeStringWeLocale_24HFormat_HalfPastTwo_Returns1430()
+        {
+            // normalizedTime 0.6042 * 24 = 14.5 = 14:30
+            WECalendarFn.GetNormalizedTime_binding = () => 0.604167f;
+            WECalendarFn.GetDateTimeFormatter_binding = () => CultureInfo.InvariantCulture.DateTimeFormat;
+            var result = WECalendarFn.GetTimeStringWeLocale(Entity.Null, new Dictionary<string, string>());
+            Assert.AreEqual("14:30", result);
+        }
+
+        [Test]
+        public void GetTimeStringWeLocale_12HFormat_Noon_ReturnsPMLabel()
+        {
+            WECalendarFn.GetNormalizedTime_binding = () => 0.5f; // noon
+            var fmt = (DateTimeFormatInfo)CultureInfo.GetCultureInfo("en-US").DateTimeFormat.Clone();
+            WECalendarFn.GetDateTimeFormatter_binding = () => fmt;
+            var vars = new Dictionary<string, string> { ["pm"] = "pm" };
+            var result = WECalendarFn.GetTimeStringWeLocale(Entity.Null, vars);
+            StringAssert.EndsWith("pm", result);
+        }
+
+        [Test]
+        public void GetTimeStringWeLocale_12HFormat_Morning_ReturnsAMLabel()
+        {
+            WECalendarFn.GetNormalizedTime_binding = () => 0.25f; // 6:00
+            var fmt = (DateTimeFormatInfo)CultureInfo.GetCultureInfo("en-US").DateTimeFormat.Clone();
+            WECalendarFn.GetDateTimeFormatter_binding = () => fmt;
+            var vars = new Dictionary<string, string> { ["am"] = "am" };
+            var result = WECalendarFn.GetTimeStringWeLocale(Entity.Null, vars);
+            StringAssert.EndsWith("am", result);
+        }
+
+        [Test]
+        public void GetFormattedDateWeLocale_CustomFormat_ReturnsFormattedDate()
+        {
+            WECalendarFn.GetCurrentDateTime_binding = () => new DateTime(2025, 1, 1);
+            WECalendarFn.GetDateTimeFormatter_binding = () => CultureInfo.InvariantCulture.DateTimeFormat;
+            var vars = new Dictionary<string, string> { ["dateFormat"] = "yyyy-MM" };
+            var result = WECalendarFn.GetFormattedDateWeLocale(Entity.Null, vars);
+            Assert.AreEqual("2025-01", result);
+        }
+
+        [Test]
+        public void GetFormattedDateWeLocale_NoFormatVar_UsesDefaultMMMSepYyyy()
+        {
+            WECalendarFn.GetCurrentDateTime_binding = () => new DateTime(2025, 3, 3);
+            var fmt = CultureInfo.InvariantCulture.DateTimeFormat;
+            WECalendarFn.GetDateTimeFormatter_binding = () => fmt;
+            var result = WECalendarFn.GetFormattedDateWeLocale(Entity.Null, new Dictionary<string, string>());
+            // Default format: "MMM/yyyy" (InvariantCulture separator is "/")
+            // time.AddMonths(3-3) = 2025-03-03, format = "Mar/2025"
+            Assert.AreEqual($"Mar{fmt.DateSeparator}2025", result);
         }
     }
 }

@@ -1,6 +1,7 @@
-﻿using Game.Simulation;
+using Game.Simulation;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -10,12 +11,27 @@ namespace BelzontWE.Builtin
     public static class WECalendarFn
     {
         private static TimeSystem timeSystem;
+
+        public static Func<float> GetNormalizedTime_binding = () =>
+        {
+            timeSystem ??= World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<TimeSystem>();
+            return timeSystem.normalizedTime;
+        };
+
+        public static Func<DateTime> GetCurrentDateTime_binding = () =>
+        {
+            timeSystem ??= World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<TimeSystem>();
+            return timeSystem.GetCurrentDateTime();
+        };
+
+        public static Func<DateTimeFormatInfo> GetDateTimeFormatter_binding = () =>
+            WEModData.InstanceWE.FormatCulture.DateTimeFormat;
+
         [WEFormula(typeof(string))]
         public static string GetTimeStringWeLocale(Entity reference, Dictionary<string, string> vars)
         {
-            timeSystem ??= World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<TimeSystem>();
-            var time = timeSystem.normalizedTime * 24;
-            var formatter = WEModData.InstanceWE.FormatCulture.DateTimeFormat;
+            var time = GetNormalizedTime_binding() * 24;
+            var formatter = GetDateTimeFormatter_binding();
             if (formatter.ShortTimePattern.Contains("tt"))
             {
                 var isPM = time >= 12;
@@ -30,10 +46,9 @@ namespace BelzontWE.Builtin
         [WEFormula(typeof(string))]
         public static string GetFormattedDateWeLocale(Entity reference, Dictionary<string, string> vars)
         {
-            timeSystem ??= World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<TimeSystem>();
-            var time = timeSystem.GetCurrentDateTime();
+            var time = GetCurrentDateTime_binding();
             time = time.AddMonths(time.Day - time.Month);
-            var formatter = WEModData.InstanceWE.FormatCulture.DateTimeFormat;
+            var formatter = GetDateTimeFormatter_binding();
 
             var format = vars.TryGetValue("dateFormat", out var dateFormat) ? dateFormat : $"MMM{formatter.DateSeparator}yyyy";
 
