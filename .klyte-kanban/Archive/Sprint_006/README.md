@@ -10,10 +10,10 @@ Tests for WESelflessTextDataTree, WEComponentTypeDesc, ObjFileHandler, WEImageIn
 
 - **Sprint number**: 006
 - **Start date**: 2026-04-02 20:24 -0300
-- **End date**:
+- **End date**: 2026-04-02 22:31 -0300
 - **Original tasks**: 07
 - **Original task IDs**: [0049], [0050], [0051], [0052], [0053], [0054], [0055]
-- **Delivered tasks (from original)**:
+- **Delivered tasks (from original)**: 7
 - **Added tasks**: 0
-- **Delivered tasks (from added)**:
-- **Total delivered tasks**:
+- **Delivered tasks (from added)**: 0
+- **Total delivered tasks**: 7
