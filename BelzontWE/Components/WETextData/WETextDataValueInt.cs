@@ -1,4 +1,5 @@
-﻿using Colossal.OdinSerializer.Utilities;
+﻿using BelzontWE.Utils;
+using Colossal.OdinSerializer.Utilities;
 using System.Collections.Generic;
 using Unity.Entities;
 
@@ -46,13 +47,16 @@ namespace BelzontWE
         }
 
         public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity, Dictionary<string, string> vars)
+            => UpdateEffectiveValue(new EntityManagerECSReader(em), geometryEntity, vars);
+
+        public bool UpdateEffectiveValue(IECSReader reader, Entity geometryEntity, Dictionary<string, string> vars)
         {
             var initEff = InitializedEffectiveText;
             var effVal = EffectiveValue;
             var result = WEFormulaeEvalCore.TryEvaluate(
                 ref formulaeStrBnk, ref formulaeCompilationStatus, ref loadingFnDone,
                 ref runtimeErrorLogged, ref initEff, defaultValue, ref effVal,
-                em, geometryEntity, vars, in s_config);
+                reader.RawManager, geometryEntity, vars, in s_config);
             InitializedEffectiveText = initEff;
             EffectiveValue = effVal;
             return result;

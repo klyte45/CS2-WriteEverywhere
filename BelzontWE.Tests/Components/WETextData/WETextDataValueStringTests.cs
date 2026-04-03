@@ -1,5 +1,7 @@
+using BelzontWE.Tests.Utils;
 using NUnit.Framework;
 using System.Reflection;
+using Unity.Entities;
 
 namespace BelzontWE.Tests.Components
 {
@@ -130,6 +132,35 @@ namespace BelzontWE.Tests.Components
         {
             var config = GetStringConfig();
             Assert.AreEqual("<InvalidFn2>", config.nullFnFallback);
+        }
+
+        // ── UpdateEffectiveValue(IECSReader) overload ─────────────────────────
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_NoFormulae_SetsEffectiveToDefault()
+        {
+            var v = new WETextDataValueString();
+            v.DefaultValue = "hello";
+            v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
+            Assert.AreEqual("hello", v.EffectiveValue.ToString());
+        }
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_NoFormulae_SetsInitializedTrue()
+        {
+            var v = new WETextDataValueString();
+            v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
+            Assert.IsTrue(v.InitializedEffectiveText);
+        }
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_NoFormulae_SecondCallReturnsFalse()
+        {
+            var v = new WETextDataValueString();
+            v.DefaultValue = "world";
+            v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
+            var changed = v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
+            Assert.IsFalse(changed);
         }
     }
 }

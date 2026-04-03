@@ -1,5 +1,7 @@
+using BelzontWE.Tests.Utils;
 using NUnit.Framework;
 using System.Reflection;
+using Unity.Entities;
 using UnityEngine;
 
 namespace BelzontWE.Tests.Components
@@ -101,5 +103,30 @@ namespace BelzontWE.Tests.Components
             var config = GetColorConfig();
             Assert.AreEqual(Color.magenta, config.errorFallback);
         }
-    }
+        // ── UpdateEffectiveValue(IECSReader) overload ─────────────────────────
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_NoFormulae_SetsEffectiveToDefault()
+        {
+            var v = new WETextDataValueColor { defaultValue = Color.red };
+            v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
+            Assert.AreEqual(Color.red, v.EffectiveValue);
+        }
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_NoFormulae_SetsInitializedTrue()
+        {
+            var v = new WETextDataValueColor();
+            v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
+            Assert.IsTrue(v.InitializedEffectiveText);
+        }
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_NoFormulae_SecondCallReturnsFalse()
+        {
+            var v = new WETextDataValueColor { defaultValue = Color.blue };
+            v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
+            var changed = v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
+            Assert.IsFalse(changed);
+        }    }
 }

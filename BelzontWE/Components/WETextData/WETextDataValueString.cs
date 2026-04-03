@@ -1,4 +1,5 @@
 ﻿using Belzont.Utils;
+using BelzontWE.Utils;
 using Colossal.OdinSerializer.Utilities;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -61,17 +62,22 @@ namespace BelzontWE
         }
 
         public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity, Dictionary<string, string> vars)
-        {
-            return UpdateEffectiveValue(em, geometryEntity, EffectiveValue.ToString(), vars);
-        }
+            => UpdateEffectiveValue(new EntityManagerECSReader(em), geometryEntity, EffectiveValue.ToString(), vars);
+
         public bool UpdateEffectiveValue(EntityManager em, Entity geometryEntity, string oldEffText, Dictionary<string, string> vars)
+            => UpdateEffectiveValue(new EntityManagerECSReader(em), geometryEntity, oldEffText, vars);
+
+        public bool UpdateEffectiveValue(IECSReader reader, Entity geometryEntity, Dictionary<string, string> vars)
+            => UpdateEffectiveValue(reader, geometryEntity, EffectiveValue.ToString(), vars);
+
+        public bool UpdateEffectiveValue(IECSReader reader, Entity geometryEntity, string oldEffText, Dictionary<string, string> vars)
         {
             var initEff = InitializedEffectiveText;
             string effVal = EffectiveValue.ToString();
             var loadedOrChanged = WEFormulaeEvalCore.TryEvaluate(
                 ref formulaeStrBnk, ref formulaeCompilationStatus, ref loadingFnDone,
                 ref runtimeErrorLogged, ref initEff, DefaultValue, ref effVal,
-                em, geometryEntity, vars, in s_config);
+                reader.RawManager, geometryEntity, vars, in s_config);
             InitializedEffectiveText = initEff;
             EffectiveValue = effVal;
             return loadedOrChanged || EffectiveValue.ToString() != oldEffText;

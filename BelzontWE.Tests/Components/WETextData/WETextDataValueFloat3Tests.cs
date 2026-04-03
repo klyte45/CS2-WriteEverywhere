@@ -1,4 +1,6 @@
+using BelzontWE.Tests.Utils;
 using NUnit.Framework;
+using Unity.Entities;
 using Unity.Mathematics;
 
 namespace BelzontWE.Tests.Components
@@ -97,6 +99,33 @@ namespace BelzontWE.Tests.Components
         {
             var v = new WETextDataValueFloat3 { defaultValue = new float3(1, 2, 3) };
             Assert.AreEqual(new float3(1, 2, 3), v.defaultValue);
+        }
+
+        // ── UpdateEffectiveValue(IECSReader) overload ─────────────────────────
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_NoFormulae_SetsEffectiveToDefault()
+        {
+            var v = new WETextDataValueFloat3 { defaultValue = new float3(1, 2, 3) };
+            v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
+            Assert.AreEqual(new float3(1, 2, 3), v.EffectiveValue);
+        }
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_NoFormulae_SetsInitializedTrue()
+        {
+            var v = new WETextDataValueFloat3();
+            v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
+            Assert.IsTrue(v.InitializedEffectiveText);
+        }
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_NoFormulae_SecondCallReturnsFalse()
+        {
+            var v = new WETextDataValueFloat3 { defaultValue = new float3(0, 0, 0) };
+            v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
+            var changed = v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
+            Assert.IsFalse(changed);
         }
     }
 }

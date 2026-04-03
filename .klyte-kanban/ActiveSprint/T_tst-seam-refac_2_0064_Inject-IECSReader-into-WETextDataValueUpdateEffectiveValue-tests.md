@@ -1,3 +1,4 @@
+**End time:** 2026-04-03 19:06 -0300
 **Start time:** 2026-04-03 18:57 -0300
 # [0064] Inject IECSReader into WETextDataValue*.UpdateEffectiveValue + tests
 
@@ -24,10 +25,10 @@ Task SR-04. Add UpdateEffectiveValue(IECSReader, Entity, ...) overload to each v
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] UpdateEffectiveValue(IECSReader reader, Entity self, ...) overload added to Float, Int, Float3, String, Color value types
-- [ ] Original UpdateEffectiveValue() retains existing signature, internally calls new overload with EntityManagerECSReader
-- [ ] New tests added to existing WETextDataValue*Tests.cs testing UpdateEffectiveValue with mocked IECSReader
-- [ ] Existing callers unaffected
+- [x] UpdateEffectiveValue(IECSReader reader, Entity self, ...) overload added to Float, Int, Float3, String, Color value types
+- [x] Original UpdateEffectiveValue() retains existing signature, internally calls new overload with EntityManagerECSReader
+- [x] New tests added to existing WETextDataValue*Tests.cs testing UpdateEffectiveValue with mocked IECSReader
+- [x] Existing callers unaffected
 
 ---
 
