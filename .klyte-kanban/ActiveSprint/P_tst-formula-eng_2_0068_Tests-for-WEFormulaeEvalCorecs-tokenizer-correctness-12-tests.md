@@ -1,7 +1,7 @@
+**Start time:** 2026-04-03 19:19 -0300
 # [0068] Tests for WEFormulaeEvalCore.cs - tokenizer correctness (>=12 tests)
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **tests for the formula tokenizer in WEFormulaeEvalCore**, so that I **the parsing step that precedes all formula evaluation is verified for correctness across valid and invalid inputs**.
