@@ -1,7 +1,8 @@
+**End time:** 2026-04-02 22:26 -0300
+**Start time:** 2026-04-02 22:25 -0300
 # [0054] Tests for WEParameterFn.cs - pure dictionary operations (>=15 tests)
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **tests for all WEParameterFn methods**, so that I **the template variable resolution logic is verified — used in every text item that reads from formula variables**.
@@ -24,9 +25,9 @@ Task BF-01. Test all WEParameterFn methods: PrintVariables with one/multiple var
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] BuiltinFn/WEParameterFnTests.cs exists with >=15 test methods
-- [ ] Tests cover: PrintVariables with one var, multiple vars (separator confirmed), empty dict->"", RelVarStr1 key found, key not found->"", RelVarStr2-4, RelVarInt1 valid int, RelVarInt1 non-numeric->0, RelVarInt1 missing->0
-- [ ] Entity parameter is Entity.Null for all tests (unused by these methods)
+- [x] BuiltinFn/WEParameterFnTests.cs exists with >=15 test methods
+- [x] Tests cover: PrintVariables with one var, multiple vars (separator confirmed), empty dict->"", RelVarStr1 key found, key not found->"", RelVarStr2-4, RelVarInt1 valid int, RelVarInt1 non-numeric->0, RelVarInt1 missing->0
+- [x] Entity parameter is Entity.Null for all tests (unused by these methods)
 
 ---
 
