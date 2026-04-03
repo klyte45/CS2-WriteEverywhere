@@ -1,7 +1,7 @@
+**Start time:** 2026-04-03 19:55 -0300
 # [0070] Integration tests: formula registration to evaluation round-trip
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **end-to-end tests from formula registration through evaluation**, so that I **the full pipeline is verified without the game**.
