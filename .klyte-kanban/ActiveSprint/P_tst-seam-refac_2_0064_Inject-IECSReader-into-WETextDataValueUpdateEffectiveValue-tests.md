@@ -1,7 +1,7 @@
+**Start time:** 2026-04-03 18:57 -0300
 # [0064] Inject IECSReader into WETextDataValue*.UpdateEffectiveValue + tests
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **UpdateEffectiveValue methods to accept an IECSReader instead of accessing World directly**, so that I **formulae evaluation logic is testable**.
