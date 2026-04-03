@@ -1,7 +1,8 @@
+**End time:** 2026-04-03 16:01 -0300
+**Start time:** 2026-04-03 15:59 -0300
 # [0056] Tests for WEBuildingFn.cs - binding null-fallback contracts
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **tests for the building formula functions**, so that I **null-binding fallbacks are verified (preventing NullReferenceExceptions when the binding isn't initialized)**.
@@ -24,10 +25,10 @@ Task BF-03. Test building formula null-fallbacks: when binding returns real Enti
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] BuiltinFn/WEBuildingFnTests.cs exists with >=8 test methods
-- [ ] Tests cover: GetBuildingRoad when binding returns real Entity, when binding returns Entity.Null, when binding is null -> returns Entity.Null (not throws)
-- [ ] Same for GetBuildingRoadNumber and GetBuildingMainRenter
-- [ ] [TearDown] restores all bindings
+- [x] BuiltinFn/WEBuildingFnTests.cs exists with >=8 test methods
+- [x] Tests cover: GetBuildingRoad when binding returns real Entity, when binding returns Entity.Null, when binding is null -> returns Entity.Null (not throws)
+- [x] Same for GetBuildingRoadNumber and GetBuildingMainRenter
+- [x] [TearDown] restores all bindings
 
 ---
 
