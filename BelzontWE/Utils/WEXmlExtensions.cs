@@ -10,9 +10,22 @@ namespace BelzontWE.Utils
     {
         public static WETextDataXml ToXml(Entity e, EntityManager em)
         {
-            var result = em.TryGetComponent<WETextDataMain>(e, out var weMain) ? weMain.ToXml() : null;
+            var hasMain = em.TryGetComponent<WETextDataMain>(e, out var weMain);
+            var hasMat = em.TryGetComponent<WETextDataMaterial>(e, out var weMat);
+            var hasMesh = em.TryGetComponent<WETextDataMesh>(e, out var weMesh);
+            var hasTransf = em.TryGetComponent<WETextDataTransform>(e, out var weTransf);
+            return BuildXmlFromComponents(hasMain, weMain, hasMat, weMat, hasMesh, weMesh, hasTransf, weTransf);
+        }
+
+        internal static WETextDataXml BuildXmlFromComponents(
+            bool hasMain, WETextDataMain weMain,
+            bool hasMat, WETextDataMaterial weMat,
+            bool hasMesh, WETextDataMesh weMesh,
+            bool hasTransf, WETextDataTransform weTransf)
+        {
+            var result = hasMain ? weMain.ToXml() : null;
             if (result is null) return result;
-            if (em.TryGetComponent<WETextDataMaterial>(e, out var weMat))
+            if (hasMat)
             {
                 switch (weMat.Shader)
                 {
@@ -27,7 +40,7 @@ namespace BelzontWE.Utils
                         break;
                 }
             }
-            if (em.TryGetComponent<WETextDataMesh>(e, out var weMesh))
+            if (hasMesh)
             {
                 switch (weMesh.TextType)
                 {
@@ -51,7 +64,7 @@ namespace BelzontWE.Utils
                         break;
                 }
             }
-            result.transform = em.TryGetComponent<WETextDataTransform>(e, out var weTransf) ? weTransf.ToXml() : default;
+            result.transform = hasTransf ? weTransf.ToXml() : default;
             return result;
         }
 
