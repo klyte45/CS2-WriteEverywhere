@@ -1,0 +1,5 @@
+{
+  "name": "Sprint-008",
+  "description": "Seam refactor completion (SR-04..SR-06) and formulae-engine foundation (FE-01..FE-04)",
+  "objective": "Inject IECSReader into UpdateEffectiveValue paths, extract formula tokenizer, and establish formulae-engine test suite with ≥680 total passing tests"
+}
