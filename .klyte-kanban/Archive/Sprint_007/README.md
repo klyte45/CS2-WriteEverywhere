@@ -10,10 +10,10 @@ All 5 builtin-fn binding-seam files have null-fallback tests; IECSReader interfa
 
 - **Sprint number**: 007
 - **Start date**: 2026-04-03 15:58 -0300
-- **End date**:
+- **End date**: 2026-04-03 16:28 -0300
 - **Original tasks**: 08
 - **Original task IDs**: [0056], [0057], [0058], [0059], [0060], [0061], [0062], [0063]
-- **Delivered tasks (from original)**:
+- **Delivered tasks (from original)**: 8
 - **Added tasks**: 0
-- **Delivered tasks (from added)**:
-- **Total delivered tasks**:
+- **Delivered tasks (from added)**: 0
+- **Total delivered tasks**: 8
