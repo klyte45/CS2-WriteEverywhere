@@ -7,6 +7,13 @@ namespace BelzontWE
 {
     public static class WELayoutUtility
     {
+        /// <summary>
+        /// Overridable ECS reader seam. When null (production), uses the EntityManager passed to each method.
+        /// Set in tests to a FakeECSReader to control TryGetBuffer results.
+        /// </summary>
+        internal static IECSReader Reader = null;
+        private static IECSReader GetReader(EntityManager em) => Reader ?? new EntityManagerECSReader(em);
+
         public enum ParentEntityMode
         {
             TARGET_IS_TARGET,
@@ -38,7 +45,7 @@ namespace BelzontWE
             em.AddComponent<WETextComponentValid>(newEntity);
             if (childTargetMode == ParentEntityMode.TARGET_IS_TARGET)
             {
-                if (!em.TryGetBuffer<WESubTextRef>(parentEntity, true, out var subRefBuff)) subRefBuff = em.AddBuffer<WESubTextRef>(parentEntity);
+                if (!GetReader(em).TryGetBuffer<WESubTextRef>(parentEntity, true, out var subRefBuff)) subRefBuff = em.AddBuffer<WESubTextRef>(parentEntity);
                 subRefBuff.Add(new WESubTextRef
                 {
                     m_weTextData = newEntity
@@ -114,7 +121,7 @@ namespace BelzontWE
             return newEntity;
         }
 
-        private static Entity CommonDataSetup(WETextDataXmlTree toCopy, Entity parentEntity, Entity targetEntity, ParentEntityMode childTargetMode, Entity newEntity, out WETextDataMain main, out WETextDataMesh mesh, out WETextDataMaterial material, out WETextDataTransform transform)
+        internal static Entity CommonDataSetup(WETextDataXmlTree toCopy, Entity parentEntity, Entity targetEntity, ParentEntityMode childTargetMode, Entity newEntity, out WETextDataMain main, out WETextDataMesh mesh, out WETextDataMaterial material, out WETextDataTransform transform)
         {
             var parentTarget = ParentEntityMode.TARGET_IS_SELF_FOR_PARENT == childTargetMode || ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET == childTargetMode ? newEntity : targetEntity;
             FromXml(toCopy.self, parentEntity, parentTarget, out main, out mesh, out material, out transform);
