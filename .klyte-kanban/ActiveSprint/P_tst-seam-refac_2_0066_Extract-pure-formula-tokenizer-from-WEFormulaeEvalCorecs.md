@@ -1,7 +1,7 @@
+**Start time:** 2026-04-03 19:14 -0300
 # [0066] Extract pure formula tokenizer from WEFormulaeEvalCore.cs
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **the formula string tokenizer/parser logic extracted into a testable internal path in WEFormulaeEvalCore**, so that I **formula parsing correctness is independently verified**.
