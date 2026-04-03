@@ -1,7 +1,7 @@
+**Start time:** 2026-04-03 19:07 -0300
 # [0065] Introduce binding delegates in WECalendarFn.cs (TimeSystem seam)
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **binding delegate fields on WECalendarFn for TimeSystem access**, so that I **calendar formula functions are testable without the game's time simulation running**.
