@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Unity.Mathematics;
 
@@ -7,6 +8,8 @@ namespace BelzontWE.Builtin
     [WEBuiltinFunction("NumberFormatting")]
     public class WENumberFormattingFn
     {
+        public static Func<CultureInfo> GetCurrentCulture = () => WEModData.InstanceWE?.FormatCulture ?? CultureInfo.InvariantCulture;
+
         [WEFormula(typeof(string))]
         public static string To4DigitsValue(float value) => DoIntReduction(value, 4);
         [WEFormula(typeof(string))]
@@ -31,9 +34,9 @@ namespace BelzontWE.Builtin
             var order = 0;
             var floatReduced = DoIntReduction(src, maxDigits, ref order);
             string result;
-            if (order == 0) result = floatReduced.ToString("F3", WEModData.InstanceWE.FormatCulture)[..(maxDigits + 1)];
+            if (order == 0) result = floatReduced.ToString("F3", GetCurrentCulture())[..(maxDigits + 1)];
             else if (order > orders.Length) return "∞";
-            else result = floatReduced.ToString("F3", WEModData.InstanceWE.FormatCulture)[..(maxDigits + 1)];
+            else result = floatReduced.ToString("F3", GetCurrentCulture())[..(maxDigits + 1)];
             if (Regex.IsMatch(result, "^[0-9]$")) result = result[..-1];
             if (floatReduced < 0) result = result[..-1];
             return result + orders[order];
