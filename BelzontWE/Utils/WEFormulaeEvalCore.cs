@@ -18,6 +18,28 @@ namespace BelzontWE
             public Func<T, T> postProcess;
         }
 
+        /// <summary>
+        /// Tokenizes a formula string into its path segments by splitting on '/'.
+        /// Returns null if formula is null. Returns a single empty-string array for empty input.
+        /// Each segment is either a component-reference ("TypeName;field.path")
+        /// or a method-call reference (starts with '&amp;').
+        /// </summary>
+        internal static string[] TokenizeFormula(string formula) => formula?.Split(new[] { "/" }, StringSplitOptions.None);
+
+        /// <summary>
+        /// Returns true if the token represents a method-call segment (starts with '&amp;').
+        /// </summary>
+        internal static bool IsMethodCallToken(string token) => token != null && token.Length > 0 && token[0] == '&';
+
+        /// <summary>
+        /// Classifies a non-null token: "method" if it starts with '&amp;', "component" otherwise.
+        /// </summary>
+        internal static string ClassifyToken(string token)
+        {
+            if (token == null) return null;
+            return IsMethodCallToken(token) ? "method" : "component";
+        }
+
         public static bool TryEvaluate<T>(
             ref int formulaeStrBnk,
             ref byte formulaeCompilationStatus,

@@ -1,3 +1,4 @@
+**End time:** 2026-04-03 19:18 -0300
 **Start time:** 2026-04-03 19:14 -0300
 # [0066] Extract pure formula tokenizer from WEFormulaeEvalCore.cs
 
@@ -24,9 +25,9 @@ Task SR-06. Extract tokenizer/parser logic to internal static methods in WEFormu
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Tokenizer/parser logic extracted to internal static method(s)
-- [ ] Utils/WEFormulaeEvalCoreTests.cs added with >=12 tests: valid formula, multi-segment chain, variable reference, method call syntax, whitespace, empty, null input, malformed brackets
-- [ ] Production EvaluateFormula(...) remains the public entry point (no signature change)
+- [x] Tokenizer/parser logic extracted to internal static method(s)
+- [x] Utils/WEFormulaeEvalCoreTests.cs added with >=12 tests: valid formula, multi-segment chain, variable reference, method call syntax, whitespace, empty, null input, malformed brackets
+- [x] Production EvaluateFormula(...) remains the public entry point (no signature change)
 
 ---
 
