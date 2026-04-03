@@ -192,5 +192,39 @@ namespace BelzontWE.Tests.BuiltinFn
                 WEVehicleFn.GetVehiclePlate_binding = originalPlate;
             }
         }
+
+        [Test]
+        public void GetVehiclePlateLine1_OddLengthPlate_ReturnsFirstHalf()
+        {
+            // Plate "ABCDE" (5 chars): Length/2 = 2 → Line1 = "AB"
+            var originalPlate = WEVehicleFn.GetVehiclePlate_binding;
+            try
+            {
+                WEVehicleFn.GetVehiclePlate_binding = (_) => "ABCDE";
+                var result = WEVehicleFn.GetVehiclePlateLine1_binding(Entity.Null);
+                Assert.AreEqual("AB", result);
+            }
+            finally
+            {
+                WEVehicleFn.GetVehiclePlate_binding = originalPlate;
+            }
+        }
+
+        [Test]
+        public void GetVehiclePlateLine2_OddLengthPlate_ReturnsLongerSecondHalf()
+        {
+            // Plate "ABCDE" (5 chars): Length/2 = 2 → Line2 = "CDE"
+            var originalPlate = WEVehicleFn.GetVehiclePlate_binding;
+            try
+            {
+                WEVehicleFn.GetVehiclePlate_binding = (_) => "ABCDE";
+                var result = WEVehicleFn.GetVehiclePlateLine2_binding(Entity.Null);
+                Assert.AreEqual("CDE", result);
+            }
+            finally
+            {
+                WEVehicleFn.GetVehiclePlate_binding = originalPlate;
+            }
+        }
     }
 }
