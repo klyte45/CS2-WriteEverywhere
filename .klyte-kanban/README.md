@@ -1,4 +1,4 @@
-<!-- kk-workspace-version: 1.2.0 -->
+<!-- kk-workspace-version: 1.4.1 -->
 # Task project workspace  - Klyte Kanban CLI format
 
 This folder is used to organize all actionable improvement tasks to be done on the project.
@@ -179,6 +179,7 @@ Run `kk schema task` to see the full JSON schema.
 | `EPIC_MERGE_CONFLICT` | The target epic already has a task that conflicts with the merge. |
 | `TASK_NOT_READY` | The task is not in a state that allows this operation. |
 | `MISSING_ARGUMENT` | A required argument or option was not provided. |
+| `INVALID_ARGUMENT` |  |
 | `DEVELOPER_CONFLICT` | The developer name conflicts with the existing assignment. |
 | `DOD_INCOMPLETE` |  |
 
