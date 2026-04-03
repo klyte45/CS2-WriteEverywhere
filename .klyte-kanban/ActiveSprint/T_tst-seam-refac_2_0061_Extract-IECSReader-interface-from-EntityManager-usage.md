@@ -1,7 +1,8 @@
+**End time:** 2026-04-03 16:20 -0300
+**Start time:** 2026-04-03 16:17 -0300
 # [0061] Extract IECSReader interface from EntityManager usage
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 <claude-sonnet-4-6@kwytco.com.br>
 ## User Story
 
 > Acting as **a developer**, I want **an IECSReader interface that abstracts the EntityManager operations**, so that I **any class currently calling World.DefaultGameObjectInjectionWorld.EntityManager can receive a test double instead**.
@@ -24,10 +25,10 @@ Task SR-01. Define IECSReader interface (TryGetComponent, TryGetBuffer, HasCompo
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] IECSReader interface defined in BelzontWE (e.g., Utils/IECSReader.cs)
-- [ ] Operations: TryGetComponent<T>, TryGetBuffer<T>, HasComponent<T>, EntityManager RawManager
-- [ ] EntityManagerECSReader concrete class wraps the real EntityManager — used in production
-- [ ] No behavioural change in any existing caller
+- [x] IECSReader interface defined in BelzontWE (e.g., Utils/IECSReader.cs)
+- [x] Operations: TryGetComponent<T>, TryGetBuffer<T>, HasComponent<T>, EntityManager RawManager
+- [x] EntityManagerECSReader concrete class wraps the real EntityManager — used in production
+- [x] No behavioural change in any existing caller
 
 ---
 
