@@ -10,10 +10,10 @@ Inject IECSReader into UpdateEffectiveValue paths, extract formula tokenizer, an
 
 - **Sprint number**: 008
 - **Start date**: 2026-04-03 18:56 -0300
-- **End date**:
+- **End date**: 2026-04-03 21:08 -0300
 - **Original tasks**: 07
 - **Original task IDs**: [0064], [0065], [0066], [0068], [0069], [0070], [0071]
-- **Delivered tasks (from original)**:
+- **Delivered tasks (from original)**: 7
 - **Added tasks**: 0
-- **Delivered tasks (from added)**:
-- **Total delivered tasks**:
+- **Delivered tasks (from added)**: 0
+- **Total delivered tasks**: 7
