@@ -1,3 +1,4 @@
+**End time:** 2026-04-04 00:18 -0300
 **Start time:** 2026-04-04 00:13 -0300
 # [0074] Tests for WEFormulaeController.cs pure logic (if extractable)
 
@@ -24,9 +25,9 @@ Task FE-07. Review WEFormulaeController for extractable pure logic (formulae cat
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] WEFormulaeController.cs reviewed for extractable pure logic (formulae catalog building, type classification)
-- [ ] If extractable: a static helper method extracted and tested (>=5 tests)
-- [ ] If not extractable: task closes documenting why WEFormulaeController is F-tier
+- [x] WEFormulaeController.cs reviewed for extractable pure logic (formulae catalog building, type classification)
+- [x] If extractable: a static helper method extracted and tested (>=5 tests)
+- [x] If not extractable: task closes documenting why WEFormulaeController is F-tier
 
 ---
 

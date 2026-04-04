@@ -325,7 +325,7 @@ namespace BelzontWE
         private static readonly PropertyInfo s_isByRefLikeProperty =
             typeof(Type).GetProperty("IsByRefLike", BindingFlags.Instance | BindingFlags.Public);
 
-        private static bool IsByRefLikeSafe(Type type)
+        internal static bool IsByRefLikeSafe(Type type)
         {
             if (s_isByRefLikeProperty != null)
                 return (bool)s_isByRefLikeProperty.GetValue(type);

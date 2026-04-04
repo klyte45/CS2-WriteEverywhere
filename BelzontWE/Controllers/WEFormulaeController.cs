@@ -37,43 +37,12 @@ namespace BelzontWE
             m_weToolController = World.GetExistingSystemManaged<WEWorldPickerController>();
         }
         private bool IsTypeIndexable(string assemblyName, string typeFullName)
-        {
-            var type = Type.GetType($"{typeFullName}, {assemblyName}");
-            return type != null && (type.IsArray || (type.GetMethod("get_Item", new[] { typeof(int) }) != null && type.GetInterfaces().Any(x => x.IsGenericType && (x.GetGenericTypeDefinition() == typeof(IList<>) || x.GetGenericTypeDefinition() == typeof(IIndexable<>)))));
-        }
+            => WEFormulaeControllerHelper.IsTypeIndexable(assemblyName, typeFullName);
         private Dictionary<int, Dictionary<string, Dictionary<string, WEStaticMethodDesc[]>>> ListAvailableMethodsForType(string assemblyName, string typeFullName)
-        {
-            var type = Type.GetType($"{typeFullName}, {assemblyName}");
-            return type == null ? null : WEFormulaeHelper.FilterAvailableMethodsForFormulae(type)
-                .Select(x => WEStaticMethodDesc.From(x))
-                .OrderBy(x => x.source)
-                .GroupBy(x => x.source)
-                .ToDictionary(
-                    srcGrouping => (int)srcGrouping.Key, srcGrouping => srcGrouping
-                    .OrderBy(x => x.dllName)
-                    .GroupBy(y => y.dllName)
-                    .ToDictionary(
-                        dllGrouping => dllGrouping.Key, dllGrouping => dllGrouping
-                        .OrderBy(x => x.className)
-                        .GroupBy(z => z.className)
-                        .ToDictionary(classGrouping => classGrouping.Key, classGrouping => classGrouping.OrderBy(x => x.methodName).ToArray()
-                        )
-                    )
-                );
-        }
+            => WEFormulaeControllerHelper.ListAvailableMethodsForType(assemblyName, typeFullName);
 
         private WETypeMemberDesc[] ListAvailableMembersForType(string assemblyName, string typeFullName)
-        {
-            var type = Type.GetType($"{typeFullName}, {assemblyName}");
-            return type?.GetMembers(WEFormulaeHelper.MEMBER_FLAGS).Where(x =>
-            (x is PropertyInfo pi && pi.GetMethod?.GetParameters().Length == 0)
-            || x is FieldInfo
-            || (x is MethodInfo mi
-                && mi.GetParameters() is ParameterInfo[] p
-                && (p.Length == 0 || (p.Length == 1 && p[0].ParameterType == typeof(Dictionary<string, string>) && !p[0].ParameterType.IsByRefLike))
-            && mi.ReturnType != typeof(void) && !mi.Name.StartsWith("get_"))
-            ).Select(x => WETypeMemberDesc.FromMemberInfo(x)).ToArray();
-        }
+            => WEFormulaeControllerHelper.ListAvailableMembersForType(assemblyName, typeFullName);
 
         private Dictionary<int, Dictionary<string, Dictionary<string, WEComponentTypeDesc[]>>> ListAvailableComponents() =>
          m_cachedComponentsList ??= TypeManager.AllTypes.Where(x => x.Type != null && (typeof(IComponentData).IsAssignableFrom(x.Type) || typeof(IBufferElementData).IsAssignableFrom(x.Type)))
