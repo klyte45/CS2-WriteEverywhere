@@ -1,7 +1,7 @@
+**Start time:** 2026-04-04 00:10 -0300
 # [0073] Error path tests: invalid formula graceful handling
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **tests that verify the formulae engine's error handling**, so that I **invalid user formulae fail gracefully (display fallback text, not crash)**.
