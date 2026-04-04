@@ -45,6 +45,10 @@
     <PackageReference Include="NUnit3TestAdapter" Version="4.4.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="NSubstitute" Version="5.1.0" />
+    <PackageReference Include="coverlet.collector" Version="6.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="NSubstitute.Analyzers.CSharp" Version="1.0.16">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>

@@ -3,6 +3,10 @@
 > **Scope:** All 143 `.cs` files in `BelzontWE/` (excluding `obj/`, `bin/`).  
 > **Method counting:** Signatures with `{` body (constructors, static/instance methods, properties with logic, operators). Getter/setter shims for simple auto-properties counted only if they contain non-trivial logic.  
 > **Coverage %:** Proportion of methods that have meaningful logic coverable by automated tests (some methods are pure delegates, wiring, or ECS plumbing that cannot be tested without the engine).
+>
+> **📊 Sprint 009 Coverage Update:** Actual Coverlet line-coverage data collected 2026-04-04.  
+> See [05_ActualCoverageReport_Sprint009.md](05_ActualCoverageReport_Sprint009.md) for full file-by-file actuals vs estimates.  
+> Overall: **13.8% total line coverage** (2,523/18,204 lines) = ~**44% of coverable surface** tested.
 
 ## Tier Legend
 
@@ -79,7 +83,7 @@
 | `WENumberFormattingFn.cs` | 48 | 8 | 80% | **B** | `To4DigitsValue`, `To3DigitsValue`, `DoIntReduction` pure except for locale singleton; one static `Func<CultureInfo>` seam needed; 15–20 est. tests |
 | `WEParameterFn.cs` | 47 | 10 | 100% | **S** | Pure dictionary ops; `Entity` param unused; 15–20 est. tests |
 | `WERenterFn.cs` | 25 | 4 | 0% | **E** | ECS renter queries |
-| `WERoadFn.cs` | 93 | 10 | 20% | **C** | Binding seam exists for some road lookups; address formatting testable; core ECS queries blocked |
+| `WERoadFn.cs` | 93 | 10 | 0% | **F** | ~~C-tier~~ **Reclassified Sprint 009:** All methods call `World.DefaultGameObjectInjectionWorld.EntityManager` directly — no IECSReader seam. F-tier in practice. |
 | `WERouteFn.cs` | 49 | 7 | 75% | **A** | Binding seam in place; `GetWaypointStaticDestination*` path w/ vars dict testable; 10–15 est. tests |
 | `WEUtitlitiesFn.cs` | 22 | 4 | 0% | **E** | `NameSystem` + ECS; no accessible seam |
 | `WEVehicleFn.cs` | 72 | 10 | 80% | **A** | Binding seam in place; plate split logic, serial modular math pure; 15–20 est. tests |
