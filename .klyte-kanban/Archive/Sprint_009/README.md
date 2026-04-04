@@ -10,10 +10,10 @@ Close formulae-engine and seam-refactor epics; achieve 720+ tests; produce regre
 
 - **Sprint number**: 009
 - **Start date**: 2026-04-03 23:57 -0300
-- **End date**:
+- **End date**: 2026-04-04 00:40 -0300
 - **Original tasks**: 07
 - **Original task IDs**: [0067], [0072], [0073], [0074], [0075], [0076], [0077]
-- **Delivered tasks (from original)**:
+- **Delivered tasks (from original)**: 7
 - **Added tasks**: 0
-- **Delivered tasks (from added)**:
-- **Total delivered tasks**:
+- **Delivered tasks (from added)**: 0
+- **Total delivered tasks**: 7
