@@ -1,3 +1,4 @@
+**End time:** 2026-04-03 21:08 -0300
 **Start time:** 2026-04-03 21:05 -0300
 # [0071] Tests for WEFormulaeHelper.cs - method discovery and Emit binding
 
@@ -24,9 +25,9 @@ Task FE-04. Extend WEFormulaeHelperTests.cs (from SR-07): GetRegisteredFormulaeC
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Utils/WEFormulaeHelperTests.cs extended with >=8 more tests
-- [ ] Tests cover: GetRegisteredFormulaeCount() returns expected count after SetFormulae<T>, calling generated delegate returns correct value, formulae with different return types stored separately by type
-- [ ] Test verifies that two distinct calls to SetFormulae<T> for same type are idempotent (no duplicate binding)
+- [x] Utils/WEFormulaeHelperTests.cs extended with >=8 more tests
+- [x] Tests cover: GetRegisteredFormulaeCount() returns expected count after SetFormulae<T>, calling generated delegate returns correct value, formulae with different return types stored separately by type
+- [x] Test verifies that two distinct calls to SetFormulae<T> for same type are idempotent (no duplicate binding)
 
 ---
 

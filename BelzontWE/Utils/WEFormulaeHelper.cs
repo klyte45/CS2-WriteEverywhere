@@ -78,6 +78,10 @@ namespace BelzontWE
         public static FormulaeFn<Color> GetCachedColorFn(string formulae) => cachedFnsColor.TryGetValue(formulae, out var cached) ? cached.Fn : null;
         public static FormulaeFn<IList<Entity>> GetCachedEntityArrayFn(string formulae) => cachedFnsEntityArray.TryGetValue(formulae, out var cached) ? cached.Fn : null;
 
+        public static int GetRegisteredFormulaeCount()
+            => cachedFnsString.Count + cachedFnsFloat.Count + cachedFnsInt.Count
+             + cachedFnsColor.Count + cachedFnsFloat3.Count + cachedFnsEntityArray.Count;
+
         public static FormulaeFn<T> GetCachedFn<T>(string formulae)
         {
             if (typeof(T) == typeof(string)) return (FormulaeFn<T>)(object)GetCachedStringFn(formulae);
