@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Unity.Entities;
+using Unity.Mathematics;
+using UnityEngine;
 using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE.Tests.Utils
@@ -35,6 +37,8 @@ namespace BelzontWE.Tests.Utils
             if (typeof(T) == typeof(string)) fieldName = "cachedFnsString";
             else if (typeof(T) == typeof(float)) fieldName = "cachedFnsFloat";
             else if (typeof(T) == typeof(int)) fieldName = "cachedFnsInt";
+            else if (typeof(T) == typeof(float3)) fieldName = "cachedFnsFloat3";
+            else if (typeof(T) == typeof(Color)) fieldName = "cachedFnsColor";
             else throw new NotSupportedException($"No cache dictionary for type {typeof(T).Name}");
 
             var dic = GetCacheDictionary(fieldName);
@@ -251,6 +255,107 @@ namespace BelzontWE.Tests.Utils
         {
             var parts = WEFormulaeHelper.GetPathParts(null);
             Assert.IsNull(parts);
+        }
+
+        // ── GetCachedFloat3Fn / GetCachedColorFn / GetCachedEntityArrayFn ─────
+
+        [Test]
+        public void GetCachedFloat3Fn_UnknownKey_ReturnsNull()
+        {
+            var fn = WEFormulaeHelper.GetCachedFloat3Fn("helper_float3_nonexistent_xyz");
+            Assert.IsNull(fn, "Unknown key should return null");
+        }
+
+        [Test]
+        public void GetCachedColorFn_UnknownKey_ReturnsNull()
+        {
+            var fn = WEFormulaeHelper.GetCachedColorFn("helper_color_nonexistent_xyz");
+            Assert.IsNull(fn, "Unknown key should return null");
+        }
+
+        [Test]
+        public void GetCachedEntityArrayFn_UnknownKey_ReturnsNull()
+        {
+            var fn = WEFormulaeHelper.GetCachedEntityArrayFn("helper_entityarr_nonexistent_xyz");
+            Assert.IsNull(fn, "Unknown key should return null");
+        }
+
+        [Test]
+        public void GetCachedFloat3Fn_AfterInjection_ReturnsDelegate()
+        {
+            var expected = new float3(7, 8, 9);
+            InjectCachedFunction<float3>("helper_float3_delegate_01", (em, e, vars) => expected);
+
+            var fn = WEFormulaeHelper.GetCachedFloat3Fn("helper_float3_delegate_01");
+            Assert.IsNotNull(fn, "Injected float3 formula fn should be retrievable");
+            Assert.AreEqual(expected, fn(default, default, null));
+        }
+
+        [Test]
+        public void GetCachedColorFn_AfterInjection_ReturnsDelegate()
+        {
+            InjectCachedFunction<Color>("helper_color_delegate_01", (em, e, vars) => Color.yellow);
+
+            var fn = WEFormulaeHelper.GetCachedColorFn("helper_color_delegate_01");
+            Assert.IsNotNull(fn, "Injected color formula fn should be retrievable");
+            Assert.AreEqual(Color.yellow, fn(default, default, null));
+        }
+
+        [Test]
+        public void GetRegisteredFormulaeCount_Float3Injection_IncreasesByOne()
+        {
+            int before = WEFormulaeHelper.GetRegisteredFormulaeCount();
+            InjectCachedFunction<float3>("helper_float3_count_01", (em, e, vars) => new float3(1, 2, 3));
+            int after = WEFormulaeHelper.GetRegisteredFormulaeCount();
+            Assert.AreEqual(before + 1, after, "Count should increase by 1 after float3 injection");
+        }
+
+        [Test]
+        public void GetRegisteredFormulaeCount_ColorInjection_IncreasesByOne()
+        {
+            int before = WEFormulaeHelper.GetRegisteredFormulaeCount();
+            InjectCachedFunction<Color>("helper_color_count_01", (em, e, vars) => Color.red);
+            int after = WEFormulaeHelper.GetRegisteredFormulaeCount();
+            Assert.AreEqual(before + 1, after, "Count should increase by 1 after Color injection");
+        }
+
+        [Test]
+        public void IsByRefLikeSafe_Int_ReturnsFalse()
+        {
+            // int is a value type but NOT a ref-like struct
+            bool result = WEFormulaeHelper.IsByRefLikeSafe(typeof(int));
+            Assert.IsFalse(result, "int should not be by-ref-like");
+        }
+
+        [Test]
+        public void IsByRefLikeSafe_String_ReturnsFalse()
+        {
+            bool result = WEFormulaeHelper.IsByRefLikeSafe(typeof(string));
+            Assert.IsFalse(result, "string should not be by-ref-like");
+        }
+
+        [Test]
+        public void GetPathParts_EmptyString_ReturnsSingleEmptyElement()
+        {
+            var parts = WEFormulaeHelper.GetPathParts("");
+            Assert.IsNotNull(parts);
+            Assert.AreEqual(1, parts.Length, "Empty string splits to single empty element");
+        }
+
+        [Test]
+        public void GetCachedFn_Float_InjectedThenRemoved_ReturnsNull()
+        {
+            string key = "helper_remove_test_01";
+            InjectCachedFunction<float>(key, (em, e, vars) => 1.0f);
+            var fnBefore = WEFormulaeHelper.GetCachedFloatFn(key);
+            Assert.IsNotNull(fnBefore, "Should be retrievable after injection");
+
+            var dic = GetCacheDictionary("cachedFnsFloat");
+            dic.Remove(key);
+            _injectedKeys.RemoveAll(t => t.key == key); // Already removed manually
+
+            var fnAfter = WEFormulaeHelper.GetCachedFloatFn(key);
+            Assert.IsNull(fnAfter, "Should return null after removal");
         }
     }
 }

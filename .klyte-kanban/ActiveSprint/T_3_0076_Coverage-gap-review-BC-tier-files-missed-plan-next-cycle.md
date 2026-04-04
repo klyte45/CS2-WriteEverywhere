@@ -1,3 +1,4 @@
+**End time:** 2026-04-04 00:35 -0300
 **Start time:** 2026-04-04 00:20 -0300
 # [0076] Coverage gap review: B/C-tier files missed; plan next cycle
 
@@ -24,9 +25,9 @@ Closure task for Sprint 8. Review all B/C-tier files in 01_FileTestabilityMatrix
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] All B/C-tier files from 01_FileTestabilityMatrix.md reviewed against test output
-- [ ] Gaps documented with reasoning (deprioritized, blocked, or not yet implemented)
-- [ ] Follow-up cycle plan drafted if coverage < 50% of meaningful business logic
+- [x] All B/C-tier files from 01_FileTestabilityMatrix.md reviewed against test output
+- [x] Gaps documented with reasoning (deprioritized, blocked, or not yet implemented)
+- [x] Follow-up cycle plan drafted if coverage < 50% of meaningful business logic
 
 ---
 

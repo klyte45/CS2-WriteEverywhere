@@ -88,5 +88,105 @@ namespace BelzontWE.Tests.Controllers
             Assert.IsNotNull(result, "Entity param type should yield grouped results");
             Assert.Greater(result.Count, 0, "Should find at least one source group with Entity-param formulae");
         }
+
+        // ── IsTypeIndexable additional edge cases ──────────────────────────────
+
+        [Test]
+        public void IsTypeIndexable_StringArray_ReturnsTrue()
+        {
+            bool result = WEFormulaeControllerHelper.IsTypeIndexable("mscorlib", "System.String[]");
+            Assert.IsTrue(result, "string[] is an array and should be indexable");
+        }
+
+        [Test]
+        public void IsTypeIndexable_BoolArray_ReturnsTrue()
+        {
+            bool result = WEFormulaeControllerHelper.IsTypeIndexable("mscorlib", "System.Boolean[]");
+            Assert.IsTrue(result, "bool[] is an array and should be indexable");
+        }
+
+        [Test]
+        public void IsTypeIndexable_ObjectArray_ReturnsTrue()
+        {
+            bool result = WEFormulaeControllerHelper.IsTypeIndexable("mscorlib", "System.Object[]");
+            Assert.IsTrue(result, "object[] is an array and should be indexable");
+        }
+
+        [Test]
+        public void IsTypeIndexable_DictionaryStringInt_ReturnsFalse()
+        {
+            // Dictionary<string,int> does NOT implement IList<> or IIndexable<>
+            bool result = WEFormulaeControllerHelper.IsTypeIndexable(
+                "mscorlib",
+                "System.Collections.Generic.Dictionary`2[[System.String, mscorlib],[System.Int32, mscorlib]]");
+            Assert.IsFalse(result, "Dictionary<string,int> does not implement IList<>");
+        }
+
+        [Test]
+        public void IsTypeIndexable_Queue_ReturnsFalse()
+        {
+            bool result = WEFormulaeControllerHelper.IsTypeIndexable(
+                "mscorlib",
+                "System.Collections.Generic.Queue`1[[System.Int32, mscorlib]]");
+            Assert.IsFalse(result, "Queue<int> does not implement IList<>");
+        }
+
+        [Test]
+        public void IsTypeIndexable_NullTypeFullName_ReturnsFalse()
+        {
+            bool result = WEFormulaeControllerHelper.IsTypeIndexable("mscorlib", null);
+            Assert.IsFalse(result, "Null type full name should return false");
+        }
+
+        // ── ListAvailableMembersForType additional types ───────────────────────
+
+        [Test]
+        public void ListAvailableMembersForType_IntType_ReturnsNonNullArray()
+        {
+            var result = WEFormulaeControllerHelper.ListAvailableMembersForType("mscorlib", "System.Int32");
+            Assert.IsNotNull(result, "Int32 should return non-null result");
+        }
+
+        [Test]
+        public void ListAvailableMembersForType_StringType_ReturnsNonEmptyArray()
+        {
+            var result = WEFormulaeControllerHelper.ListAvailableMembersForType("mscorlib", "System.String");
+            Assert.IsNotNull(result, "String type should return non-null");
+            Assert.Greater(result.Length, 0, "String should have discoverable members (Length, etc.)");
+        }
+
+        [Test]
+        public void ListAvailableMembersForType_BoolType_ReturnsNonNullArray()
+        {
+            var result = WEFormulaeControllerHelper.ListAvailableMembersForType("mscorlib", "System.Boolean");
+            Assert.IsNotNull(result, "Boolean should return non-null result");
+        }
+
+        // ── ListAvailableMethodsForType for common .NET types ─────────────────
+
+        [Test, Ignore("ListAvailableMethodsForType calls WEStaticMethodDesc.From which loads Colossal.IO.AssetDatabase — Game.dll dependency")]
+        public void ListAvailableMethodsForType_DateTimeType_ReturnsEmptyDictionary()
+        {
+            // DateTime has no [WEBuiltinFunction] methods in test context → empty dict (not null)
+            var result = WEFormulaeControllerHelper.ListAvailableMethodsForType("mscorlib", "System.DateTime");
+            Assert.IsNotNull(result, "DateTime type should return empty dict, not null");
+            Assert.AreEqual(0, result.Count, "No WE formulae methods registered for DateTime in test context");
+        }
+
+        [Test, Ignore("ListAvailableMethodsForType calls WEStaticMethodDesc.From which loads Colossal.IO.AssetDatabase — Game.dll dependency")]
+        public void ListAvailableMethodsForType_BoolType_ReturnsEmptyDictionary()
+        {
+            var result = WEFormulaeControllerHelper.ListAvailableMethodsForType("mscorlib", "System.Boolean");
+            Assert.IsNotNull(result, "Boolean type should return empty dict, not null");
+            Assert.AreEqual(0, result.Count, "No WE formulae methods registered for bool in test context");
+        }
+
+        [Test, Ignore("ListAvailableMethodsForType calls WEStaticMethodDesc.From which loads Colossal.IO.AssetDatabase — Game.dll dependency")]
+        public void ListAvailableMethodsForType_IntType_ReturnsEmptyDictionary()
+        {
+            var result = WEFormulaeControllerHelper.ListAvailableMethodsForType("mscorlib", "System.Int32");
+            Assert.IsNotNull(result, "Int32 type should return empty dict, not null");
+            Assert.AreEqual(0, result.Count, "No WE formulae methods registered for Int32 in test context");
+        }
     }
 }

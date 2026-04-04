@@ -1,8 +1,12 @@
 using BelzontWE.Tests.Utils;
+using BelzontWE.Utils;
+using NSubstitute;
 using NUnit.Framework;
+using System.Collections;
 using System.Reflection;
 using Unity.Entities;
 using UnityEngine;
+using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE.Tests.Components
 {
@@ -128,5 +132,70 @@ namespace BelzontWE.Tests.Components
             v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
             var changed = v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
             Assert.IsFalse(changed);
-        }    }
+        }
+
+        // ── UpdateEffectiveValue with injected formula (FE-05 Color) ──────────
+
+        private static void SetLoadingDone(ref WETextDataValueColor v)
+        {
+            object boxed = v;
+            typeof(WETextDataValueColor).GetField("loadingFnDone", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(boxed, true);
+            v = (WETextDataValueColor)boxed;
+        }
+
+        private static void InjectForColor(string key, Color val, out IDictionary cache)
+        {
+            var field = typeof(WEFormulaeHelper).GetField("cachedFnsColor", BindingFlags.Static | BindingFlags.NonPublic);
+            cache = (IDictionary)field.GetValue(null);
+            var baseType = typeof(WEFormulaeHelper).GetNestedType("BaseCache`1", BindingFlags.NonPublic).MakeGenericType(typeof(Color));
+            var inst = System.Activator.CreateInstance(baseType);
+            baseType.GetMethod("SetData", BindingFlags.Instance | BindingFlags.Public).Invoke(inst, new object[] { (byte)0, (FormulaeFn<Color>)((em, e, v2) => val), null });
+            cache[key] = inst;
+        }
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_ValidFormula_ReturnsFormulaResult()
+        {
+            string key = "fe05_color_valid";
+            InjectForColor(key, Color.green, out var cache);
+            try
+            {
+                var v = new WETextDataValueColor { defaultValue = Color.black };
+                v.Formulae = key;
+                SetLoadingDone(ref v);
+                var reader = Substitute.For<IECSReader>();
+                v.UpdateEffectiveValue(reader, Entity.Null, null);
+                Assert.AreEqual(Color.green, v.EffectiveValue);
+            }
+            finally { cache.Remove(key); }
+        }
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_UnknownFormula_ReturnsNullFnFallback()
+        {
+            var v = new WETextDataValueColor { defaultValue = Color.red };
+            v.Formulae = "fe05_color_nosuch";
+            SetLoadingDone(ref v);
+            var reader = Substitute.For<IECSReader>();
+            v.UpdateEffectiveValue(reader, Entity.Null, null);
+            Assert.AreEqual(Color.cyan, v.EffectiveValue, "Unknown formula should yield Color.cyan (nullFnFallback)");
+        }
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_ValidFormula_SetsInitializedTrue()
+        {
+            string key = "fe05_color_init";
+            InjectForColor(key, Color.white, out var cache);
+            try
+            {
+                var v = new WETextDataValueColor();
+                v.Formulae = key;
+                SetLoadingDone(ref v);
+                var reader = Substitute.For<IECSReader>();
+                v.UpdateEffectiveValue(reader, Entity.Null, null);
+                Assert.IsTrue(v.InitializedEffectiveText);
+            }
+            finally { cache.Remove(key); }
+        }
+    }
 }
