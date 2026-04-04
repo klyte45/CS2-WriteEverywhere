@@ -1,7 +1,7 @@
+**Start time:** 2026-04-03 21:05 -0300
 # [0071] Tests for WEFormulaeHelper.cs - method discovery and Emit binding
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **tests that verify the Reflection.Emit-based delegate generation in WEFormulaeHelper**, so that I **the compile-time JIT binding between formula strings and methods is verified**.
