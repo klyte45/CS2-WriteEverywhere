@@ -1,7 +1,7 @@
+**Start time:** 2026-04-04 00:13 -0300
 # [0074] Tests for WEFormulaeController.cs pure logic (if extractable)
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **to test any pure query/discovery logic in WEFormulaeController**, so that I **the logic that builds the formulae catalog sent to the UI is verified without the game context**.
