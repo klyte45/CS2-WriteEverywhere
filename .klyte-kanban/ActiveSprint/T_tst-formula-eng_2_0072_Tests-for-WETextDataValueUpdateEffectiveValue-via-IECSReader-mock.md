@@ -1,3 +1,4 @@
+**End time:** 2026-04-04 00:10 -0300
 **Start time:** 2026-04-04 00:03 -0300
 # [0072] Tests for WETextDataValue*.UpdateEffectiveValue via IECSReader mock
 
@@ -24,9 +25,9 @@ Task FE-05. Add >=6 tests each to WETextDataValueFloat/Int/String for UpdateEffe
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] WETextDataValueFloatTests.cs, WETextDataValueIntTests.cs, WETextDataValueStringTests.cs each gain >=6 tests for UpdateEffectiveValue
-- [ ] Tests use NSubstitute mock of IECSReader: mock returns known component data, call UpdateEffectiveValue, verify EffectiveValue updated and InitializedEffectiveText=true
-- [ ] Tests cover: no formula->uses DefaultValue, valid formula->evaluated value, invalid/unknown formula->fallback value
+- [x] WETextDataValueFloatTests.cs, WETextDataValueIntTests.cs, WETextDataValueStringTests.cs each gain >=6 tests for UpdateEffectiveValue
+- [x] Tests use NSubstitute mock of IECSReader: mock returns known component data, call UpdateEffectiveValue, verify EffectiveValue updated and InitializedEffectiveText=true
+- [x] Tests cover: no formula->uses DefaultValue, valid formula->evaluated value, invalid/unknown formula->fallback value
 
 ---
 

@@ -1,6 +1,11 @@
 using NUnit.Framework;
 using BelzontWE.Tests.Utils;
+using BelzontWE.Utils;
+using NSubstitute;
+using System.Collections;
+using System.Reflection;
 using Unity.Entities;
+using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE.Tests.Components
 {
@@ -134,6 +139,70 @@ namespace BelzontWE.Tests.Components
             v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
             var changed = v.UpdateEffectiveValue(new NullECSReader(), Entity.Null, null);
             Assert.IsFalse(changed);
+        }
+
+        // ── UpdateEffectiveValue with injected formula (FE-05) ────────────────
+
+        private static void SetLoadingDone(ref WETextDataValueFloat v)
+        {
+            object boxed = v;
+            typeof(WETextDataValueFloat).GetField("loadingFnDone", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(boxed, true);
+            v = (WETextDataValueFloat)boxed;
+        }
+
+        private static void InjectForFloat(string key, float val, out IDictionary cache)
+        {
+            var field = typeof(WEFormulaeHelper).GetField("cachedFnsFloat", BindingFlags.Static | BindingFlags.NonPublic);
+            cache = (IDictionary)field.GetValue(null);
+            var baseType = typeof(WEFormulaeHelper).GetNestedType("BaseCache`1", BindingFlags.NonPublic).MakeGenericType(typeof(float));
+            var inst = System.Activator.CreateInstance(baseType);
+            baseType.GetMethod("SetData", BindingFlags.Instance | BindingFlags.Public).Invoke(inst, new object[] { (byte)0, (FormulaeFn<float>)((em, e, v2) => val), null });
+            cache[key] = inst;
+        }
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_ValidFormula_ReturnsFormulaResult()
+        {
+            string key = "fe05_float_valid";
+            InjectForFloat(key, 99.5f, out var cache);
+            try
+            {
+                var v = new WETextDataValueFloat { defaultValue = 1f };
+                v.Formulae = key;
+                SetLoadingDone(ref v);
+                var reader = Substitute.For<IECSReader>();
+                v.UpdateEffectiveValue(reader, Entity.Null, null);
+                Assert.AreEqual(99.5f, v.EffectiveValue, 0.001f);
+            }
+            finally { cache.Remove(key); }
+        }
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_UnknownFormula_ReturnsNullFnFallback()
+        {
+            var v = new WETextDataValueFloat { defaultValue = 5f };
+            v.Formulae = "fe05_float_nosuch";
+            SetLoadingDone(ref v);
+            var reader = Substitute.For<IECSReader>();
+            v.UpdateEffectiveValue(reader, Entity.Null, null);
+            Assert.IsTrue(float.IsNaN(v.EffectiveValue), "Unknown formula should yield NaN (nullFnFallback)");
+        }
+
+        [Test]
+        public void UpdateEffectiveValue_IECSReader_ValidFormula_SetsInitializedTrue()
+        {
+            string key = "fe05_float_init";
+            InjectForFloat(key, 2.0f, out var cache);
+            try
+            {
+                var v = new WETextDataValueFloat();
+                v.Formulae = key;
+                SetLoadingDone(ref v);
+                var reader = Substitute.For<IECSReader>();
+                v.UpdateEffectiveValue(reader, Entity.Null, null);
+                Assert.IsTrue(v.InitializedEffectiveText);
+            }
+            finally { cache.Remove(key); }
         }
     }
 }
