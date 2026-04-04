@@ -1,7 +1,7 @@
+**Start time:** 2026-04-04 00:19 -0300
 # [0075] Regression test suite: manual game session validation document
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **the project maintainer**, I want **a documented manual regression validation checklist for game session testing**, so that I **seam refactors are verified to not break formula evaluation in the running game**.
