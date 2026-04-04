@@ -1,7 +1,7 @@
+**Start time:** 2026-04-03 23:58 -0300
 # [0067] Tests for WEFormulaeHelper.cs - formula registration and discovery
 
-**Developed by:** 
-
+**Developed by:** Claude-Sonnet-4-6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **tests for the WEFormulaeHelper formula registration system**, so that I **the Reflection.Emit-based formula-to-method binding is verified to discover and bind the correct methods**.
