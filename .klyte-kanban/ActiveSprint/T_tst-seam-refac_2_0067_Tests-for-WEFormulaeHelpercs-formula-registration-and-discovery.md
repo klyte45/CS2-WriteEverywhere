@@ -1,3 +1,4 @@
+**End time:** 2026-04-04 00:02 -0300
 **Start time:** 2026-04-03 23:58 -0300
 # [0067] Tests for WEFormulaeHelper.cs - formula registration and discovery
 
@@ -24,9 +25,9 @@ Task SR-07. Test WEFormulaeHelper formula registration system: SetFormulae<T>() 
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Utils/WEFormulaeHelperTests.cs exists with >=12 tests
-- [ ] Tests cover: SetFormulae<T>() discovers methods decorated with [WEFormula], returns correct count, discovered names match known formula names, GetFormulaForType(typeof(string)) returns string formulae, calling a discovered formula delegate returns expected value using a test formulae class
-- [ ] No production code changes beyond InternalsVisibleTo (already done)
+- [x] Utils/WEFormulaeHelperTests.cs exists with >=12 tests
+- [x] Tests cover: SetFormulae<T>() discovers methods decorated with [WEFormula], returns correct count, discovered names match known formula names, GetFormulaForType(typeof(string)) returns string formulae, calling a discovered formula delegate returns expected value using a test formulae class
+- [x] No production code changes beyond InternalsVisibleTo (already done)
 
 ---
 

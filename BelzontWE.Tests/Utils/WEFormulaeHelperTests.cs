@@ -199,6 +199,33 @@ namespace BelzontWE.Tests.Utils
             Assert.AreEqual(typeof(int), methods.First().ReturnType);
         }
 
+        [Test]
+        public void FilterAvailableMethodsForFormulae_DiscoveredNamesMatchKnownNames()
+        {
+            WEFormulaeHelper.ResetMethodCache();
+            var methods = WEFormulaeHelper.FilterAvailableMethodsForFormulae(
+                typeof(Entity), "TestFormulaeClass", null);
+
+            var names = methods.Select(m => m.Name).ToList();
+            CollectionAssert.Contains(names, "GetGreeting", "Should find GetGreeting");
+            CollectionAssert.Contains(names, "GetFixedInt", "Should find GetFixedInt");
+            CollectionAssert.Contains(names, "GetFixedFloat", "Should find GetFixedFloat");
+        }
+
+        [Test]
+        public void FilterAvailableMethodsForFormulae_StringParamType_ReturnsStringChainingMethods()
+        {
+            // Verifies "GetFormulaForType(typeof(string))" concept: formulae whose first param is string
+            // (used as chaining formulae that transform string→string)
+            WEFormulaeHelper.ResetMethodCache();
+            var methods = WEFormulaeHelper.FilterAvailableMethodsForFormulae(
+                typeof(string), "TestFormulaeClass", null);
+
+            var names = methods.Select(m => m.Name).ToList();
+            CollectionAssert.Contains(names, "ToUpperCase", "Should find ToUpperCase (string→string)");
+            CollectionAssert.Contains(names, "AppendExclamation", "Should find AppendExclamation (string→string)");
+        }
+
         // ── GetPathParts ───────────────────────────────────────────────────────
 
         [Test]
