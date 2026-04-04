@@ -148,11 +148,11 @@ namespace BelzontWE
                     {
                         case '&':
                             {
-                                var parts = codePart[1..].Split(new char[] { ';' });
+                                var parts = codePart.Substring(1).Split(new char[] { ';' });
                                 var className = parts[0];
                                 var pathNav = parts[1].Split(new char[] { '.' });
                                 var method = pathNav[0];
-                                var navFields = pathNav.Length > 1 ? pathNav[1..] : new string[0];
+                                var navFields = pathNav.Length > 1 ? CopyArrayFrom(pathNav, 1) : new string[0];
                                 var candidateMethods = FilterAvailableMethodsForFormulae(currentComponentType, className, method);
                                 var resultQuery = candidateMethods.ToList();
                                 if (resultQuery.Count == 0)
@@ -311,20 +311,79 @@ namespace BelzontWE
             }
         }
 
+        private static T[] CopyArrayFrom<T>(T[] source, int startIndex)
+        {
+            var result = new T[source.Length - startIndex];
+            Array.Copy(source, startIndex, result, 0, result.Length);
+            return result;
+        }
+
+        private static readonly PropertyInfo s_isByRefLikeProperty =
+            typeof(Type).GetProperty("IsByRefLike", BindingFlags.Instance | BindingFlags.Public);
+
+        private static bool IsByRefLikeSafe(Type type)
+        {
+            if (s_isByRefLikeProperty != null)
+                return (bool)s_isByRefLikeProperty.GetValue(type);
+            return false;
+        }
+
         public static string[] GetPathParts(string newFormulae) => newFormulae?.Split(new char[] { '/' });
 
         private static List<MethodInfo> CACHED_AVAILABLE_STATIC_METHODS;
 
+        internal static void ResetMethodCache()
+        {
+            CACHED_AVAILABLE_STATIC_METHODS = null;
+        }
+
+        private static Type[] SafeGetTypes(Assembly assembly)
+        {
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                return Array.FindAll(ex.Types, t => t != null);
+            }
+        }
+
+        private static MethodInfo[] SafeGetMethods(Type type, BindingFlags flags)
+        {
+            try
+            {
+                return type.GetMethods(flags);
+            }
+            catch
+            {
+                return new MethodInfo[0];
+            }
+        }
+
+        private static bool IsValidFormulaMethod(MethodInfo m)
+        {
+            try
+            {
+                var p = m.GetParameters();
+                return p != null
+                    && (p.Length == 1 || (p.Length == 2 && p[1].ParameterType == typeof(Dictionary<string, string>)))
+                    && !IsByRefLikeSafe(p[0].ParameterType)
+                    && m.ReturnType != typeof(void);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public static IEnumerable<MethodInfo> FilterAvailableMethodsForFormulae(Type currentComponentType, string className = null, string method = null)
         {
             CACHED_AVAILABLE_STATIC_METHODS ??= AppDomain.CurrentDomain.GetAssemblies()
-                                                 .SelectMany(assembly => assembly.GetTypes())
-                                                 .SelectMany(x => x.GetMethods(BindingFlags.Static | BindingFlags.Public))
-                                                 .Where(m => m.GetParameters() is ParameterInfo[] p
-                                                    && (p.Length == 1 || (p.Length == 2 && p[1].ParameterType == typeof(Dictionary<string, string>)))
-                                                    && !p[0].ParameterType.IsByRefLike
-                                                    && m.ReturnType != typeof(void)
-                                                 ).ToList();
+                                                 .SelectMany(assembly => SafeGetTypes(assembly))
+                                                 .SelectMany(x => SafeGetMethods(x, BindingFlags.Static | BindingFlags.Public))
+                                                 .Where(m => IsValidFormulaMethod(m))
+                                                 .ToList();
 
             return CACHED_AVAILABLE_STATIC_METHODS.Where(m => CheckMethodIsCompatible(currentComponentType, className, method, m));
         }
@@ -459,7 +518,7 @@ namespace BelzontWE
 
             if (targetValue.EndsWith("f"))
             {
-                targetValue = targetValue[..^1];
+                targetValue = targetValue.Substring(0, targetValue.Length - 1);
                 if (currentOperand != TypeCode.Single)
                 {
                     generator.Emit(OpCodes.Conv_R4);
@@ -468,7 +527,7 @@ namespace BelzontWE
             }
             else if (targetValue.EndsWith("d"))
             {
-                targetValue = targetValue[..^1];
+                targetValue = targetValue.Substring(0, targetValue.Length - 1);
                 if (currentOperand != TypeCode.Double)
                 {
                     generator.Emit(OpCodes.Conv_R8);
@@ -577,11 +636,11 @@ namespace BelzontWE
                 var op = CheckAritmeticOp(field);
                 if (op != OpCodes.Nop)
                 {
-                    var value = field[1..].Replace(',', '.').ToLower();
+                    var value = field.Substring(1).Replace(',', '.').ToLower();
                     var oldCompType = currentComponentType;
                     if (!SetupMathOperands(ref currentComponentType, value, op, iLGenerator))
                     {
-                        errorFmtArgs = new[] { oldCompType.FullName, field[0..1], field[1..] };
+                        errorFmtArgs = new[] { oldCompType.FullName, field.Substring(0, 1), field.Substring(1) };
                         return 11; // Invalid arithmetic operation: {0} {1} {2} (comma is decimal separator)
                     }
                     continue;

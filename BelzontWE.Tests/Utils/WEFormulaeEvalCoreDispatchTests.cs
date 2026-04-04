@@ -31,6 +31,12 @@ namespace BelzontWE.Tests.Utils
 
         [WEFormula(typeof(float), "Returns a fixed float")]
         public static float GetFixedFloat(Entity reference) => 3.14f;
+
+        [WEFormula(typeof(string), "Converts a string to upper case (for chaining)")]
+        public static string ToUpperCase(string input) => input?.ToUpper();
+
+        [WEFormula(typeof(string), "Appends exclamation to a string (for chaining)")]
+        public static string AppendExclamation(string input) => input + "!";
     }
 
     [TestFixture]

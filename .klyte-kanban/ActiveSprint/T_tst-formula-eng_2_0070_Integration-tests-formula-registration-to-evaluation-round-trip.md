@@ -1,3 +1,4 @@
+**End time:** 2026-04-03 21:05 -0300
 **Start time:** 2026-04-03 19:55 -0300
 # [0070] Integration tests: formula registration to evaluation round-trip
 
@@ -24,11 +25,11 @@ Task FE-03. End-to-end tests: fixture formulae class -> WEFormulaeHelper.SetForm
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Test-fixture formulae class defined in test assembly with 3+ formulae functions
-- [ ] WEFormulaeHelper.SetFormulae<TestFormulaeClass>() called in [SetUp]
-- [ ] WEFormulaeEvalCore.Evaluate(formulaString, ...) called and result verified
-- [ ] At minimum: const string formula, reads from variable dict, chains two transforms
-- [ ] [TearDown] unregisters test formulae to prevent interaction with other test classes
+- [x] Test-fixture formulae class defined in test assembly with 3+ formulae functions
+- [x] WEFormulaeHelper.SetFormulae<TestFormulaeClass>() called in [SetUp]
+- [x] WEFormulaeEvalCore.Evaluate(formulaString, ...) called and result verified
+- [x] At minimum: const string formula, reads from variable dict, chains two transforms
+- [x] [TearDown] unregisters test formulae to prevent interaction with other test classes
 
 ---
 
