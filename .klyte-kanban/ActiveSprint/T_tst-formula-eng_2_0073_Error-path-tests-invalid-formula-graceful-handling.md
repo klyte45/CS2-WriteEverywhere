@@ -1,3 +1,4 @@
+**End time:** 2026-04-04 00:13 -0300
 **Start time:** 2026-04-04 00:10 -0300
 # [0073] Error path tests: invalid formula graceful handling
 
@@ -24,8 +25,8 @@ Task FE-06. Test formulae engine error handling: empty formula, non-existent fun
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Tests for: empty formula string evaluation, formula referencing non-existent function, formula with wrong argument count, formula producing null result handled as empty string, deeply nested/recursive formula (cycle detection or depth limit)
-- [ ] Error fallback values from WETextDataValueString.s_config are verified
+- [x] Tests for: empty formula string evaluation, formula referencing non-existent function, formula with wrong argument count, formula producing null result handled as empty string, deeply nested/recursive formula (cycle detection or depth limit)
+- [x] Error fallback values from WETextDataValueString.s_config are verified
 
 ---
 
