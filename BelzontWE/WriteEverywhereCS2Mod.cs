@@ -76,7 +76,7 @@ namespace BelzontWE
             updateSystem.UpdateAfter<WEPrefabLayoutSystem>(SystemUpdatePhase.Rendering);
             updateSystem.UpdateAt<WETemplateDisposalSystem>(SystemUpdatePhase.Cleanup);
 
-            updateSystem.UpdateAt<WEPreCullingSystem>(SystemUpdatePhase.PreCulling);
+            updateSystem.UpdateAt<WEPreCullingSystem>(SystemUpdatePhase.PreCulling);            
 
             var reloadAssetsWeStuff = () =>
             {

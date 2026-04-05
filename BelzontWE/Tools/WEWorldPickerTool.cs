@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace BelzontWE
 {
-    public partial class WEWorldPickerTool : IBelzontToolSystem
+    internal partial class WEWorldPickerTool : IBelzontToolSystem
     {
         public static readonly float[] precisionIdx = new[] { 1f, 1 / 2f, 1 / 4f, 1 / 10f, 1 / 20f, 1 / 40f, 1 / 100f, 1 / 200f, 1 / 400f, 1 / 1000f };
 
@@ -544,9 +544,9 @@ namespace BelzontWE
 
             if (isDecal)
             {
-                return decalBaseRotation * Quaternion.Euler(basePitch, rotationY, 0);
+                return decalBaseRotation * Quaternion.Euler(basePitch, rotationY, 180);
             }
-            return Quaternion.Euler(basePitch, rotationY, 0);
+            return Quaternion.Euler(basePitch, rotationY, 180);
         }
 
         private Quaternion GetPlaneZYRotation(bool isDecal, float3 itemAngles, bool isRotationLocked, Quaternion decalBaseRotation, bool isBackFacing)

@@ -61,9 +61,9 @@ namespace BelzontWE
                     continue;
 
                 // MatrixTransform nodes are never rendered; skip them.
-                if (mesh.TextType == WESimulationTextType.MatrixTransform)
+                if (mesh.TextType == WESimulationTextType.MatrixTransform || mesh.TextType == WESimulationTextType.Archetype || mesh.TextType == WESimulationTextType.Placeholder)
                     continue;
-
+                    
                 // Only Default shader with positive emissive intensity and UseGlobalLight enabled emits scene light.
                 if (materialData.Shader != WEShader.Default || materialData.EmissiveIntensityEffective <= 0f || !materialData.UseGlobalLight)
                 {
@@ -122,7 +122,7 @@ namespace BelzontWE
             var go = new GameObject($"[WELight]_{entity.Index}");
 
             // AddHDLight adds both the Unity Light component and HDAdditionalLightData.
-            var hdLight = go.AddHDLight(HDLightTypeAndShape.Point);
+            var hdLight = go.AddHDLight(HDLightTypeAndShape.RectangleArea);
 
             // Mirror the defaults CS2 uses in LightCullingSystem for all dynamic lights:
             hdLight.lightlayersMask = LightLayerEnum.Everything;
