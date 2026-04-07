@@ -333,12 +333,12 @@ namespace BelzontWE
                 if (m_cycleAxisLock.WasPressedThisFrame()) m_Controller.CurrentMoveMode.ChangeValueWithEffects((1 + m_Controller.CurrentMoveMode.Value) % 3);
                 if (m_Controller.CameraLocked.Value && m_ToggleLockCameraRotation.WasPressedThisFrame()) m_Controller.CameraRotationLocked.ChangeValueWithEffects(!m_Controller.CameraRotationLocked.Value);
 
-                if (m_treeNavNext.WasPressedThisFrame()) m_Controller.FireTreeNavAction(0);
-                else if (m_treeNavPrev.WasPressedThisFrame()) m_Controller.FireTreeNavAction(1);
-                else if (m_treeToggleFold.WasPressedThisFrame()) m_Controller.FireTreeNavAction(2);
-                else if (m_treeDelete.WasPressedThisFrame() && m_Controller.IsValidEditingItem()) m_Controller.FireTreeNavAction(3);
-                else if (m_treeFoldAll.WasPressedThisFrame()) m_Controller.FireTreeNavAction(4);
-                else if (m_treeUnfoldAll.WasPressedThisFrame()) m_Controller.FireTreeNavAction(5);
+                if (m_treeNavNext.WasPressedThisFrame()) m_Controller.FireTreeNavAction(WEWorldPickerController.TreeNavAction.NavNext);
+                else if (m_treeNavPrev.WasPressedThisFrame()) m_Controller.FireTreeNavAction(WEWorldPickerController.TreeNavAction.NavPrev);
+                else if (m_treeToggleFold.WasPressedThisFrame()) m_Controller.FireTreeNavAction(WEWorldPickerController.TreeNavAction.ToggleFold);
+                else if (m_treeDelete.WasPressedThisFrame() && m_Controller.IsValidEditingItem()) m_Controller.FireTreeNavAction(WEWorldPickerController.TreeNavAction.Delete);
+                else if (m_treeFoldAll.WasPressedThisFrame()) m_Controller.FireTreeNavAction(WEWorldPickerController.TreeNavAction.FoldAll);
+                else if (m_treeUnfoldAll.WasPressedThisFrame()) m_Controller.FireTreeNavAction(WEWorldPickerController.TreeNavAction.UnfoldAll);
 
 
                 if (HoveredEntity != Entity.Null)

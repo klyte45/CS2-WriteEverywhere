@@ -18,7 +18,14 @@ import { K45HierarchyMenu, K45HierarchyViewport } from "./K45HierarchyMenu";
 import useAsyncMemo from "@klyte45/vuio-commons/src/utils/useAsyncMemo";
 import '../style/textHierarchyView.scss';
 
-
+const enum TreeNavAction {
+    NavNext = 0,
+    NavPrev = 1,
+    ToggleFold = 2,
+    Delete = 3,
+    FoldAll = 4,
+    UnfoldAll = 5,
+}
 
 export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: Entity | undefined | null, setClipboard: (c: Entity | undefined | null) => any }) => {
 
@@ -233,22 +240,21 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
         );
 
     // Tree navigation actions sent from C# backend ProxyActions registered in WEModData
-    // Action codes: 0=NavNext, 1=NavPrev, 2=ToggleFold, 3=Delete, 4=FoldAll, 5=UnfoldAll
     const treeNavHandlerRef = useRef<(action: number) => void>();
     treeNavHandlerRef.current = (action: number) => {
         const currentIdx = viewport.findIndex(v => v.id.Index === wps.CurrentSubEntity.value?.Index);
         switch (action) {
-            case 0: // NavNext (PageDown)
+            case TreeNavAction.NavNext:
                 if (currentIdx >= 0 && currentIdx < viewport.length - 1) {
                     wps.CurrentSubEntity.set(viewport[currentIdx + 1].id);
                 }
                 break;
-            case 1: // NavPrev (PageUp)
+            case TreeNavAction.NavPrev:
                 if (currentIdx > 0) {
                     wps.CurrentSubEntity.set(viewport[currentIdx - 1].id);
                 }
                 break;
-            case 2: // ToggleFold (Space)
+            case TreeNavAction.ToggleFold:
                 if (currentIdx >= 0 && viewport[currentIdx].expandable) {
                     const id = viewport[currentIdx].id;
                     const isExpanded = expandedViewports.some(y => y.Index === id.Index);
@@ -257,15 +263,15 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                         : [...expandedViewports, id]);
                 }
                 break;
-            case 3: // Delete
+            case TreeNavAction.Delete:
                 if (wps.CurrentSubEntity.value?.Index) {
                     setPendingDelete(true);
                 }
                 break;
-            case 4: // FoldAll (Home)
+            case TreeNavAction.FoldAll:
                 setExpandedViewports([]);
                 break;
-            case 5: // UnfoldAll (End)
+            case TreeNavAction.UnfoldAll:
                 setExpandedViewports(collectAllExpandable(wps.CurrentTree.value));
                 break;
         }

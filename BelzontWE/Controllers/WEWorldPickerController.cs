@@ -364,9 +364,19 @@ namespace BelzontWE
             CurrentTree.Value = GetTextTreeForEntity(CurrentEntity.Value);
         }
 
-        public void FireTreeNavAction(int action)
+        public enum TreeNavAction
         {
-            m_eventCaller?.Invoke($"{PREFIX}treeNavAction!", new object[] { action });
+            NavNext = 0,
+            NavPrev = 1,
+            ToggleFold = 2,
+            Delete = 3,
+            FoldAll = 4,
+            UnfoldAll = 5,
+        }
+
+        public void FireTreeNavAction(TreeNavAction action)
+        {
+            m_eventCaller?.Invoke($"{PREFIX}treeNavAction!", new object[] { (int)action });
         }
 
         private void RemoveItem()
