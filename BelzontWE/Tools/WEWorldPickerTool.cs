@@ -50,8 +50,8 @@ namespace BelzontWE
         private ProxyAction m_CameraZoomAction;
         private ProxyAction m_increasePrecisionValue;
         private ProxyAction m_reducePrecisionValue;
-        private ProxyAction m_nextText;
-        private ProxyAction m_prevText;
+        private ProxyAction m_instanceNavZNext;
+        private ProxyAction m_instanceNavZPrev;
         private ProxyAction m_instanceNavXNext;
         private ProxyAction m_instanceNavXPrev;
         private ProxyAction m_instanceNavYNext;
@@ -98,8 +98,8 @@ namespace BelzontWE
             m_increasePrecisionValue = WEModData.Instance.GetAction(WEModData.kActionIncreaseMovementStrenght);
             m_reducePrecisionValue = WEModData.Instance.GetAction(WEModData.kActionReduceMovementStrenght);
 
-            m_nextText = WEModData.Instance.GetAction(WEModData.kActionNextText);
-            m_prevText = WEModData.Instance.GetAction(WEModData.kActionPreviousText);
+            m_instanceNavZNext = WEModData.Instance.GetAction(WEModData.kActionInstanceNavZNext);
+            m_instanceNavZPrev = WEModData.Instance.GetAction(WEModData.kActionInstanceNavZPrev);
             m_instanceNavXNext = WEModData.Instance.GetAction(WEModData.kActionInstanceNavXNext);
             m_instanceNavXPrev = WEModData.Instance.GetAction(WEModData.kActionInstanceNavXPrev);
             m_instanceNavYNext = WEModData.Instance.GetAction(WEModData.kActionInstanceNavYNext);
@@ -144,8 +144,8 @@ namespace BelzontWE
             m_RotateAction.shouldBeEnabled = true;
             m_increasePrecisionValue.shouldBeEnabled = true;
             m_reducePrecisionValue.shouldBeEnabled = true;
-            m_prevText.shouldBeEnabled = true;
-            m_nextText.shouldBeEnabled = true;
+            m_instanceNavZPrev.shouldBeEnabled = true;
+            m_instanceNavZNext.shouldBeEnabled = true;
             m_instanceNavXNext.shouldBeEnabled = true;
             m_instanceNavXPrev.shouldBeEnabled = true;
             m_instanceNavYNext.shouldBeEnabled = true;
@@ -191,8 +191,8 @@ namespace BelzontWE
             HoveredEntity = Entity.Null;
             m_MoveAction.shouldBeEnabled = false;
             m_RotateAction.shouldBeEnabled = false;
-            m_prevText.shouldBeEnabled = false;
-            m_nextText.shouldBeEnabled = false;
+            m_instanceNavZPrev.shouldBeEnabled = false;
+            m_instanceNavZNext.shouldBeEnabled = false;
             m_instanceNavXNext.shouldBeEnabled = false;
             m_instanceNavXPrev.shouldBeEnabled = false;
             m_instanceNavYNext.shouldBeEnabled = false;
@@ -281,7 +281,7 @@ namespace BelzontWE
                 if (m_increasePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Max(m_Controller.MouseSensibility.Value - 1, 0));
                 if (m_reducePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Min(m_Controller.MouseSensibility.Value + 1, precisionIdx.Length - 1));
 
-                if ((m_nextText.WasPressedThisFrame() || m_prevText.WasPressedThisFrame() ||
+                if ((m_instanceNavZNext.WasPressedThisFrame() || m_instanceNavZPrev.WasPressedThisFrame() ||
                      m_instanceNavXNext.WasPressedThisFrame() || m_instanceNavXPrev.WasPressedThisFrame() ||
                      m_instanceNavYNext.WasPressedThisFrame() || m_instanceNavYPrev.WasPressedThisFrame()) &&
                     EntityManager.TryGetComponent<WETextDataTransform>(m_Controller.CurrentSubEntity.Value, out var navTransform))
@@ -308,8 +308,8 @@ namespace BelzontWE
                             default: xPos = 0; yPos = 1; zPos = 2; break; // XYZ
                         }
                         int targetAxis = -1, delta = 0;
-                        if (m_nextText.WasPressedThisFrame()) { targetAxis = zPos; delta = 1; }
-                        else if (m_prevText.WasPressedThisFrame()) { targetAxis = zPos; delta = -1; }
+                        if (m_instanceNavZNext.WasPressedThisFrame()) { targetAxis = zPos; delta = 1; }
+                        else if (m_instanceNavZPrev.WasPressedThisFrame()) { targetAxis = zPos; delta = -1; }
                         else if (m_instanceNavXNext.WasPressedThisFrame()) { targetAxis = xPos; delta = 1; }
                         else if (m_instanceNavXPrev.WasPressedThisFrame()) { targetAxis = xPos; delta = -1; }
                         else if (m_instanceNavYNext.WasPressedThisFrame()) { targetAxis = yPos; delta = 1; }
@@ -317,8 +317,11 @@ namespace BelzontWE
                         if (targetAxis >= 0 && counts[targetAxis] > 1)
                         {
                             comps[targetAxis] = math.clamp(comps[targetAxis] + delta, 0, counts[targetAxis] - 1);
-                            var newIdx = math.clamp(comps[0] + comps[1] * counts[0] + comps[2] * counts[0] * counts[1], 0, totalInstances - 1);
-                            m_Controller.CurrentInstanceIdx.ChangeValueWithEffects(newIdx);
+                            var calcNewIdx = comps[0] + comps[1] * counts[0] + comps[2] * counts[0] * counts[1];
+                            if (calcNewIdx > 0 && calcNewIdx < totalInstances)
+                            {
+                                m_Controller.CurrentInstanceIdx.ChangeValueWithEffects(calcNewIdx);
+                            }
                         }
                     }
                 }

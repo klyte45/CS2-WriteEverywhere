@@ -27,8 +27,8 @@ namespace BelzontWE
     [SettingsUIKeyboardAction(kActionPerspectiveXZ, ActionType.Button, "K45_WE.Tool")]
     [SettingsUIKeyboardAction(kActionCycleEditAxisLock, ActionType.Button, "K45_WE.Tool")]
     [SettingsUIKeyboardAction(kActionToggleLockCameraRotation, ActionType.Button, "K45_WE.Tool")]
-    [SettingsUIKeyboardAction(kActionNextText, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
-    [SettingsUIKeyboardAction(kActionPreviousText, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionInstanceNavZNext, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionInstanceNavZPrev, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
     [SettingsUIKeyboardAction(kActionInstanceNavXNext, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
     [SettingsUIKeyboardAction(kActionInstanceNavXPrev, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
     [SettingsUIKeyboardAction(kActionInstanceNavYNext, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
@@ -65,8 +65,8 @@ namespace BelzontWE
         public const string kActionReduceMovementStrenght = "K45_WE_PrecisionLowerNum";
         public const string kActionEnablePicker = "K45_WE_EnablePicker";
 
-        public const string kActionNextText = "K45_WE_NextText";
-        public const string kActionPreviousText = "K45_WE_PreviousText";
+        public const string kActionInstanceNavZNext = "K45_WE_InstanceNavZNext";
+        public const string kActionInstanceNavZPrev = "K45_WE_InstanceNavZPrev";
         public const string kActionInstanceNavXNext = "K45_WE_InstanceNavXNext";
         public const string kActionInstanceNavXPrev = "K45_WE_InstanceNavXPrev";
         public const string kActionInstanceNavYNext = "K45_WE_InstanceNavYNext";
@@ -273,8 +273,8 @@ namespace BelzontWE
         [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad3, kActionPerspectiveXZ)] public ProxyBinding ActionPerspectiveXZ { get; set; }
         [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMultiply, kActionCycleEditAxisLock)] public ProxyBinding ActionCycleAxisLock { get; set; }
 
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadPlus, kActionNextText)] public ProxyBinding ActionNextText { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMinus, kActionPreviousText)] public ProxyBinding ActionPreviousText { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadPlus, kActionInstanceNavZNext)] public ProxyBinding ActionNextText { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMinus, kActionInstanceNavZPrev)] public ProxyBinding ActionPreviousText { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, kActionInstanceNavXNext)] public ProxyBinding ActionInstanceNavXNext { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, kActionInstanceNavXPrev)] public ProxyBinding ActionInstanceNavXPrev { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.UpArrow, kActionInstanceNavYNext)] public ProxyBinding ActionInstanceNavYNext { get; set; }
