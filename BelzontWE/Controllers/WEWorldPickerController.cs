@@ -237,6 +237,7 @@ namespace BelzontWE
         public MultiUIValueBinding<bool> ShowProjectionCube { get; private set; }
         public MultiUIValueBinding<float> PlaneTilt { get; private set; }
         public MultiUIValueBinding<string[]> FontList { get; private set; }
+        public MultiUIValueBinding<int> CurrentInstanceIdx { get; private set; }
         private void InitValueBindings()
         {
             if (m_initialized) return;
@@ -254,6 +255,7 @@ namespace BelzontWE
             ShowProjectionCube = new(true, $"{PREFIX}{nameof(ShowProjectionCube)}", m_eventCaller, m_callBinder);
             FontList = new(default, $"{PREFIX}{nameof(FontList)}", m_eventCaller, m_callBinder);
             PlaneTilt = new(22.5f, $"{PREFIX}{nameof(PlaneTilt)}", m_eventCaller, m_callBinder, (x, _) => Math.Clamp(x, -45, 45)); // All, Horizontal, Vertical
+            CurrentInstanceIdx = new(0, $"{PREFIX}{nameof(CurrentInstanceIdx)}", m_eventCaller, m_callBinder, (x, _) => Math.Max(0, x));
             CurrentSubEntity.OnScreenValueChanged += (x) => OnCurrentItemChanged();
             FontList.Value = FontServer.Instance.GetLoadedFontsNames();
             FontList.UpdateUIs();
@@ -441,6 +443,7 @@ namespace BelzontWE
 
         internal void OnCurrentItemChanged()
         {
+            CurrentInstanceIdx?.ChangeValueWithEffects(0);
             ReloadTree();
             OnCurrentItemChanged(CurrentSubEntity.Value);
         }

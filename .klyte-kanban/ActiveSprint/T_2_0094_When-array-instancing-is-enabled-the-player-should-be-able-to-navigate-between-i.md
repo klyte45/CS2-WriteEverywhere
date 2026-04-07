@@ -1,7 +1,8 @@
+**End time:** 2026-04-07 00:49 -0300
+**Start time:** 2026-04-07 00:41 -0300
 # [0094] When array instancing is enabled, the player should be able to navigate between instances with the fixed camera
 
-**Developed by:** 
-
+**Developed by:** Agent-Claude-Sonnet-4.6 (agent@example.com)
 ## User Story
 
 > Acting as **a player editing a WE layout that uses array instancing**, I want **to navigate between individual array instances using keyboard and UI controls while the camera is locked to the editing target**, so that I **I can inspect and verify the position and appearance of each instance in the array without having to unlock the camera and manually pan to each one**.

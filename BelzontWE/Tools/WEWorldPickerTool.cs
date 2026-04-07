@@ -50,8 +50,8 @@ namespace BelzontWE
         private ProxyAction m_CameraZoomAction;
         private ProxyAction m_increasePrecisionValue;
         private ProxyAction m_reducePrecisionValue;
-        //private ProxyAction m_nextText;
-        //private ProxyAction m_prevText;
+        private ProxyAction m_nextText;
+        private ProxyAction m_prevText;
         private ProxyAction m_moveLeft;
         private ProxyAction m_moveRight;
         private ProxyAction m_moveUp;
@@ -88,9 +88,8 @@ namespace BelzontWE
             m_increasePrecisionValue = WEModData.Instance.GetAction(WEModData.kActionIncreaseMovementStrenght);
             m_reducePrecisionValue = WEModData.Instance.GetAction(WEModData.kActionReduceMovementStrenght);
 
-
-            //m_nextText = WEModData.Instance.GetAction(WEModData.kActionNextText);
-            //m_prevText = WEModData.Instance.GetAction(WEModData.kActionPreviousText);
+            m_nextText = WEModData.Instance.GetAction(WEModData.kActionNextText);
+            m_prevText = WEModData.Instance.GetAction(WEModData.kActionPreviousText);
 
             m_moveLeft = WEModData.Instance.GetAction(WEModData.kActionMoveLeft);
             m_moveRight = WEModData.Instance.GetAction(WEModData.kActionMoveRight);
@@ -125,8 +124,8 @@ namespace BelzontWE
             m_RotateAction.shouldBeEnabled = true;
             m_increasePrecisionValue.shouldBeEnabled = true;
             m_reducePrecisionValue.shouldBeEnabled = true;
-            //m_prevText.shouldBeEnabled = true;
-            //m_nextText.shouldBeEnabled = true;
+            m_prevText.shouldBeEnabled = true;
+            m_nextText.shouldBeEnabled = true;
             m_alternateFixedCamera.shouldBeEnabled = true;
             m_useXY.shouldBeEnabled = true;
             m_useXZ.shouldBeEnabled = true;
@@ -162,8 +161,8 @@ namespace BelzontWE
             HoveredEntity = Entity.Null;
             m_MoveAction.shouldBeEnabled = false;
             m_RotateAction.shouldBeEnabled = false;
-            //m_prevText.shouldBeEnabled = false;
-            //m_nextText.shouldBeEnabled = false;
+            m_prevText.shouldBeEnabled = false;
+            m_nextText.shouldBeEnabled = false;
             m_increasePrecisionValue.shouldBeEnabled = false;
             m_reducePrecisionValue.shouldBeEnabled = false;
             m_alternateFixedCamera.shouldBeEnabled = false;
@@ -242,8 +241,17 @@ namespace BelzontWE
                 if (m_increasePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Max(m_Controller.MouseSensibility.Value - 1, 0));
                 if (m_reducePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Min(m_Controller.MouseSensibility.Value + 1, precisionIdx.Length - 1));
 
-                //if (m_nextText.WasPressedThisFrame()) m_Controller.CurrentItemIdx.ChangeValueWithEffects((m_Controller.CurrentItemIdx.Value + m_Controller.CurrentItemCount.Value - 1) % m_Controller.CurrentItemCount.Value);
-                //if (m_prevText.WasPressedThisFrame()) m_Controller.CurrentItemIdx.ChangeValueWithEffects((m_Controller.CurrentItemIdx.Value + 1) % m_Controller.CurrentItemCount.Value);
+                if ((m_nextText.WasPressedThisFrame() || m_prevText.WasPressedThisFrame()) &&
+                    EntityManager.TryGetComponent<WETextDataTransform>(m_Controller.CurrentSubEntity.Value, out var navTransform))
+                {
+                    var totalInstances = (int)math.min(navTransform.ArrayInstancing.x * navTransform.ArrayInstancing.y * navTransform.ArrayInstancing.z, 256);
+                    if (totalInstances > 1)
+                    {
+                        var delta = m_nextText.WasPressedThisFrame() ? 1 : -1;
+                        var newIdx = ((m_Controller.CurrentInstanceIdx.Value + delta) % totalInstances + totalInstances) % totalInstances;
+                        m_Controller.CurrentInstanceIdx.ChangeValueWithEffects(newIdx);
+                    }
+                }
 
                 if (m_useXY.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)(m_Controller.CurrentPlaneMode.Value == (int)ToolEditMode.PlaneXY ? ToolEditMode.PlaneBackXY : ToolEditMode.PlaneXY));
                 if (m_useXZ.WasPressedThisFrame()) m_Controller.CurrentPlaneMode.ChangeValueWithEffects((int)(m_Controller.CurrentPlaneMode.Value == (int)ToolEditMode.PlaneXZ ? ToolEditMode.PlaneBackXZ : ToolEditMode.PlaneXZ));
@@ -345,7 +353,18 @@ namespace BelzontWE
 
                         var targetMatrix = CalculateCameraMatrix();
 
-                        m_cameraSystem.cinematicCameraController.pivot = m_Controller.CurrentItemMatrix.GetPosition() + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));
+                        var entityPos = (float3)m_Controller.CurrentItemMatrix.GetPosition();
+                        if (EntityManager.TryGetComponent<WETextDataTransform>(m_Controller.CurrentSubEntity.Value, out var camTransform))
+                        {
+                            var instCounts = camTransform.InstanceCountByAxisOrder;
+                            var spacings = camTransform.SpacingByAxisOrder;
+                            var iIdx = m_Controller.CurrentInstanceIdx.Value;
+                            int iM = (int)(iIdx % instCounts[0]);
+                            int iN = (int)((iIdx / (long)instCounts[0]) % instCounts[1]);
+                            int iO = (int)(iIdx / ((long)instCounts[0] * instCounts[1]));
+                            entityPos += iM * spacings[0] + iN * spacings[1] + iO * spacings[2];
+                        }
+                        m_cameraSystem.cinematicCameraController.pivot = (Vector3)entityPos + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));
                         m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;
 
                     }

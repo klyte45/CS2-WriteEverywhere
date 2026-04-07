@@ -9,6 +9,43 @@ import { ArrayInstancingAxisOrder, WEPlacementAlignment, WEZPlacementPivot, Worl
 import { translate } from "utils/translate";
 import "../style/floatingPanels.scss";
 
+function getAxisMapping(order: ArrayInstancingAxisOrder): [number, number, number] {
+    switch (order) {
+        case ArrayInstancingAxisOrder.XYZ: return [0, 1, 2];
+        case ArrayInstancingAxisOrder.XZY: return [0, 2, 1];
+        case ArrayInstancingAxisOrder.YXZ: return [1, 0, 2];
+        case ArrayInstancingAxisOrder.YZX: return [1, 2, 0];
+        case ArrayInstancingAxisOrder.ZXY: return [2, 0, 1];
+        case ArrayInstancingAxisOrder.ZYX: return [2, 1, 0];
+        default: return [0, 1, 2];
+    }
+}
+
+function decodeInstanceIdx(idx: number, counts: [number, number, number], order: ArrayInstancingAxisOrder): [number, number, number] {
+    const [axisM, axisN, axisO] = getAxisMapping(order);
+    const countM = counts[axisM];
+    const countN = counts[axisN];
+    const m = idx % countM;
+    const n = Math.floor(idx / countM) % countN;
+    const o = Math.floor(idx / (countM * countN));
+    const result: [number, number, number] = [0, 0, 0];
+    result[axisM] = m;
+    result[axisN] = n;
+    result[axisO] = o;
+    return result;
+}
+
+function encodeInstanceIdx(xIdx: number, yIdx: number, zIdx: number, counts: [number, number, number], order: ArrayInstancingAxisOrder): number {
+    const [axisM, axisN, axisO] = getAxisMapping(order);
+    const xyz = [xIdx, yIdx, zIdx];
+    const m = xyz[axisM];
+    const n = xyz[axisN];
+    const o = xyz[axisO];
+    const countM = counts[axisM];
+    const countN = counts[axisN];
+    return m + n * countM + o * countM * countN;
+}
+
 
 
 export const WEInstancingView = (props: { initialPosition?: { x: number, y: number } }) => {
@@ -26,6 +63,13 @@ export const WEInstancingView = (props: { initialPosition?: { x: number, y: numb
     const T_totalInstancesCount = translate("instancingSettings.totalInstancesCount");
     const T_zPivot = translate("instancingSettings.zPivot");
     const T_alignmentByAxis = translate("instancingSettings.axisAlignment");
+    const T_instanceNavTitle = translate("instancingSettings.instanceNavTitle");
+    const T_instanceNavX = translate("instancingSettings.instanceNav.x");
+    const T_instanceNavY = translate("instancingSettings.instanceNav.y");
+    const T_instanceNavZ = translate("instancingSettings.instanceNav.z");
+
+    const i_plus = "coui://uil/Standard/Plus.svg";
+    const i_minus = "coui://uil/Standard/Minus.svg";
 
 
     const [buildIdx, setBuildIdx] = useState(0);
@@ -37,6 +81,9 @@ export const WEInstancingView = (props: { initialPosition?: { x: number, y: numb
     const DropdownFieldAxisOrder = VanillaWidgets.instance.DropdownField<ArrayInstancingAxisOrder>();
     const DropdownFieldPivotZ = VanillaWidgets.instance.DropdownField<WEZPlacementPivot>();
     const DropdownFieldAlignment = VanillaWidgets.instance.DropdownField<WEPlacementAlignment>();
+    const Button = VanillaComponentResolver.instance.ToolButton;
+    const buttonClass = VanillaComponentResolver.instance.toolButtonTheme.button;
+    const focusDisabled = VanillaComponentResolver.instance.FOCUS_DISABLED;
     const wps = WorldPickerService.instance.bindingList;
 
     useEffect(() => {
@@ -115,6 +162,32 @@ export const WEInstancingView = (props: { initialPosition?: { x: number, y: numb
                         />
                     </FocusDisabled>
                 </EditorItemRow>
+                {(wps.transform.ArrayInstancing.value[0] > 1 || wps.transform.ArrayInstancing.value[1] > 1 || wps.transform.ArrayInstancing.value[2] > 1) && (() => {
+                    const counts: [number, number, number] = [wps.transform.ArrayInstancing.value[0], wps.transform.ArrayInstancing.value[1], wps.transform.ArrayInstancing.value[2]];
+                    const order = wps.transform.ArrayAxisGrowthOrder.value;
+                    const linearIdx = wps.picker.CurrentInstanceIdx.value;
+                    const [xIdx, yIdx, zIdx] = decodeInstanceIdx(linearIdx, counts, order);
+                    const axisRows: [string, number, number, (v: number) => number][] = [
+                        [T_instanceNavX, counts[0], xIdx, (v) => encodeInstanceIdx(v, yIdx, zIdx, counts, order)],
+                        [T_instanceNavY, counts[1], yIdx, (v) => encodeInstanceIdx(xIdx, v, zIdx, counts, order)],
+                        [T_instanceNavZ, counts[2], zIdx, (v) => encodeInstanceIdx(xIdx, yIdx, v, counts, order)],
+                    ];
+                    return <>
+                        <hr />
+                        <h4>{T_instanceNavTitle}</h4>
+                        {axisRows.map(([label, count, axisIdx, toLinear]) => (
+                            <EditorItemRow key={label} label={label} className="buttonShrink">
+                                <FocusDisabled>
+                                    <Button src={i_minus} onSelect={() => wps.picker.CurrentInstanceIdx.set(toLinear(Math.max(0, axisIdx - 1)))}
+                                        focusKey={focusDisabled} className={buttonClass} disabled={count <= 1 || axisIdx <= 0} />
+                                    <div style={{ minWidth: "2rem", textAlign: "center" }}>{axisIdx + 1}/{count}</div>
+                                    <Button src={i_plus} onSelect={() => wps.picker.CurrentInstanceIdx.set(toLinear(Math.min(count - 1, axisIdx + 1)))}
+                                        focusKey={focusDisabled} className={buttonClass} disabled={count <= 1 || axisIdx >= count - 1} />
+                                </FocusDisabled>
+                            </EditorItemRow>
+                        ))}
+                    </>;
+                })()}
                 <EditorItemRow>{T_arrayInfo}</EditorItemRow>
             </>}
         </Panel>
