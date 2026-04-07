@@ -16,7 +16,7 @@ namespace BelzontWE
 {
     [FileLocation("K45_WE_settings")]
     [SettingsUIShowGroupName(kLogSection, kFontsSection, kSpritesSection, kMeshesSection,
-         kToolControlsSection, kItemEditing, kViewPerspectiveSection)]
+         kToolControlsSection, kItemEditing, kViewPerspectiveSection, kArrayItemViewSection, kItemTreeNavigationSection)]
     [SettingsUIMouseAction(kActionApplyMouse, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new string[] { "K45_WE.Tool" })]
     [SettingsUIMouseAction(kActionCancelMouse, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new string[] { "K45_WE.Tool" })]
     [SettingsUIKeyboardAction(kActionIncreaseMovementStrenght, ActionType.Button, "K45_WE.Tool")]
@@ -58,6 +58,8 @@ namespace BelzontWE
         const string kToolControlsSection = "ToolControls";
         const string kItemEditing = "ItemEditing";
         const string kViewPerspectiveSection = "ViewPerspective";
+        const string kArrayItemViewSection = "ArrayItemView";
+        const string kItemTreeNavigationSection = "ItemTreeNavigation";
 
         public const string kActionApplyMouse = "K45_WE_MoveText";
         public const string kActionCancelMouse = "K45_WE_RotateText";
@@ -273,12 +275,12 @@ namespace BelzontWE
         [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad3, kActionPerspectiveXZ)] public ProxyBinding ActionPerspectiveXZ { get; set; }
         [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMultiply, kActionCycleEditAxisLock)] public ProxyBinding ActionCycleAxisLock { get; set; }
 
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadPlus, kActionInstanceNavZNext)] public ProxyBinding ActionNextText { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMinus, kActionInstanceNavZPrev)] public ProxyBinding ActionPreviousText { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, kActionInstanceNavXNext)] public ProxyBinding ActionInstanceNavXNext { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, kActionInstanceNavXPrev)] public ProxyBinding ActionInstanceNavXPrev { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.UpArrow, kActionInstanceNavYNext)] public ProxyBinding ActionInstanceNavYNext { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.DownArrow, kActionInstanceNavYPrev)] public ProxyBinding ActionInstanceNavYPrev { get; set; }
+        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, kActionInstanceNavXNext)] public ProxyBinding ActionInstanceNavXNext { get; set; }
+        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, kActionInstanceNavXPrev)] public ProxyBinding ActionInstanceNavXPrev { get; set; }
+        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.UpArrow, kActionInstanceNavYNext)] public ProxyBinding ActionInstanceNavYNext { get; set; }
+        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.DownArrow, kActionInstanceNavYPrev)] public ProxyBinding ActionInstanceNavYPrev { get; set; }
+        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadPlus, kActionInstanceNavZNext)] public ProxyBinding ActionInstanceNavZNext { get; set; }
+        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMinus, kActionInstanceNavZPrev)] public ProxyBinding ActionInstanceNavZPrev { get; set; }
 
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad4, kActionMoveLeft)] public ProxyBinding ActionMoveLeft { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad6, kActionMoveRight)] public ProxyBinding ActionMoveRight { get; set; }
@@ -286,12 +288,13 @@ namespace BelzontWE
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad5, kActionMoveDown)] public ProxyBinding ActionMoveDown { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad9, kActionRotateClockwise)] public ProxyBinding ActionRotateClockwise { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad7, kActionRotateCounterClockwise)] public ProxyBinding ActionRotateCounterClockwise { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.PageDown, kActionTreeNavNext)] public ProxyBinding ActionTreeNavNext { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.PageUp, kActionTreeNavPrev)] public ProxyBinding ActionTreeNavPrev { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Space, kActionTreeToggleFold)] public ProxyBinding ActionTreeToggleFold { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Delete, kActionTreeDelete)] public ProxyBinding ActionTreeDelete { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Home, kActionTreeFoldAll)] public ProxyBinding ActionTreeFoldAll { get; set; }
-        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.End, kActionTreeUnfoldAll)] public ProxyBinding ActionTreeUnfoldAll { get; set; }
+
+        [SettingsUISection(kKeybindingSection, kItemTreeNavigationSection)][SettingsUIKeyboardBinding(BindingKeyboard.PageDown, kActionTreeNavNext)] public ProxyBinding ActionTreeNavNext { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemTreeNavigationSection)][SettingsUIKeyboardBinding(BindingKeyboard.PageUp, kActionTreeNavPrev)] public ProxyBinding ActionTreeNavPrev { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemTreeNavigationSection)][SettingsUIKeyboardBinding(BindingKeyboard.Space, kActionTreeToggleFold)] public ProxyBinding ActionTreeToggleFold { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemTreeNavigationSection)][SettingsUIKeyboardBinding(BindingKeyboard.Delete, kActionTreeDelete)] public ProxyBinding ActionTreeDelete { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemTreeNavigationSection)][SettingsUIKeyboardBinding(BindingKeyboard.Home, kActionTreeFoldAll)] public ProxyBinding ActionTreeFoldAll { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemTreeNavigationSection)][SettingsUIKeyboardBinding(BindingKeyboard.End, kActionTreeUnfoldAll)] public ProxyBinding ActionTreeUnfoldAll { get; set; }
         #endregion
     }
 

@@ -318,7 +318,7 @@ namespace BelzontWE
                         {
                             comps[targetAxis] = math.clamp(comps[targetAxis] + delta, 0, counts[targetAxis] - 1);
                             var calcNewIdx = comps[0] + comps[1] * counts[0] + comps[2] * counts[0] * counts[1];
-                            if (calcNewIdx > 0 && calcNewIdx < totalInstances)
+                            if (calcNewIdx >= 0 && calcNewIdx < totalInstances)
                             {
                                 m_Controller.CurrentInstanceIdx.ChangeValueWithEffects(calcNewIdx);
                             }
