@@ -54,6 +54,7 @@ namespace BelzontWE
         private Dictionary<FixedString64Bytes, FontSystemData> LoadedFonts { get; } = new();
 
         private EndFrameBarrier m_endFrameBarrier;
+        private EntityQuery m_weTextEntities;
 
         public FontSystemData this[string name] => LoadedFonts.TryGetValue(name, out var e) ? e : null;
 
@@ -72,6 +73,14 @@ namespace BelzontWE
             Instance = this;
             DefaultFont = FontSystemData.From(KResourceLoader.LoadResourceDataMod("Resources.SourceSansPro-Regular.ttf"), DEFAULT_FONT_KEY, true);
             m_endFrameBarrier = World.GetOrCreateSystemManaged<EndFrameBarrier>();
+
+            m_weTextEntities = GetEntityQuery(new EntityQueryDesc
+            {
+                All = new ComponentType[]
+                {
+                    ComponentType.ReadWrite<WETextDataMesh>(),
+                }
+            });
 
             dictPtr = GCHandle.Alloc(LoadedFonts);
 
@@ -203,6 +212,12 @@ namespace BelzontWE
                 ProcessFontSystem(data, updateAtlases);
             }
 
+            if (requiresUpdateParameter)
+            {
+                if (BasicIMod.DebugMode) LogUtils.DoLog("Font params changed — marking all WE text entities for re-render");
+                EntityManager.AddComponent<WEWaitingRendering>(m_weTextEntities);
+                EntityManager.SetComponentEnabled<WEWaitingRendering>(m_weTextEntities, true);
+            }
             requiresUpdateParameter = false;
             if (keysToDispose.Count > 0)
             {

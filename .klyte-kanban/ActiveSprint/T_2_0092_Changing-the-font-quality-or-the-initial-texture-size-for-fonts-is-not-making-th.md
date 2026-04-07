@@ -1,7 +1,8 @@
+**End time:** 2026-04-07 00:04 -0300
+**Start time:** 2026-04-06 23:57 -0300
 # [0092] Changing the font quality or the initial texture size for fonts is showing garbled text until they get regenerated
 
-**Developed by:** 
-
+**Developed by:** Agent-Claude-Sonnet-4.6 (agent@example.com)
 ## User Story
 
 > Acting as **a player who changes the font quality or initial texture size setting in WE options**, I want **all on-screen WE texts to re-render cleanly immediately after changing those settings**, so that I **I don't see garbled, cross-referenced sprite textures on text until waiting for the natural BRI regeneration cycle**.
