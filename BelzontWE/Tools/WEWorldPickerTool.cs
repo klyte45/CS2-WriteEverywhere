@@ -188,7 +188,7 @@ namespace BelzontWE
             {
                 m_ToolRaycastSystem.collisionMask = CollisionMask.OnGround | CollisionMask.Overground;
                 m_ToolRaycastSystem.typeMask = TypeMask.StaticObjects | TypeMask.MovingObjects;
-                m_ToolRaycastSystem.raycastFlags = (RaycastFlags.SubElements | RaycastFlags.Placeholders | RaycastFlags.Outside | RaycastFlags.BuildingLots | RaycastFlags.SubBuildings | RaycastFlags.NoMainElements | RaycastFlags.Markers | RaycastFlags.Cargo | RaycastFlags.Passenger | RaycastFlags.Decals);
+                m_ToolRaycastSystem.raycastFlags = RaycastFlags.SubElements | RaycastFlags.Placeholders | RaycastFlags.Outside | RaycastFlags.BuildingLots | RaycastFlags.SubBuildings | RaycastFlags.Markers | RaycastFlags.Cargo | RaycastFlags.Passenger | RaycastFlags.Decals;
                 m_ToolRaycastSystem.netLayerMask = (Layer)~0u;
                 m_ToolRaycastSystem.iconLayerMask = (IconLayerMask)~0u;
             }
