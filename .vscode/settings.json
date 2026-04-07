@@ -1,0 +1,14 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "ForEach-Object": true,
+        "git add": true,
+        "git commit": true,
+        "npx kk": true,
+        "MSBuild.exe": true,
+        "dotnet build": true,
+        "Tee-Object": true,
+        "dotnet test": true,
+        "Test-Path": true,
+        "npx tsc": true
+    }
+}
