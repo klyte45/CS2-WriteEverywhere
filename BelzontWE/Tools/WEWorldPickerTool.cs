@@ -1,5 +1,6 @@
 ﻿using Belzont.Interfaces;
 using Colossal.Entities;
+using Game;
 using Game.Common;
 using Game.Input;
 using Game.Net;
@@ -76,6 +77,7 @@ namespace BelzontWE
         private bool m_isRotating;
 
         private byte m_keyMoveRotateCooldown;
+        private CinemachineRestrictToTerrain m_terrainRestriction;
 
         protected override void OnCreateWithBarrier()
         {
@@ -179,6 +181,7 @@ namespace BelzontWE
 
             m_cameraSystem.cinematicCameraController.collisionsEnabled = true;
             m_cameraSystem.cinematicCameraController.inputEnabled = true;
+            if (m_terrainRestriction != null) m_terrainRestriction.enabled = true;
         }
 
         public override void InitializeRaycast()
@@ -332,6 +335,9 @@ namespace BelzontWE
                             m_cameraSystem.activeCameraController = m_cameraSystem.cinematicCameraController;
                             m_cameraSystem.cinematicCameraController.collisionsEnabled = false;
                             m_cameraSystem.cinematicCameraController.inputEnabled = false;
+                            if (m_terrainRestriction == null)
+                                m_terrainRestriction = m_cameraSystem.cinematicCameraController.GetComponentInChildren<CinemachineRestrictToTerrain>();
+                            if (m_terrainRestriction != null) m_terrainRestriction.enabled = false;
                         }
 #pragma warning restore CS0252 // Possível comparação de referência inesperada; o lado esquerdo precisa de conversão
                         m_cameraDisabledHere = cameraDisabledThisFrame = true;
@@ -357,6 +363,7 @@ namespace BelzontWE
                 m_cameraSystem.activeCameraController = m_oldController;
                 m_oldController = null;
                 m_cameraDisabledHere = false;
+                if (m_terrainRestriction != null) m_terrainRestriction.enabled = true;
             }
             return inputDeps;
         }

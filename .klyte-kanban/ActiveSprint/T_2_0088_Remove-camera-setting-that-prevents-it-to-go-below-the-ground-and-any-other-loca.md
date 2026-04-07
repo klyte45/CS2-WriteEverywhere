@@ -1,7 +1,8 @@
+**End time:** 2026-04-06 23:49 -0300
+**Start time:** 2026-04-06 23:43 -0300
 # [0088] Remove camera setting that prevents it to go below the ground (and any other location restriction) when it's focused in an WE layout
 
-**Developed by:** 
-
+**Developed by:** Agent-Claude-Sonnet-4.6 (agent@example.com)
 ## User Story
 
 > Acting as **a player or developer editing a WE layout that is located underground or inside a building**, I want **the WE editor camera to position itself without ground-clamping or terrain collision when focusing on a layout item**, so that I **I can inspect and edit text layouts in subterranean positions (tunnels, basements, underground stations) without the camera snapping to or stopping at terrain level**.
