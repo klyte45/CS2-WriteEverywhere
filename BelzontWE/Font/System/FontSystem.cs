@@ -320,7 +320,6 @@ namespace BelzontWE.Font
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] removing {originalText} since atlas changed");
 
                 m_textCache[originalText] = null;
-                itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
                 return;
             }
 
@@ -329,7 +328,6 @@ namespace BelzontWE.Font
             {
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] removing {originalText} ");
                 m_textCache[originalText] = null;
-                itemsQueueWriter.Enqueue(new StringRenderingQueueItem() { text = originalText });
             }
             else if (m_textCache.TryGetValue(originalText, out var currentVal))
             {
@@ -360,7 +358,7 @@ namespace BelzontWE.Font
         }
 
 
-        private byte framesBuffering = 0;
+        private int framesBuffering = 0;
 
         public unsafe struct StringRenderingQueueItem
         {
