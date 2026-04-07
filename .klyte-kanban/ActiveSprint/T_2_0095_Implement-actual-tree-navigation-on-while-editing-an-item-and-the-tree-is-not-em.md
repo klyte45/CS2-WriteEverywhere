@@ -1,7 +1,8 @@
+**End time:** 2026-04-07 00:52 -0300
+**Start time:** 2026-04-07 00:49 -0300
 # [0095] Implement actual tree navigation on while editing an item and the tree is not empty
 
-**Developed by:** 
-
+**Developed by:** Agent-Claude-Sonnet-4.6 (agent@example.com)
 ## User Story
 
 > Acting as **a player editing items in the WE component tree**, I want **to navigate the tree, fold/unfold items, and delete an item using keyboard shortcuts while the WE editor is open**, so that I **I can manage the layout tree efficiently without switching between keyboard and mouse**.

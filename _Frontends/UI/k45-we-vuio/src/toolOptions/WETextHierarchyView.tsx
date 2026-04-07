@@ -5,7 +5,7 @@ import { FilePickerDialog } from "common/FilePickerDialog";
 import { StringInputDialog } from "common/StringInputDialog";
 import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
 import { ConfirmationDialog, Panel, Portal } from "cs2/ui";
-import { useEffect, useState } from "react";
+import { KeyboardEvent, useEffect, useState } from "react";
 import { FileService } from "services/FileService";
 import { LayoutsService } from "services/LayoutsService";
 import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeElement";
@@ -104,6 +104,9 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const T_back = translate("cityLayoutsTab.exportXml.back")
 
     const T_templateFromMods = translate("cityLayoutsTab.addTemplateXmlDialog.templateFromMods")
+
+    const T_deleteConfirmMsg = translate("textHierarchyWindow.deleteConfirmMsg");
+    const T_deleteConfirmCancel = translate("textHierarchyWindow.deleteConfirmCancel");
 
     const defaultPosition = { x: 20 / window.innerWidth, y: 100 / window.innerHeight }
 
@@ -219,6 +222,56 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
 
 
     const [alertToDisplay, setAlertToDisplay] = useState(void 0 as string | undefined);
+    const [pendingDelete, setPendingDelete] = useState(false);
+
+    const collectAllExpandable = (items: WETextItemResume[]): Entity[] =>
+        items.flatMap(item =>
+            item.children?.length > 0
+                ? [item.id, ...collectAllExpandable(item.children)]
+                : []
+        );
+
+    const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+        const currentIdx = viewport.findIndex(v => v.id.Index === wps.CurrentSubEntity.value?.Index);
+        switch (e.key) {
+            case 'PageDown':
+                if (currentIdx >= 0 && currentIdx < viewport.length - 1) {
+                    wps.CurrentSubEntity.set(viewport[currentIdx + 1].id);
+                }
+                e.preventDefault();
+                break;
+            case 'PageUp':
+                if (currentIdx > 0) {
+                    wps.CurrentSubEntity.set(viewport[currentIdx - 1].id);
+                }
+                e.preventDefault();
+                break;
+            case ' ':
+                if (currentIdx >= 0 && viewport[currentIdx].expandable) {
+                    const id = viewport[currentIdx].id;
+                    const isExpanded = expandedViewports.some(y => y.Index === id.Index);
+                    setExpandedViewports(isExpanded
+                        ? expandedViewports.filter(y => y.Index !== id.Index)
+                        : [...expandedViewports, id]);
+                }
+                e.preventDefault();
+                break;
+            case 'Delete':
+                if (wps.CurrentSubEntity.value?.Index) {
+                    setPendingDelete(true);
+                }
+                e.preventDefault();
+                break;
+            case 'Home':
+                setExpandedViewports([]);
+                e.preventDefault();
+                break;
+            case 'End':
+                setExpandedViewports(collectAllExpandable(wps.CurrentTree.value));
+                e.preventDefault();
+                break;
+        }
+    };
 
 
     const [loadingFromXml, setLoadingFromXml] = useState(false)
@@ -348,6 +401,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     }, [wps.CurrentEntity.value])
 
     return <Portal>
+        <div tabIndex={0} onKeyDown={handleKeyDown} style={{ outline: 'none' }}>
         <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
             <div className="k45_we_hierarchyViewportTitle">
                 <div className="k45_we_itemTitle">{currentBuildingTree?.selectedItem?.name}</div>
@@ -378,6 +432,14 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.removeItem()} src={i_delete} tooltip={T_delete} focusKey={FocusDisabled} className={buttonClass} />
             </EditorItemRow>
         </Panel>
+        </div>
+        {pendingDelete && <ConfirmationDialog
+            onConfirm={() => { setPendingDelete(false); WorldPickerService.removeItem(); }}
+            onCancel={() => setPendingDelete(false)}
+            confirm={T_delete}
+            cancel={T_deleteConfirmCancel}
+            message={T_deleteConfirmMsg}
+        />}
         {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissible={false} message={alertToDisplay} confirm={"OK"} />}
         <StringInputWithOverrideDialog dialogTitle={T_addItemDialogTitle} dialogPromptText={T_addItemDialogPromptText} dialogOverrideText={T_confirmOverrideSaveAsCityTemplate}
             isActive={savingCityTemplate} setIsActive={setSavingCityTemplate}
