@@ -21,7 +21,7 @@ The new navigation model replaces this with:
 - **Home**: Fold all tree items
 - **End**: Unfold all tree items recursively
 
-Fold/unfold state is **purely on the React frontend**: `expandedViewports: Entity[]` in `WETextHierarchyView.tsx`. The `K45HierarchyMenu` component receives `expanded` as a prop and calls `onSetExpanded` on click — but has no keyboard handler.
+Fold/unfold state is **purely on the React frontend**: `expandedViewports: Entity[]` in `WETextHierarchyView.tsx`. The `K45HierarchyMenu` component receives `expanded` as a prop and calls `onSetExpanded` on click — but has no keyboard handler and shall **STILL CONTINUE LIKE THAT**. The keyboard listener will be on backend part and will send events to the React component to update `expandedViewports` accordingly. All bindings shall be registered as ProxyActions in `WEModData.cs` to allow for user re-binding in the game options.
 
 The `ConfirmationDialog` component from the base game UI is already imported in `WETextHierarchyView.tsx` (used for `alertToDisplay`). The deletion confirmation state needs a new pending-delete pathway that bypasses the direct `WorldPickerService.removeItem()` call used by the delete button.
 

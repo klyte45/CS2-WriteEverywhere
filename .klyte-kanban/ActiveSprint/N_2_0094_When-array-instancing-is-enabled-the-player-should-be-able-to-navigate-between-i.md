@@ -20,7 +20,7 @@ A prior incomplete implementation existed for flat-list item navigation (`m_next
 This feature requires:
 1. **C# binding**: A `CurrentInstanceIdx` `MultiUIValueBinding<int>` in `WEWorldPickerController`
 2. **Camera pivot offset**: In `WEWorldPickerTool.OnUpdate`, when `CameraLocked` is true and the selected entity has `ArrayInstancing.x * y * z > 1`, compute the selected instance's offset using the same `SpacingByAxisOrder` logic and add it to the camera pivot
-3. **Keyboard actions**: Re-use or re-bind the existing `kActionNextText` / `kActionPreviousText` ProxyActions to increment/decrement `CurrentInstanceIdx` (clamped by instance count)
+3. **Keyboard actions**: All bindings shall be registered as ProxyActions in `WEModData.cs` to allow for user re-binding in the game options. The default keys can be Numpad +/- for the Z axis (the most common one to have multiple instances), and ←→ for X and ↑↓ for Y. The actions will increment/decrement `CurrentInstanceIdx` accordingly, respecting the `ArrayAxisGrowthOrder` (e.g. for XYZ order: incrementing goes through X first, then Y, then Z). Navigating past the last instance on a non-full row should not crash or show a position outside the actual spawned instances.
 4. **UI controls**: Add a new section below the Pivot section in `WEInstancingView.tsx` — only visible when any axis count > 1 — with `+/-` buttons per axis (X, Y, Z), each button disabled if that axis count ≤ 1
 5. **Axis-order awareness**: The `CurrentInstanceIdx` must be decoded into per-axis indices respecting `ArrayAxisGrowthOrder` and the non-full-row edge case
 
@@ -42,7 +42,7 @@ All HTML elements must use game-provided components; no `<span>` or `<input>` ra
 
 - [ ] A `CurrentInstanceIdx` `MultiUIValueBinding<int>` (initialized to 0) is added to `WEWorldPickerController`
 - [ ] When `CameraLocked` is true and `ArrayInstancing` total count > 1, the camera pivot targets the selected instance's world position
-- [ ] Page Left / Page Right (or the re-bound next/prev actions) increment/decrement `CurrentInstanceIdx`, navigating linearly through instances respecting axis order
+- [ ] ProxyAction buttons with default keys being: ←→ = X axis; ↑↓ = Y Axis; Numpad +/- = Z Axis - `CurrentInstanceIdx` is incremented/decremented accordingly from the current mapping of M, N, O indices respecting `ArrayAxisGrowthOrder` (inverse mapping from linear index to per-axis indices)
 - [ ] Navigating past the last instance on a non-full row does not crash or show a position outside the actual spawned instances
 - [ ] The UI shows a new 'Instance navigation' section in `WEInstancingView.tsx` below the Pivot section, visible only when at least one axis count > 1
 - [ ] Each axis has a pair of `+` / `-` buttons; a button is disabled when that axis count ≤ 1
