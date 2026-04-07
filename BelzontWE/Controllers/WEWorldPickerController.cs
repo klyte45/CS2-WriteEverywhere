@@ -208,8 +208,9 @@ namespace BelzontWE
                 EntityManager.AddBuffer<WESubTextRef>(newParent);
             }
             var newTarget = EntityManager.TryGetComponent<WETextDataMain>(newParent, out var mainParent) ? mainParent.TargetEntity : newParent;
-            WELayoutUtility.DoCreateLayoutItem(XmlUtils.CloneViaXml(WETextDataXmlTree.FromEntity(sourceLayoutEntity, EntityManager)), newParent, newTarget, EntityManager);
+            var newEntity = WELayoutUtility.DoCreateLayoutItem(XmlUtils.CloneViaXml(WETextDataXmlTree.FromEntity(sourceLayoutEntity, EntityManager)), newParent, newTarget, EntityManager);
             ReloadTree();
+            CurrentSubEntity.ChangeValueWithEffects(newEntity);
             return true;
         }
 

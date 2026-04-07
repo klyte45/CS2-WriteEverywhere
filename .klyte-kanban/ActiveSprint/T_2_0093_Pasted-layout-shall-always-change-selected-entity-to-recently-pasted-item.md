@@ -1,7 +1,8 @@
+**End time:** 2026-04-07 00:08 -0300
+**Start time:** 2026-04-07 00:04 -0300
 # [0093] Pasted layout shall always change selected entity to recently pasted item
 
-**Developed by:** 
-
+**Developed by:** Agent-Claude-Sonnet-4.6 (agent@example.com)
 ## User Story
 
 > Acting as **a player pasting a layout into the WE component tree**, I want **the newly pasted item to be automatically selected after paste**, so that I **I can immediately start editing the pasted item without having to manually find and click it in the tree**.
