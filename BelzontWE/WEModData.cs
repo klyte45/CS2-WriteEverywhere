@@ -29,6 +29,10 @@ namespace BelzontWE
     [SettingsUIKeyboardAction(kActionToggleLockCameraRotation, ActionType.Button, "K45_WE.Tool")]
     [SettingsUIKeyboardAction(kActionNextText, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
     [SettingsUIKeyboardAction(kActionPreviousText, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionInstanceNavXNext, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionInstanceNavXPrev, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionInstanceNavYNext, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionInstanceNavYPrev, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
     [SettingsUIKeyboardAction(kActionMoveLeft, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
     [SettingsUIKeyboardAction(kActionMoveRight, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
     [SettingsUIKeyboardAction(kActionMoveUp, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
@@ -57,6 +61,10 @@ namespace BelzontWE
 
         public const string kActionNextText = "K45_WE_NextText";
         public const string kActionPreviousText = "K45_WE_PreviousText";
+        public const string kActionInstanceNavXNext = "K45_WE_InstanceNavXNext";
+        public const string kActionInstanceNavXPrev = "K45_WE_InstanceNavXPrev";
+        public const string kActionInstanceNavYNext = "K45_WE_InstanceNavYNext";
+        public const string kActionInstanceNavYPrev = "K45_WE_InstanceNavYPrev";
         public const string kActionMoveLeft = "K45_WE_MoveLeft";
         public const string kActionMoveRight = "K45_WE_MoveRight";
         public const string kActionMoveUp = "K45_WE_MoveUp";
@@ -252,8 +260,12 @@ namespace BelzontWE
         [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad3, kActionPerspectiveXZ)] public ProxyBinding ActionPerspectiveXZ { get; set; }
         [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMultiply, kActionCycleEditAxisLock)] public ProxyBinding ActionCycleAxisLock { get; set; }
 
-        //[SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadPlus, kActionNextText)] public ProxyBinding ActionNextText { get; set; }
-        //[SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMinus, kActionPreviousText)] public ProxyBinding ActionPreviousText { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadPlus, kActionNextText)] public ProxyBinding ActionNextText { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMinus, kActionPreviousText)] public ProxyBinding ActionPreviousText { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, kActionInstanceNavXNext)] public ProxyBinding ActionInstanceNavXNext { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, kActionInstanceNavXPrev)] public ProxyBinding ActionInstanceNavXPrev { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.UpArrow, kActionInstanceNavYNext)] public ProxyBinding ActionInstanceNavYNext { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.DownArrow, kActionInstanceNavYPrev)] public ProxyBinding ActionInstanceNavYPrev { get; set; }
 
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad4, kActionMoveLeft)] public ProxyBinding ActionMoveLeft { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad6, kActionMoveRight)] public ProxyBinding ActionMoveRight { get; set; }

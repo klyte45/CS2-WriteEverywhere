@@ -9,6 +9,7 @@
         "Tee-Object": true,
         "dotnet test": true,
         "Test-Path": true,
-        "npx tsc": true
+        "npx tsc": true,
+        "kk": true
     }
 }

@@ -40,15 +40,15 @@ All HTML elements must use game-provided components; no `<span>` or `<input>` ra
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] A `CurrentInstanceIdx` `MultiUIValueBinding<int>` (initialized to 0) is added to `WEWorldPickerController`
-- [ ] When `CameraLocked` is true and `ArrayInstancing` total count > 1, the camera pivot targets the selected instance's world position
-- [ ] ProxyAction buttons with default keys being: ←→ = X axis; ↑↓ = Y Axis; Numpad +/- = Z Axis - `CurrentInstanceIdx` is incremented/decremented accordingly from the current mapping of M, N, O indices respecting `ArrayAxisGrowthOrder` (inverse mapping from linear index to per-axis indices)
-- [ ] Navigating past the last instance on a non-full row does not crash or show a position outside the actual spawned instances
-- [ ] The UI shows a new 'Instance navigation' section in `WEInstancingView.tsx` below the Pivot section, visible only when at least one axis count > 1
-- [ ] Each axis has a pair of `+` / `-` buttons; a button is disabled when that axis count ≤ 1
-- [ ] No `<span>`, `<input>` or other raw HTML elements are introduced — only game-provided component types and `<div>` or components previously used in the WE codebase
-- [ ] When `ArrayInstancing` is (1,1,1), the feature is invisible and the camera behavior is unchanged
-- [ ] Project compiles without errors
+- [x] A `CurrentInstanceIdx` `MultiUIValueBinding<int>` (initialized to 0) is added to `WEWorldPickerController`
+- [x] When `CameraLocked` is true and `ArrayInstancing` total count > 1, the camera pivot targets the selected instance's world position
+- [x] ProxyAction buttons with default keys being: ←→ = X axis; ↑↓ = Y Axis; Numpad +/- = Z Axis - `CurrentInstanceIdx` is incremented/decremented accordingly from the current mapping of M, N, O indices respecting `ArrayAxisGrowthOrder` (inverse mapping from linear index to per-axis indices)
+- [x] Navigating past the last instance on a non-full row does not crash or show a position outside the actual spawned instances
+- [x] The UI shows a new 'Instance navigation' section in `WEInstancingView.tsx` below the Pivot section, visible only when at least one axis count > 1
+- [x] Each axis has a pair of `+` / `-` buttons; a button is disabled when that axis count ≤ 1
+- [x] No `<span>`, `<input>` or other raw HTML elements are introduced — only game-provided component types and `<div>` or components previously used in the WE codebase
+- [x] When `ArrayInstancing` is (1,1,1), the feature is invisible and the camera behavior is unchanged
+- [x] Project compiles without errors
 
 ---
 

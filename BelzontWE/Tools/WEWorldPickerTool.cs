@@ -52,6 +52,10 @@ namespace BelzontWE
         private ProxyAction m_reducePrecisionValue;
         private ProxyAction m_nextText;
         private ProxyAction m_prevText;
+        private ProxyAction m_instanceNavXNext;
+        private ProxyAction m_instanceNavXPrev;
+        private ProxyAction m_instanceNavYNext;
+        private ProxyAction m_instanceNavYPrev;
         private ProxyAction m_moveLeft;
         private ProxyAction m_moveRight;
         private ProxyAction m_moveUp;
@@ -90,6 +94,10 @@ namespace BelzontWE
 
             m_nextText = WEModData.Instance.GetAction(WEModData.kActionNextText);
             m_prevText = WEModData.Instance.GetAction(WEModData.kActionPreviousText);
+            m_instanceNavXNext = WEModData.Instance.GetAction(WEModData.kActionInstanceNavXNext);
+            m_instanceNavXPrev = WEModData.Instance.GetAction(WEModData.kActionInstanceNavXPrev);
+            m_instanceNavYNext = WEModData.Instance.GetAction(WEModData.kActionInstanceNavYNext);
+            m_instanceNavYPrev = WEModData.Instance.GetAction(WEModData.kActionInstanceNavYPrev);
 
             m_moveLeft = WEModData.Instance.GetAction(WEModData.kActionMoveLeft);
             m_moveRight = WEModData.Instance.GetAction(WEModData.kActionMoveRight);
@@ -126,6 +134,10 @@ namespace BelzontWE
             m_reducePrecisionValue.shouldBeEnabled = true;
             m_prevText.shouldBeEnabled = true;
             m_nextText.shouldBeEnabled = true;
+            m_instanceNavXNext.shouldBeEnabled = true;
+            m_instanceNavXPrev.shouldBeEnabled = true;
+            m_instanceNavYNext.shouldBeEnabled = true;
+            m_instanceNavYPrev.shouldBeEnabled = true;
             m_alternateFixedCamera.shouldBeEnabled = true;
             m_useXY.shouldBeEnabled = true;
             m_useXZ.shouldBeEnabled = true;
@@ -163,6 +175,10 @@ namespace BelzontWE
             m_RotateAction.shouldBeEnabled = false;
             m_prevText.shouldBeEnabled = false;
             m_nextText.shouldBeEnabled = false;
+            m_instanceNavXNext.shouldBeEnabled = false;
+            m_instanceNavXPrev.shouldBeEnabled = false;
+            m_instanceNavYNext.shouldBeEnabled = false;
+            m_instanceNavYPrev.shouldBeEnabled = false;
             m_increasePrecisionValue.shouldBeEnabled = false;
             m_reducePrecisionValue.shouldBeEnabled = false;
             m_alternateFixedCamera.shouldBeEnabled = false;
@@ -241,15 +257,45 @@ namespace BelzontWE
                 if (m_increasePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Max(m_Controller.MouseSensibility.Value - 1, 0));
                 if (m_reducePrecisionValue.WasPressedThisFrame()) m_Controller.MouseSensibility.ChangeValueWithEffects(Math.Min(m_Controller.MouseSensibility.Value + 1, precisionIdx.Length - 1));
 
-                if ((m_nextText.WasPressedThisFrame() || m_prevText.WasPressedThisFrame()) &&
+                if ((m_nextText.WasPressedThisFrame() || m_prevText.WasPressedThisFrame() ||
+                     m_instanceNavXNext.WasPressedThisFrame() || m_instanceNavXPrev.WasPressedThisFrame() ||
+                     m_instanceNavYNext.WasPressedThisFrame() || m_instanceNavYPrev.WasPressedThisFrame()) &&
                     EntityManager.TryGetComponent<WETextDataTransform>(m_Controller.CurrentSubEntity.Value, out var navTransform))
                 {
-                    var totalInstances = (int)math.min(navTransform.ArrayInstancing.x * navTransform.ArrayInstancing.y * navTransform.ArrayInstancing.z, 256);
+                    var instCounts = navTransform.InstanceCountByAxisOrder;
+                    var totalInstances = (int)math.min((long)instCounts[0] * instCounts[1] * instCounts[2], 256);
                     if (totalInstances > 1)
                     {
-                        var delta = m_nextText.WasPressedThisFrame() ? 1 : -1;
-                        var newIdx = ((m_Controller.CurrentInstanceIdx.Value + delta) % totalInstances + totalInstances) % totalInstances;
-                        m_Controller.CurrentInstanceIdx.ChangeValueWithEffects(newIdx);
+                        var iIdx = m_Controller.CurrentInstanceIdx.Value;
+                        int iM = (int)(iIdx % instCounts[0]);
+                        int iN = (int)((iIdx / (long)instCounts[0]) % instCounts[1]);
+                        int iO = (int)(iIdx / ((long)instCounts[0] * instCounts[1]));
+                        int[] comps = new[] { iM, iN, iO };
+                        int[] counts = new[] { (int)instCounts[0], (int)instCounts[1], (int)instCounts[2] };
+                        // Map physical axis (X=0, Y=1, Z=2) to M/N/O position based on growth order
+                        int xPos, yPos, zPos;
+                        switch (navTransform.arrayAxisGrowthOrder)
+                        {
+                            case WETextDataTransform.ArrayInstancingAxisOrder.XZY: xPos = 0; yPos = 2; zPos = 1; break;
+                            case WETextDataTransform.ArrayInstancingAxisOrder.YXZ: xPos = 1; yPos = 0; zPos = 2; break;
+                            case WETextDataTransform.ArrayInstancingAxisOrder.YZX: xPos = 2; yPos = 0; zPos = 1; break;
+                            case WETextDataTransform.ArrayInstancingAxisOrder.ZXY: xPos = 1; yPos = 2; zPos = 0; break;
+                            case WETextDataTransform.ArrayInstancingAxisOrder.ZYX: xPos = 2; yPos = 1; zPos = 0; break;
+                            default: xPos = 0; yPos = 1; zPos = 2; break; // XYZ
+                        }
+                        int targetAxis = -1, delta = 0;
+                        if (m_nextText.WasPressedThisFrame()) { targetAxis = zPos; delta = 1; }
+                        else if (m_prevText.WasPressedThisFrame()) { targetAxis = zPos; delta = -1; }
+                        else if (m_instanceNavXNext.WasPressedThisFrame()) { targetAxis = xPos; delta = 1; }
+                        else if (m_instanceNavXPrev.WasPressedThisFrame()) { targetAxis = xPos; delta = -1; }
+                        else if (m_instanceNavYNext.WasPressedThisFrame()) { targetAxis = yPos; delta = 1; }
+                        else if (m_instanceNavYPrev.WasPressedThisFrame()) { targetAxis = yPos; delta = -1; }
+                        if (targetAxis >= 0 && counts[targetAxis] > 1)
+                        {
+                            comps[targetAxis] = math.clamp(comps[targetAxis] + delta, 0, counts[targetAxis] - 1);
+                            var newIdx = math.clamp(comps[0] + comps[1] * counts[0] + comps[2] * counts[0] * counts[1], 0, totalInstances - 1);
+                            m_Controller.CurrentInstanceIdx.ChangeValueWithEffects(newIdx);
+                        }
                     }
                 }
 
