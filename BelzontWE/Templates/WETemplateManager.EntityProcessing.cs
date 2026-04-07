@@ -84,6 +84,7 @@ namespace BelzontWE
                 buff.Clear();
                 if (hasTemplate)
                 {
+                    var registeredGuid = targetTemplate.Guid;
                     targetTemplate = targetTemplate.Clone();
 
                     var targetSize = transformData.InstanceCountFn.EffectiveValue < 0 ? math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 256) : math.min(256, (uint)transformData.InstanceCountFn.EffectiveValue);
@@ -115,7 +116,7 @@ namespace BelzontWE
 
                                 var updater = new WETemplateUpdater()
                                 {
-                                    templateEntity = targetTemplate.Guid,
+                                    templateEntity = registeredGuid,
                                     childEntity = WELayoutUtility.DoCreateLayoutItemCmdBuffer(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_MainDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
                                 };
 

@@ -1,7 +1,8 @@
+**End time:** 2026-04-06 23:57 -0300
+**Start time:** 2026-04-06 23:55 -0300
 # [0091] The template usage counter is always zeroed in the UI
 
-**Developed by:** 
-
+**Developed by:** Agent-Claude-Sonnet-4.6 (agent@example.com)
 ## User Story
 
 > Acting as **a player using city templates in Write Everywhere**, I want **the template usage counter in the WE editor UI to show the correct number of entities currently using each template**, so that I **I can tell whether a template is actively in use before deciding to delete or modify it**.
