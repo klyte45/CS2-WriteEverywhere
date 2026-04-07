@@ -208,7 +208,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
 
     const getParentNode = (search: Entity, treeNode: WETextItemResume): Entity | undefined => {
         if (treeNode.children?.some(x => x.id.Index == search.Index)) return treeNode.id
-        return treeNode.children?.find(x => getParentNode(search, x))?.id
+        return treeNode.children?.map(x => getParentNode(search, x)).find(x => x !== undefined)
     }
 
     const [currentParentNode, setCurrentParentNode] = useState(null as Entity | null | undefined)
