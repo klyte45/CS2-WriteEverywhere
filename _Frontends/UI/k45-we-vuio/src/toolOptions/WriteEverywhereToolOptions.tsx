@@ -3,7 +3,7 @@ import { useValue } from "cs2/api";
 import { tool } from "cs2/bindings";
 import { ModuleRegistryExtend } from "cs2/modding";
 import { useCallback, useEffect, useState } from "react";
-import { WEPlacementPivot, WorldPickerService } from "services/WorldPickerService";
+import { WEPlacementPivot, ArrayInstancingAxisOrder, WorldPickerService } from "services/WorldPickerService";
 import { translate } from "../utils/translate";
 import { WETextAppearenceSettings } from "./WETextAppearenceSettings";
 import { WETextValueSettings } from "./WETextValueSettings";
@@ -39,6 +39,43 @@ const i_unselectedPivot = "coui://uil/Standard/Circle.svg";
 const i_selectedPivot = "coui://uil/Standard/CircleXClose.svg";
 
 const iarr_moveMode = [i_moveModeAll, i_moveModeHorizontal, i_moveModeVertical]
+
+function getAxisMapping(order: ArrayInstancingAxisOrder): [number, number, number] {
+    switch (order) {
+        case ArrayInstancingAxisOrder.XYZ: return [0, 1, 2];
+        case ArrayInstancingAxisOrder.XZY: return [0, 2, 1];
+        case ArrayInstancingAxisOrder.YXZ: return [1, 0, 2];
+        case ArrayInstancingAxisOrder.YZX: return [1, 2, 0];
+        case ArrayInstancingAxisOrder.ZXY: return [2, 0, 1];
+        case ArrayInstancingAxisOrder.ZYX: return [2, 1, 0];
+        default: return [0, 1, 2];
+    }
+}
+
+function decodeInstanceIdx(idx: number, counts: [number, number, number], order: ArrayInstancingAxisOrder): [number, number, number] {
+    const [axisM, axisN, axisO] = getAxisMapping(order);
+    const countM = counts[axisM];
+    const countN = counts[axisN];
+    const m = idx % countM;
+    const n = Math.floor(idx / countM) % countN;
+    const o = Math.floor(idx / (countM * countN));
+    const result: [number, number, number] = [0, 0, 0];
+    result[axisM] = m;
+    result[axisN] = n;
+    result[axisO] = o;
+    return result;
+}
+
+function encodeInstanceIdx(xIdx: number, yIdx: number, zIdx: number, counts: [number, number, number], order: ArrayInstancingAxisOrder): number {
+    const [axisM, axisN, axisO] = getAxisMapping(order);
+    const xyz = [xIdx, yIdx, zIdx];
+    const m = xyz[axisM];
+    const n = xyz[axisN];
+    const o = xyz[axisO];
+    const countM = counts[axisM];
+    const countN = counts[axisN];
+    return m + n * countM + o * countM * countN;
+}
 
 
 export const WriteEverywhereToolOptionsVisibility: ModuleRegistryExtend = (Component: any) => {
@@ -90,6 +127,10 @@ const WEWorldPickerToolPanel = () => {
     const T_pivot_Top = translate("toolOption.pivot_Top.tooltip"); //"move in XY, rotate in Z (front)"
     const T_pivot_Middle = translate("toolOption.pivot_Middle.tooltip"); //"move in ZY, rotate in X (right)"
     const T_pivot_Bottom = translate("toolOption.pivot_Bottom.tooltip"); //"move in XZ, rotate in Y (top)"
+    const T_instanceNavTitle = translate("instancingSettings.instanceNavTitle");
+    const T_instanceNavX = translate("instancingSettings.instanceNav.x");
+    const T_instanceNavY = translate("instancingSettings.instanceNav.y");
+    const T_instanceNavZ = translate("instancingSettings.instanceNav.z");
 
     const descriptionPivotPosition: Record<WEPlacementPivot, string> = {
         [WEPlacementPivot.TopLeft]: `${T_pivot_Top}, ${T_pivot_Left}`,
@@ -266,6 +307,36 @@ const WEWorldPickerToolPanel = () => {
                         if (isNaN(newVal[i])) return;
                         transform.CurrentRotation.set(newVal);
                     }} />
+                {(transform.ArrayInstancing.value[0] > 1 || transform.ArrayInstancing.value[1] > 1 || transform.ArrayInstancing.value[2] > 1) && (() => {
+                    const counts: [number, number, number] = [transform.ArrayInstancing.value[0], transform.ArrayInstancing.value[1], transform.ArrayInstancing.value[2]];
+                    const order = transform.ArrayAxisGrowthOrder.value;
+                    const linearIdx = wps.CurrentInstanceIdx.value;
+                    const [xIdx, yIdx, zIdx] = decodeInstanceIdx(linearIdx, counts, order);
+                    const rows: [string, number, number, (v: number) => number][] = [
+                        [T_instanceNavX, counts[0], xIdx, (v) => encodeInstanceIdx(v, yIdx, zIdx, counts, order)],
+                        [T_instanceNavY, counts[1], yIdx, (v) => encodeInstanceIdx(xIdx, v, zIdx, counts, order)],
+                        [T_instanceNavZ, counts[2], zIdx, (v) => encodeInstanceIdx(xIdx, yIdx, v, counts, order)],
+                    ];
+                    return <VanillaComponentResolver.instance.Section title={T_instanceNavTitle}>
+                        {rows.map(([label, count, axisIdx, toLinear]) => (
+                            <AmountValueSection
+                                key={label}
+                                sectionless
+                                widthContent={60}
+                                title={label}
+                                valueGetter={() => `${axisIdx + 1} / ${count}`}
+                                up={{
+                                    onSelect: () => wps.CurrentInstanceIdx.set(toLinear(Math.min(count - 1, axisIdx + 1))),
+                                    disabledFn: () => count <= 1 || axisIdx >= count - 1
+                                }}
+                                down={{
+                                    onSelect: () => wps.CurrentInstanceIdx.set(toLinear(Math.max(0, axisIdx - 1))),
+                                    disabledFn: () => count <= 1 || axisIdx <= 0
+                                }}
+                            />
+                        ))}
+                    </VanillaComponentResolver.instance.Section>;
+                })()}
             </>}
             <VanillaComponentResolver.instance.Section title={L_actions} >
                 <>
