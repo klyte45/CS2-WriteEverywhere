@@ -33,6 +33,37 @@ Additionally to the usual workflow via `npx kk`, manual testing will be required
 
 When adding a new research conetent here, always name the folder that holds all the related files with the pattern `YYYYMMDDHH_descriptive-title/` to ensure chronological ordering and easy reference from tasks. For example, `2024061509_mod-architecture-research/`.
 
+The subfolder `_auxFiles/` contains shared auxiliary files that can help with the research, like the current game decompiled code and other reference materials. These files **cannot** be referenced directly from tasks, but can be used as a source for information to be included in the task files themselves.
+
+### Changelog file formatting
+
+The `changelog.md` file should follow the following format:
+
+```markdown
+# vX.Y.ZrW (DD-MMM-YY)
+- Behavior change 1
+- Behavior change 2
+- New feature 1
+- New feature 2
+- Bug fix 1
+- Bug fix 2
+
+## FROM vX.Y.ZrW-1 - DD-MMM-YY
+- Previous change 1
+- Previous change 2
+...
+```
+
+#### Explaining sections from the changelog
+
+- The top section (before the first `## FROM`) describes the changes introduced in the current version.
+- About previous versions:
+    - If the previous version was released more than 1 month ago, the file shall be cleaned before start.
+    - If the previous version was released within 1 month, the old `#` that starts the file shall be replaced with `## FROM`.
+    - The `## FROM` token is used to allow automated tools to easily identify and remove the previous version's changes when publishing to Paradox Mods, since the changelog there should only contain the current version's changes.
+- The order of changes inside the version shall be: Behavior changes (changes that break compatibility or change existing features), new features, bug fixes. Important changes can be highlighted with bold section markers. No emojis.
+- MMM shall always be 3 letters, capitalized. Example: `15-JUN-24`. Month names always in English, regardless of locale.  
+
 ## Folder structure
 
 ### ActiveSprint/
