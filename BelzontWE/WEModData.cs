@@ -39,6 +39,12 @@ namespace BelzontWE
     [SettingsUIKeyboardAction(kActionMoveDown, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
     [SettingsUIKeyboardAction(kActionRotateClockwise, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
     [SettingsUIKeyboardAction(kActionRotateCounterClockwise, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionTreeNavNext, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionTreeNavPrev, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionTreeToggleFold, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionTreeDelete, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionTreeFoldAll, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
+    [SettingsUIKeyboardAction(kActionTreeUnfoldAll, ActionType.Button, RebindOptions.All, ModifierOptions.Allow, usages: new[] { "K45_WE.Tool" })]
     public class WEModData : BasicModData
     {
         const string kFontsSection = "Font";
@@ -65,6 +71,13 @@ namespace BelzontWE
         public const string kActionInstanceNavXPrev = "K45_WE_InstanceNavXPrev";
         public const string kActionInstanceNavYNext = "K45_WE_InstanceNavYNext";
         public const string kActionInstanceNavYPrev = "K45_WE_InstanceNavYPrev";
+
+        public const string kActionTreeNavNext = "K45_WE_TreeNavNext";
+        public const string kActionTreeNavPrev = "K45_WE_TreeNavPrev";
+        public const string kActionTreeToggleFold = "K45_WE_TreeToggleFold";
+        public const string kActionTreeDelete = "K45_WE_TreeDelete";
+        public const string kActionTreeFoldAll = "K45_WE_TreeFoldAll";
+        public const string kActionTreeUnfoldAll = "K45_WE_TreeUnfoldAll";
         public const string kActionMoveLeft = "K45_WE_MoveLeft";
         public const string kActionMoveRight = "K45_WE_MoveRight";
         public const string kActionMoveUp = "K45_WE_MoveUp";
@@ -273,6 +286,12 @@ namespace BelzontWE
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad5, kActionMoveDown)] public ProxyBinding ActionMoveDown { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad9, kActionRotateClockwise)] public ProxyBinding ActionRotateClockwise { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad7, kActionRotateCounterClockwise)] public ProxyBinding ActionRotateCounterClockwise { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.PageDown, kActionTreeNavNext)] public ProxyBinding ActionTreeNavNext { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.PageUp, kActionTreeNavPrev)] public ProxyBinding ActionTreeNavPrev { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Space, kActionTreeToggleFold)] public ProxyBinding ActionTreeToggleFold { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Delete, kActionTreeDelete)] public ProxyBinding ActionTreeDelete { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Home, kActionTreeFoldAll)] public ProxyBinding ActionTreeFoldAll { get; set; }
+        [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.End, kActionTreeUnfoldAll)] public ProxyBinding ActionTreeUnfoldAll { get; set; }
         #endregion
     }
 

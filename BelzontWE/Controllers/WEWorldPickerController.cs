@@ -364,6 +364,11 @@ namespace BelzontWE
             CurrentTree.Value = GetTextTreeForEntity(CurrentEntity.Value);
         }
 
+        public void FireTreeNavAction(int action)
+        {
+            m_eventCaller?.Invoke($"{PREFIX}treeNavAction!", new object[] { action });
+        }
+
         private void RemoveItem()
         {
             if (IsValidEditingItem())

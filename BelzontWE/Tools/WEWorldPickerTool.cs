@@ -68,6 +68,12 @@ namespace BelzontWE
         private ProxyAction m_useZY;
         private ProxyAction m_cycleAxisLock;
         private ProxyAction m_ToggleLockCameraRotation;
+        private ProxyAction m_treeNavNext;
+        private ProxyAction m_treeNavPrev;
+        private ProxyAction m_treeToggleFold;
+        private ProxyAction m_treeDelete;
+        private ProxyAction m_treeFoldAll;
+        private ProxyAction m_treeUnfoldAll;
         private WEWorldPickerController m_Controller;
         private WETextDataMeshController m_MeshDataController;
         private WETextDataTransformController m_TransformController;
@@ -113,6 +119,12 @@ namespace BelzontWE
             m_useZY = WEModData.Instance.GetAction(WEModData.kActionPerspectiveZY);
             m_cycleAxisLock = WEModData.Instance.GetAction(WEModData.kActionCycleEditAxisLock);
             m_ToggleLockCameraRotation = WEModData.Instance.GetAction(WEModData.kActionToggleLockCameraRotation);
+            m_treeNavNext = WEModData.Instance.GetAction(WEModData.kActionTreeNavNext);
+            m_treeNavPrev = WEModData.Instance.GetAction(WEModData.kActionTreeNavPrev);
+            m_treeToggleFold = WEModData.Instance.GetAction(WEModData.kActionTreeToggleFold);
+            m_treeDelete = WEModData.Instance.GetAction(WEModData.kActionTreeDelete);
+            m_treeFoldAll = WEModData.Instance.GetAction(WEModData.kActionTreeFoldAll);
+            m_treeUnfoldAll = WEModData.Instance.GetAction(WEModData.kActionTreeUnfoldAll);
 
             m_CameraZoomAction = InputManager.instance.FindAction("Camera", "Zoom");
             m_Controller = World.GetOrCreateSystemManaged<WEWorldPickerController>();
@@ -144,6 +156,12 @@ namespace BelzontWE
             m_useZY.shouldBeEnabled = true;
             m_cycleAxisLock.shouldBeEnabled = true;
             m_ToggleLockCameraRotation.shouldBeEnabled = true;
+            m_treeNavNext.shouldBeEnabled = true;
+            m_treeNavPrev.shouldBeEnabled = true;
+            m_treeToggleFold.shouldBeEnabled = true;
+            m_treeDelete.shouldBeEnabled = true;
+            m_treeFoldAll.shouldBeEnabled = true;
+            m_treeUnfoldAll.shouldBeEnabled = true;
 
             m_moveLeft.shouldBeEnabled = true;
             m_moveRight.shouldBeEnabled = true;
@@ -186,6 +204,12 @@ namespace BelzontWE
             m_useXZ.shouldBeEnabled = false;
             m_useZY.shouldBeEnabled = false;
             m_cycleAxisLock.shouldBeEnabled = false;
+            m_treeNavNext.shouldBeEnabled = false;
+            m_treeNavPrev.shouldBeEnabled = false;
+            m_treeToggleFold.shouldBeEnabled = false;
+            m_treeDelete.shouldBeEnabled = false;
+            m_treeFoldAll.shouldBeEnabled = false;
+            m_treeUnfoldAll.shouldBeEnabled = false;
 
             m_moveLeft.shouldBeEnabled = false;
             m_moveRight.shouldBeEnabled = false;
@@ -305,6 +329,13 @@ namespace BelzontWE
                 if (m_alternateFixedCamera.WasPressedThisFrame()) m_Controller.CameraLocked.ChangeValueWithEffects(!m_Controller.CameraLocked.Value);
                 if (m_cycleAxisLock.WasPressedThisFrame()) m_Controller.CurrentMoveMode.ChangeValueWithEffects((1 + m_Controller.CurrentMoveMode.Value) % 3);
                 if (m_Controller.CameraLocked.Value && m_ToggleLockCameraRotation.WasPressedThisFrame()) m_Controller.CameraRotationLocked.ChangeValueWithEffects(!m_Controller.CameraRotationLocked.Value);
+
+                if (m_treeNavNext.WasPressedThisFrame()) m_Controller.FireTreeNavAction(0);
+                else if (m_treeNavPrev.WasPressedThisFrame()) m_Controller.FireTreeNavAction(1);
+                else if (m_treeToggleFold.WasPressedThisFrame()) m_Controller.FireTreeNavAction(2);
+                else if (m_treeDelete.WasPressedThisFrame() && m_Controller.IsValidEditingItem()) m_Controller.FireTreeNavAction(3);
+                else if (m_treeFoldAll.WasPressedThisFrame()) m_Controller.FireTreeNavAction(4);
+                else if (m_treeUnfoldAll.WasPressedThisFrame()) m_Controller.FireTreeNavAction(5);
 
 
                 if (HoveredEntity != Entity.Null)

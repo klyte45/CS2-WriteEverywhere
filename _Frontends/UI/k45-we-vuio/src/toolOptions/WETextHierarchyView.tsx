@@ -5,7 +5,8 @@ import { FilePickerDialog } from "common/FilePickerDialog";
 import { StringInputDialog } from "common/StringInputDialog";
 import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
 import { ConfirmationDialog, Panel, Portal } from "cs2/ui";
-import { KeyboardEvent, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import engine from "cohtml/cohtml";
 import { FileService } from "services/FileService";
 import { LayoutsService } from "services/LayoutsService";
 import { WESimulationTextType, WETextItemResume } from "services/WEFormulaeElement";
@@ -231,22 +232,23 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 : []
         );
 
-    const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    // Tree navigation actions sent from C# backend ProxyActions registered in WEModData
+    // Action codes: 0=NavNext, 1=NavPrev, 2=ToggleFold, 3=Delete, 4=FoldAll, 5=UnfoldAll
+    const treeNavHandlerRef = useRef<(action: number) => void>();
+    treeNavHandlerRef.current = (action: number) => {
         const currentIdx = viewport.findIndex(v => v.id.Index === wps.CurrentSubEntity.value?.Index);
-        switch (e.key) {
-            case 'PageDown':
+        switch (action) {
+            case 0: // NavNext (PageDown)
                 if (currentIdx >= 0 && currentIdx < viewport.length - 1) {
                     wps.CurrentSubEntity.set(viewport[currentIdx + 1].id);
                 }
-                e.preventDefault();
                 break;
-            case 'PageUp':
+            case 1: // NavPrev (PageUp)
                 if (currentIdx > 0) {
                     wps.CurrentSubEntity.set(viewport[currentIdx - 1].id);
                 }
-                e.preventDefault();
                 break;
-            case ' ':
+            case 2: // ToggleFold (Space)
                 if (currentIdx >= 0 && viewport[currentIdx].expandable) {
                     const id = viewport[currentIdx].id;
                     const isExpanded = expandedViewports.some(y => y.Index === id.Index);
@@ -254,24 +256,25 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                         ? expandedViewports.filter(y => y.Index !== id.Index)
                         : [...expandedViewports, id]);
                 }
-                e.preventDefault();
                 break;
-            case 'Delete':
+            case 3: // Delete
                 if (wps.CurrentSubEntity.value?.Index) {
                     setPendingDelete(true);
                 }
-                e.preventDefault();
                 break;
-            case 'Home':
+            case 4: // FoldAll (Home)
                 setExpandedViewports([]);
-                e.preventDefault();
                 break;
-            case 'End':
+            case 5: // UnfoldAll (End)
                 setExpandedViewports(collectAllExpandable(wps.CurrentTree.value));
-                e.preventDefault();
                 break;
         }
     };
+    useEffect(() => {
+        const handler = (action: number) => treeNavHandlerRef.current?.(action);
+        engine.on("k45::we.wpicker.treeNavAction!", handler);
+        return () => engine.off("k45::we.wpicker.treeNavAction!", handler);
+    }, []);
 
 
     const [loadingFromXml, setLoadingFromXml] = useState(false)
@@ -401,7 +404,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     }, [wps.CurrentEntity.value])
 
     return <Portal>
-        <div tabIndex={0} onKeyDown={handleKeyDown} style={{ outline: 'none' }}>
+        <div tabIndex={0} style={{ outline: 'none' }}>
         <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
             <div className="k45_we_hierarchyViewportTitle">
                 <div className="k45_we_itemTitle">{currentBuildingTree?.selectedItem?.name}</div>

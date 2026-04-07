@@ -43,16 +43,16 @@ All keyboard handlers must be attached to a parent `div` in the React tree with 
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] **Page Up**: pressing Page Up when the WE editor is open and an item is selected moves the selection to the previous item in viewport order; no-op if the first item is selected
-- [ ] **Page Down**: pressing Page Down moves selection to the next item in viewport order; no-op if the last item is selected
-- [ ] **Space**: pressing Space on a selected item with children toggles its fold state; no-op if the item has no children
-- [ ] **Delete key**: pressing Delete shows a confirmation dialog using the base game `ConfirmationDialog`; the dialog has no default button selected; confirming deletes the item; cancelling dismisses without action
-- [ ] **Existing UI delete button**: still deletes directly without a confirmation dialog
-- [ ] **Home**: pressing Home collapses all tree items (sets `expandedViewports` to empty)
-- [ ] **End**: pressing End recursively expands all tree items (sets `expandedViewports` to all entities that have children)
-- [ ] All keyboard shortcuts are only active when the WE editor panel has focus (keyboard events are scoped to the tree container `div` with `tabIndex={0}`)
-- [ ] No `<span>`, `<input>` or other raw HTML elements are introduced — only game-provided component types and `<div>` or components previously used in the WE codebase
-- [ ] Commented-out C# Numpad +/- navigation code in `WEWorldPickerTool.cs` is either replaced by the new Page Up/Down mechanism or cleanly removed
+- [x] **Page Up**: pressing Page Up when the WE editor is open and an item is selected moves the selection to the previous item in viewport order; no-op if the first item is selected
+- [x] **Page Down**: pressing Page Down moves selection to the next item in viewport order; no-op if the last item is selected
+- [x] **Space**: pressing Space on a selected item with children toggles its fold state; no-op if the item has no children
+- [x] **Delete key**: pressing Delete shows a confirmation dialog using the base game `ConfirmationDialog`; the dialog has no default button selected; confirming deletes the item; cancelling dismisses without action
+- [x] **Existing UI delete button**: still deletes directly without a confirmation dialog
+- [x] **Home**: pressing Home collapses all tree items (sets `expandedViewports` to empty)
+- [x] **End**: pressing End recursively expands all tree items (sets `expandedViewports` to all entities that have children)
+- [x] All keyboard shortcuts are only active when the WE editor panel has focus (keyboard events are scoped to the tree container `div` with `tabIndex={0}`)
+- [x] No `<span>`, `<input>` or other raw HTML elements are introduced — only game-provided component types and `<div>` or components previously used in the WE codebase
+- [x] Commented-out C# Numpad +/- navigation code in `WEWorldPickerTool.cs` is either replaced by the new Page Up/Down mechanism or cleanly removed
 
 ---
 
