@@ -81,11 +81,11 @@ export const WEInstancingView = (props: { initialPosition?: { x: number, y: numb
         wps.picker.CurrentSubEntity.subscribe(async () => setBuildIdx(buildIdx + 1))
     }, [buildIdx, wps.picker.CurrentSubEntity.value])
 
-    const defaultPosition = props.initialPosition ?? { x: 600 / window.innerWidth, y: 100 / window.innerHeight }
+    const defaultPosition = props.initialPosition ?? { x: 600 / window.innerWidth, y: (window.innerHeight - 300) / window.innerHeight }
     const arrayToXYZ = (x: number[]) => ({ x: x[0], y: x[1], z: x[2] })
     const xyzToArray = (x: { x: number, y: number, z: number }): [number, number, number] => [x.x, x.y, x.z]
     return <Portal>
-        <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel k45_contentFillPanel" initialPosition={defaultPosition} style={{ height: "400rem", display: "flex", flexDirection: "column" }}
+        <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel k45_contentFillPanel" initialPosition={defaultPosition} style={{ height: "450rem", display: "flex", flexDirection: "column" }}
             contentClassName="k45_variablesListWindow">
             <FormulaeEditRow
                 formulaeModule="transform" formulaeField="MustDrawFn" label={T_showWhenLabel} defaultInputField={T_showWhenAlways}

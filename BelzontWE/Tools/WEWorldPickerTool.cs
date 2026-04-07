@@ -440,15 +440,15 @@ namespace BelzontWE
                             var spacings = camTransform.SpacingByAxisOrder;
                             var iIdx = m_Controller.CurrentInstanceIdx.Value;
                             int iM = (int)(iIdx % instCounts[0]);
-                            int iN = (int)((iIdx / (long)instCounts[0]) % instCounts[1]);
+                            int iN = (int)(iIdx / instCounts[0] % instCounts[1]);
                             int iO = (int)(iIdx / ((long)instCounts[0] * instCounts[1]));
-                            var localPos = camTransform.offsetPosition + iM * spacings[0] + iN * spacings[1] + iO * spacings[2];
-                            if (EntityManager.TryGetComponent<WETextDataMesh>(m_Controller.CurrentSubEntity.Value, out var camMesh))
-                            {
-                                var meshSize = camMesh.Bounds.max - camMesh.Bounds.min;
-                                localPos += (camTransform.PivotAsFloat3 - new float3(.5f, .5f, .5f)) * meshSize * camTransform.scale;
-                            }
-                            entityPos = (float3)m_Controller.CurrentItemMatrix.MultiplyPoint(localPos);
+                            // Mirror EntityProcessing pivotOffset formula exactly
+                            var totalArea = (camTransform.ArrayInstancing - 1) * camTransform.arrayInstancingGapMeters;
+                            var effectivePivot = camTransform.PivotAsFloat3 - (math.sign(totalArea.xyz) / 2) - new float3(.5f, .5f, .5f);
+                            var pivotOffset = effectivePivot * math.abs(totalArea);
+                            var localOffset = pivotOffset + (float3)(iM * spacings[0] + iN * spacings[1] + iO * spacings[2]);
+                            // Spacing vectors are in entity-local space; rotate by the full entity rotation (including offsetRotation)
+                            entityPos += (float3)(m_Controller.CurrentItemMatrix.rotation * (Vector3)localOffset);
                         }
                         m_cameraSystem.cinematicCameraController.pivot = (Vector3)entityPos + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));
                         m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;

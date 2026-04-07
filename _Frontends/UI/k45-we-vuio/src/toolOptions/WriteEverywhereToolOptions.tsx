@@ -307,7 +307,7 @@ const WEWorldPickerToolPanel = () => {
                         if (isNaN(newVal[i])) return;
                         transform.CurrentRotation.set(newVal);
                     }} />
-                {(transform.ArrayInstancing.value[0] > 1 || transform.ArrayInstancing.value[1] > 1 || transform.ArrayInstancing.value[2] > 1) && (() => {
+                {(transform.ArrayInstancing.value[0] * transform.ArrayInstancing.value[1] * transform.ArrayInstancing.value[2] > 1 && wps.CameraLocked.value) && (() => {
                     const counts: [number, number, number] = [transform.ArrayInstancing.value[0], transform.ArrayInstancing.value[1], transform.ArrayInstancing.value[2]];
                     const order = transform.ArrayAxisGrowthOrder.value;
                     const linearIdx = wps.CurrentInstanceIdx.value;
@@ -319,11 +319,10 @@ const WEWorldPickerToolPanel = () => {
                     ];
                     return <VanillaComponentResolver.instance.Section title={T_instanceNavTitle}>
                         {rows.map(([label, count, axisIdx, toLinear]) => (
-                            <AmountValueSection
+                            <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }} > {label} <AmountValueSection
                                 key={label}
                                 sectionless
                                 widthContent={60}
-                                title={label}
                                 valueGetter={() => `${axisIdx + 1} / ${count}`}
                                 up={{
                                     onSelect: () => wps.CurrentInstanceIdx.set(toLinear(Math.min(count - 1, axisIdx + 1))),
@@ -333,7 +332,7 @@ const WEWorldPickerToolPanel = () => {
                                     onSelect: () => wps.CurrentInstanceIdx.set(toLinear(Math.max(0, axisIdx - 1))),
                                     disabledFn: () => count <= 1 || axisIdx <= 0
                                 }}
-                            />
+                            /></div>
                         ))}
                     </VanillaComponentResolver.instance.Section>;
                 })()}

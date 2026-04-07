@@ -275,13 +275,6 @@ namespace BelzontWE
         [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad3, kActionPerspectiveXZ)] public ProxyBinding ActionPerspectiveXZ { get; set; }
         [SettingsUISection(kKeybindingSection, kViewPerspectiveSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMultiply, kActionCycleEditAxisLock)] public ProxyBinding ActionCycleAxisLock { get; set; }
 
-        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, kActionInstanceNavXNext)] public ProxyBinding ActionInstanceNavXNext { get; set; }
-        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, kActionInstanceNavXPrev)] public ProxyBinding ActionInstanceNavXPrev { get; set; }
-        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.UpArrow, kActionInstanceNavYNext)] public ProxyBinding ActionInstanceNavYNext { get; set; }
-        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.DownArrow, kActionInstanceNavYPrev)] public ProxyBinding ActionInstanceNavYPrev { get; set; }
-        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadPlus, kActionInstanceNavZNext)] public ProxyBinding ActionInstanceNavZNext { get; set; }
-        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMinus, kActionInstanceNavZPrev)] public ProxyBinding ActionInstanceNavZPrev { get; set; }
-
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad4, kActionMoveLeft)] public ProxyBinding ActionMoveLeft { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad6, kActionMoveRight)] public ProxyBinding ActionMoveRight { get; set; }
         [SettingsUISection(kKeybindingSection, kItemEditing)][SettingsUIKeyboardBinding(BindingKeyboard.Numpad8, kActionMoveUp)] public ProxyBinding ActionMoveUp { get; set; }
@@ -295,6 +288,15 @@ namespace BelzontWE
         [SettingsUISection(kKeybindingSection, kItemTreeNavigationSection)][SettingsUIKeyboardBinding(BindingKeyboard.Delete, kActionTreeDelete)] public ProxyBinding ActionTreeDelete { get; set; }
         [SettingsUISection(kKeybindingSection, kItemTreeNavigationSection)][SettingsUIKeyboardBinding(BindingKeyboard.Home, kActionTreeFoldAll)] public ProxyBinding ActionTreeFoldAll { get; set; }
         [SettingsUISection(kKeybindingSection, kItemTreeNavigationSection)][SettingsUIKeyboardBinding(BindingKeyboard.End, kActionTreeUnfoldAll)] public ProxyBinding ActionTreeUnfoldAll { get; set; }
+        
+        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, kActionInstanceNavXNext)] public ProxyBinding ActionInstanceNavXNext { get; set; }
+        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, kActionInstanceNavXPrev)] public ProxyBinding ActionInstanceNavXPrev { get; set; }
+        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.UpArrow, kActionInstanceNavYNext)] public ProxyBinding ActionInstanceNavYNext { get; set; }
+        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.DownArrow, kActionInstanceNavYPrev)] public ProxyBinding ActionInstanceNavYPrev { get; set; }
+        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadPlus, kActionInstanceNavZNext)] public ProxyBinding ActionInstanceNavZNext { get; set; }
+        [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.NumpadMinus, kActionInstanceNavZPrev)] public ProxyBinding ActionInstanceNavZPrev { get; set; }
+
+
         #endregion
     }
 

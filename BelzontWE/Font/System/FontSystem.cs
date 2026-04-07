@@ -319,7 +319,7 @@ namespace BelzontWE.Font
 
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] removing {originalText} since atlas changed");
 
-                m_textCache[originalText] = null;
+                m_textCache.Remove(originalText);
                 return;
             }
 
@@ -327,7 +327,7 @@ namespace BelzontWE.Font
             if (result is null)
             {
                 if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"[FontSystem: {Name}] removing {originalText} ");
-                m_textCache[originalText] = null;
+                m_textCache.Remove(originalText);
             }
             else if (m_textCache.TryGetValue(originalText, out var currentVal))
             {

@@ -504,10 +504,10 @@ K45::WE.vuio[shaderProperties.renderBackface]	Render backface	Renderizar face tr
 ::BK45_WE_InstanceNavXPrev	Navigate array: X- (previous)	Navegar array: X- (anterior)
 ::BK45_WE_InstanceNavYNext	Navigate array: Y+ (next)	Navegar array: Y+ (próximo)
 ::BK45_WE_InstanceNavYPrev	Navigate array: Y- (previous)	Navegar array: Y- (anterior)
-::LActionNextText	Array Z+ (next)	Array Z+ (próximo)
-::DActionNextText	Move camera to the next instance along the Z axis of the array	Move a câmera para a próxima instância no eixo Z da matriz
-::LActionPreviousText	Array Z- (previous)	Array Z- (anterior)
-::DActionPreviousText	Move camera to the previous instance along the Z axis of the array	Move a câmera para a instância anterior no eixo Z da matriz
+::LActionInstanceNavZNext	Array Z+ (next)	Array Z+ (próximo)
+::DActionInstanceNavZNext	Move camera to the next instance along the Z axis of the array	Move a câmera para a próxima instância no eixo Z da matriz
+::LActionInstanceNavZPrev	Array Z- (previous)	Array Z- (anterior)
+::DActionInstanceNavZPrev	Move camera to the previous instance along the Z axis of the array	Move a câmera para a instância anterior no eixo Z da matriz
 ::LActionInstanceNavXNext	Array X+ (next)	Array X+ (próximo)
 ::DActionInstanceNavXNext	Move camera to the next instance along the X axis of the array	Move a câmera para a próxima instância no eixo X da matriz
 ::LActionInstanceNavXPrev	Array X- (previous)	Array X- (anterior)
@@ -540,5 +540,5 @@ K45::WE.vuio[instancingSettings.instanceNav.y]	Y axis	Eixo Y
 K45::WE.vuio[instancingSettings.instanceNav.z]	Z axis	Eixo Z
 K45::WE.vuio[textHierarchyWindow.deleteConfirmMsg]	Are you sure you want to delete this item?	Tem certeza que deseja apagar este item?
 K45::WE.vuio[textHierarchyWindow.deleteConfirmCancel]	Cancel	Cancelar
-::GArrayItemView    Instance item (array)	Instância do array
-::GTreeItemView     Tree item (layout hierarchy)	Item da árvore (hierarquia de layout)
+::GArrayItemView	Instance item (array)	Instância do array
+::GItemTreeNavigation	Tree item (layout hierarchy)	Item da árvore (hierarquia de layout)
