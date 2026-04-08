@@ -10,6 +10,7 @@
         "dotnet test": true,
         "Test-Path": true,
         "npx tsc": true,
-        "kk": true
+        "kk": true,
+        "git show": true
     }
 }
