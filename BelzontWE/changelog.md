@@ -1,4 +1,4 @@
-# v1.2.0r0 (07-APR-26)
+# v1.2.0r0 (08-APR-26)
 - XZ plane camera view corrected: the top of the screen now corresponds to positive Z direction
 - Emissive light effects are now rectangle or cube-shaped based on the geometry of the layout item, instead of using point light emission
 - Reduced overall slowdown when loading a city with many active layouts (1000+)
