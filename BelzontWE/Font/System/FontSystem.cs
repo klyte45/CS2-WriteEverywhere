@@ -371,7 +371,7 @@ namespace BelzontWE.Font
             {
                 m_textCache[""] = new PrimitiveRenderInformation("", [], [], [], default, null, null);
             }
-            if (itemsQueue.Count >= WEConstants.STRING_RENDERING_BATCH || framesBuffering++ > 60)
+            if (framesBuffering++ > 15 && (itemsQueue.Count >= WEConstants.STRING_RENDERING_BATCH || framesBuffering > 60))
             {
                 framesBuffering = 0;
                 if (itemsQueue.Count != 0)
@@ -399,10 +399,17 @@ namespace BelzontWE.Font
 
                     if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"charsToRender = ['{string.Join("', '", charsToRender)}']");
 
+                restartFor:
                     var countSucceeded = 0;
                     foreach (var charact in charsToRender)
                     {
                         var result = GetGlyph(glyphs, charact, out bool hasReseted);
+                        if (hasReseted)
+                        {
+                            LogUtils.DoInfoLog($"[FontSystem: {Name}] Reset texture! (Now {CurrentAtlas.Texture.width} | v = {CurrentAtlas.Version}) A");
+                            m_textCache.Clear();
+                            goto restartFor;
+                        }
                         if (!result.IsValid)
                         {
                             var normalizedChar = char.ConvertFromUtf32(charact).Normalize(System.Text.NormalizationForm.FormKD);
@@ -411,15 +418,21 @@ namespace BelzontWE.Font
                             {
                                 result = GetGlyph(glyphs, char.ConvertToUtf32(normalizedChar, 0), out hasReseted);
                                 glyphs[charact] = result;
+                                if (hasReseted)
+                                {
+                                    LogUtils.DoInfoLog($"[FontSystem: {Name}] Reset texture! (Now {CurrentAtlas.Texture.width} | v = {CurrentAtlas.Version}) B");
+                                    m_textCache.Clear();
+                                    goto restartFor;
+                                }
                             }
                         }
                         if (result.IsValid)
                         {
                             if (hasReseted)
                             {
-                                LogUtils.DoInfoLog($"[FontSystem: {Name}] Reset texture! (Now {CurrentAtlas.Texture.width})");
+                                LogUtils.DoInfoLog($"[FontSystem: {Name}] Reset texture! (Now {CurrentAtlas.Texture.width} | v = {CurrentAtlas.Version}) C");
                                 m_textCache.Clear();
-                                continue;
+                                goto restartFor;
                             }
 
                             countSucceeded++;
@@ -472,6 +485,8 @@ namespace BelzontWE.Font
                     break;
                 }
             }
+
+            if (BasicIMod.DebugMode) LogUtils.DoLog($"Ending post-processing; strings yet to process at font {Name}: {results.Count}");
         }
 
         public JobHandle RunJobs(JobHandle dependency)

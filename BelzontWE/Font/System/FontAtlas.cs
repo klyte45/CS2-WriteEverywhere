@@ -97,7 +97,7 @@ namespace BelzontWE.Font
             Texture = newTexture;
             IsPendingApply = true;
             Expand(newW, newH);
-            // Version is NOT incremented — existing glyph UV coordinates remain valid
+            Version++;
         }
 
         public void Reset(int w, int h)

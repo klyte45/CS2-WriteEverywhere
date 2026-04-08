@@ -17,7 +17,7 @@ namespace BelzontWE
 
         // Font job configuration
         public const int FONT_JOB_BATCH_SIZE = 32;
-        public const int STRING_RENDERING_BATCH = 256;
+        public const int STRING_RENDERING_BATCH = 4096;
 
         // Frame interval configuration
         public const int RENDERER_FRAME_CHECK_MASK = 0x1f;
