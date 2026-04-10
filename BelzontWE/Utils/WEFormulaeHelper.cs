@@ -373,6 +373,7 @@ namespace BelzontWE
                 return p != null
                     && (p.Length == 1 || (p.Length == 2 && p[1].ParameterType == typeof(Dictionary<string, string>)))
                     && !IsByRefLikeSafe(p[0].ParameterType)
+                    && !m.IsGenericMethod
                     && m.ReturnType != typeof(void);
             }
             catch
