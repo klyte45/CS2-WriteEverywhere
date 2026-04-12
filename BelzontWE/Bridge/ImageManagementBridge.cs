@@ -11,13 +11,16 @@ using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Unity.Entities;
 
 namespace BelzontWE.Bridge
 {
     [Obsolete("Don't reference methods on this class directly. Always use reverse patch to access them, and don't use this mod DLL as hard dependency of your own mod.", true)]
     public static class ImageManagementBridge
     {
+        private static WEAtlasesLibrary _imageAtlasLibrary;
 
+        private static WEAtlasesLibrary ImageAtlasLibrary => _imageAtlasLibrary ??= World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<WEAtlasesLibrary>();
         public static string GetImageAtlasVersion() => BasicIMod.FullVersion;
 
         public static void RegisterImageAtlas(Assembly mainAssembly, string atlasName, string[] imagePaths, Action<string> onCompleteLoading = null)
@@ -34,7 +37,7 @@ namespace BelzontWE.Bridge
                 if (imagePaths is null) throw new ArgumentNullException("imagePaths");
                 if (imagePaths.Length == 0) throw new ArgumentOutOfRangeException("imagePaths", "Should not be empty.");
                 CommonAtlasValidation(mainAssembly, atlasName, targetAtlasName);
-                WEAtlasesLibrary.Instance.LoadImagesToAtlas(mainAssembly, atlasName, imagePaths, modIdentifier, displayName, notifGroup, args);
+                ImageAtlasLibrary.LoadImagesToAtlas(mainAssembly, atlasName, imagePaths, modIdentifier, displayName, notifGroup, args);
                 OnSuccessLoadAtlas(notifGroup, args);
             }
             catch (Exception e)
@@ -99,7 +102,7 @@ namespace BelzontWE.Bridge
             try
             {
                 CommonAtlasValidation(mainAssembly, atlasName, targetAtlasName);
-                WEAtlasesLibrary.Instance.LoadImagesAsDynamicAtlas(mainAssembly, atlasName, producer, modIdentifier, displayName, notifGroup, args);
+                ImageAtlasLibrary.LoadImagesAsDynamicAtlas(mainAssembly, atlasName, producer, modIdentifier, displayName, notifGroup, args);
                 OnSuccessLoadAtlas(notifGroup, args);
             }
             catch (Exception e)
@@ -109,13 +112,13 @@ namespace BelzontWE.Bridge
             yield return targetAtlasName;
         }
 
-        public static bool CheckImageAtlasExists(Assembly mainAssembly, string atlasName) => WEAtlasesLibrary.Instance.AtlasExists(WEModIntegrationUtility.GetModAccessName(mainAssembly, atlasName));
+        public static bool CheckImageAtlasExists(Assembly mainAssembly, string atlasName) => ImageAtlasLibrary.AtlasExists(WEModIntegrationUtility.GetModAccessName(mainAssembly, atlasName));
 
         public static void EnsureAtlasDeleted(Assembly mainAssembly, string atlasName)
         {
             if (CheckImageAtlasExists(mainAssembly, atlasName))
             {
-                WEAtlasesLibrary.Instance.UnregisterModAtlas(mainAssembly, atlasName);
+                ImageAtlasLibrary.UnregisterModAtlas(mainAssembly, atlasName);
             }
         }
     }

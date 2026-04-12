@@ -25,6 +25,7 @@ namespace BelzontWE
         private WETextDataBaseController[] m_baseControllers;
         private NameSystem m_nameSystem;
         private PrefabSystem m_prefabSystem;
+        private WETemplateManager m_templateManager;
 
         public void SetupCallBinder(Action<string, Delegate> callBinder)
         {
@@ -257,12 +258,12 @@ namespace BelzontWE
             PlaneTilt = new(22.5f, $"{PREFIX}{nameof(PlaneTilt)}", m_eventCaller, m_callBinder, (x, _) => Math.Clamp(x, -45, 45)); // All, Horizontal, Vertical
             CurrentInstanceIdx = new(0, $"{PREFIX}{nameof(CurrentInstanceIdx)}", m_eventCaller, m_callBinder, (x, _) => Math.Max(0, x));
             CurrentSubEntity.OnScreenValueChanged += (x) => OnCurrentItemChanged();
-            FontList.Value = FontServer.Instance.GetLoadedFontsNames();
+            FontList.Value = [.. FontServer.Instance.GetLoadedFontsNames(), .. m_templateManager.ListAllFontsMapped()];
             FontList.UpdateUIs();
 
             FontServer.Instance.OnFontsLoadedChanged += () =>
             {
-                FontList.Value = FontServer.Instance.GetLoadedFontsNames();
+                FontList.Value = [.. FontServer.Instance.GetLoadedFontsNames(), .. m_templateManager.ListAllFontsMapped()];
                 FontList.UpdateUIs();
             };
             CurrentEntity.OnScreenValueChanged += (x) =>
@@ -478,6 +479,7 @@ namespace BelzontWE
             m_EndBarrier = World.GetExistingSystemManaged<ModificationEndBarrier>();
             m_nameSystem = World.GetExistingSystemManaged<NameSystem>();
             m_prefabSystem = World.GetExistingSystemManaged<PrefabSystem>();
+            m_templateManager = World.GetOrCreateSystemManaged<WETemplateManager>();
             GameManager.instance.userInterface.view.Listener.BindingsReleased += () => m_initialized = false;
         }
 

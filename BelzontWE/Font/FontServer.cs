@@ -265,7 +265,7 @@ namespace BelzontWE
 
         internal bool FontExists(string name) => LoadedFonts.ContainsKey(name);
 
-        public string[] GetLoadedFontsNames() => LoadedFonts.Keys.Select(x => x.ToString()).ToArray();
+        public string[] GetLoadedFontsNames() => [.. LoadedFonts.Keys.Select(x => x.ToString())];
 
 
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter

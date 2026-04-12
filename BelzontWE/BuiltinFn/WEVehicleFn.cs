@@ -4,6 +4,8 @@ using Game.Objects;
 using Game.Simulation;
 using Game.Vehicles;
 using System;
+using System.Runtime.CompilerServices;
+using Unity.Collections;
 using Unity.Entities;
 using Target = Game.Common.Target;
 
@@ -16,10 +18,14 @@ namespace BelzontWE.Builtin
         public const string NUMBERS = "0123456789";
         public readonly static string[] DIGITS_ORDER = { NUMBERS, NUMBERS, LETTERS, NUMBERS, LETTERS, LETTERS, LETTERS };
 
+        private static World _world;
+
+        private static World World => _world ??= World.DefaultGameObjectInjectionWorld;
+
 
         public static Func<Entity, string> GetTargetDestinationStatic_binding = (entity) =>
         {
-            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            var em = World.EntityManager;
             return !em.TryGetComponent<Target>(entity, out var target) ?
                         !em.TryGetComponent<Owner>(entity, out var owner) ? "<?NO TARGET?>"
                         : WEUtitlitiesFn.GetEntityName(owner.m_Owner)
@@ -33,8 +39,8 @@ namespace BelzontWE.Builtin
         public static Func<Entity, string> GetTargetDestinationDynamic_binding = GetTargetDestinationStatic_binding;
         public static Func<Entity, string> GetVehiclePlate_binding = (Entity refNum) =>
         {
-            citySys ??= World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<CitySystem>();
-            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            citySys ??= World.GetExistingSystemManaged<CitySystem>();
+            var em = World.EntityManager;
             var refControl = em.TryGetComponent<Controller>(refNum, out var controller) ? controller.m_Controller : refNum;
             var output = "";
             var idx = refNum.Index + (em.TryGetComponent<Owner>(refControl, out var owner) && em.HasComponent<OutsideConnection>(owner.m_Owner) ? owner.m_Owner.Index : citySys.City.Index << 4);
@@ -48,14 +54,14 @@ namespace BelzontWE.Builtin
         };
         public static Func<Entity, string> GetTargetTransportLineNumber_binding = (entity) =>
         {
-            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            var em = World.EntityManager;
             return !em.TryGetComponent<Target>(entity, out var target) ? "<T>"
                 : target.m_Target == Entity.Null ? "CS2"
                 : !em.TryGetComponent<Owner>(target.m_Target, out var ownerRoute) ? "---"
                 : WERouteFn.GetTransportLineNumber(ownerRoute.m_Owner);
         };
         public static Func<Entity, string> GetSerialNumber_binding = (entity) => (entity.Index % 100000).ToString().PadLeft(5, '0');
-        public static Func<Entity, string> GetConvoyId_binding = (entity) => GetVehiclePlate_binding(World.DefaultGameObjectInjectionWorld.EntityManager.TryGetComponent(entity, out Controller c) ? c.m_Controller : entity);
+        public static Func<Entity, string> GetConvoyId_binding = (entity) => GetVehiclePlate_binding(World.EntityManager.TryGetComponent(entity, out Controller c) ? c.m_Controller : entity);
         public static Func<Entity, string> GetVehiclePlateLine1_binding = (entity) => { var plate = GetVehiclePlate(entity); return plate[..(plate.Length / 2)]; };
         public static Func<Entity, string> GetVehiclePlateLine2_binding = (entity) => { var plate = GetVehiclePlate(entity); return plate[(plate.Length / 2)..]; };
 
@@ -75,5 +81,28 @@ namespace BelzontWE.Builtin
         public static string GetSerialNumber(Entity reference) => GetSerialNumber_binding?.Invoke(reference) ?? "<???>";
         [WEFormula(typeof(string))]
         public static string GetConvoyId(Entity vehicleRef) => GetConvoyId_binding?.Invoke(vehicleRef) ?? "<???>";
+        [WEFormula(typeof(int))]
+        public static int GetRawCarNumber(Entity vehicleRef)
+        {
+            var em = World.EntityManager;
+            return em.TryGetComponent<Controller>(vehicleRef, out var controller) && em.TryGetBuffer<LayoutElement>(controller.m_Controller, true, out var layoutElements)
+                ? CalculateTrainCarNumber(vehicleRef, controller.m_Controller, layoutElements)
+                : 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int CalculateTrainCarNumber(Entity entity, Entity refEntity, DynamicBuffer<LayoutElement> layoutData)
+        {
+            var carNumber = 0;
+            for (; carNumber < layoutData.Length; carNumber++)
+            {
+                if (layoutData[carNumber].m_Vehicle == entity)
+                {
+                    break;
+                }
+            }
+            carNumber = layoutData[0].m_Vehicle == refEntity ? carNumber + 1 : layoutData.Length - carNumber;
+            return carNumber;
+        }
     }
 }

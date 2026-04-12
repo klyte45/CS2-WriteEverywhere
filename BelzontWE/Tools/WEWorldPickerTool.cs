@@ -9,6 +9,7 @@ using Game.Prefabs;
 using Game.Rendering;
 using Game.Tools;
 using System;
+using System.Linq;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -78,7 +79,7 @@ namespace BelzontWE
         private WETextDataMeshController m_MeshDataController;
         private WETextDataTransformController m_TransformController;
         private WETextDataMaterialController m_MaterialController;
-
+        private WETemplateManager m_templateManager;
         private float2 m_mousePositionRef;
         private float3 m_originalPositionText;
         private float m_mousePositionRefRot;
@@ -132,6 +133,7 @@ namespace BelzontWE
             m_cameraSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
             m_TransformController = World.GetOrCreateSystemManaged<WETextDataTransformController>();
             m_MaterialController = World.GetOrCreateSystemManaged<WETextDataMaterialController>();
+            m_templateManager = World.GetOrCreateSystemManaged<WETemplateManager>();
         }
         protected override void OnStartRunning()
         {
@@ -170,7 +172,7 @@ namespace BelzontWE
             m_rotateClockwise.shouldBeEnabled = true;
             m_rotateCounterClockwise.shouldBeEnabled = true;
 
-            m_Controller.FontList.Value = FontServer.Instance.GetLoadedFontsNames();
+            m_Controller.FontList.Value = [.. FontServer.Instance.GetLoadedFontsNames(), .. m_templateManager.ListAllFontsMapped()];
             m_Controller.FontList.UpdateUIs();
         }
         protected override void OnStopRunning()
@@ -431,28 +433,34 @@ namespace BelzontWE
                         m_cameraDisabledHere = cameraDisabledThisFrame = true;
                         m_cameraDistance = math.clamp(m_cameraDistance + (m_CameraZoomAction.ReadValue<float>() * 4f), 1f, 30f);
 
-                        var targetMatrix = CalculateCameraMatrix();
 
                         var entityPos = (float3)m_Controller.CurrentItemMatrix.GetPosition();
                         if (EntityManager.TryGetComponent<WETextDataTransform>(m_Controller.CurrentSubEntity.Value, out var camTransform))
                         {
                             var instCounts = camTransform.InstanceCountByAxisOrder;
-                            var spacings = camTransform.SpacingByAxisOrder;
-                            var iIdx = m_Controller.CurrentInstanceIdx.Value;
-                            int iM = (int)(iIdx % instCounts[0]);
-                            int iN = (int)(iIdx / instCounts[0] % instCounts[1]);
-                            int iO = (int)(iIdx / ((long)instCounts[0] * instCounts[1]));
-                            // Mirror EntityProcessing pivotOffset formula exactly
-                            var totalArea = (camTransform.ArrayInstancing - 1) * camTransform.arrayInstancingGapMeters;
-                            var effectivePivot = camTransform.PivotAsFloat3 - (math.sign(totalArea.xyz) / 2) - new float3(.5f, .5f, .5f);
-                            var pivotOffset = effectivePivot * math.abs(totalArea);
-                            var localOffset = pivotOffset + (float3)(iM * spacings[0] + iN * spacings[1] + iO * spacings[2]);
-                            // Spacing vectors are in entity-local space; rotate by the full entity rotation (including offsetRotation)
-                            entityPos += (float3)(m_Controller.CurrentItemMatrix.rotation * (Vector3)localOffset);
+                            if (instCounts.x * instCounts.y * instCounts.z > 0)
+                            {
+                                var spacings = camTransform.SpacingByAxisOrder;
+                                var iIdx = m_Controller.CurrentInstanceIdx.Value;
+                                int iM = (int)(iIdx % instCounts[0]);
+                                int iN = (int)(iIdx / instCounts[0] % instCounts[1]);
+                                int iO = (int)(iIdx / ((long)instCounts[0] * instCounts[1]));
+                                // Mirror EntityProcessing pivotOffset formula exactly
+                                var totalArea = (camTransform.ArrayInstancing - 1) * camTransform.arrayInstancingGapMeters;
+                                var effectivePivot = camTransform.PivotAsFloat3 - (math.sign(totalArea.xyz) / 2) - new float3(.5f, .5f, .5f);
+                                var pivotOffset = effectivePivot * math.abs(totalArea);
+                                var localOffset = pivotOffset + (float3)(iM * spacings[0] + iN * spacings[1] + iO * spacings[2]);
+                                // Spacing vectors are in entity-local space; rotate by the full entity rotation (including offsetRotation)
+                                entityPos += (float3)(m_Controller.CurrentItemMatrix.rotation * (Vector3)localOffset);
+                            }
                         }
-                        m_cameraSystem.cinematicCameraController.pivot = (Vector3)entityPos + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));
-                        m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;
-
+                        var targetMatrixNullable = CalculateCameraMatrix();
+                        if (targetMatrixNullable.HasValue)
+                        {
+                            var targetMatrix = targetMatrixNullable.Value;
+                            m_cameraSystem.cinematicCameraController.pivot = (Vector3)entityPos + (Matrix4x4.TRS(default, targetMatrix.rotation, Vector3.one)).MultiplyPoint(new Vector3(0, 0, -m_cameraDistance));
+                            m_cameraSystem.cinematicCameraController.rotation = targetMatrix.rotation.eulerAngles;
+                        }
                     }
 
                 }
@@ -604,7 +612,7 @@ namespace BelzontWE
             }
         }
 
-        private Matrix4x4 CalculateCameraMatrix()
+        private Matrix4x4? CalculateCameraMatrix()
         {
             var isDecal = m_MaterialController.ShaderType.Value == WEShader.Decal;
             var itemAngles = m_TransformController.CurrentRotation.Value;
@@ -612,7 +620,12 @@ namespace BelzontWE
             var planeMode = (ToolEditMode)m_Controller.CurrentPlaneMode.Value;
 
             var cameraRotation = GetCameraRotationForPlane(planeMode, isDecal, itemAngles, isRotationLocked);
-            return m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(cameraRotation);
+            var targetMatrix = m_Controller.CurrentItemMatrix * Matrix4x4.Rotate(cameraRotation);
+            if (targetMatrix.ValidTRS())
+            {
+                return targetMatrix;
+            }
+            return null;
         }
 
         private Quaternion GetCameraRotationForPlane(ToolEditMode planeMode, bool isDecal, float3 itemAngles, bool isRotationLocked)

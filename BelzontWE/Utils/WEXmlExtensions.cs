@@ -162,7 +162,7 @@ namespace BelzontWE.Utils
         public static WETextDataXml.MeshDataTextXml ToTextMeshXml(this WETextDataMesh value)
             => new()
             {
-                fontName = value.FontName.ToString(),
+                fontName = value.originalName.Length > 0 ? value.originalName.ToString() : value.FontName.ToString(),
                 MaxWidthMeters = value.MaxWidthMeters.ToXml(),
                 rescaleHeightOnTextOverflow = value.RescaleHeightOnTextOverflow,
                 text = value.ValueData.ToXml()

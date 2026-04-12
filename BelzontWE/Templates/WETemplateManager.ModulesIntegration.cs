@@ -54,17 +54,30 @@ namespace BelzontWE
 
         internal FixedString64Bytes GetFontFor(string strOriginal, FixedString64Bytes currentFont, ref bool haveChanges)
         {
-            if (!strOriginal.Contains(":")) return strOriginal;
-            var decomposedName = strOriginal.Split(":", 2);
-            var result = m_fontsReplacements.TryGetValue(decomposedName[0], out var fontList) && fontList.TryGetValue(decomposedName[1], out var fontName)
-                        ? (FixedString64Bytes)fontName
-                        : default;
+            FixedString64Bytes result;
+            if (!GetFontFor(strOriginal, out result))
+            {
+                return result;
+            }
             if (result != currentFont)
             {
                 haveChanges |= true;
             }
             return result;
         }
+
+        internal bool GetFontFor(string strOriginal, out FixedString64Bytes result)
+        {
+            result = strOriginal;
+            if (!strOriginal.Contains(":")) return false;
+            var decomposedName = strOriginal.Split(":", 2);
+            result = m_fontsReplacements.TryGetValue(decomposedName[0], out var fontList) && fontList.TryGetValue(decomposedName[1], out var fontName)
+                        ? (FixedString64Bytes)fontName
+                        : default;
+            return  true;
+        }
+
+        internal List<string> ListAllFontsMapped() => [.. m_fontsMapped.SelectMany(x => x.Value.Select(y => $"{x.Key}:{y}")).OrderBy(x => x)];
 
         internal FixedString64Bytes GetAtlasFor(string strOriginal, FixedString64Bytes currentAtlas, ref bool haveChanges)
         {

@@ -1,4 +1,6 @@
 ﻿using Colossal.Entities;
+using Game.Common;
+using Game.Objects;
 using Game.Routes;
 using System;
 using System.Collections.Generic;
@@ -18,12 +20,20 @@ namespace BelzontWE.Builtin
         public static Func<Entity, Entity> GetWaypointStaticDestinationEntity_binding = (entity) =>
         {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-            return em.TryGetComponent<Waypoint>(entity, out var waypoint)
+
+            var result = em.TryGetComponent<Waypoint>(entity, out var waypoint)
                 && em.TryGetComponent<Connected>(entity, out var connected)
                 && em.TryGetBuffer(connected.m_Connected, true, out DynamicBuffer<RouteWaypoint> waypoints)
                 && waypoints.Length > 0
-                ? waypoints[(waypoint.m_Index + 1) % waypoints.Length].m_Waypoint
+                && em.TryGetComponent<Connected>(waypoints[(waypoint.m_Index + 1) % waypoints.Length].m_Waypoint, out var waypointData)
+                ? waypointData.m_Connected
                 : entity;
+
+            while (em.TryGetComponent(result, out Owner component))
+            {
+                result = component.m_Owner;
+            }
+            return result;
         };
         public static Func<Entity, string> GetWaypointStaticDestinationName_binding = (entity) =>
         {

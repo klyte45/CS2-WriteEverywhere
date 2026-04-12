@@ -1,7 +1,6 @@
 ﻿using Belzont.Utils;
 using Colossal.Entities;
 using System;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -115,7 +114,16 @@ namespace BelzontWE
             CustomMeshName.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.CustomMeshName.DefaultValue = x ?? ""; return currentItem; });
             SetupOnFormulaeChangedAction(PickerController, (ref WETextDataMesh data, string newFormulae, out string[] errorArgs) => data.CustomMeshName.SetFormulae(newFormulae, out errorArgs), CustomMeshNameFormulaeStr, CustomMeshNameFormulaeCompileResult, CustomMeshNameFormulaeCompileResultErrorArgs);
 
-            SelectedFont.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { if (x.Length > 0) { currentItem.FontName = FontServer.Instance.TryGetFont(x, out var data) ? data.Name : currentItem.FontName; } return currentItem; });
+            SelectedFont.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) =>
+            {
+                if (x.Length > 0)
+                {
+                    currentItem.originalName = x;
+                    WETemplateManager.Instance.GetFontFor(x, out var fontName);
+                    currentItem.FontName = FontServer.Instance.TryGetFont(fontName, out var data) ? data.Name : x;
+                }
+                return currentItem;
+            });
             ValueTextFormulaeStr.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { ValueTextFormulaeCompileResult.Value = currentItem.SetFormulae(x, out var cmpErr); ValueTextFormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
             TextSourceType.OnScreenValueChanged += (x) => PickerController.EnqueueModification<int, WETextDataMesh>(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; PickerController.ReloadTreeDelayed(); return currentItem; });
             ImageAtlasName.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
@@ -128,7 +136,7 @@ namespace BelzontWE
         {
             EntityManager.TryGetComponent<WETextDataMesh>(entity, out var mesh);
             ValueText.Value = mesh.ValueData.DefaultValue;
-            SelectedFont.Value = FontServer.Instance.TryGetFont(mesh.FontName, out var fsd) ? fsd.Name : "";
+            SelectedFont.Value = mesh.originalName.ToString().Contains(":") ? mesh.originalName.ToString() : FontServer.Instance.TryGetFont(mesh.FontName, out var fsd) ? fsd.Name : "";
             ValueTextFormulaeStr.Value = mesh.ValueData.Formulae;
             TextSourceType.Value = (int)mesh.TextType;
             ImageAtlasName.Value = mesh.Atlas.ToString();
