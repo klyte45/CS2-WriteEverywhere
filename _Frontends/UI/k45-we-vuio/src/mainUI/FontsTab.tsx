@@ -1,8 +1,6 @@
 import { VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
-import { FilePickerDialog } from "common/FilePickerDialog";
-import { StringInputDialog } from "common/StringInputDialog";
-import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
-import { ListActionTypeArray, WEListWithPreviewTab } from "common/WEListWithPreviewTab";
+import { FilePickerDialog, StringInputDialog, StringInputWithOverrideDialog } from "@klyte45/vuio-commons";
+import { ListActionTypeArray, ListWithPreviewTab } from "@klyte45/vuio-commons";
 import { ConfirmationDialog, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
 import { FileService } from "services/FileService";
@@ -100,7 +98,7 @@ export const FontsTab = (props: Props) => {
         { className: "negativeBtn", action() { setCurrentModal(Modals.CONFIRMING_DELETE) }, text: T_delete },
         { className: "neutralBtn", action() { setIsRenamingLayout(true) }, text: T_rename },
         { className: "neutralBtn", action() { setIsDuplicatingLayout(true) }, text: T_duplicate },
-        { className: "neutralBtn", action() { FontService.cleanFontCache(selectedFont!) }, text: T_cleanCache},
+        { className: "neutralBtn", action() { FontService.cleanFontCache(selectedFont!) }, text: T_cleanCache },
 
     ]
     const detailsFields = [] as any[]
@@ -155,7 +153,7 @@ export const FontsTab = (props: Props) => {
         }
     ]
     return <>
-        <WEListWithPreviewTab listActions={listActions} itemActions={actions} detailsFields={detailsFields} listItems={Object.entries(fontList).filter(x => !x[1]).map(x => x[0]).sort((a, b) => a.localeCompare(b))} selectedKey={selectedFont!} onChangeSelection={setSelectedFont} >
+        <ListWithPreviewTab listActions={listActions} itemActions={actions} detailsFields={detailsFields} listItems={Object.entries(fontList).filter(x => !x[1]).map(x => x[0]).sort((a, b) => a.localeCompare(b))} selectedKey={selectedFont!} onChangeSelection={setSelectedFont} >
             {fontDetail && <>
                 <div className="k45_we_fontTab_previewControls">
                     <FocusableEditorItem focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}><StringInputField value={previewText} onChange={setPreviewText} /></FocusableEditorItem>
@@ -164,9 +162,10 @@ export const FontsTab = (props: Props) => {
                 <div className="k45_we_fontTab_previewText" style={{ fontFamily: "K45WE_" + fontDetail.guid, fontSize: fontSize + "rem" }}>
                     {previewText || T_typeAboveToPreviewThisFont}
                 </div></>}
-        </WEListWithPreviewTab>
+        </ListWithPreviewTab>
 
         <StringInputWithOverrideDialog dialogTitle={T_renameDialogTitle} dialogPromptText={T_renameDialogText} dialogOverrideText={T_confirmOverrideText} validationFn={validateName} initialValue={selectedFont!}
+            translate={translate}
             maxLength={30}
             isActive={isRenamingLayout} setIsActive={setIsRenamingLayout}
             isShortCircuitCheckFn={(x) => !x || x == selectedFont}
@@ -179,9 +178,10 @@ export const FontsTab = (props: Props) => {
             isShortCircuitCheckFn={(x) => !x || x == selectedFont}
             checkIfExistsFn={FontService.checkFontExists}
             actionOnSuccess={onDuplicateLayout}
+            translate={translate}
         />
 
-        <FilePickerDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText} isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd}
+        <FilePickerDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText} isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd} generateDataProvider={FileService.generateDataProvider} translate={translate}
             actionOnSuccess={onAskPathAdd} allowedExtensions={"*.ttf"} initialFolder={fontsFolder} bookmarks={modsFontsFolder.sort((a, b) => a.ModName.localeCompare(b.ModName)).map(x => {
                 return {
                     name: x.ModName,

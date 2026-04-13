@@ -67,7 +67,14 @@ module.exports = (en) => {
                 },
               },
             },
-            "sass-loader",
+            {
+              loader: "sass-loader",
+              options: {
+                sassOptions: {
+                  loadPaths: [path.resolve(__dirname, "node_modules")],
+                },
+              },
+            },
           ],
         },
         {

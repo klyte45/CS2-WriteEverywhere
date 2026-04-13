@@ -14,10 +14,17 @@ body>.k45_we_mainPanel {
         padding: 0;
     }
 
+    [class^=scrollable_] {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
     [class^=content_] {
         display: flex;
         overflow: hidden !important;
         flex-direction: column;
+        flex-grow: 1;
     }
 
     .k45_we_mainPanel_title {
@@ -37,5 +44,6 @@ body>.k45_we_mainPanel {
     .k45_we_mainPanel_content {
         flex-grow: 1;
         flex-shrink: 1;
+        padding-top: 5rem;
     }
 }

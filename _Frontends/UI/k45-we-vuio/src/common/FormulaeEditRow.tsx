@@ -5,7 +5,7 @@ import { translate } from "utils/translate";
 import i_formulae from "../images/Function.svg";
 import classNames from "classnames";
 import { Portal } from "cs2/ui";
-import { ContextMenuExpansion } from "./ContextMenuButton";
+import { ContextMenuExpansion } from "@klyte45/vuio-commons";
 import { FocusDisabled } from "cs2/input";
 
 type Props = {

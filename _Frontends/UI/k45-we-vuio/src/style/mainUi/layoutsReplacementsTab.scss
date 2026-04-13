@@ -1,4 +1,4 @@
-.k45_we_tabWithContent_body.layoutReplacementTab {
+.k45_tabWithContent_body.layoutReplacementTab {
     .sectionTitle {
         font-size: 200%;
         color: var(--accentColorNormal);
@@ -51,7 +51,7 @@
 
 }
 
-@import "../buttonsStyles";
+@import "@klyte45/vuio-commons/src/styles/buttonsStyles";
 .k45_we_moduleOptionsTab {
     @extend %buttonsStyle;
 }

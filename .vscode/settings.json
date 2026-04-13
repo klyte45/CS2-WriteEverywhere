@@ -11,6 +11,7 @@
         "Test-Path": true,
         "npx tsc": true,
         "kk": true,
-        "git show": true
+        "git show": true,
+        "npm install": true
     }
 }

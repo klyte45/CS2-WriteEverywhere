@@ -1,14 +1,9 @@
 import { Entity, replaceArgs, VanillaComponentResolver, VanillaFnResolver } from "@klyte45/vuio-commons";
-import { StringInputDialog } from "common/StringInputDialog";
-import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
-import { BaseStringInputDialog } from "common/BaseStringInputDialog";
-import { ListActionTypeArray, WEListWithPreviewTab } from "common/WEListWithPreviewTab";
+import { BaseStringInputDialog, StringInputDialog, StringInputWithOverrideDialog, FilePickerDialog, ListActionTypeArray, ListWithPreviewTab } from "@klyte45/vuio-commons";
 import { ConfirmationDialog, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
 import { CityDetailResponse, LayoutsService } from "services/LayoutsService";
-import "style/mainUi/tabStructure.scss";
 import { translate } from "utils/translate";
-import { FilePickerDialog } from "common/FilePickerDialog";
 import { FileService } from "services/FileService";
 import { ModFolder } from "utils/ModFolder";
 
@@ -107,7 +102,7 @@ export const CityLayoutsTab = (props: Props) => {
     const displayingModal = () => {
         switch (currentModal) {
             case Modals.CONFIRMING_DELETE: return <ConfirmationDialog onConfirm={() => { setCurrentModal(0); LayoutsService.deleteTemplate(selectedTemplate!); setSelectedTemplate(null) }} onCancel={() => setCurrentModal(0)} message={T_confirmDeleteText} />
-            case Modals.EXPORTING_TEMPLATE: return <BaseStringInputDialog onConfirm={exportTemplateCallback} dialogTitle={T_exportXmlDialogTitle} dialogPromptText={T_exportXmlDialogText} initialValue={selectedTemplate!} />
+            case Modals.EXPORTING_TEMPLATE: return <BaseStringInputDialog onConfirm={exportTemplateCallback} dialogTitle={T_exportXmlDialogTitle} dialogPromptText={T_exportXmlDialogText} initialValue={selectedTemplate!} translate={translate} />
             case Modals.SUCCESS_EXPORTING_TEMPLATE: return <ConfirmationDialog onConfirm={() => { LayoutsService.openExportedFilesFolder(); setCurrentModal(0) }} onCancel={() => setCurrentModal(0)} confirm={T_goToFileFolder} cancel={T_back} message={replaceArgs(T_successMessage, { "name": lastXmlExportedLayoutName })} />
         }
     }
@@ -147,30 +142,32 @@ export const CityLayoutsTab = (props: Props) => {
         }
     ]
     return <>
-        <WEListWithPreviewTab listActions={listActions} itemActions={actions} detailsFields={detailsFields} listItems={Object.keys(layoutList ?? {})} selectedKey={selectedTemplate!} onChangeSelection={setSelectedTemplate} >
+        <ListWithPreviewTab listActions={listActions} itemActions={actions} detailsFields={detailsFields} listItems={Object.keys(layoutList ?? {})} selectedKey={selectedTemplate!} onChangeSelection={setSelectedTemplate} >
             <div className="k45_we_tabWithPreview_previewControls">
 
             </div>
-        </WEListWithPreviewTab>
+        </ListWithPreviewTab>
         <StringInputWithOverrideDialog dialogTitle={T_renameDialogTitle} dialogPromptText={T_renameDialogText} dialogOverrideText={T_confirmOverrideText} initialValue={selectedTemplate!}
+            translate={translate}
             isActive={isRenamingLayout} setIsActive={setIsRenamingLayout}
             isShortCircuitCheckFn={(x) => !x || x == selectedTemplate}
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}
             actionOnSuccess={onRenameLayout}
         />
         <StringInputWithOverrideDialog dialogTitle={T_duplicateDialogTitle} dialogPromptText={T_duplicateDialogText} dialogOverrideText={T_confirmOverrideText} initialValue={selectedTemplate!}
+            translate={translate}
             isActive={isDuplicatingLayout} setIsActive={setIsDuplicatingLayout}
             isShortCircuitCheckFn={(x) => !x || x == selectedTemplate}
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}
             actionOnSuccess={onDuplicateLayout}
         />
         <FilePickerDialog dialogTitle={T_addDialogTitle} dialogPromptText={T_addDialogText} isActive={isAskingPathAdd} setIsActive={setIsAskingPathAdd}
-            actionOnSuccess={onAskPathAdd} allowedExtensions={extensionsImport} initialFolder={layoutFolder} bookmarks={modsLayoutsFolder.sort((a,b)=>a.ModName.localeCompare(b.ModName)).map(x => {
+            actionOnSuccess={onAskPathAdd} allowedExtensions={extensionsImport} initialFolder={layoutFolder} bookmarks={modsLayoutsFolder.sort((a, b) => a.ModName.localeCompare(b.ModName)).map(x => {
                 return {
                     name: x.ModName,
                     targetPath: x.Location
                 }
-            })} bookmarksTitle={T_templateFromMods} bookmarksIcon={i_bookmarkMods} />
+            })} bookmarksTitle={T_templateFromMods} bookmarksIcon={i_bookmarkMods} generateDataProvider={FileService.generateDataProvider} translate={translate} />
 
         <Portal>
             {alertToDisplay && <ConfirmationDialog onConfirm={() => { setAlertToDisplay(void 0); }} cancellable={false} dismissible={false} message={alertToDisplay} confirm={"OK"} />}

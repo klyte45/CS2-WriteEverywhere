@@ -1,10 +1,8 @@
 import { ColorHSVA, LocElementType, PropsDropdownField, replaceArgs, UIColorRGBA, VanillaComponentResolver, VanillaFnResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import useAsyncMemo from "@klyte45/vuio-commons/src/utils/useAsyncMemo";
 import classNames from "classnames";
-import { FilePickerDialog } from "common/FilePickerDialog";
-import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
-import { WEListWithContentTab } from "common/WEListWithContentTab";
-import { ListActionTypeArray } from "common/WEListWithPreviewTab";
+import { FilePickerDialog, StringInputWithOverrideDialog } from "@klyte45/vuio-commons";
+import { ListWithContentTab, ListActionTypeArray } from "@klyte45/vuio-commons";
 import { FocusBoundary, FocusDisabled } from "cs2/input";
 import { ConfirmationDialog, Portal, Scrollable, Tooltip } from "cs2/ui";
 import { ObjectTyped } from "object-typed";
@@ -15,6 +13,7 @@ import { TextureAtlasService } from "services/TextureAtlasService";
 import { WEModuleOptionFieldTypes, WEModuleService } from "services/WEModulesService";
 import "style/mainUi/layoutsReplacementsTab.scss";
 import { translate } from "utils/translate";
+import { FileService } from "services/FileService";
 
 const engine = (window as any).engine;
 
@@ -257,7 +256,7 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
     }
 
     return <>
-        <WEListWithContentTab listActions={listActions}
+        <ListWithContentTab listActions={listActions}
             listItems={Object.values(modsReplacementData).map(x => { return { displayName: x.displayName, value: x.modId } }).sort((a, b) => a.displayName.localeCompare(b.displayName))}
             selectedKey={selectedMod!} onChangeSelection={setSelectedMod} bodyClasses="layoutReplacementTab">
             {selectedMod && <>
@@ -268,8 +267,9 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
                     {getCurrentTabContent()}
                 </TabNav>
             </>}
-        </WEListWithContentTab>
+        </ListWithContentTab>
         <StringInputWithOverrideDialog
+            translate={translate}
             dialogTitle={T_saveSettingsDialogTitle}
             dialogPromptText={T_saveSettingsDialogText}
             dialogOverrideText={T_confirmOverrideText}
@@ -281,6 +281,7 @@ export const PrefabTemplatesReplacementsTab = (props: Props) => {
             checkIfExistsFn={LayoutsService.checkReplacementSettingFileExists}
         />
         <FilePickerDialog
+            generateDataProvider={FileService.generateDataProvider} translate={translate}
             dialogTitle={T_loadSettingsDialogTitle}
             dialogPromptText={T_loadSettingsDialogText}
             isActive={isLoadingSettings}
@@ -477,6 +478,7 @@ const FilePickerOptionsRow = ({ module, i18n, tabBuildIdx }: { module: string, i
         <Button onClick={() => setShowPicker(true)} className="k45_we neutralBtn">{engine.translate("Common.Browse")}</Button>
     </EditorRow>
         {filePickerOptions && <FilePickerDialog
+            generateDataProvider={FileService.generateDataProvider} translate={translate}
             dialogTitle={engine.translate(i18n)}
             dialogPromptText={filePickerOptions.promptText}
             isActive={showPicker}

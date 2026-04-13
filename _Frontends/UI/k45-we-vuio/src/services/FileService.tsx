@@ -1,6 +1,7 @@
 import engine from "cohtml/cohtml";
+import { DataProvider } from "@klyte45/vuio-commons";
 
-export type DataProvider = { displayName: string, directory: boolean, fullPath: string }[]
+
 
 export class FileService {
     static async generateDataProvider(folder: string, allowedExtension: string): Promise<DataProvider> {

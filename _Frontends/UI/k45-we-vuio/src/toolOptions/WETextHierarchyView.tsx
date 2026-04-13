@@ -1,9 +1,4 @@
-import { Entity, LocElementType, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
-import { ContextButtonMenuItemArray, ContextMenuButton } from "common/ContextMenuButton";
-import { DropdownDialog } from "common/DropdownDialog";
-import { FilePickerDialog } from "common/FilePickerDialog";
-import { StringInputDialog } from "common/StringInputDialog";
-import { StringInputWithOverrideDialog } from "common/StringInputWithOverrideDialog";
+import { K45HierarchyMenu, K45HierarchyViewport, ContextButtonMenuItemArray, ContextMenuButton, DropdownDialog, Entity, FilePickerDialog, LocElementType, replaceArgs, StringInputDialog, StringInputWithOverrideDialog, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import { ConfirmationDialog, Panel, Portal } from "cs2/ui";
 import { useEffect, useRef, useState } from "react";
 import engine from "cohtml/cohtml";
@@ -14,7 +9,6 @@ import { BuildingTreeWe, NodeType, WorldPickerService } from "services/WorldPick
 import { ModFolder } from "utils/ModFolder";
 import { translate } from "utils/translate";
 import i_cut from "../images/Scissors.svg";
-import { K45HierarchyMenu, K45HierarchyViewport } from "./K45HierarchyMenu";
 import useAsyncMemo from "@klyte45/vuio-commons/src/utils/useAsyncMemo";
 import '../style/textHierarchyView.scss';
 
@@ -411,36 +405,36 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
 
     return <Portal>
         <div tabIndex={0} style={{ outline: 'none' }}>
-        <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
-            <div className="k45_we_hierarchyViewportTitle">
-                <div className="k45_we_itemTitle">{currentBuildingTree?.selectedItem?.name}</div>
-                <div className="k45_we_prefabName">{currentBuildingTree?.selectedItem?.prefabName}</div>
-            </div>
-            <ScrollView style={{ height: "400rem" }}>
-                <HierarchyMenu
-                    viewport={viewport}
-                    onSelect={(i) => wps.CurrentSubEntity.set(viewport[i].id)}
-                    onSetExpanded={(x, b) => !b ? setExpandedViewports(expandedViewports.filter(y => y.Index != viewport[x].id.Index)) : setExpandedViewports(expandedViewports.concat([viewport[x].id]))}
-                />
-            </ScrollView>
-            <EditorItemRow>
-                <ContextMenuButton src={i_addItem} tooltip={T_addItem} focusKey={FocusDisabled} className={buttonClass} menuItems={addNodeMenu} menuTitle={T_addItem} />
-                <div style={{ flexGrow: 1 }}></div>
-                {currentBuildingTree && currentBuildingTree.menuData.length > 1 && <>
-                    <ContextMenuButton src={i_buildingModuleSelect} tooltip={T_buildingModuleSelect} focusKey={FocusDisabled} className={buttonClass} menuItems={currentBuildingTree.menuData} menuTitle={T_buildingModuleSelect} />
-                    <div style={{ flexGrow: 2 }}></div>
-                </>}
-                <ContextMenuButton disabled={!wps.CurrentSubEntity.value?.Index} src={i_exportLayout} tooltip={T_exportSave} focusKey={FocusDisabled} className={buttonClass} menuItems={saveNodeMenu} menuTitle={T_exportSave} />
-                <ContextMenuButton src={i_importLayout} tooltip={T_importOrLoad} focusKey={FocusDisabled} className={buttonClass} menuItems={loadNodeMenu} menuTitle={T_importOrLoad} />
-                <div style={{ flexGrow: 1 }}></div>
-                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(true); }} src={i_cut} tooltip={T_cut} focusKey={FocusDisabled} className={buttonClass} />
-                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(false); }} src={i_copy} tooltip={T_copy} focusKey={FocusDisabled} className={buttonClass} />
-                <div style={{ width: "10rem" }}></div>
-                <ContextMenuButton disabled={!clipboard} tooltip={T_paste} src={i_paste} focusKey={FocusDisabled} className={buttonClass} menuItems={pasteMenuItems} menuTitle={T_paste} />
-                <div style={{ width: "10rem" }}></div>
-                <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.removeItem()} src={i_delete} tooltip={T_delete} focusKey={FocusDisabled} className={buttonClass} />
-            </EditorItemRow>
-        </Panel>
+            <Panel draggable header={T_title} className="k45_we_floatingSettingsPanel" initialPosition={defaultPosition} >
+                <div className="k45_we_hierarchyViewportTitle">
+                    <div className="k45_we_itemTitle">{currentBuildingTree?.selectedItem?.name}</div>
+                    <div className="k45_we_prefabName">{currentBuildingTree?.selectedItem?.prefabName}</div>
+                </div>
+                <ScrollView style={{ height: "400rem" }}>
+                    <HierarchyMenu
+                        viewport={viewport}
+                        onSelect={(i) => wps.CurrentSubEntity.set(viewport[i].id)}
+                        onSetExpanded={(x, b) => !b ? setExpandedViewports(expandedViewports.filter(y => y.Index != viewport[x].id.Index)) : setExpandedViewports(expandedViewports.concat([viewport[x].id]))}
+                    />
+                </ScrollView>
+                <EditorItemRow>
+                    <ContextMenuButton src={i_addItem} tooltip={T_addItem} focusKey={FocusDisabled} className={buttonClass} menuItems={addNodeMenu} menuTitle={T_addItem} />
+                    <div style={{ flexGrow: 1 }}></div>
+                    {currentBuildingTree && currentBuildingTree.menuData.length > 1 && <>
+                        <ContextMenuButton src={i_buildingModuleSelect} tooltip={T_buildingModuleSelect} focusKey={FocusDisabled} className={buttonClass} menuItems={currentBuildingTree.menuData} menuTitle={T_buildingModuleSelect} />
+                        <div style={{ flexGrow: 2 }}></div>
+                    </>}
+                    <ContextMenuButton disabled={!wps.CurrentSubEntity.value?.Index} src={i_exportLayout} tooltip={T_exportSave} focusKey={FocusDisabled} className={buttonClass} menuItems={saveNodeMenu} menuTitle={T_exportSave} />
+                    <ContextMenuButton src={i_importLayout} tooltip={T_importOrLoad} focusKey={FocusDisabled} className={buttonClass} menuItems={loadNodeMenu} menuTitle={T_importOrLoad} />
+                    <div style={{ flexGrow: 1 }}></div>
+                    <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(true); }} src={i_cut} tooltip={T_cut} focusKey={FocusDisabled} className={buttonClass} />
+                    <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => { setClipboard(wps.CurrentSubEntity.value); setClipboardIsCut(false); }} src={i_copy} tooltip={T_copy} focusKey={FocusDisabled} className={buttonClass} />
+                    <div style={{ width: "10rem" }}></div>
+                    <ContextMenuButton disabled={!clipboard} tooltip={T_paste} src={i_paste} focusKey={FocusDisabled} className={buttonClass} menuItems={pasteMenuItems} menuTitle={T_paste} />
+                    <div style={{ width: "10rem" }}></div>
+                    <Button disabled={!wps.CurrentSubEntity.value?.Index} onSelect={() => WorldPickerService.removeItem()} src={i_delete} tooltip={T_delete} focusKey={FocusDisabled} className={buttonClass} />
+                </EditorItemRow>
+            </Panel>
         </div>
         {pendingDelete && <ConfirmationDialog
             onConfirm={() => { setPendingDelete(false); WorldPickerService.removeItem(); }}
@@ -455,6 +449,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
             isShortCircuitCheckFn={(x) => !x || !wps.CurrentSubEntity.value}
             checkIfExistsFn={LayoutsService.checkCityTemplateExists}
             actionOnSuccess={onSaveTemplate}
+            translate={translate}
         />
         <FilePickerDialog dialogTitle={T_loadingFromXmlDialogTitle} dialogPromptText={T_loadingFromXmlDialogPromptText} isActive={loadingFromXml} setIsActive={setLoadingFromXml} actionOnSuccess={onLoadFromXml} allowedExtensions={extensionsImport} initialFolder={layoutFolder}
             bookmarksTitle={T_templateFromMods} bookmarksIcon={i_bookmarkMods}
@@ -463,13 +458,13 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                     name: x.ModName,
                     targetPath: x.Location
                 }
-            })} />
+            })} generateDataProvider={FileService.generateDataProvider} translate={translate} />
 
-        <StringInputDialog dialogTitle={T_exportXmlDialogTitle} dialogPromptText={T_exportXmlDialogText} isActive={exportingAsXml} setIsActive={setExportingAsXml} actionOnSuccess={onExportAsXml} />
+        <StringInputDialog dialogTitle={T_exportXmlDialogTitle} dialogPromptText={T_exportXmlDialogText} isActive={exportingAsXml} setIsActive={setExportingAsXml} actionOnSuccess={onExportAsXml} translate={translate} />
         {nameExportedAsXml &&
             <ConfirmationDialog onConfirm={() => { LayoutsService.openExportedFilesFolder(); setNameExportedAsXml(null) }} onCancel={() => setNameExportedAsXml(null)} confirm={T_goToFileFolder} cancel={T_back} message={replaceArgs(T_successMessage, { "name": nameExportedAsXml })} />
         }
-        <DropdownDialog isActive={loadingFromCity} setIsActive={setLoadingFromCity} callback={onLoadFromCity} items={cityLayoutsAvailable.map(x => { return { displayName: { __Type: LocElementType.String, value: x }, value: x } })} title={T_loadingFromXmlDialogTitle} promptText={T_loadingFromXmlDialogPromptText} />
+        <DropdownDialog isActive={loadingFromCity} setIsActive={setLoadingFromCity} callback={onLoadFromCity} items={cityLayoutsAvailable.map(x => { return { displayName: { __Type: LocElementType.String, value: x }, value: x } })} title={T_loadingFromXmlDialogTitle} promptText={T_loadingFromXmlDialogPromptText} translate={translate} />
     </Portal>;
 };
 

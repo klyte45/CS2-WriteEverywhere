@@ -35,7 +35,7 @@ export const WELayoutVariablesView = (props: { initialPosition?: { x: number, y:
                         : <div className="k45_variablesEmpty">{T_noVariable}</div>
                 }
             </Scrollable>
-            <div className="k45_we_dialogBtns">
+            <div className="k45_dialogBtns">
                 <button className="positiveBtn" style={{ width: "100%" }} onClick={() => FormulaeService.setVariablesOnCurrentEntity([...variableList, ["newKey", "newValue"]]).then(() => setBuildIdx(buildIdx + 1))}>{T_addVariable}</button>
             </div>
         </Panel>

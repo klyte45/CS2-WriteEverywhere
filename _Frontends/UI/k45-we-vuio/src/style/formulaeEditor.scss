@@ -1,4 +1,5 @@
-@import "buttonsStyles";
+
+@import "@klyte45/vuio-commons/src/styles/buttonsStyles";
 
 @mixin icon-based-innerline {
     padding-left: 25rem;

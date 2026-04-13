@@ -1,13 +1,10 @@
 import { replaceArgs, VanillaComponentResolver, VanillaFnResolver } from "@klyte45/vuio-commons";
-import { BaseStringInputDialog } from "common/BaseStringInputDialog";
-import { ListActionTypeArray, WEListWithPreviewTab } from "common/WEListWithPreviewTab";
+import { BaseStringInputDialog, StringInputDialog, ListActionTypeArray, ListWithPreviewTab } from "@klyte45/vuio-commons";
 import { ConfirmationDialog, Portal } from "cs2/ui";
 import { useEffect, useState } from "react";
 import { AtlasCityDetailResponse, ModAtlasRegistry, TextureAtlasService } from "services/TextureAtlasService";
-import "style/mainUi/tabStructure.scss";
 import { translate } from "utils/translate";
 import "../style/cityAtlasesTab.scss";
-import { StringInputDialog } from "common/StringInputDialog";
 import { ObjectTyped } from "object-typed";
 
 type Props = {}
@@ -101,7 +98,7 @@ export const CityAtlasesTab = (props: Props) => {
     const displayingModal = () => {
         switch (currentModal) {
             case Modals.CONFIRMING_DELETE: return <ConfirmationDialog onConfirm={() => { setCurrentModal(0); TextureAtlasService.removeFromCity(selectedAtlas!); setSelectedAtlas(null) }} onCancel={() => setCurrentModal(0)} message={replaceArgs(T_confirmDeleteText, { "name": selectedAtlas ?? "?????" })} />
-            case Modals.EXPORTING_ATLAS: return <BaseStringInputDialog onConfirm={exportTemplateCallback} dialogTitle={T_exportDialogTitle} dialogPromptText={T_exportDialogText} initialValue={selectedAtlas!.replace(":", "_")} />
+            case Modals.EXPORTING_ATLAS: return <BaseStringInputDialog onConfirm={exportTemplateCallback} dialogTitle={T_exportDialogTitle} dialogPromptText={T_exportDialogText} initialValue={selectedAtlas!.replace(":", "_")} translate={translate} />
             case Modals.SUCCESS_EXPORTING_TEMPLATE: return <ConfirmationDialog onConfirm={() => { TextureAtlasService.openExportFolder(lastExportedAtlasFolder); setCurrentModal(0) }} onCancel={() => setCurrentModal(0)} confirm={T_goToFileFolder} cancel={T_back} message={replaceArgs(T_successMessage, { "name": lastExportedAtlasFolder ?? "?????" })} />
         }
     }
@@ -118,7 +115,7 @@ export const CityAtlasesTab = (props: Props) => {
     const [alertToDisplay, setAlertToDisplay] = useState(undefined as string | undefined)
     const listActions: ListActionTypeArray = []
 
-    function getItems(atlasList: Record<string, boolean | ModAtlasRegistry>): Parameters<typeof WEListWithPreviewTab>[0]['listItems'] {
+    function getItems(atlasList: Record<string, boolean | ModAtlasRegistry>): Parameters<typeof ListWithPreviewTab>[0]['listItems'] {
         const normalizedComparer = (a: string, b: string): number => a.toLowerCase().normalize("NFKD").localeCompare(b.toLowerCase().normalize("NFKD"));
 
         const cityAtlases = Object.entries(atlasList ?? {}).filter(x => x[1] === true).map(x => x[0]).sort(normalizedComparer)
@@ -141,10 +138,10 @@ export const CityAtlasesTab = (props: Props) => {
     }
 
     return <>
-        <WEListWithPreviewTab listActions={listActions} itemActions={actions} detailsFields={detailsFields} listItems={getItems(atlasList)} selectedKey={selectedAtlas!} onChangeSelection={setSelectedAtlas} >
+        <ListWithPreviewTab listActions={listActions} itemActions={actions} detailsFields={detailsFields} listItems={getItems(atlasList)} selectedKey={selectedAtlas!} onChangeSelection={setSelectedAtlas} >
             {selectedAtlas && <div className="k45_we_atlasPreviewImg" style={{ backgroundImage: `url(coui://we.k45/_textureAtlas/${selectedAtlas})` }} />}
-        </WEListWithPreviewTab>
-        <StringInputDialog dialogTitle={T_addToCityDialogTitle} dialogPromptText={T_addToCityDialogText} validationFn={(x) => !!x && !atlasList[x] && x.length <= 30} initialValue={selectedAtlas!}
+        </ListWithPreviewTab>
+        <StringInputDialog dialogTitle={T_addToCityDialogTitle} dialogPromptText={T_addToCityDialogText} validationFn={(x) => !!x && !atlasList[x] && x.length <= 30} initialValue={selectedAtlas!} translate={translate}
             maxLength={30} isActive={isCopyingToCity} setIsActive={setIsCopyingToCity} actionOnSuccess={onCopyToCity}
         />
         <Portal>

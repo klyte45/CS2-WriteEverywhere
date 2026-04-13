@@ -97,7 +97,7 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
         onClose={() => callback()}
         wide={true}
         title={T_addItemDialogTitle}
-        buttons={<div className="k45_we_dialogBtns">
+        buttons={<div className="k45_dialogBtns">
             {(optionsMembers || optionsStaticMethods || optionsComponentGetter) && <button className="positiveBtn"
                 onClick={() => callback(getCurrentSelectionObject())} disabled={!isValidSelection()}>Select</button>}
             <button className="negativeBtn" onClick={() => callback()}>Back</button>
