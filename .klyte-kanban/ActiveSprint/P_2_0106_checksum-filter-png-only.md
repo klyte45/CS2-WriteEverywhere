@@ -1,7 +1,7 @@
+**Start time:** 2026-04-15 03:14 -0300
 # [0106] checksum-filter-png-only
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **the folder checksum to only reflect PNG image files**, so that I **non-image files in the atlas folder do not cause unnecessary atlas rebuilds**.
