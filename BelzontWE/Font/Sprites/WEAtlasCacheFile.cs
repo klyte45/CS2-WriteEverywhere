@@ -1,4 +1,5 @@
 using BelzontWE.Sprites;
+using Colossal;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -42,6 +43,12 @@ namespace BelzontWE.Font.Sprites
         /// </summary>
         public byte[]?[] LayerBC7 { get; }
 
+        /// <summary>
+        /// Saved VT layer GUIDs (5 elements) for persistent tile file reuse.
+        /// Null when no VT data was cached (e.g., older cache files).
+        /// </summary>
+        public Colossal.Hash128[]? VTLayerGuids { get; }
+
         public readonly struct CachedSprite
         {
             public readonly string Name;
@@ -59,7 +66,8 @@ namespace BelzontWE.Font.Sprites
         public WEAtlasCacheFile(
             uint checksum, int width, int height, int size,
             HeuristicMethod method, MaxRectsBinPack rectsPack,
-            IReadOnlyList<CachedSprite> sprites, byte[]?[] layerBC7)
+            IReadOnlyList<CachedSprite> sprites, byte[]?[] layerBC7,
+            Colossal.Hash128[]? vtLayerGuids = null)
         {
             if (layerBC7 is null || layerBC7.Length != 5)
                 throw new ArgumentException("layerBC7 must have exactly 5 elements.", nameof(layerBC7));
@@ -78,6 +86,7 @@ namespace BelzontWE.Font.Sprites
 
             Sprites = sprites;
             LayerBC7 = layerBC7;
+            VTLayerGuids = vtLayerGuids;
         }
 
         // Internal constructor for deserialization
@@ -86,7 +95,8 @@ namespace BelzontWE.Font.Sprites
             HeuristicMethod method,
             int binWidth, int binHeight, bool allowRotations,
             List<Rect> usedRects, List<Rect> freeRects,
-            List<CachedSprite> sprites, byte[]?[] layerBC7)
+            List<CachedSprite> sprites, byte[]?[] layerBC7,
+            Colossal.Hash128[]? vtLayerGuids)
         {
             Checksum = checksum;
             Width = width;
@@ -100,6 +110,7 @@ namespace BelzontWE.Font.Sprites
             FreeRectangles = freeRects.AsReadOnly();
             Sprites = sprites.AsReadOnly();
             LayerBC7 = layerBC7;
+            VTLayerGuids = vtLayerGuids;
         }
 
         /// <summary>
@@ -167,6 +178,23 @@ namespace BelzontWE.Font.Sprites
                     w.Write(layer);
                 }
             }
+
+            // VT layer GUIDs (optional, appended after layers)
+            if (VTLayerGuids != null && VTLayerGuids.Length == 5)
+            {
+                w.Write((byte)1); // marker: GUIDs present
+                foreach (var guid in VTLayerGuids)
+                {
+                    w.Write(guid.value.x);
+                    w.Write(guid.value.y);
+                    w.Write(guid.value.z);
+                    w.Write(guid.value.w);
+                }
+            }
+            else
+            {
+                w.Write((byte)0); // marker: no GUIDs
+            }
         }
 
         /// <summary>
@@ -222,10 +250,31 @@ namespace BelzontWE.Font.Sprites
                     layers[i] = len < 0 ? null : r.ReadBytes(len);
                 }
 
+                // VT layer GUIDs (optional, may not be present in older files)
+                Colossal.Hash128[]? vtGuids = null;
+                try
+                {
+                    if (stream.Position < stream.Length)
+                    {
+                        byte marker = r.ReadByte();
+                        if (marker == 1)
+                        {
+                            vtGuids = new Colossal.Hash128[5];
+                            for (int i = 0; i < 5; i++)
+                            {
+                                vtGuids[i] = new Colossal.Hash128(
+                                    r.ReadUInt32(), r.ReadUInt32(),
+                                    r.ReadUInt32(), r.ReadUInt32());
+                            }
+                        }
+                    }
+                }
+                catch { /* older file without GUIDs — ignore */ }
+
                 return new WEAtlasCacheFile(
                     checksum, width, height, size, method,
                     binWidth, binHeight, allowRotations,
-                    usedRects, freeRects, sprites, layers);
+                    usedRects, freeRects, sprites, layers, vtGuids);
             }
             catch
             {

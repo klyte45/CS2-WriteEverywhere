@@ -2,6 +2,7 @@ using Belzont.Interfaces;
 using Belzont.Utils;
 using BelzontWE.Sprites;
 using Colossal;
+using Colossal.Compression;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
 using System;
 using System.Collections.Generic;
@@ -165,7 +166,8 @@ namespace BelzontWE
         public static void UploadLayerToVT(
             TextureStreamingSystem tss, VTAtlassingInfo atlasInfo,
             int layerIndex, byte[] bc7Data, int width, int height,
-            GraphicsFormat format, Hash128 guid, int tileSize = VT_TILE_SIZE)
+            GraphicsFormat format, Hash128 guid, string vtTileFolderName,
+            int tileSize = VT_TILE_SIZE, bool isCityAtlas = false)
         {
             string stepTag = $"stack={atlasInfo.stackGlobalIndex} layer={layerIndex} idx={atlasInfo.indexInStack} {width}x{height}";
             VTCrashLog($"[UploadLayerToVT] START {stepTag} fmt={format} tile={tileSize} bc7len={bc7Data.Length} guid={guid}");
@@ -182,13 +184,24 @@ namespace BelzontWE
             if (BasicIMod.VerboseMode) LogUtils.DoVerboseLog(
                 "[WEAtlasVTUtils] PreprocessForVT produced {0} bytes", tileData.Length);
 
-            // 2. Save preprocessed data to disk for VT re-streaming.
+            // 2. Save preprocessed data to disk as zstd-compressed tiles for VT re-streaming.
             //    When the VT CPU cache evicts tiles, ReadVTTextureDataAsync re-reads
             //    individual tiles from this file using the tileOffsets mapping.
+            //    Each tile is individually compressed with CompressZstdWithMarker.
             VTCrashLog($"[UploadLayerToVT] Step2-SaveToFile {stepTag}");
-            string filePath = SaveTileDataToFile(guid, tileData);
-            List<int> tileOffsets = ComputeTileOffsets(width, height, format, tileSize);
-            VTCrashLog($"[UploadLayerToVT] Step2-Saved {stepTag} path={filePath} tileOffsets.Count={tileOffsets.Count}");
+            string filePath;
+            List<int> tileOffsets = null;
+            bool existedOnDisk = TryGetExistingTileFile(guid, vtTileFolderName, isCityAtlas, out filePath);
+            if (existedOnDisk)
+            {
+                tileOffsets = ComputeOffsetsFromFile(filePath, width, height, format, tileSize);
+                if (tileOffsets == null) existedOnDisk = false; // File is corrupt — regenerate
+            }
+            if (!existedOnDisk)
+            {
+                (filePath, tileOffsets) = SaveTileDataToFile(guid, tileData, width, height, format, vtTileFolderName, tileSize, isCityAtlas);
+            }
+            VTCrashLog($"[UploadLayerToVT] Step2-Saved {stepTag} path={filePath} tileOffsets.Count={tileOffsets.Count} reused={existedOnDisk}");
 
             try
             {
@@ -270,66 +283,122 @@ namespace BelzontWE
         #region VT tile file persistence
 
         /// <summary>
-        /// Saves preprocessed VT tile data to disk so the game's <c>ReadVTTextureDataAsync</c>
-        /// can re-read individual tiles when they are evicted from the CPU cache.
+        /// Saves preprocessed VT tile data to disk with zstd compression per tile,
+        /// matching the format expected by the game's <c>ReadVTTextureDataAsync</c>
+        /// and <c>DecompressionJob</c>.
         /// </summary>
-        /// <returns>Absolute path to the written file.</returns>
-        internal static string SaveTileDataToFile(Hash128 guid, NativeArray<byte> tileData)
-        {
-            string dir = GetVTTileFileDirectory();
-            string filePath = Path.Combine(dir, $"{guid}.vtd");
-            byte[] bytes = tileData.ToArray();
-            File.WriteAllBytes(filePath, bytes);
-            return filePath;
-        }
-
-        /// <summary>
-        /// Computes the cumulative tile offsets list expected by
-        /// <c>VTDatabase.GetCompressedTileOffsetAndSize</c>.
-        /// <para>
-        /// Format: <c>tileOffsets[i] = (i+1) * bytesPerTile</c> (cumulative end offsets).
-        /// </para>
-        /// </summary>
-        internal static List<int> ComputeTileOffsets(int width, int height, GraphicsFormat format, int tileSize)
+        /// <returns>Tuple of (absolute file path, cumulative compressed tile offsets).</returns>
+        internal static (string filePath, List<int> tileOffsets) SaveTileDataToFile(
+            Hash128 guid, NativeArray<byte> tileData,
+            int width, int height, GraphicsFormat format,
+            string vtTileFolderName, int tileSize = VT_TILE_SIZE,
+            bool isCityAtlas = false)
         {
             var layerInfo = new AtlassingUtils.LayerInfo(tileSize, format);
             int maxLevel = (int)Math.Log(Math.Min(width, height) / (double)tileSize, 2.0);
             int numTiles = GetTileCount(width, height, maxLevel, tileSize);
             int bytesPerTile = layerInfo.totalTileSizeInBytes;
-            var offsets = new List<int>(numTiles);
-            for (int i = 0; i < numTiles; i++)
+
+            string dir = GetVTTileFileDirectory(vtTileFolderName, isCityAtlas);
+            string filePath = Path.Combine(dir, $"{guid}.vtd");
+            var tileOffsets = new List<int>(numTiles);
+            int cumulativeOffset = 0;
+
+            using (var fs = File.Open(filePath, FileMode.Create, FileAccess.Write))
             {
-                offsets.Add((i + 1) * bytesPerTile);
+                for (int i = 0; i < numTiles; i++)
+                {
+                    int srcOffset = i * bytesPerTile;
+                    int tileLen = Math.Min(bytesPerTile, tileData.Length - srcOffset);
+                    var tileBytes = new byte[tileLen];
+                    NativeArray<byte>.Copy(tileData, srcOffset, tileBytes, 0, tileLen);
+                    byte[] compressed = CompressionUtils.CompressZstdWithMarker(
+                        tileBytes, tileLen, VirtualTexturingConfig.zStdCompressionLevel);
+                    fs.Write(compressed, 0, compressed.Length);
+                    cumulativeOffset += compressed.Length;
+                    tileOffsets.Add(cumulativeOffset);
+                }
             }
-            return offsets;
+
+            return (filePath, tileOffsets);
+        }
+
+        /// <summary>
+        /// Checks if a .vtd tile file already exists on disk for the given GUID and folder.
+        /// </summary>
+        internal static bool TryGetExistingTileFile(Hash128 guid, string vtTileFolderName, bool isCityAtlas, out string filePath)
+        {
+            string dir = GetVTTileFileDirectory(vtTileFolderName, isCityAtlas);
+            filePath = Path.Combine(dir, $"{guid}.vtd");
+            return File.Exists(filePath);
+        }
+
+        /// <summary>
+        /// Reads an existing .vtd file and computes cumulative tile offsets by scanning
+        /// each tile's zstd header (12-byte prefix: magic, uncompressed size, compressed size).
+        /// Returns null if the file is corrupt or unreadable. 
+        /// </summary>
+        internal static List<int> ComputeOffsetsFromFile(string filePath, int width, int height, GraphicsFormat format, int tileSize)
+        {
+            try
+            {
+                int maxLevel = (int)Math.Log(Math.Min(width, height) / (double)tileSize, 2.0);
+                int numTiles = GetTileCount(width, height, maxLevel, tileSize);
+                var offsets = new List<int>(numTiles);
+                int cumulativeOffset = 0;
+                var header = new byte[12];
+
+                using (var fs = File.Open(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    for (int i = 0; i < numTiles; i++)
+                    {
+                        if (fs.Read(header, 0, 12) != 12) return null;
+                        int magic = BitConverter.ToInt32(header, 0);
+                        if (magic != int.MaxValue) return null;
+                        int compressedSize = BitConverter.ToInt32(header, 8);
+                        if (compressedSize <= 0) return null;
+                        int tileFileSize = 12 + compressedSize;
+                        // Seek past the compressed data (we already read the 12-byte header)
+                        fs.Seek(compressedSize, SeekOrigin.Current);
+                        cumulativeOffset += tileFileSize;
+                        offsets.Add(cumulativeOffset);
+                    }
+                }
+                return offsets;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         /// <summary>
         /// Deletes a cached VT tile file for a specific layer GUID.
         /// Best-effort; ignores errors.
         /// </summary>
-        internal static void DeleteCachedTileFile(Hash128 guid)
+        internal static void DeleteCachedTileFile(Hash128 guid, string vtTileFolderName, bool isCityAtlas = false)
         {
             try
             {
-                string filePath = Path.Combine(GetVTTileFileDirectory(), $"{guid}.vtd");
+                string filePath = Path.Combine(GetVTTileFileDirectory(vtTileFolderName, isCityAtlas), $"{guid}.vtd");
                 if (File.Exists(filePath)) File.Delete(filePath);
             }
             catch { /* best effort */ }
         }
 
         /// <summary>
-        /// Cleans all .vtd files from the VT tile cache directory.
-        /// Called on system init to remove stale files from previous sessions.
+        /// Cleans all .vtd files from the city-bound VT tile cache directory.
+        /// Called on system init because city atlas data changes every session.
+        /// Local and mod atlas tiles are persistent and NOT cleaned here.
         /// </summary>
-        internal static void CleanVTTileFileDirectory()
+        internal static void CleanCityVTTileFileDirectory()
         {
             try
             {
-                string dir = GetVTTileFileDirectory();
+                string dir = WEAtlasesLibrary.CACHED_VT_TILES_CITY_FOLDER;
                 if (Directory.Exists(dir))
                 {
-                    foreach (var file in Directory.GetFiles(dir, "*.vtd"))
+                    foreach (var file in Directory.GetFiles(dir, "*.vtd", SearchOption.AllDirectories))
                     {
                         File.Delete(file);
                     }
@@ -338,9 +407,42 @@ namespace BelzontWE
             catch { /* best effort */ }
         }
 
-        private static string GetVTTileFileDirectory()
+        /// <summary>
+        /// Deletes an entire atlas subfolder from the persistent VT tile cache.
+        /// Used when an atlas's checksum changes and tiles need regeneration.
+        /// </summary>
+        internal static void CleanAtlasVTTileFolder(string vtTileFolderName, bool isCityAtlas = false)
         {
-            return WEAtlasesLibrary.CACHED_VT_TILES_FOLDER;
+            try
+            {
+                string dir = GetVTTileFileDirectory(vtTileFolderName, isCityAtlas);
+                if (Directory.Exists(dir))
+                {
+                    Directory.Delete(dir, true);
+                }
+            }
+            catch { /* best effort */ }
+        }
+
+        private static string GetVTTileFileDirectory(string vtTileFolderName, bool isCityAtlas = false)
+        {
+            string baseDir = isCityAtlas
+                ? WEAtlasesLibrary.CACHED_VT_TILES_CITY_FOLDER
+                : WEAtlasesLibrary.CACHED_VT_TILES_FOLDER;
+            string dir = Path.Combine(baseDir, SanitizeFolderName(vtTileFolderName));
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        private static string SanitizeFolderName(string name)
+        {
+            var invalid = Path.GetInvalidFileNameChars();
+            var chars = name.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                if (Array.IndexOf(invalid, chars[i]) >= 0) chars[i] = '_';
+            }
+            return new string(chars);
         }
 
         #endregion

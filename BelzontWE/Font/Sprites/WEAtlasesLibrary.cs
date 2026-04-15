@@ -34,6 +34,7 @@ namespace BelzontWE.Sprites
         public static string ATLAS_EXPORT_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "exportedAtlases");
         public static string CACHED_VT_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, ".cache", "vtAtlases");
         public static string CACHED_VT_TILES_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, ".cache", "vtTiles");
+        public static string CACHED_VT_TILES_CITY_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, ".cache", "vtTilesCity");
         private const string GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID = "generatingAtlasesCache";
         private const string ERRORS_IMAGE_ATLAS_NOTIFICATION_ID = "errorLoadingAtlasesCache";
         private const string ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID = "errorLoadingModuleAtlasesCache";
@@ -53,7 +54,8 @@ namespace BelzontWE.Sprites
             KFileUtils.EnsureFolderCreation(IMAGES_FOLDER);
             KFileUtils.EnsureFolderCreation(CACHED_VT_FOLDER);
             KFileUtils.EnsureFolderCreation(CACHED_VT_TILES_FOLDER);
-            WEAtlasVTUtils.CleanVTTileFileDirectory();
+            KFileUtils.EnsureFolderCreation(CACHED_VT_TILES_CITY_FOLDER);
+            WEAtlasVTUtils.CleanCityVTTileFileDirectory();
             actionQueue.Enqueue(() => LoadImagesFromLocalFolders());
             m_atlasUsageQuery = GetEntityQuery(new EntityQueryDesc[]
               {
@@ -203,6 +205,7 @@ namespace BelzontWE.Sprites
                     try
                     {
                         LocalAtlases[atlasName] = WETextureAtlas.FromCacheFile(cachedFile);
+                        LocalAtlases[atlasName].VTTileFolderName = atlasName;
                         RegisterAtlasForVT(LocalAtlases[atlasName]);
                         m_localAtlasChecksums[atlasName] = checksum;
                         continue;
@@ -349,6 +352,7 @@ namespace BelzontWE.Sprites
                             try
                             {
                                 ModAtlases[modAccessName] = WETextureAtlas.FromCacheFile(cachedFile);
+                                ModAtlases[modAccessName].VTTileFolderName = modAccessName;
                                 RegisterAtlasForVT(ModAtlases[modAccessName]);
                                 m_modAtlasChecksums[modAccessName] = checksum;
                                 return;
@@ -410,6 +414,7 @@ namespace BelzontWE.Sprites
                                 ModAtlases[modAccessName].Dispose();
                                 ModAtlases[modAccessName] = WETextureAtlas.FromCacheFile(reloadedCache);
                             }
+                            ModAtlases[modAccessName].VTTileFolderName = modAccessName;
                             RegisterAtlasForVT(ModAtlases[modAccessName]);
                             m_modAtlasChecksums[modAccessName] = checksum;
                         }
@@ -447,6 +452,8 @@ namespace BelzontWE.Sprites
 
         private WETextureAtlas RegisterLocalAtlas(string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0, string sourceFolderPath = null)
         {
+            // Clean old VT tile files for this atlas (checksum mismatch means atlas content changed)
+            WEAtlasVTUtils.CleanAtlasVTTileFolder(atlasName);
             var atlas = RegisterAtlas(LocalAtlases, atlasName, spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset);
             if (atlas != null && sourceFolderPath != null)
             {
@@ -463,6 +470,7 @@ namespace BelzontWE.Sprites
                         LocalAtlases[atlasName] = WETextureAtlas.FromCacheFile(cachedFile);
                         atlas = LocalAtlases[atlasName];
                     }
+                    atlas.VTTileFolderName = atlasName;
                     RegisterAtlasForVT(atlas);
                 }
                 catch (Exception ex)
@@ -725,10 +733,13 @@ namespace BelzontWE.Sprites
                 if (atlas.Deserialize(reader, key, out var action))
                 {
                     var capturedAtlas = atlas;
+                    var capturedKey = key.ToString();
                     var originalAction = action;
                     actionQueue.Enqueue(() =>
                     {
                         originalAction();
+                        capturedAtlas.VTTileFolderName = capturedKey;
+                        capturedAtlas.IsCityAtlas = true;
                         RegisterAtlasForVT(capturedAtlas);
                     });
                 }

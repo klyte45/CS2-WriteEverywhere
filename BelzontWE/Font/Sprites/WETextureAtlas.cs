@@ -58,6 +58,15 @@ namespace BelzontWE.Font
         internal VTTextureParamBlock VTParamBlock0 { get; private set; }
         internal VTTextureParamBlock VTParamBlock1 { get; private set; }
         internal Colossal.Hash128[] VTLayerGuids => m_vtLayerGuids;
+        /// <summary>
+        /// Subfolder name under the VT tiles cache directory for this atlas.
+        /// Set when the atlas is registered for VT. Used to locate .vtd files.
+        /// </summary>
+        internal string VTTileFolderName { get; set; }
+        /// <summary>
+        /// When true, VT tile files go into the city temp folder (cleaned every session).
+        /// </summary>
+        internal bool IsCityAtlas { get; set; }
         private Colossal.Hash128[] m_vtLayerGuids;
         private int m_vtRegistrationEpoch;
         private TextureStreamingSystem m_textureStreamingSystem;
@@ -184,7 +193,7 @@ namespace BelzontWE.Font
 
             var cache = new Sprites.WEAtlasCacheFile(
                 checksum, Width, Height, Size, Method, rectsPack,
-                spritesForCache.AsReadOnly(), layers);
+                spritesForCache.AsReadOnly(), layers, m_vtLayerGuids);
             cache.WriteTo(cacheFilePath);
 
             if (WillSerialize)
@@ -254,6 +263,12 @@ namespace BelzontWE.Font
                 IsApplied = true,
                 IsWritable = false,
             };
+
+            // Restore saved VT layer GUIDs so we can reuse existing .vtd tile files
+            if (cache.VTLayerGuids != null && cache.VTLayerGuids.Length == 5)
+            {
+                atlas.m_vtLayerGuids = (Colossal.Hash128[])cache.VTLayerGuids.Clone();
+            }
 
             atlas.m_main = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[0]!, false);
             atlas.m_main.name = "Main";
@@ -712,29 +727,37 @@ namespace BelzontWE.Font
                 VTAtlasInfoStack0.stackGlobalIndex, VTAtlasInfoStack0.indexInStack,
                 VTAtlasInfoStack1.stackGlobalIndex, VTAtlasInfoStack1.indexInStack);
 
-            // Use epoch to ensure unique GUIDs across re-registrations of the same atlas.
-            int guidSeed = GetHashCode() ^ m_vtRegistrationEpoch;
-            m_vtRegistrationEpoch++;
+            // Use saved GUIDs from cache file if available (enables .vtd file reuse),
+            // otherwise generate new ones with epoch to ensure uniqueness.
+            bool reusingSavedGuids = m_vtLayerGuids != null && m_vtLayerGuids.Length == 5
+                && System.Array.TrueForAll(m_vtLayerGuids, g => g.isValid);
+            int guidSeed = 0;
+            if (!reusingSavedGuids)
+            {
+                guidSeed = GetHashCode() ^ m_vtRegistrationEpoch;
+                m_vtRegistrationEpoch++;
+            }
+            string folderName = VTTileFolderName ?? GetHashCode().ToString("X8");
             try
             {
                 // Stack 0 (DefaultPVTStack, 4 layers): game formats [BC7_SRGB, BC7_SRGB, BC7_UNorm, BC7_SRGB]
                 // Layer mapping: L0=_BaseColorMap, L1=_MaskMap, L2=_NormalMap, L3=control
                 // m_serializationOrder: [0]=main, [1]=emissive, [2]=control, [3]=mask, [4]=normal
-                var guid0 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 0);
+                var guid0 = reusingSavedGuids ? m_vtLayerGuids[0] : WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 0);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 0, m_serializationOrder[0], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(false), guid0, tileSize); // main → L0, SRGB
+                    WEAtlasVTUtils.GetBC7Format(false), guid0, folderName, tileSize, IsCityAtlas); // main → L0, SRGB
 
-                var guid1 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 1);
+                var guid1 = reusingSavedGuids ? m_vtLayerGuids[1] : WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 1);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 1, m_serializationOrder[3], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(false), guid1, tileSize); // mask → L1, SRGB
+                    WEAtlasVTUtils.GetBC7Format(false), guid1, folderName, tileSize, IsCityAtlas); // mask → L1, SRGB
 
-                var guid2 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 2);
+                var guid2 = reusingSavedGuids ? m_vtLayerGuids[2] : WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 2);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 2, m_serializationOrder[4], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(true), guid2, tileSize); // normal → L2, UNorm
+                    WEAtlasVTUtils.GetBC7Format(true), guid2, folderName, tileSize, IsCityAtlas); // normal → L2, UNorm
 
-                var guid3 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 3);
+                var guid3 = reusingSavedGuids ? m_vtLayerGuids[3] : WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 3);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 3, m_serializationOrder[2], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(false), guid3, tileSize); // control → L3, SRGB
+                    WEAtlasVTUtils.GetBC7Format(false), guid3, folderName, tileSize, IsCityAtlas); // control → L3, SRGB
 
                 // Invalidate Stack 0 region ONCE after all 4 layers are committed
                 // (matches game's TexturesAsyncLoader.CompleteIfReady pattern)
@@ -743,9 +766,9 @@ namespace BelzontWE.Font
                 WEAtlasVTUtils.VTCrashLog($"[UploadTilesToVT] InvalidateRegion stack0 done");
 
                 // Stack 1 (ExtendedPVTStack, 1 layer only): emissive=L0
-                var guid4 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack1.stackGlobalIndex, 0);
+                var guid4 = reusingSavedGuids ? m_vtLayerGuids[4] : WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack1.stackGlobalIndex, 0);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack1, 0, m_serializationOrder[1], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(false), guid4, tileSize); // emissive → L0, SRGB
+                    WEAtlasVTUtils.GetBC7Format(false), guid4, folderName, tileSize, IsCityAtlas); // emissive → L0, SRGB
 
                 // Invalidate Stack 1 region
                 WEAtlasVTUtils.VTCrashLog($"[UploadTilesToVT] InvalidateRegion stack1={VTAtlasInfoStack1.stackGlobalIndex} idx={VTAtlasInfoStack1.indexInStack}");
@@ -755,7 +778,8 @@ namespace BelzontWE.Font
                 m_vtLayerGuids = new[] { guid0, guid1, guid2, guid3, guid4 };
 
                 if (Belzont.Interfaces.BasicIMod.VerboseMode) Belzont.Utils.LogUtils.DoVerboseLog(
-                    "[WETextureAtlas] VT upload complete ({0}x{1}): 5 layers committed + 2 regions invalidated", Width, Height);
+                    "[WETextureAtlas] VT upload complete ({0}x{1}): 5 layers committed + 2 regions invalidated (reusedGuids={2})",
+                    Width, Height, reusingSavedGuids);
 
                 return true;
             }
@@ -798,9 +822,10 @@ namespace BelzontWE.Font
             // Clean up cached tile files for re-streaming
             if (m_vtLayerGuids != null)
             {
+                string folderName = VTTileFolderName ?? GetHashCode().ToString("X8");
                 foreach (var guid in m_vtLayerGuids)
                 {
-                    WEAtlasVTUtils.DeleteCachedTileFile(guid);
+                    WEAtlasVTUtils.DeleteCachedTileFile(guid, folderName, IsCityAtlas);
                 }
             }
 
