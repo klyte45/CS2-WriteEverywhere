@@ -113,18 +113,17 @@ namespace BelzontWE.Font
             m_normal.Apply();
             if (WillSerialize)
             {
-                // Compress to BC7 for GPU-efficient savegame storage (version 3+)
+                // Compress to BC7 for GPU-efficient savegame storage (version 3+).
+                // NOTE: We do NOT replace textures here — BRI materials already hold references
+                // to the RGBA32 textures (captured synchronously in PrimitiveRenderInformation
+                // constructor). Replacing textures would destroy those references → white quads.
+                // Serialization uses m_serializationOrder (byte arrays); textures stay RGBA32 for rendering.
                 var bc7Main = WEAtlasBC7Utils.CompressToBC7(m_main, false);
                 var bc7Emissive = WEAtlasBC7Utils.CompressToBC7(m_emissive, false);
                 var bc7Control = WEAtlasBC7Utils.CompressToBC7(m_control, true);
                 var bc7Mask = WEAtlasBC7Utils.CompressToBC7(m_mask, true);
                 var bc7Normal = WEAtlasBC7Utils.CompressToBC7(m_normal, true);
                 m_serializationOrder = new byte[][] { bc7Main, bc7Emissive, bc7Control, bc7Mask, bc7Normal };
-                ReplaceWithBC7(ref m_main, bc7Main, false);
-                ReplaceWithBC7(ref m_emissive, bc7Emissive, false);
-                ReplaceWithBC7(ref m_control, bc7Control, true);
-                ReplaceWithBC7(ref m_mask, bc7Mask, true);
-                ReplaceWithBC7(ref m_normal, bc7Normal, true);
                 IsWritable = false;
             }
 
@@ -132,9 +131,10 @@ namespace BelzontWE.Font
         }
 
         /// <summary>
-        /// Compresses all 5 atlas layers to BC7, writes a <see cref="WEAtlasCacheFile"/> to
-        /// <paramref name="cacheFilePath"/>, updates the serialization order with BC7 data,
-        /// and replaces the RGBA32 <see cref="Texture2D"/> instances with GPU-only BC7 textures.
+        /// Compresses all 5 atlas layers to BC7 and writes a <see cref="WEAtlasCacheFile"/> to
+        /// <paramref name="cacheFilePath"/>. Textures are intentionally left as RGBA32 so that
+        /// BRI materials (which already reference them) continue to render correctly.
+        /// On the next game startup, the atlas will be loaded directly from the BC7 cache.
         /// Must be called after <see cref="Apply()"/>.
         /// </summary>
         internal void WriteBC7CacheAndReplaceTextures(string cacheFilePath, uint checksum)
@@ -161,15 +161,10 @@ namespace BelzontWE.Font
                 spritesForCache.AsReadOnly(), layers);
             cache.WriteTo(cacheFilePath);
 
-            if (WillSerialize)
-                m_serializationOrder = System.Array.ConvertAll(layers, l => l ?? System.Array.Empty<byte>());
-
-            ReplaceWithBC7(ref m_main, layers[0]!, false);
-            ReplaceWithBC7(ref m_emissive, layers[1]!, false);
-            ReplaceWithBC7(ref m_control, layers[2]!, true);
-            ReplaceWithBC7(ref m_mask, layers[3]!, true);
-            ReplaceWithBC7(ref m_normal, layers[4]!, true);
-
+            // NOTE: textures intentionally NOT replaced with BC7 here.
+            // PrimitiveRenderInformation already captured RGBA32 texture references in their materials;
+            // destroying & replacing them would result in white quads for the current session.
+            // Next startup loads from cache (BC7 directly).
             IsWritable = false;
         }
 
@@ -264,11 +259,14 @@ namespace BelzontWE.Font
 
         public void Dispose()
         {
-            if (m_main && m_main.isReadable) GameObject.Destroy(m_main);
-            if (m_emissive && m_emissive.isReadable) GameObject.Destroy(m_emissive);
-            if (m_control && m_control.isReadable) GameObject.Destroy(m_control);
-            if (m_mask && m_mask.isReadable) GameObject.Destroy(m_mask);
-            if (m_normal && m_normal.isReadable) GameObject.Destroy(m_normal);
+            // Destroy all owned textures regardless of readability.
+            // Previously this skipped non-readable (BC7) textures, causing GPU memory leaks
+            // when caches loaded via FromCacheFile were later disposed.
+            if (m_main) GameObject.Destroy(m_main);
+            if (m_emissive) GameObject.Destroy(m_emissive);
+            if (m_control) GameObject.Destroy(m_control);
+            if (m_mask) GameObject.Destroy(m_mask);
+            if (m_normal) GameObject.Destroy(m_normal);
             ClearSprites();
         }
 

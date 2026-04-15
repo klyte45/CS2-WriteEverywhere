@@ -315,7 +315,9 @@ namespace BelzontWE.Sprites
             var modAccessName = mainAssembly is Assembly aKey
                 ? WEModIntegrationUtility.GetModAccessName(aKey, atlasName)
                 : WEModIntegrationUtility.GetModAccessName(mainAssembly as AssetData, atlasName);
-            var cacheFilePath = Path.Combine(CACHED_VT_FOLDER, $"{modAccessName}.cache.we.bc7");
+            // The modAccessName format is "ModId:AtlasName". Colon is illegal in Windows filenames,
+            // so we use it as a directory separator: vtAtlases/ModId/AtlasName.cache.we.bc7
+            var cacheFilePath = Path.Combine(CACHED_VT_FOLDER, modAccessName.Replace(':', Path.DirectorySeparatorChar) + ".cache.we.bc7");
 
             actionQueue.Enqueue(() =>
             {
