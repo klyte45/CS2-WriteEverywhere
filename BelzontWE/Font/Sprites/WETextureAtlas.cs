@@ -18,6 +18,12 @@ namespace BelzontWE.Font
     public class WETextureAtlas : IDisposable, ISerializable
     {
         public const uint CURRENT_VERSION = 3;
+
+        /// <summary>VT stack config index for DefaultPVTStack (basecolor, normal, mask).</summary>
+        internal const int VT_STACK_DEFAULT = 0;
+        /// <summary>VT stack config index for ExtendedPVTStack (control, emissive).</summary>
+        internal const int VT_STACK_EXTENDED = 1;
+
         public int Width { get; private set; }
         public int Height { get; private set; }
         public int Size { get; private set; }
@@ -35,6 +41,12 @@ namespace BelzontWE.Font
         private byte[][] m_serializationOrder;
         public bool IsWritable { get; internal set; } = true;
 
+        // ── VT registration state ──────────────────────────────────────────────
+        internal bool IsVTRegistered { get; private set; }
+        internal VTAtlassingInfo VTAtlasInfoStack0 { get; private set; }
+        internal VTAtlassingInfo VTAtlasInfoStack1 { get; private set; }
+        internal VTTextureParamBlock VTParamBlock0 { get; private set; }
+        internal VTTextureParamBlock VTParamBlock1 { get; private set; }
 
         public IEnumerable<FixedString32Bytes> Keys => Sprites.Keys;
 
@@ -591,5 +603,48 @@ namespace BelzontWE.Font
         {
         }
         public Material GenerateMaterial(WEShader shader, TextureStreamingSystem tss) => WERenderingHelper.GenerateMaterial(shader, m_main, m_normal, m_mask, m_control, m_emissive);
+
+        /// <summary>
+        /// Reserves rectangular regions in the game's VT atlas for this texture atlas.
+        /// Stack 0 (<c>DefaultPVTStack</c>): main (layer 0), normal (layer 1), mask (layer 2).
+        /// Stack 1 (<c>ExtendedPVTStack</c>): control (layer 0), emissive (layer 1).
+        /// After successful reservation, <see cref="IsVTRegistered"/> is set to <c>true</c>
+        /// and the param blocks are available via <see cref="VTParamBlock0"/>/<see cref="VTParamBlock1"/>.
+        /// </summary>
+        /// <param name="tss">The game's texture streaming system.</param>
+        /// <returns><c>true</c> if both reservations succeeded; <c>false</c> on failure (atlas left unregistered).</returns>
+        internal bool ReserveVTSpace(TextureStreamingSystem tss)
+        {
+            if (IsVTRegistered) return true;
+
+            try
+            {
+                var info0 = tss.ReserveTextureRect(VT_STACK_DEFAULT, Width, Height);
+                if (info0.stackGlobalIndex < 0 || info0.indexInStack < 0)
+                {
+                    Belzont.Utils.LogUtils.DoWarnLog($"[WETextureAtlas] VT reservation failed for DefaultPVTStack ({Width}x{Height}): stackGlobalIndex={info0.stackGlobalIndex}, indexInStack={info0.indexInStack}");
+                    return false;
+                }
+
+                var info1 = tss.ReserveTextureRect(VT_STACK_EXTENDED, Width, Height);
+                if (info1.stackGlobalIndex < 0 || info1.indexInStack < 0)
+                {
+                    Belzont.Utils.LogUtils.DoWarnLog($"[WETextureAtlas] VT reservation failed for ExtendedPVTStack ({Width}x{Height}): stackGlobalIndex={info1.stackGlobalIndex}, indexInStack={info1.indexInStack}");
+                    return false;
+                }
+
+                VTAtlasInfoStack0 = info0;
+                VTAtlasInfoStack1 = info1;
+                VTParamBlock0 = tss.GetTextureParamBlock(info0);
+                VTParamBlock1 = tss.GetTextureParamBlock(info1);
+                IsVTRegistered = true;
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                Belzont.Utils.LogUtils.DoWarnLog($"[WETextureAtlas] VT reservation exception ({Width}x{Height}): {ex.GetType().Name}: {ex.Message}");
+                return false;
+            }
+        }
     }
 }

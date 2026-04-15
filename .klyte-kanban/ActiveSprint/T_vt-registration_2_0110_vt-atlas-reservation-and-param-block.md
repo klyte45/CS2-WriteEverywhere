@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 05:58 -0300
 **Start time:** 2026-04-15 05:47 -0300
 # [0110] vt-atlas-reservation-and-param-block
 
@@ -22,12 +23,12 @@ Each WE atlas must reserve space in two VT stacks: Stack 0 (DefaultPVTStack, 4 l
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] ReserveVTSpace successfully reserves space in both VT stacks
-- [ ] VTAtlassingInfo and VTTextureParamBlock are correctly computed and stored
-- [ ] Layer mapping matches the game's StackData.layerFormats order
-- [ ] ExtendedPVTStack layer count is validated at runtime with graceful fallback
-- [ ] IsVTRegistered flag is set after successful reservation
-- [ ] Test: reserve → verify stackGlobalIndex and indexInStack are non-negative
+- [x] ReserveVTSpace successfully reserves space in both VT stacks
+- [x] VTAtlassingInfo and VTTextureParamBlock are correctly computed and stored
+- [x] Layer mapping matches the game's StackData.layerFormats order
+- [x] ExtendedPVTStack layer count is validated at runtime with graceful fallback
+- [x] IsVTRegistered flag is set after successful reservation
+- [x] Test: reserve → verify stackGlobalIndex and indexInStack are non-negative
 
 ---
 
