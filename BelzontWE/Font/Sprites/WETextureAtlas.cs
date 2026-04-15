@@ -161,10 +161,12 @@ namespace BelzontWE.Font
                 spritesForCache.AsReadOnly(), layers);
             cache.WriteTo(cacheFilePath);
 
-            // NOTE: textures intentionally NOT replaced with BC7 here.
-            // PrimitiveRenderInformation already captured RGBA32 texture references in their materials;
-            // destroying & replacing them would result in white quads for the current session.
-            // Next startup loads from cache (BC7 directly).
+            if (WillSerialize)
+                m_serializationOrder = System.Array.ConvertAll(layers, l => l ?? System.Array.Empty<byte>());
+
+            // Do NOT call ReplaceWithBC7 here — BRI materials already hold references
+            // to the RGBA32 textures. Replacing them would destroy those references → white quads.
+            // The BC7 data is persisted in the cache file; next startup loads directly from BC7.
             IsWritable = false;
         }
 
@@ -220,7 +222,11 @@ namespace BelzontWE.Font
             atlas.m_normal.name = "Normal";
 
             foreach (var sp in cache.Sprites)
-                atlas.Sprites[sp.Name] = new BelzontWE.Sprites.WESpriteInfo { Name = sp.Name, Region = sp.Region, ExtraTextures = sp.Flags };
+            {
+                var spriteInfo = new BelzontWE.Sprites.WESpriteInfo { Name = sp.Name, Region = sp.Region, ExtraTextures = sp.Flags };
+                spriteInfo.CachedBRI = WERenderingHelper.GenerateBri(atlas, spriteInfo);
+                atlas.Sprites[sp.Name] = spriteInfo;
+            }
 
             return atlas;
         }
