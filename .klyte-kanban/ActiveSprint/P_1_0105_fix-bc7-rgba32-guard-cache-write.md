@@ -1,7 +1,7 @@
+**Start time:** 2026-04-15 03:08 -0300
 # [0105] fix-bc7-rgba32-guard-cache-write
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a player**, I want **the game to load without ArgumentException errors and have atlas cache files appear on disk**, so that I **the BC7 optimization works correctly on first load**.
