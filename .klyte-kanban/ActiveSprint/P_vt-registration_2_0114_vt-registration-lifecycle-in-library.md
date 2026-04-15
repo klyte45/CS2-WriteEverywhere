@@ -1,7 +1,7 @@
+**Start time:** 2026-04-15 06:25 -0300
 # [0114] vt-registration-lifecycle-in-library
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **the atlas library system**, I want **to orchestrate the full VT registration lifecycle (register on load, deregister on dispose/reload) for all atlas types**, so that I **local, mod, and city atlases all benefit from VT streaming automatically without per-caller logic**.
