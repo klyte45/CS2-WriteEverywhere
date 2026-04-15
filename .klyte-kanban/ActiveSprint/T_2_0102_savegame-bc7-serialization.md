@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 02:24 -0300
 **Start time:** 2026-04-15 02:21 -0300
 # [0102] savegame-bc7-serialization
 
@@ -22,12 +23,12 @@
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] New save uses version 1 with BC7
-- [ ] Load version 0 decodes PNG
-- [ ] Load version 1 loads BC7
-- [ ] Save file reduced 60-75%
-- [ ] Test: v0 to v1 migration
-- [ ] Test: v1 rendering matches v0
+- [x] New save uses version 1 with BC7
+- [x] Load version 0 decodes PNG
+- [x] Load version 1 loads BC7
+- [x] Save file reduced 60-75%
+- [x] Test: v0 to v1 migration
+- [x] Test: v1 rendering matches v0
 
 ---
 

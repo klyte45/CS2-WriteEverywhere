@@ -17,7 +17,7 @@ namespace BelzontWE.Font
 {
     public class WETextureAtlas : IDisposable, ISerializable
     {
-        public const uint CURRENT_VERSION = 2;
+        public const uint CURRENT_VERSION = 3;
         public int Width { get; private set; }
         public int Height { get; private set; }
         public int Size { get; private set; }
@@ -113,14 +113,19 @@ namespace BelzontWE.Font
             m_normal.Apply();
             if (WillSerialize)
             {
-                m_serializationOrder = new byte[][]
-                {
-                    m_main.EncodeToPNG(),
-                    m_emissive.EncodeToPNG(),
-                    m_control.EncodeToPNG(),
-                    m_mask.EncodeToPNG(),
-                    m_normal.EncodeToPNG(),
-                };
+                // Compress to BC7 for GPU-efficient savegame storage (version 3+)
+                var bc7Main = WEAtlasBC7Utils.CompressToBC7(m_main, false);
+                var bc7Emissive = WEAtlasBC7Utils.CompressToBC7(m_emissive, false);
+                var bc7Control = WEAtlasBC7Utils.CompressToBC7(m_control, true);
+                var bc7Mask = WEAtlasBC7Utils.CompressToBC7(m_mask, true);
+                var bc7Normal = WEAtlasBC7Utils.CompressToBC7(m_normal, true);
+                m_serializationOrder = new byte[][] { bc7Main, bc7Emissive, bc7Control, bc7Mask, bc7Normal };
+                ReplaceWithBC7(ref m_main, bc7Main, false);
+                ReplaceWithBC7(ref m_emissive, bc7Emissive, false);
+                ReplaceWithBC7(ref m_control, bc7Control, true);
+                ReplaceWithBC7(ref m_mask, bc7Mask, true);
+                ReplaceWithBC7(ref m_normal, bc7Normal, true);
+                IsWritable = false;
             }
 
             IsApplied = true;
@@ -352,7 +357,6 @@ namespace BelzontWE.Font
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
             if (!WillSerialize) throw new NotSupportedException("This texture atlas isn't marked to serialize");
-            if (!IsWritable) throw new InvalidOperationException("This texture atlas can't be serialized because it's VT atlas.");
             if (m_serializationOrder is null) throw new InvalidDataException("Texture atlas has no data to serialize. Forgot Apply()?");
             writer.Write(CURRENT_VERSION);
             writer.Write((int)Method);
@@ -415,6 +419,7 @@ namespace BelzontWE.Font
                 Size = Convert.ToString(Width - 1, 2).Length + Convert.ToString(Height - 1, 2).Length;
             }
 
+            bool isBC7 = version >= 3;
             var bytesArrays = new ImageLoadInfo[5];
             for (int i = 0; i < bytesArrays.Length; i++)
             {
@@ -438,28 +443,51 @@ namespace BelzontWE.Font
             imageLoadAction = () =>
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Loading texture atlas '{name}'!");
-                if (m_main) GameObject.Destroy(m_main);
-                m_main = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-                m_main.LoadImage(bytesArrays[0].pngData);
-                if (m_emissive) GameObject.Destroy(m_emissive);
-                m_emissive = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-                m_emissive.LoadImage(bytesArrays[1].pngData);
-                if (m_control) GameObject.Destroy(m_control);
-                m_control = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
-                m_control.LoadImage(bytesArrays[2].pngData);
-                if (m_mask) GameObject.Destroy(m_mask);
-                m_mask = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
-                m_mask.LoadImage(bytesArrays[3].pngData);
-                if (m_normal) GameObject.Destroy(m_normal);
-                m_normal = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
-                m_normal.LoadImage(bytesArrays[4].pngData);
+                if (isBC7)
+                {
+                    // Version 3+: raw BC7 bytes, create GPU textures directly
+                    if (m_main) GameObject.Destroy(m_main);
+                    m_main = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[0].pngData, false);
+                    m_main.name = "Main";
+                    if (m_emissive) GameObject.Destroy(m_emissive);
+                    m_emissive = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[1].pngData, false);
+                    m_emissive.name = "Emissive";
+                    if (m_control) GameObject.Destroy(m_control);
+                    m_control = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[2].pngData, true);
+                    m_control.name = "Control";
+                    if (m_mask) GameObject.Destroy(m_mask);
+                    m_mask = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[3].pngData, true);
+                    m_mask.name = "Mask";
+                    if (m_normal) GameObject.Destroy(m_normal);
+                    m_normal = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[4].pngData, true);
+                    m_normal.name = "Normal";
+                    IsWritable = false;
+                    IsApplied = true;
+                }
+                else
+                {
+                    if (m_main) GameObject.Destroy(m_main);
+                    m_main = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+                    m_main.LoadImage(bytesArrays[0].pngData);
+                    if (m_emissive) GameObject.Destroy(m_emissive);
+                    m_emissive = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+                    m_emissive.LoadImage(bytesArrays[1].pngData);
+                    if (m_control) GameObject.Destroy(m_control);
+                    m_control = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
+                    m_control.LoadImage(bytesArrays[2].pngData);
+                    if (m_mask) GameObject.Destroy(m_mask);
+                    m_mask = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
+                    m_mask.LoadImage(bytesArrays[3].pngData);
+                    if (m_normal) GameObject.Destroy(m_normal);
+                    m_normal = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
+                    m_normal.LoadImage(bytesArrays[4].pngData);
+                    Apply();
+                }
                 foreach (var sprite in Sprites)
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"Calculating BRI for sprite {name}.{sprite.Key}");
                     sprite.Value.CachedBRI = WERenderingHelper.GenerateBri(this, sprite.Value);
                 }
-
-                Apply();
             };
             if (version < 1) return true;
             reader.Read(out uint versionAtlas);
