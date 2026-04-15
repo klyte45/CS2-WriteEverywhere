@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 02:03 -0300
 **Start time:** 2026-04-15 02:02 -0300
 # [0098] always-5-images-emissive-fallback
 
@@ -22,11 +23,11 @@
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Missing emissive uses main image
-- [ ] Missing control/mask uses transparent black
-- [ ] Missing normal uses flat normal
-- [ ] Test: null emissive matches main
-- [ ] Test: explicit emissive uses explicit
+- [x] Missing emissive uses main image
+- [x] Missing control/mask uses transparent black
+- [x] Missing normal uses flat normal
+- [x] Test: null emissive matches main
+- [x] Test: explicit emissive uses explicit
 
 ---
 
