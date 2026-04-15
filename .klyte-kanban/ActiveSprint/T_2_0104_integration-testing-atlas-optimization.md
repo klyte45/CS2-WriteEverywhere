@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 02:29 -0300
 **Start time:** 2026-04-15 02:27 -0300
 # [0104] integration-testing-atlas-optimization
 
@@ -22,11 +23,11 @@
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Full lifecycle test: build→cache→reload→serialize
-- [ ] Backward compat: load v0 and re-save as v1
-- [ ] Smart reload: verify only changed rebuilt
-- [ ] Memory measurement before/after
-- [ ] No test regressions
+- [x] Full lifecycle test: build→cache→reload→serialize
+- [x] Backward compat: load v0 and re-save as v1
+- [x] Smart reload: verify only changed rebuilt
+- [x] Memory measurement before/after
+- [x] No test regressions
 
 ---
 
