@@ -33,6 +33,7 @@ namespace BelzontWE.Sprites
         public static string IMAGES_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "imageAtlases");
         public static string ATLAS_EXPORT_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, "exportedAtlases");
         public static string CACHED_VT_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, ".cache", "vtAtlases");
+        public static string CACHED_VT_TILES_FOLDER => Path.Combine(BasicIMod.ModSettingsRootFolder, ".cache", "vtTiles");
         private const string GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID = "generatingAtlasesCache";
         private const string ERRORS_IMAGE_ATLAS_NOTIFICATION_ID = "errorLoadingAtlasesCache";
         private const string ERRORS_IMAGE_ATLAS_NOTIFICATION_MODULE_ID = "errorLoadingModuleAtlasesCache";
@@ -51,6 +52,8 @@ namespace BelzontWE.Sprites
             Instance = this;
             KFileUtils.EnsureFolderCreation(IMAGES_FOLDER);
             KFileUtils.EnsureFolderCreation(CACHED_VT_FOLDER);
+            KFileUtils.EnsureFolderCreation(CACHED_VT_TILES_FOLDER);
+            WEAtlasVTUtils.CleanVTTileFileDirectory();
             actionQueue.Enqueue(() => LoadImagesFromLocalFolders());
             m_atlasUsageQuery = GetEntityQuery(new EntityQueryDesc[]
               {

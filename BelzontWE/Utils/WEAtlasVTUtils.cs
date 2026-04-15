@@ -1,5 +1,6 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
+using BelzontWE.Sprites;
 using Colossal;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
 using System;
@@ -181,13 +182,21 @@ namespace BelzontWE
             if (BasicIMod.VerboseMode) LogUtils.DoVerboseLog(
                 "[WEAtlasVTUtils] PreprocessForVT produced {0} bytes", tileData.Length);
 
+            // 2. Save preprocessed data to disk for VT re-streaming.
+            //    When the VT CPU cache evicts tiles, ReadVTTextureDataAsync re-reads
+            //    individual tiles from this file using the tileOffsets mapping.
+            VTCrashLog($"[UploadLayerToVT] Step2-SaveToFile {stepTag}");
+            string filePath = SaveTileDataToFile(guid, tileData);
+            List<int> tileOffsets = ComputeTileOffsets(width, height, format, tileSize);
+            VTCrashLog($"[UploadLayerToVT] Step2-Saved {stepTag} path={filePath} tileOffsets.Count={tileOffsets.Count}");
+
             try
             {
-                // 2. Register buffer allocation in VT system
-                VTCrashLog($"[UploadLayerToVT] Step2-RegisterVTTextureData {stepTag} guid={guid} dataSize={tileData.Length}");
-                bool registered = tss.RegisterVTTextureData(guid, string.Empty, 0, 0, tileData.Length,
-                    new List<int> { 0 }, width, height);
-                VTCrashLog($"[UploadLayerToVT] Step2-Done {stepTag} registered={registered}");
+                // 3. Register buffer allocation in VT system with correct path and offsets
+                VTCrashLog($"[UploadLayerToVT] Step3-RegisterVTTextureData {stepTag} guid={guid} dataSize={tileData.Length}");
+                bool registered = tss.RegisterVTTextureData(guid, filePath, 0, 0, tileData.Length,
+                    tileOffsets, width, height);
+                VTCrashLog($"[UploadLayerToVT] Step3-Done {stepTag} registered={registered}");
 
                 if (!registered)
                 {
@@ -195,17 +204,17 @@ namespace BelzontWE
                     return;
                 }
 
-                // 3. Copy preprocessed tiles into the registered buffer
-                VTCrashLog($"[UploadLayerToVT] Step3-GetTextureData {stepTag}");
+                // 4. Copy preprocessed tiles into the registered buffer
+                VTCrashLog($"[UploadLayerToVT] Step4-GetTextureData {stepTag}");
                 var buffer = tss.GetTextureData(guid);
-                VTCrashLog($"[UploadLayerToVT] Step3-GotBuffer {stepTag} bufLen={buffer.Length} tileLen={tileData.Length}");
+                VTCrashLog($"[UploadLayerToVT] Step4-GotBuffer {stepTag} bufLen={buffer.Length} tileLen={tileData.Length}");
                 if (buffer.Length != tileData.Length)
                 {
                     LogUtils.DoWarnLog($"[WEAtlasVTUtils] Buffer length mismatch: expected {tileData.Length}, got {buffer.Length}");
                 }
-                VTCrashLog($"[UploadLayerToVT] Step3-Copy {stepTag}");
+                VTCrashLog($"[UploadLayerToVT] Step4-Copy {stepTag}");
                 NativeArray<byte>.Copy(tileData, buffer);
-                VTCrashLog($"[UploadLayerToVT] Step3-Done {stepTag}");
+                VTCrashLog($"[UploadLayerToVT] Step4-Done {stepTag}");
             }
             finally
             {
@@ -213,16 +222,16 @@ namespace BelzontWE
                 tileData.Dispose();
             }
 
-            // 4. Mark loading complete (enables AddTextureToCache)
-            VTCrashLog($"[UploadLayerToVT] Step4-DoneLoading {stepTag}");
+            // 5. Mark loading complete (enables AddTextureToCache)
+            VTCrashLog($"[UploadLayerToVT] Step5-DoneLoading {stepTag}");
             tss.DoneLoading(guid);
-            VTCrashLog($"[UploadLayerToVT] Step4-Done {stepTag}");
+            VTCrashLog($"[UploadLayerToVT] Step5-Done {stepTag}");
 
-            // 5. Transfer tile data to GPU cache (disposes registered buffer internally)
-            VTCrashLog($"[UploadLayerToVT] Step5-AddTextureToCache {stepTag}");
+            // 6. Transfer tile data to GPU cache (disposes registered buffer internally)
+            VTCrashLog($"[UploadLayerToVT] Step6-AddTextureToCache {stepTag}");
             tss.AddTextureToCache(atlasInfo.stackGlobalIndex, layerIndex,
                 atlasInfo.indexInStack, width, height, guid, 0);
-            VTCrashLog($"[UploadLayerToVT] Step5-Done {stepTag}");
+            VTCrashLog($"[UploadLayerToVT] Step6-Done {stepTag}");
 
             if (BasicIMod.VerboseMode) LogUtils.DoVerboseLog(
                 "[WEAtlasVTUtils] Layer {0} committed to VT cache (stack={1} idx={2})",
@@ -257,5 +266,83 @@ namespace BelzontWE
         /// </summary>
         internal static Hash128 GenerateLayerGuid(int atlasInstanceId, int stackGlobalIndex, int layerIndex)
             => Hash128.CreateGuid($"WE_VT_{atlasInstanceId}_{stackGlobalIndex}_{layerIndex}");
+
+        #region VT tile file persistence
+
+        /// <summary>
+        /// Saves preprocessed VT tile data to disk so the game's <c>ReadVTTextureDataAsync</c>
+        /// can re-read individual tiles when they are evicted from the CPU cache.
+        /// </summary>
+        /// <returns>Absolute path to the written file.</returns>
+        internal static string SaveTileDataToFile(Hash128 guid, NativeArray<byte> tileData)
+        {
+            string dir = GetVTTileFileDirectory();
+            string filePath = Path.Combine(dir, $"{guid}.vtd");
+            byte[] bytes = tileData.ToArray();
+            File.WriteAllBytes(filePath, bytes);
+            return filePath;
+        }
+
+        /// <summary>
+        /// Computes the cumulative tile offsets list expected by
+        /// <c>VTDatabase.GetCompressedTileOffsetAndSize</c>.
+        /// <para>
+        /// Format: <c>tileOffsets[i] = (i+1) * bytesPerTile</c> (cumulative end offsets).
+        /// </para>
+        /// </summary>
+        internal static List<int> ComputeTileOffsets(int width, int height, GraphicsFormat format, int tileSize)
+        {
+            var layerInfo = new AtlassingUtils.LayerInfo(tileSize, format);
+            int maxLevel = (int)Math.Log(Math.Min(width, height) / (double)tileSize, 2.0);
+            int numTiles = GetTileCount(width, height, maxLevel, tileSize);
+            int bytesPerTile = layerInfo.totalTileSizeInBytes;
+            var offsets = new List<int>(numTiles);
+            for (int i = 0; i < numTiles; i++)
+            {
+                offsets.Add((i + 1) * bytesPerTile);
+            }
+            return offsets;
+        }
+
+        /// <summary>
+        /// Deletes a cached VT tile file for a specific layer GUID.
+        /// Best-effort; ignores errors.
+        /// </summary>
+        internal static void DeleteCachedTileFile(Hash128 guid)
+        {
+            try
+            {
+                string filePath = Path.Combine(GetVTTileFileDirectory(), $"{guid}.vtd");
+                if (File.Exists(filePath)) File.Delete(filePath);
+            }
+            catch { /* best effort */ }
+        }
+
+        /// <summary>
+        /// Cleans all .vtd files from the VT tile cache directory.
+        /// Called on system init to remove stale files from previous sessions.
+        /// </summary>
+        internal static void CleanVTTileFileDirectory()
+        {
+            try
+            {
+                string dir = GetVTTileFileDirectory();
+                if (Directory.Exists(dir))
+                {
+                    foreach (var file in Directory.GetFiles(dir, "*.vtd"))
+                    {
+                        File.Delete(file);
+                    }
+                }
+            }
+            catch { /* best effort */ }
+        }
+
+        private static string GetVTTileFileDirectory()
+        {
+            return WEAtlasesLibrary.CACHED_VT_TILES_FOLDER;
+        }
+
+        #endregion
     }
 }

@@ -795,6 +795,15 @@ namespace BelzontWE.Font
                 Belzont.Utils.LogUtils.DoWarnLog($"[WETextureAtlas] VT deregistration exception ({Width}x{Height}): {ex.GetType().Name}: {ex.Message}");
             }
 
+            // Clean up cached tile files for re-streaming
+            if (m_vtLayerGuids != null)
+            {
+                foreach (var guid in m_vtLayerGuids)
+                {
+                    WEAtlasVTUtils.DeleteCachedTileFile(guid);
+                }
+            }
+
             // Reset all VT state
             IsVTRegistered = false;
             VTAtlasInfoStack0 = default;
