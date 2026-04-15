@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 02:27 -0300
 **Start time:** 2026-04-15 02:24 -0300
 # [0103] smart-reload-checksum-based
 
@@ -22,12 +23,12 @@
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Unchanged folders not rebuilt
-- [ ] Changed folder triggers rebuild
-- [ ] New folder created
-- [ ] Deleted folder disposed
-- [ ] Test: reload no Dispose calls
-- [ ] Test: modify single folder
+- [x] Unchanged folders not rebuilt
+- [x] Changed folder triggers rebuild
+- [x] New folder created
+- [x] Deleted folder disposed
+- [x] Test: reload no Dispose calls
+- [x] Test: modify single folder
 
 ---
 

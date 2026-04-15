@@ -39,6 +39,7 @@ namespace BelzontWE.Sprites
 
         public static WEAtlasesLibrary Instance { get; private set; }
         private readonly Queue<Action> actionQueue = new();
+        private readonly Dictionary<string, uint> m_localAtlasChecksums = new();
         private EntityQuery m_atlasUsageQuery;
         private TextureStreamingSystem m_textureStreamingSystem;
 
@@ -148,9 +149,19 @@ namespace BelzontWE.Sprites
             if (modSpritesJobRunning != null) yield return 0;
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 0);
             yield return 0;
-            ClearAtlasDict(LocalAtlases);
             var errors = new Dictionary<string, string>();
-            var folders = Directory.GetDirectories(IMAGES_FOLDER);
+            var folders = Directory.Exists(IMAGES_FOLDER) ? Directory.GetDirectories(IMAGES_FOLDER) : Array.Empty<string>();
+            // Dispose atlases for folders that no longer exist on disk
+            var folderNamesOnDisk = new HashSet<string>(folders.Select(d => Path.GetFileNameWithoutExtension(d)));
+            var toRemove = LocalAtlases.Keys
+                .Where(k => k != INTERNAL_ATLAS_NAME && !folderNamesOnDisk.Contains(k.ToString()))
+                .ToList();
+            foreach (var key in toRemove)
+            {
+                if (LocalAtlases.TryGetValue(key, out var old)) { var captured = old; actionQueue.Enqueue(() => captured?.Dispose()); }
+                LocalAtlases.Remove(key);
+                m_localAtlasChecksums.Remove(key.ToString());
+            }
             for (int i = 0; i < folders.Length; i++)
             {
                 string dir = folders[i];
@@ -162,14 +173,22 @@ namespace BelzontWE.Sprites
                 NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * i / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
                 yield return 0;
                 var atlasName = Path.GetFileNameWithoutExtension(dir);
-                var cacheFilePath = Path.Combine(CACHED_VT_FOLDER, $"{atlasName}.cache.we.bc7");
                 var checksum = WEChecksumUtils.ComputeFolderChecksum(dir);
+                // Smart reload: skip if checksum unchanged and atlas already loaded
+                if (m_localAtlasChecksums.TryGetValue(atlasName, out var prevChecksum)
+                    && prevChecksum == checksum
+                    && LocalAtlases.ContainsKey(atlasName))
+                {
+                    continue;
+                }
+                var cacheFilePath = Path.Combine(CACHED_VT_FOLDER, $"{atlasName}.cache.we.bc7");
                 var cachedFile = Font.Sprites.WEAtlasCacheFile.ReadFrom(cacheFilePath);
                 if (cachedFile != null && cachedFile.Checksum == checksum)
                 {
                     try
                     {
                         LocalAtlases[atlasName] = WETextureAtlas.FromCacheFile(cachedFile);
+                        m_localAtlasChecksums[atlasName] = checksum;
                         continue;
                     }
                     catch (Exception ex)
@@ -180,6 +199,10 @@ namespace BelzontWE.Sprites
                 var spritesToAdd = new List<WEImageInfo>();
                 WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, (img, msg) => errors[img] = msg);
                 var generatedAtlas = RegisterLocalAtlas(atlasName, spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25, sourceFolderPath: dir);
+                if (generatedAtlas != null)
+                {
+                    m_localAtlasChecksums[atlasName] = checksum;
+                }
             }
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
             yield return 0;
