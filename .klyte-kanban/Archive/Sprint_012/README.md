@@ -10,10 +10,10 @@ All 4 atlas-optimization bugs fixed: no RGBA32 exceptions, cache files written, 
 
 - **Sprint number**: 012
 - **Start date**: 2026-04-15 03:06 -0300
-- **End date**:
+- **End date**: 2026-04-15 03:35 -0300
 - **Original tasks**: 04
 - **Original task IDs**: [0105], [0106], [0107], [0108]
-- **Delivered tasks (from original)**:
+- **Delivered tasks (from original)**: 4
 - **Added tasks**: 0
-- **Delivered tasks (from added)**:
-- **Total delivered tasks**:
+- **Delivered tasks (from added)**: 0
+- **Total delivered tasks**: 4
