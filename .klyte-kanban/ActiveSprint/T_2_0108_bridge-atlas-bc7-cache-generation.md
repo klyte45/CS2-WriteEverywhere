@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 03:34 -0300
 **Start time:** 2026-04-15 03:28 -0300
 # [0108] bridge-atlas-bc7-cache-generation
 
@@ -22,12 +23,12 @@ Only local image folder atlases write BC7 cache files. Atlases registered via Im
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] RegisterImageAtlas (file-based) writes a .cache.we.bc7 after atlas build
-- [ ] RegisterImageAtlasFromMemory (producer-based) writes a .cache.we.bc7 after atlas build
-- [ ] LoadImagesFromModsCoroutine skips rebuild for mod atlases with matching checksum
-- [ ] m_modAtlasChecksums tracks checksums per mod atlas key
-- [ ] Test: bridge cache lifecycle (Ignored - Unity required)
-- [ ] Build compiles 0 errors, full test suite 0 failures
+- [x] RegisterImageAtlas (file-based) writes a .cache.we.bc7 after atlas build
+- [x] RegisterImageAtlasFromMemory (producer-based) writes a .cache.we.bc7 after atlas build
+- [x] LoadImagesFromModsCoroutine skips rebuild for mod atlases with matching checksum
+- [x] m_modAtlasChecksums tracks checksums per mod atlas key
+- [x] Test: bridge cache lifecycle (Ignored - Unity required)
+- [x] Build compiles 0 errors, full test suite 0 failures
 
 ---
 

@@ -40,6 +40,7 @@ namespace BelzontWE.Sprites
         public static WEAtlasesLibrary Instance { get; private set; }
         private readonly Queue<Action> actionQueue = new();
         private readonly Dictionary<string, uint> m_localAtlasChecksums = new();
+        private readonly Dictionary<string, uint> m_modAtlasChecksums = new();
         private EntityQuery m_atlasUsageQuery;
         private TextureStreamingSystem m_textureStreamingSystem;
 
@@ -47,6 +48,7 @@ namespace BelzontWE.Sprites
         {
             Instance = this;
             KFileUtils.EnsureFolderCreation(IMAGES_FOLDER);
+            KFileUtils.EnsureFolderCreation(CACHED_VT_FOLDER);
             actionQueue.Enqueue(() => LoadImagesFromLocalFolders());
             m_atlasUsageQuery = GetEntityQuery(new EntityQueryDesc[]
               {
@@ -92,7 +94,7 @@ namespace BelzontWE.Sprites
         private Dictionary<FixedString32Bytes, WETextureAtlas> CityAtlases { get; } = [];
         private Dictionary<string, WETextureAtlas> ModAtlases { get; } = [];
 
-        private Dictionary<string, (AssetData info, Dictionary<string, Action> registerCallback)> RegisteredModsAtlases { get; } = [];
+        private Dictionary<string, (AssetData info, Dictionary<string, (Action callback, Func<uint> checksumFactory, string modAccessName)> registrations)> RegisteredModsAtlases { get; } = [];
 
         #region Getters
 
@@ -266,16 +268,19 @@ namespace BelzontWE.Sprites
                 actionQueue.Enqueue(() => item?.Dispose());
                 ModAtlases.Remove(key);
             }
-            if (RegisteredModsAtlases.TryGetValue(WEModIntegrationUtility.GetModIdentifier(modId), out var registrers) && registrers.registerCallback.ContainsKey(atlasName))
+            m_modAtlasChecksums.Remove(key);
+            if (RegisteredModsAtlases.TryGetValue(WEModIntegrationUtility.GetModIdentifier(modId), out var registrers) && registrers.registrations.ContainsKey(atlasName))
             {
-                registrers.registerCallback.Remove(atlasName);
+                registrers.registrations.Remove(atlasName);
             }
         }
 
         internal void LoadImagesToAtlas(Assembly mainAssembly, string atlasName, string[] imagePaths, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args)
         {
             var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
-            EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, (img, msg) => errors.Add($"{img}: {msg}")));
+            EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId,
+                (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, (img, msg) => errors.Add($"{img}: {msg}")),
+                () => WEChecksumUtils.ComputeFileListChecksum(imagePaths));
         }
 
         internal void LoadImagesAsDynamicAtlas(Assembly mainAssembly, string atlasName,
@@ -283,31 +288,61 @@ namespace BelzontWE.Sprites
             string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args)
         {
             var modId = WEModIntegrationUtility.GetModIdentifier(mainAssembly);
-            EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(producer(), spritesToAdd, errors));
+            EnqueueModAtlasLoader(mainAssembly, atlasName, modIdentifier, displayName, notifGroup, args, modId,
+                (spritesToAdd, errors) => WEAtlasLoadingUtils.LoadAllImagesFromList(producer(), spritesToAdd, errors),
+                () => WEChecksumUtils.ComputeBridgeMemoryChecksum(producer()));
         }
         internal void LoadImagesToAtlas(AssetData metadata, string atlasName, string[] imagePaths, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args)
         {
             var modId = WEModIntegrationUtility.GetModIdentifier(metadata);
-            EnqueueModAtlasLoader(metadata, atlasName, modIdentifier, displayName, notifGroup, args, modId, (spritesToAdd, errors) =>
-            {
-                WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, (img, msg) => errors.Add($"{img}: {msg}"));
-
-                LogUtils.DoLog($"Loaded images to atlas '{atlasName}' from paths: {string.Join(", ", imagePaths)}");
-            });
+            EnqueueModAtlasLoader(metadata, atlasName, modIdentifier, displayName, notifGroup, args, modId,
+                (spritesToAdd, errors) =>
+                {
+                    WEAtlasLoadingUtils.LoadAllImagesFromList(imagePaths, spritesToAdd, (img, msg) => errors.Add($"{img}: {msg}"));
+                    LogUtils.DoLog($"Loaded images to atlas '{atlasName}' from paths: {string.Join(", ", imagePaths)}");
+                },
+                () => WEChecksumUtils.ComputeFileListChecksum(imagePaths));
 
             LogUtils.DoLog($"Enqueued images for atlas: '{atlasName}'");
         }
 
-        private void EnqueueModAtlasLoader(object mainAssembly, string atlasName, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args, string modId, Action<List<WEImageInfo>, List<string>> loaderEnqueue)
+        private void EnqueueModAtlasLoader(object mainAssembly, string atlasName, string modIdentifier, string displayName, string notifGroup, Dictionary<string, ILocElement> args, string modId, Action<List<WEImageInfo>, List<string>> loaderEnqueue, Func<uint> checksumFactory)
         {
             if (mainAssembly is not Assembly and not AssetData)
             {
                 throw new ArgumentException("mainAssembly must be of type Assembly or AssetData");
             }
+            var modAccessName = mainAssembly is Assembly aKey
+                ? WEModIntegrationUtility.GetModAccessName(aKey, atlasName)
+                : WEModIntegrationUtility.GetModAccessName(mainAssembly as AssetData, atlasName);
+            var cacheFilePath = Path.Combine(CACHED_VT_FOLDER, $"{modAccessName}.cache.we.bc7");
+
             actionQueue.Enqueue(() =>
             {
                 void RegisterCallback()
                 {
+                    // Compute checksum before loading to enable smart cache hit
+                    uint checksum = 0;
+                    try { checksum = checksumFactory(); } catch { }
+
+                    if (checksum != 0)
+                    {
+                        var cachedFile = Font.Sprites.WEAtlasCacheFile.ReadFrom(cacheFilePath);
+                        if (cachedFile != null && cachedFile.Checksum == checksum)
+                        {
+                            try
+                            {
+                                ModAtlases[modAccessName] = WETextureAtlas.FromCacheFile(cachedFile);
+                                m_modAtlasChecksums[modAccessName] = checksum;
+                                return;
+                            }
+                            catch (Exception ex)
+                            {
+                                LogUtils.DoWarnLog($"[WEAtlasesLibrary] Failed to load BC7 cache for mod atlas '{modAccessName}': {ex.GetType().Name}: {ex.Message}");
+                            }
+                        }
+                    }
+
                     var spritesToAdd = new List<WEImageInfo>();
                     var errors = new List<string>();
                     loaderEnqueue(spritesToAdd, errors);
@@ -345,11 +380,23 @@ namespace BelzontWE.Sprites
                         throw new Exception($"There are no images to load. Check with the developer from the module for a fix");
                     }
                     if (spritesToAdd.Count == 0) return;
-                    RegisterAtlas(ModAtlases, mainAssembly is Assembly a ? WEModIntegrationUtility.GetModAccessName(a, atlasName) : WEModIntegrationUtility.GetModAccessName(mainAssembly as AssetData, atlasName), spritesToAdd, notifGroup, "generatingAtlasesCacheMod.loading", args, args, LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, 100, 0);
+                    var atlas = RegisterAtlas(ModAtlases, modAccessName, spritesToAdd, notifGroup, "generatingAtlasesCacheMod.loading", args, args, LOAD_FROM_MOD_NOTIFICATION_ID_PREFIX, 100, 0);
+                    if (atlas != null && checksum != 0)
+                    {
+                        try
+                        {
+                            atlas.WriteBC7CacheAndReplaceTextures(cacheFilePath, checksum);
+                            m_modAtlasChecksums[modAccessName] = checksum;
+                        }
+                        catch (Exception ex)
+                        {
+                            LogUtils.DoWarnLog($"[WEAtlasesLibrary] Failed to write BC7 cache for mod atlas '{modAccessName}': {ex.GetType().Name}: {ex.Message}");
+                        }
+                    }
                 }
                 if (!RegisteredModsAtlases.ContainsKey(modId)) RegisteredModsAtlases[modId] = (mainAssembly is Assembly a ? ModManagementUtils.GetModDataFromMainAssembly(a) : mainAssembly as AssetData, []);
-                RegisteredModsAtlases[modId].registerCallback[atlasName] = RegisterCallback;
-                RegisteredModsAtlases[modId].registerCallback[atlasName]();
+                RegisteredModsAtlases[modId].registrations[atlasName] = (RegisterCallback, checksumFactory, modAccessName);
+                RegisteredModsAtlases[modId].registrations[atlasName].callback();
             });
         }
 
@@ -358,11 +405,12 @@ namespace BelzontWE.Sprites
         public IEnumerator LoadImagesFromModsCoroutine()
         {
             ClearAtlasDict(ModAtlases);
+            m_modAtlasChecksums.Clear();
             foreach (var mod in RegisteredModsAtlases.Values)
             {
-                foreach (var atlasCallback in mod.registerCallback.Values)
+                foreach (var registration in mod.registrations.Values)
                 {
-                    atlasCallback();
+                    registration.callback();
                     yield return 0;
                 }
             }
