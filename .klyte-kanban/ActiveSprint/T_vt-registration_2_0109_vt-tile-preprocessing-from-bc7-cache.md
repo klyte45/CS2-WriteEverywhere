@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 05:47 -0300
 **Start time:** 2026-04-15 05:32 -0300
 # [0109] vt-tile-preprocessing-from-bc7-cache
 
@@ -22,11 +23,11 @@ The game's VT system requires textures in a tiled, padded BC7 format. AtlassingU
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] WEAtlasVTUtils.PreprocessForVT wraps AtlassingUtils.PreProcessData correctly
-- [ ] All 5 layer formats are correctly mapped (sRGB vs UNorm)
-- [ ] Output tile data follows the game's expected tile layout (512px tiles, 8px padding)
-- [ ] NativeArray memory is properly managed (no leaks)
-- [ ] Unit test: known BC7 input produces expected tile count and byte sizes
+- [x] WEAtlasVTUtils.PreprocessForVT wraps AtlassingUtils.PreProcessData correctly
+- [x] All 5 layer formats are correctly mapped (sRGB vs UNorm)
+- [x] Output tile data follows the game's expected tile layout (512px tiles, 8px padding)
+- [x] NativeArray memory is properly managed (no leaks)
+- [x] Unit test: known BC7 input produces expected tile count and byte sizes
 
 ---
 
