@@ -12,11 +12,16 @@
 - Always-5-images enforcement (emissive fallback to main)
 - Smart UI reload (checksum-based skip)
 
-### Out of Scope (Future Sprint)
-- VT registration (R9 from action plan)
+### Out of Scope (Phase 2 — begins after Phase 1 is production-stable)
+- VT registration (R9 from action plan) — will reuse BC7 cache infrastructure built in Phase 1
 - VT material binding changes (R10)
-- Font atlas BC7 compression (Phase 2 optimization)
+- Font atlas memory optimization — deferred (see decision note below)
+- Font atlas BC7 compression
 - Mipmap generation
+
+> **Decision note — Font atlas**: `makeNoLongerReadable = true` releases the CPU-side pixel buffer, after which `SetPixels()` throws. Since `FontAtlas.RenderGlyph()` writes pixels on demand, any new glyph after releasing would require a full rebuild — the risk/reward is unfavorable at this stage. Font memory optimization is deferred to a later focused sprint.
+
+> **Decision note — VT Phase 2**: Phase 2 begins only once Phase 1 (BC7 + disk cache) is confirmed stable in production. The disk cache format produced in Phase 1 is intentionally compatible with `AtlassingUtils.PreProcessData` for future VT tiling.
 
 ---
 
@@ -32,8 +37,7 @@ flowchart TB
     T6["T6: Disk cache read<br/>(fast load path)"]
     T7["T7: Savegame BC7<br/>serialization"]
     T8["T8: Smart reload<br/>(checksum-based)"]
-    T9["T9: Font atlas<br/>makeNoLongerReadable"]
-    T10["T10: Integration testing"]
+    T9["T9: Integration testing"]
     
     T1 --> T4
     T1 --> T5
@@ -45,11 +49,10 @@ flowchart TB
     T4 --> T6
     T5 --> T6
     T6 --> T8
-    T5 --> T10
-    T6 --> T10
-    T7 --> T10
-    T8 --> T10
-    T9 --> T10
+    T5 --> T9
+    T6 --> T9
+    T7 --> T9
+    T8 --> T9
 ```
 
 ---
@@ -82,15 +85,18 @@ flowchart TB
 **User Story**: As the atlas system, I need a utility to compress RGBA32 textures to BC7 and extract raw byte data.
 
 **Implementation Notes**:
-- Wraps `Texture2D.Compress(highQuality: true)` + `GetRawTextureData()`
-- Two variants: sRGB (basecolor, emissive) and UNorm/Linear (normal, mask, control)
-- Returns `byte[]` of BC7 data suitable for caching or `LoadRawTextureData`
-- Also: `CreateBC7Texture(int w, int h, byte[] data, bool linear)` for deserializing
+- Research confirmed (see `07_GameBC7ImportPipelineResearch.md`): **`PipelinePlugin.dll` ships with the game** at `Cities2_Data/Plugins/x86_64/`. Both `Colossal.AssetPipeline.dll` and `Colossal.AssetPipeline.Native.dll` are in `Cities2_Data/Managed/`. The full BC7 encoder pipeline is callable from mod code at runtime.
+- Runtime BC7 path: **`TextureImporter.Texture.CompressBC(effort: 3)`** — wraps `NativeTextures.BlockCompress()` (P/Invoke into `PipelinePlugin.dll`). This is the **exact same CPU-side encoder** the game uses for its own asset editor. `Texture2D.Compress()` (Unity built-in, GPU/driver) is **not** used — it produces vendor/driver-defined quality, not format-identical output.
+- Usage: construct a `TextureImporter.Texture` from the readable RGBA32 atlas `Texture2D` (use the `(name, path, Texture2D)` constructor), call `CompressBC(effort: 3)`, then upload `compressedMips[0]` bytes into a new `Texture2D` with `GraphicsFormat.RGBA_BC7_SRGB` / `RGBA_BC7_UNorm`. Dispose the pipeline `Texture` when done.
+- The game's `AtlassingUtils.PreProcessData` (managed/Burst, runtime-callable) tiles pre-existing BC7 byte buffers into the VT physical page layout. **Store raw BC7 bytes** from this step in the disk cache so Phase 2 can feed them directly into this method without re-compression.
+- Two format variants: sRGB (basecolor, emissive) → `RGBA_BC7_SRGB`; Linear/UNorm (normal, mask, control) → `RGBA_BC7_UNorm`
+- Also: `CreateBC7Texture(int w, int h, byte[] data, bool linear)` for deserializing from cache
 
 **DoD**:
-- [ ] `CompressToBC7(Texture2D source, bool linear)` returns `byte[]`
+- [ ] `CompressToBC7(Texture2D source, bool linear)` returns `byte[]` (via `TextureImporter.Texture.CompressBC(effort: 3)` — game's own BC7 encoder)
 - [ ] `CreateFromBC7(int w, int h, byte[] bc7Data, bool linear)` returns `Texture2D`
 - [ ] Output Texture2D has `makeNoLongerReadable = true` (no CPU mirror)
+- [ ] Returned raw bytes are in raw BC7 block format (compatible with `AtlassingUtils.PreProcessData` input)
 - [ ] Round-trip test: RGBA32 → BC7 → Texture2D → visual inspection (lossy but acceptable quality)
 
 ---
@@ -235,42 +241,13 @@ flowchart TB
 
 ---
 
-### T9 — Font Atlas `makeNoLongerReadable`
+### ~~T9 — Font Atlas `makeNoLongerReadable`~~ — DEFERRED
 
-**User Story**: As the font system, after the font atlas stabilizes (no new glyphs for N frames), I release the CPU-side copy to halve memory usage.
-
-**Implementation Notes**:
-- Add a stability counter to `FontAtlas`:
-  ```csharp
-  private int _framesSinceLastGlyph;
-  private bool _isReadable = true;
-  private const int STABILITY_THRESHOLD = 300; // ~5 seconds at 60fps
-  ```
-- Each frame: if `IsPendingApply` was false, increment counter. Reset on any glyph write.
-- When counter reaches threshold: `_texture.Apply(false, true)` → non-readable
-- When a new glyph is needed and atlas is non-readable:
-  - If atlas had room (from packing state): must recreate as readable — **destructive reset**
-  - OR: track whether packing has free space; if yes, recreate readable from GPU readback
-
-**Simpler approach**: Only call `makeNoLongerReadable` on expansion/reset boundaries, not after stability. On `ExpandWithCopy()`, the OLD texture is destroyed anyway — the NEW texture can be created readable, then on NEXT expansion the old (now stable) is destroyed. Net effect: only the current active atlas is readable.
-
-Actually, the simplest safe implementation:
-- After `Apply()`: do NOT call `makeNoLongerReadable` (need to keep writing)
-- On `ExpandWithCopy()`: OLD texture is `Destroy()`'d → memory freed anyway
-- On `_texture.Apply()` after stability: `_texture.Apply(false, true)` IF we add a "frozen" state
-- On new glyph when frozen: full destructive reset (re-render all cached glyphs)
-
-**DoD**:
-- [ ] Stability detection: no new glyphs for N frames → atlas marked non-readable  
-- [ ] CPU RAM freed after marking non-readable (~50% reduction)
-- [ ] New glyph after freeze → triggers atlas rebuild (not crash)
-- [ ] Cached strings still render correctly after freeze
-- [ ] Test: render text, wait for stability, verify CPU memory freed
-- [ ] Test: render new character after freeze, verify atlas rebuilds and renders
+> **Decision**: Discarded from this sprint. After `Apply(false, makeNoLongerReadable: true)`, Unity releases the CPU pixel buffer and subsequent `SetPixels()` calls throw. Since `FontAtlas.RenderGlyph()` must write pixels for any newly-encountered glyph, making the atlas non-readable creates a hard failure path. The font memory optimization requires a more careful redesign (e.g., separate staging + frozen textures) and is deferred to a dedicated later sprint.
 
 ---
 
-### T10 — Integration Testing
+### T9 — Integration Testing
 
 **User Story**: As a developer, I need comprehensive tests verifying that all atlas optimizations work together and don't break existing functionality.
 
@@ -278,8 +255,7 @@ Actually, the simplest safe implementation:
 - [ ] Full atlas lifecycle test: build → cache → reload-from-cache → serialize → deserialize
 - [ ] Backward compatibility test: load v0 savegame → verify rendering → re-save as v1
 - [ ] Smart reload test: initial load → modify one folder → reload → only changed atlas rebuilt
-- [ ] Font stability test: render text → freeze → render new text → verify rebuild
-- [ ] Memory measurement: before/after comparison for typical scenario (5 atlases + 5 fonts)
+- [ ] Memory measurement: before/after comparison for typical scenario (5 atlases)
 - [ ] No existing test regressions
 
 ---
@@ -305,36 +281,32 @@ gantt
     section Serialization
     T7 Savegame BC7            :t7, after t2, 2
     
-    section UI & Font
+    section UI
     T8 Smart Reload            :t8, after t1 t6, 1
-    T9 Font makeNoLongerReadable :t9, 0, 2
     
     section Validation
-    T10 Integration Testing    :t10, after t5 t6 t7 t8 t9, 2
+    T9 Integration Testing     :t9, after t5 t6 t7 t8, 2
 ```
 
 ### Parallel tracks:
 - **Track A** (image atlas): T1 + T2 + T3 → T4 → T5 → T6 → T8
 - **Track B** (serialization): T2 → T7
-- **Track C** (font): T9 (independent)
-- **Track D** (integration): T10 (after all others)
+- **Track C** (integration): T9 (after all others)
 
-### Estimated task count: 10 tasks
+### Estimated task count: 9 tasks
 
 ---
 
 ## Expected Outcomes
 
-### Memory Reduction (10 local atlases at 1024², 5 fonts at 1024²)
+### Memory Reduction (10 local atlases at 1024²)
 
 | Component | Before | After | Reduction |
 |-----------|--------|-------|-----------|
 | Image atlas VRAM (10 × 20 MB) | 200 MB | 50 MB | **75%** |
 | Image atlas CPU (readable + PNG) | 200 MB | 0 | **100%** |
-| Font atlas CPU (readable mirror) | 20 MB | 0* | **100%*** |
-| **Total** | **420 MB** | **50 MB** | **88%** |
-
-> \*After stability detection releases CPU copy. VRAM unchanged for fonts (no format change in Phase 1).
+| Font atlas | unchanged | unchanged | — (deferred) |
+| **Total (image atlases)** | **400 MB** | **50 MB** | **87.5%** |
 
 ### Load Time
 
