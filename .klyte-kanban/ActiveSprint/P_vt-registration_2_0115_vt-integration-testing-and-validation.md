@@ -1,7 +1,7 @@
+**Start time:** 2026-04-15 06:33 -0300
 # [0115] vt-integration-testing-and-validation
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **comprehensive integration tests for the VT registration system**, so that I **VT registration works reliably across all atlas types and lifecycle scenarios**.
