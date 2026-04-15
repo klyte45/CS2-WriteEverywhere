@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 09:22 -0300
 **Start time:** 2026-04-15 06:33 -0300
 # [0115] vt-integration-testing-and-validation
 
@@ -22,13 +23,13 @@ VT registration is high-complexity and touches multiple systems. Integration tes
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] All lifecycle scenarios tested: register, deregister, re-register, dispose
-- [ ] Visual parity confirmed between VT and direct texture rendering
-- [ ] No VRAM/VT atlas slot leaks across 10+ reload cycles
-- [ ] Graceful fallback when VT registration fails
-- [ ] Font materials confirmed unaffected
-- [ ] Memory reduction measured and documented
-- [ ] No existing test regressions
+- [x] All lifecycle scenarios tested: register, deregister, re-register, dispose
+- [x] Visual parity confirmed between VT and direct texture rendering
+- [x] No VRAM/VT atlas slot leaks across 10+ reload cycles
+- [x] Graceful fallback when VT registration fails
+- [x] Font materials confirmed unaffected
+- [x] Memory reduction measured and documented
+- [x] No existing test regressions
 
 ---
 
