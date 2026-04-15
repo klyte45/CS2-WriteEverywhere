@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 02:02 -0300
 **Start time:** 2026-04-15 01:52 -0300
 # [0097] bc7-compression-helper
 
@@ -22,11 +23,11 @@
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] CompressToBC7() returns byte[]
-- [ ] CreateFromBC7() returns Texture2D
-- [ ] Output Texture2D has makeNoLongerReadable = true
-- [ ] Bytes in raw BC7 format
-- [ ] Round-trip test passes
+- [x] CompressToBC7() returns byte[]
+- [x] CreateFromBC7() returns Texture2D
+- [x] Output Texture2D has makeNoLongerReadable = true
+- [x] Bytes in raw BC7 format
+- [x] Round-trip test passes
 
 ---
 

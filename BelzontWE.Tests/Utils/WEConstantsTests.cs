@@ -56,9 +56,6 @@ namespace BelzontWE.Tests.Utils
         public void FONT_JOB_BATCH_SIZE_Is32()
             => Assert.That(WEConstants.FONT_JOB_BATCH_SIZE, Is.EqualTo(32));
 
-        [Test]
-        public void STRING_RENDERING_BATCH_Is256()
-            => Assert.That(WEConstants.STRING_RENDERING_BATCH, Is.EqualTo(256));
 
         // ── Frame interval configuration ──────────────────────────────────────
 

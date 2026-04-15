@@ -104,6 +104,10 @@
       <HintPath>$(CSII_MANAGEDPATH)\Colossal.AssetPipeline.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Colossal.AssetPipeline.Native">
+      <HintPath>$(CSII_MANAGEDPATH)\Colossal.AssetPipeline.Native.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Colossal.PSI.Common">
       <HintPath>$(CSII_MANAGEDPATH)\Colossal.PSI.Common.dll</HintPath>
       <Private>False</Private>
