@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 06:32 -0300
 **Start time:** 2026-04-15 06:25 -0300
 # [0114] vt-registration-lifecycle-in-library
 
@@ -22,13 +23,13 @@ WEAtlasesLibrary manages three atlas dictionaries (LocalAtlases, ModAtlases, Cit
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] All atlas types (local, mod, city) are VT-registered after loading
-- [ ] All atlas types are VT-deregistered before disposal
-- [ ] Atlas reload path: deregister old → dispose → load new → register new
-- [ ] No orphaned VT registrations after full atlas clear
-- [ ] OnDestroy properly cleans up all VT registrations
-- [ ] Test: full lifecycle — load local atlases → reload → verify no VT leaks
-- [ ] Test: mod atlas register/unregister cycle
+- [x] All atlas types (local, mod, city) are VT-registered after loading
+- [x] All atlas types are VT-deregistered before disposal
+- [x] Atlas reload path: deregister old → dispose → load new → register new
+- [x] No orphaned VT registrations after full atlas clear
+- [x] OnDestroy properly cleans up all VT registrations
+- [x] Test: full lifecycle — load local atlases → reload → verify no VT leaks
+- [x] Test: mod atlas register/unregister cycle
 
 ---
 

@@ -256,6 +256,9 @@ namespace BelzontWE.Font
             atlas.m_normal = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[4]!, true);
             atlas.m_normal.name = "Normal";
 
+            // Keep raw BC7 bytes for VT tile uploads (and for serialization if applicable).
+            atlas.m_serializationOrder = new byte[][] { cache.LayerBC7[0]!, cache.LayerBC7[1]!, cache.LayerBC7[2]!, cache.LayerBC7[3]!, cache.LayerBC7[4]! };
+
             foreach (var sp in cache.Sprites)
             {
                 var spriteInfo = new BelzontWE.Sprites.WESpriteInfo { Name = sp.Name, Region = sp.Region, ExtraTextures = sp.Flags };
@@ -517,6 +520,8 @@ namespace BelzontWE.Font
                     if (m_normal) GameObject.Destroy(m_normal);
                     m_normal = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[4].pngData, true);
                     m_normal.name = "Normal";
+                    // Keep raw BC7 bytes for VT tile uploads and serialization.
+                    m_serializationOrder = new byte[][] { bytesArrays[0].pngData, bytesArrays[1].pngData, bytesArrays[2].pngData, bytesArrays[3].pngData, bytesArrays[4].pngData };
                     IsWritable = false;
                     IsApplied = true;
                 }

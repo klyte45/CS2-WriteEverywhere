@@ -86,6 +86,14 @@ namespace BelzontWE.Sprites
             {
                 item.Value?.Dispose();
             }
+            foreach (var item in CityAtlases)
+            {
+                item.Value?.Dispose();
+            }
+            foreach (var item in ModAtlases)
+            {
+                item.Value?.Dispose();
+            }
         }
 
         private const string INTERNAL_ATLAS_NAME = @"\/INTERNAL\/";
@@ -190,6 +198,7 @@ namespace BelzontWE.Sprites
                     try
                     {
                         LocalAtlases[atlasName] = WETextureAtlas.FromCacheFile(cachedFile);
+                        RegisterAtlasForVT(LocalAtlases[atlasName]);
                         m_localAtlasChecksums[atlasName] = checksum;
                         continue;
                     }
@@ -335,6 +344,7 @@ namespace BelzontWE.Sprites
                             try
                             {
                                 ModAtlases[modAccessName] = WETextureAtlas.FromCacheFile(cachedFile);
+                                RegisterAtlasForVT(ModAtlases[modAccessName]);
                                 m_modAtlasChecksums[modAccessName] = checksum;
                                 return;
                             }
@@ -395,6 +405,7 @@ namespace BelzontWE.Sprites
                                 ModAtlases[modAccessName].Dispose();
                                 ModAtlases[modAccessName] = WETextureAtlas.FromCacheFile(reloadedCache);
                             }
+                            RegisterAtlasForVT(ModAtlases[modAccessName]);
                             m_modAtlasChecksums[modAccessName] = checksum;
                         }
                         catch (Exception ex)
@@ -447,6 +458,7 @@ namespace BelzontWE.Sprites
                         LocalAtlases[atlasName] = WETextureAtlas.FromCacheFile(cachedFile);
                         atlas = LocalAtlases[atlasName];
                     }
+                    RegisterAtlasForVT(atlas);
                 }
                 catch (Exception ex)
                 {
@@ -602,7 +614,19 @@ namespace BelzontWE.Sprites
 
         #region VT mapping
 
-
+        /// <summary>
+        /// Reserves VT space and uploads tiles for an atlas.
+        /// Safe to call on atlases that don't have BC7 serialization data (no-op).
+        /// </summary>
+        private void RegisterAtlasForVT(WETextureAtlas atlas)
+        {
+            if (atlas == null || atlas.IsVTRegistered) return;
+            if (!atlas.ReserveVTSpace(m_textureStreamingSystem)) return;
+            if (!atlas.UploadTilesToVT(m_textureStreamingSystem))
+            {
+                atlas.DeregisterFromVT(m_textureStreamingSystem);
+            }
+        }
 
         #endregion
 
@@ -649,7 +673,13 @@ namespace BelzontWE.Sprites
                 var atlas = new WETextureAtlas();
                 if (atlas.Deserialize(reader, key, out var action))
                 {
-                    actionQueue.Enqueue(action);
+                    var capturedAtlas = atlas;
+                    var originalAction = action;
+                    actionQueue.Enqueue(() =>
+                    {
+                        originalAction();
+                        RegisterAtlasForVT(capturedAtlas);
+                    });
                 }
                 CityAtlases[key] = atlas;
             }
