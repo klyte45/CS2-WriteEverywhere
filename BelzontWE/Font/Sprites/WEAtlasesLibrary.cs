@@ -39,6 +39,8 @@ namespace BelzontWE.Sprites
 
         public static WEAtlasesLibrary Instance { get; private set; }
         private readonly Queue<Action> actionQueue = new();
+        private readonly Queue<WETextureAtlas> m_pendingVTRegistrations = new();
+        private bool m_vtSystemReady;
         private readonly Dictionary<string, uint> m_localAtlasChecksums = new();
         private readonly Dictionary<string, uint> m_modAtlasChecksums = new();
         private EntityQuery m_atlasUsageQuery;
@@ -616,11 +618,20 @@ namespace BelzontWE.Sprites
 
         /// <summary>
         /// Reserves VT space and uploads tiles for an atlas.
+        /// If the game's VT system has not finished initializing, the atlas is
+        /// queued and will be registered later in <see cref="OnUpdate"/>.
         /// Safe to call on atlases that don't have BC7 serialization data (no-op).
         /// </summary>
         private void RegisterAtlasForVT(WETextureAtlas atlas)
         {
             if (atlas == null || atlas.IsVTRegistered) return;
+
+            if (!m_vtSystemReady)
+            {
+                m_pendingVTRegistrations.Enqueue(atlas);
+                return;
+            }
+
             if (!atlas.ReserveVTSpace(m_textureStreamingSystem)) return;
             if (!atlas.UploadTilesToVT(m_textureStreamingSystem))
             {
@@ -640,6 +651,32 @@ namespace BelzontWE.Sprites
             while (actionQueue.TryDequeue(out var action))
             {
                 action();
+            }
+
+            if (!m_vtSystemReady)
+            {
+                // Wait until the game's VT system has fully initialized:
+                // VTDatabase must exist (Initialize() ran) and both material queues must be empty.
+                if (m_textureStreamingSystem.VTDatabase != null
+                    && m_textureStreamingSystem.VTMaterialsLeftToLoadCount == 0
+                    && m_textureStreamingSystem.VTMaterialsDuplicatesToProcessCount == 0)
+                {
+                    m_vtSystemReady = true;
+                    LogUtils.DoInfoLog($"[WEAtlasesLibrary] Game VT system ready — processing {m_pendingVTRegistrations.Count} deferred atlas registrations.");
+                }
+            }
+
+            if (m_vtSystemReady)
+            {
+                while (m_pendingVTRegistrations.TryDequeue(out var atlas))
+                {
+                    if (atlas == null || atlas.IsVTRegistered) continue;
+                    if (!atlas.ReserveVTSpace(m_textureStreamingSystem)) continue;
+                    if (!atlas.UploadTilesToVT(m_textureStreamingSystem))
+                    {
+                        atlas.DeregisterFromVT(m_textureStreamingSystem);
+                    }
+                }
             }
         }
 
