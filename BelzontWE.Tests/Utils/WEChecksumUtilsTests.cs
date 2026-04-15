@@ -58,25 +58,23 @@ namespace BelzontWE.Tests.Utils
         [Test]
         public void ComputeFolderChecksum_FileOrderingIsCaseInsensitiveOrdinal()
         {
-            // Write files in reverse alphabetical order (creation order ≠ sorted order)
-            File.WriteAllText(Path.Combine(_tempDir, "Zfile.png"), "Z");
-            File.WriteAllText(Path.Combine(_tempDir, "afile.png"), "A");
+            // Write both files, get checksum, then delete and recreate in reverse order
+            var fileZ = Path.Combine(_tempDir, "Zfile.png");
+            var fileA = Path.Combine(_tempDir, "afile.png");
 
-            var dir2 = _tempDir + "_2";
-            Directory.CreateDirectory(dir2);
-            File.WriteAllText(Path.Combine(dir2, "afile.png"), "A");
-            File.WriteAllText(Path.Combine(dir2, "Zfile.png"), "Z");
+            File.WriteAllText(fileZ, "Z");
+            File.WriteAllText(fileA, "A");
+            var checksumFirst = WEChecksumUtils.ComputeFolderChecksum(_tempDir);
 
-            try
-            {
-                Assert.That(
-                    WEChecksumUtils.ComputeFolderChecksum(_tempDir),
-                    Is.EqualTo(WEChecksumUtils.ComputeFolderChecksum(dir2)));
-            }
-            finally
-            {
-                Directory.Delete(dir2, recursive: true);
-            }
+            File.Delete(fileZ);
+            File.Delete(fileA);
+
+            // Recreate in reverse order — result must be identical (sorted by path, not creation order)
+            File.WriteAllText(fileA, "A");
+            File.WriteAllText(fileZ, "Z");
+            var checksumSecond = WEChecksumUtils.ComputeFolderChecksum(_tempDir);
+
+            Assert.That(checksumFirst, Is.EqualTo(checksumSecond));
         }
 
         // ── Golden test ───────────────────────────────────────────────────────
@@ -84,14 +82,15 @@ namespace BelzontWE.Tests.Utils
         [Test]
         public void ComputeFolderChecksum_KnownInput_ReturnsGoldenChecksum()
         {
-            // File: "img.png" with size = 4 bytes → entry "img.png:4"
-            File.WriteAllBytes(Path.Combine(_tempDir, "img.png"), new byte[] { 1, 2, 3, 4 });
+            // File: "img.png" with size = 4 bytes → entry "<fullpath>:4"
+            var fullPath = Path.Combine(_tempDir, "img.png");
+            File.WriteAllBytes(fullPath, new byte[] { 1, 2, 3, 4 });
 
             var result = WEChecksumUtils.ComputeFolderChecksum(_tempDir);
 
-            // Pre-computed FNV-1a of bytes for "img.png:4\0" (UTF-8, null-byte separator)
+            // Pre-computed FNV-1a of bytes for "{fullPath}:4\0" (UTF-8, null-byte separator)
             // Verified against the reference algorithm; if this fails the algorithm has changed.
-            uint expected = ComputeExpected("img.png:4");
+            uint expected = ComputeExpected($"{fullPath}:4");
             Assert.That(result, Is.EqualTo(expected));
         }
 
@@ -134,6 +133,42 @@ namespace BelzontWE.Tests.Utils
             var after = WEChecksumUtils.ComputeFolderChecksum(_tempDir);
 
             Assert.That(after, Is.Not.EqualTo(before));
+        }
+
+        // ── Non-PNG filter (new behavior) ─────────────────────────────────────
+
+        [Test]
+        public void ComputeFolderChecksum_NonPngIgnored()
+        {
+            File.WriteAllText(Path.Combine(_tempDir, "img.png"), "AAAA");
+            var before = WEChecksumUtils.ComputeFolderChecksum(_tempDir);
+
+            // Adding a non-PNG file must NOT change the checksum
+            File.WriteAllText(Path.Combine(_tempDir, "readme.txt"), "ignored");
+            File.WriteAllText(Path.Combine(_tempDir, "data.xml"), "also ignored");
+            var after = WEChecksumUtils.ComputeFolderChecksum(_tempDir);
+
+            Assert.That(after, Is.EqualTo(before));
+        }
+
+        [Test]
+        public void ComputeFileListChecksum_FullPath_Used()
+        {
+            // Same filename, different directories → must produce different checksums
+            var dir1 = Path.Combine(_tempDir, "mod_a");
+            var dir2 = Path.Combine(_tempDir, "mod_b");
+            Directory.CreateDirectory(dir1);
+            Directory.CreateDirectory(dir2);
+
+            var path1 = Path.Combine(dir1, "icon.png");
+            var path2 = Path.Combine(dir2, "icon.png");
+            File.WriteAllBytes(path1, new byte[] { 1, 2, 3 });
+            File.WriteAllBytes(path2, new byte[] { 1, 2, 3 });
+
+            var checksum1 = WEChecksumUtils.ComputeFileListChecksum(new[] { path1 });
+            var checksum2 = WEChecksumUtils.ComputeFileListChecksum(new[] { path2 });
+
+            Assert.That(checksum1, Is.Not.EqualTo(checksum2));
         }
 
         // ── Helper: compute expected hash at compile time for golden test ──────

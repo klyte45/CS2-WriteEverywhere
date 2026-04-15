@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 03:27 -0300
 **Start time:** 2026-04-15 03:14 -0300
 # [0106] checksum-filter-png-only
 
@@ -22,11 +23,11 @@ WEChecksumUtils.ComputeFolderChecksum currently hashes ALL files in the director
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] ComputeFolderChecksum only hashes .png files (case-insensitive)
-- [ ] Hash key includes full path not just filename
-- [ ] ComputeFileListChecksum(IEnumerable<string>) added for bridge file-path based checksums
-- [ ] ComputeBridgeMemoryChecksum added for producer-based atlases
-- [ ] New tests ComputeFolderChecksum_NonPngIgnored and ComputeFileListChecksum_FullPath_Used pass (no Unity needed)
+- [x] ComputeFolderChecksum only hashes .png files (case-insensitive)
+- [x] Hash key includes full path not just filename
+- [x] ComputeFileListChecksum(IEnumerable<string>) added for bridge file-path based checksums
+- [x] ComputeBridgeMemoryChecksum added for producer-based atlases
+- [x] New tests ComputeFolderChecksum_NonPngIgnored and ComputeFileListChecksum_FullPath_Used pass (no Unity needed)
 
 ---
 
