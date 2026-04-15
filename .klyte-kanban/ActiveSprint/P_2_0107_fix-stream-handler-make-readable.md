@@ -1,7 +1,7 @@
+**Start time:** 2026-04-15 03:27 -0300
 # [0107] fix-stream-handler-make-readable
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a user**, I want **the texture atlas preview in the UI to display correctly after BC7 conversion**, so that I **the atlas manager panel shows the correct images even after optimization**.
