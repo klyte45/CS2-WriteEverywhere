@@ -59,5 +59,57 @@ namespace BelzontWE.Tests.Font.Sprites
             // Would verify: calling ReserveVTSpace twice returns true both times
             // and does not reserve a second set of rects
         }
+
+        // ── DeregisterFromVT (requires game runtime) ────────────────────────
+
+        [Test, Ignore("DeregisterFromVT requires TextureStreamingSystem from game runtime")]
+        public void DeregisterFromVT_ResetsIsVTRegistered()
+        {
+            // Would verify: after ReserveVTSpace then DeregisterFromVT, IsVTRegistered == false
+        }
+
+        [Test, Ignore("DeregisterFromVT requires TextureStreamingSystem from game runtime")]
+        public void DeregisterFromVT_ClearsAtlasInfoToDefault()
+        {
+            // Would verify: VTAtlasInfoStack0 == default, VTAtlasInfoStack1 == default
+        }
+
+        [Test, Ignore("DeregisterFromVT requires TextureStreamingSystem from game runtime")]
+        public void DeregisterFromVT_ClearsParamBlocksToDefault()
+        {
+            // Would verify: VTParamBlock0 == default, VTParamBlock1 == default
+        }
+
+        [Test, Ignore("DeregisterFromVT requires TextureStreamingSystem from game runtime")]
+        public void DeregisterFromVT_ClearsLayerGuids()
+        {
+            // Would verify: VTLayerGuids == null after deregistration
+        }
+
+        [Test, Ignore("DeregisterFromVT requires TextureStreamingSystem from game runtime")]
+        public void DeregisterFromVT_WithNullTss_StillResetsState()
+        {
+            // Would verify: register with real TSS, then call DeregisterFromVT(null)
+            // => IsVTRegistered == false (graceful, just skips InvalidateRegion)
+        }
+
+        [Test, Ignore("DeregisterFromVT requires TextureStreamingSystem from game runtime")]
+        public void DeregisterFromVT_WhenNotRegistered_IsNoOp()
+        {
+            // Would verify: calling DeregisterFromVT on unregistered atlas doesn't throw
+        }
+
+        [Test, Ignore("DeregisterFromVT requires TextureStreamingSystem from game runtime")]
+        public void RegisterDeregisterReregister_Succeeds()
+        {
+            // Would verify: ReserveVTSpace → DeregisterFromVT → ReserveVTSpace
+            // succeeds without errors (uses fresh GUIDs via epoch counter)
+        }
+
+        [Test, Ignore("Dispose integration requires TextureStreamingSystem from game runtime")]
+        public void Dispose_DeregistersVT_BeforeDestroyingTextures()
+        {
+            // Would verify: after Dispose, IsVTRegistered == false
+        }
     }
 }

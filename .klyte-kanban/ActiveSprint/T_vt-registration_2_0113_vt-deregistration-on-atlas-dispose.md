@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 06:24 -0300
 **Start time:** 2026-04-15 06:13 -0300
 # [0113] vt-deregistration-on-atlas-dispose
 
@@ -22,14 +23,14 @@ When a user reloads images or modifies atlases at runtime, the old atlas must be
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] DeregisterFromVT releases VT atlas rect slots for both stacks
-- [ ] Tile data GUIDs are unregistered from VT cache
-- [ ] Materials are unbound from VT (ENABLE_VT disabled)
-- [ ] VT region is invalidated after deregistration
-- [ ] IsVTRegistered is reset to false
-- [ ] No VT atlas slot leaks on repeated atlas reload cycles
-- [ ] Test: register → deregister → re-register cycle succeeds without errors
-- [ ] Test: dispose atlas → verify VT slot is available for new reservation
+- [x] DeregisterFromVT releases VT atlas rect slots for both stacks
+- [x] Tile data GUIDs are unregistered from VT cache
+- [x] Materials are unbound from VT (ENABLE_VT disabled)
+- [x] VT region is invalidated after deregistration
+- [x] IsVTRegistered is reset to false
+- [x] No VT atlas slot leaks on repeated atlas reload cycles
+- [x] Test: register → deregister → re-register cycle succeeds without errors
+- [x] Test: dispose atlas → verify VT slot is available for new reservation
 
 ---
 

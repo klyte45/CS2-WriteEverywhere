@@ -49,6 +49,8 @@ namespace BelzontWE.Font
         internal VTTextureParamBlock VTParamBlock1 { get; private set; }
         internal Colossal.Hash128[] VTLayerGuids => m_vtLayerGuids;
         private Colossal.Hash128[] m_vtLayerGuids;
+        private int m_vtRegistrationEpoch;
+        private TextureStreamingSystem m_textureStreamingSystem;
 
         public IEnumerable<FixedString32Bytes> Keys => Sprites.Keys;
 
@@ -298,6 +300,7 @@ namespace BelzontWE.Font
 
         public void Dispose()
         {
+            DeregisterFromVT(m_textureStreamingSystem);
             // Destroy all owned textures regardless of readability.
             // Previously this skipped non-readable (BC7) textures, causing GPU memory leaks
             // when caches loaded via FromCacheFile were later disposed.
@@ -658,6 +661,7 @@ namespace BelzontWE.Font
                 VTParamBlock0 = tss.GetTextureParamBlock(info0);
                 VTParamBlock1 = tss.GetTextureParamBlock(info1);
                 IsVTRegistered = true;
+                m_textureStreamingSystem = tss;
                 return true;
             }
             catch (System.Exception ex)
@@ -682,29 +686,31 @@ namespace BelzontWE.Font
             if (!IsVTRegistered) return false;
             if (m_serializationOrder == null || m_serializationOrder.Length < 5) return false;
 
-            int instanceId = GetHashCode();
+            // Use epoch to ensure unique GUIDs across re-registrations of the same atlas.
+            int guidSeed = GetHashCode() ^ m_vtRegistrationEpoch;
+            m_vtRegistrationEpoch++;
             try
             {
                 // Stack 0 (DefaultPVTStack): main=layer0, normal=layer1, mask=layer2
                 // m_serializationOrder: [0]=main, [1]=emissive, [2]=control, [3]=mask, [4]=normal
-                var guid0 = WEAtlasVTUtils.GenerateLayerGuid(instanceId, VTAtlasInfoStack0.stackGlobalIndex, 0);
+                var guid0 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 0);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 0, m_serializationOrder[0], Width, Height,
                     WEAtlasVTUtils.GetBC7Format(false), guid0);
 
-                var guid1 = WEAtlasVTUtils.GenerateLayerGuid(instanceId, VTAtlasInfoStack0.stackGlobalIndex, 1);
+                var guid1 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 1);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 1, m_serializationOrder[4], Width, Height,
                     WEAtlasVTUtils.GetBC7Format(true), guid1);
 
-                var guid2 = WEAtlasVTUtils.GenerateLayerGuid(instanceId, VTAtlasInfoStack0.stackGlobalIndex, 2);
+                var guid2 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 2);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 2, m_serializationOrder[3], Width, Height,
                     WEAtlasVTUtils.GetBC7Format(true), guid2);
 
                 // Stack 1 (ExtendedPVTStack): control=layer0, emissive=layer1
-                var guid3 = WEAtlasVTUtils.GenerateLayerGuid(instanceId, VTAtlasInfoStack1.stackGlobalIndex, 0);
+                var guid3 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack1.stackGlobalIndex, 0);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack1, 0, m_serializationOrder[2], Width, Height,
                     WEAtlasVTUtils.GetBC7Format(true), guid3);
 
-                var guid4 = WEAtlasVTUtils.GenerateLayerGuid(instanceId, VTAtlasInfoStack1.stackGlobalIndex, 1);
+                var guid4 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack1.stackGlobalIndex, 1);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack1, 1, m_serializationOrder[1], Width, Height,
                     WEAtlasVTUtils.GetBC7Format(false), guid4);
 
@@ -716,6 +722,45 @@ namespace BelzontWE.Font
                 Belzont.Utils.LogUtils.DoWarnLog($"[WETextureAtlas] VT upload exception ({Width}x{Height}): {ex.GetType().Name}: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Deregisters this atlas from the VT streaming system.
+        /// Invalidates VT regions for both stacks, resets all VT state, and clears stored GUIDs.
+        /// <para>
+        /// Note: the game provides no public API to release reserved VT atlas rects.
+        /// This method invalidates the regions (so the GPU stops requesting tiles) and
+        /// clears internal state. The VT rect slots are effectively leaked but this
+        /// matches the game's own <c>SurfaceAsset.ClearVTAtlassingInfos</c> pattern.
+        /// </para>
+        /// </summary>
+        /// <param name="tss">The game's texture streaming system (may be null during shutdown).</param>
+        internal void DeregisterFromVT(TextureStreamingSystem tss)
+        {
+            if (!IsVTRegistered) return;
+
+            try
+            {
+                if (tss != null)
+                {
+                    // Invalidate GPU tile regions so they stop being requested
+                    tss.InvalidateRegion(VTAtlasInfoStack0.stackGlobalIndex, VTAtlasInfoStack0.indexInStack);
+                    tss.InvalidateRegion(VTAtlasInfoStack1.stackGlobalIndex, VTAtlasInfoStack1.indexInStack);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Belzont.Utils.LogUtils.DoWarnLog($"[WETextureAtlas] VT deregistration exception ({Width}x{Height}): {ex.GetType().Name}: {ex.Message}");
+            }
+
+            // Reset all VT state
+            IsVTRegistered = false;
+            VTAtlasInfoStack0 = default;
+            VTAtlasInfoStack1 = default;
+            VTParamBlock0 = default;
+            VTParamBlock1 = default;
+            m_vtLayerGuids = null;
+            m_textureStreamingSystem = null;
         }
     }
 }
