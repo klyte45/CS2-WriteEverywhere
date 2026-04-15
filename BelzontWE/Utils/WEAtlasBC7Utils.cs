@@ -1,3 +1,4 @@
+using Belzont.Utils;
 using Colossal.AssetPipeline.Native;
 using System;
 using UnityEngine;
@@ -35,12 +36,21 @@ namespace BelzontWE
         {
             if (source is null)
                 throw new ArgumentNullException(nameof(source));
-            if (source.format != TextureFormat.RGBA32)
-                throw new ArgumentException("Source texture must be RGBA32 format.", nameof(source));
 
-            var raw = source.GetRawTextureData();
-            int width = source.width;
-            int height = source.height;
+            Texture2D toCompress = source;
+            bool isTemp = false;
+            if (source.format != TextureFormat.RGBA32)
+            {
+                var readable = source.MakeReadable(out _);
+                toCompress = new Texture2D(readable.width, readable.height, TextureFormat.RGBA32, false, linear);
+                toCompress.SetPixels(readable.GetPixels());
+                toCompress.Apply(false, false);
+                isTemp = true;
+            }
+
+            var raw = toCompress.GetRawTextureData();
+            int width = toCompress.width;
+            int height = toCompress.height;
             var dst = new byte[GetBC7SizeBytes(width, height)];
 
             // sRGB textures use perceptual quality; linear textures use no bias.
@@ -59,6 +69,8 @@ namespace BelzontWE
                 if (result != 0)
                     throw new InvalidOperationException($"NativeTextures.BlockCompress failed (code {result}).");
             }
+
+            if (isTemp) UnityEngine.Object.Destroy(toCompress);
 
             return dst;
         }

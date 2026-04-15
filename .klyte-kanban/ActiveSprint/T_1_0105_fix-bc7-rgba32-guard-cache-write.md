@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 03:14 -0300
 **Start time:** 2026-04-15 03:08 -0300
 # [0105] fix-bc7-rgba32-guard-cache-write
 
@@ -12,7 +13,7 @@
 
 Two bugs share the same root cause. (1) On savegame load: WETextureAtlas.Apply() calls CompressToBC7() on textures created via Texture2D.LoadImage() which can change format away from RGBA32 causing ArgumentException. Stack trace: Apply() <- imageLoadAction lambda <- OnUpdate(). (2) Cache files never written to disk: WriteBC7CacheAndReplaceTextures() in RegisterLocalAtlas is silently swallowed by its try-catch because CompressToBC7 throws the same RGBA32 exception for PNG-loaded textures from WEAtlasLoadingUtils.
 
-There are aditional information from the Log. Look at `Logs\Mods_K45_WE.log` from AI Workspace for details.
+There are aditional information from the Log. Look at `Logs\Mods_K45_WE.log` from AI Workspace for details. Ensure the cache folder is being created.
 
 ---
 
@@ -24,11 +25,13 @@ There are aditional information from the Log. Look at `Logs\Mods_K45_WE.log` fro
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] CompressToBC7 does not throw when source texture is not RGBA32 format
-- [ ] CompressToBC7 creates a temporary RGBA32 copy before compressing non-RGBA32 textures
-- [ ] Game loads previously saved game without ArgumentException in Apply()
-- [ ] After LoadImagesFromLocalFoldersCoroutine runs, .cache.we.bc7 files appear in CACHED_VT_FOLDER
-- [ ] Build compiles 0 errors, full test suite 0 failures
+- [x] Checked logs at `Logs\Mods_K45_WE.log` from AI Workspace for details on the error and its stack trace
+- [x] Ensured the cache folder is being created at `CACHED_VT_FOLDER`
+- [x] CompressToBC7 does not throw when source texture is not RGBA32 format
+- [x] CompressToBC7 creates a temporary RGBA32 copy before compressing non-RGBA32 textures
+- [x] Game loads previously saved game without ArgumentException in Apply()
+- [x] After LoadImagesFromLocalFoldersCoroutine runs, .cache.we.bc7 files appear in CACHED_VT_FOLDER
+- [x] Build compiles 0 errors, full test suite 0 failures
 
 ---
 
