@@ -604,7 +604,25 @@ namespace BelzontWE.Font
         internal void Init()
         {
         }
-        public Material GenerateMaterial(WEShader shader, TextureStreamingSystem tss) => WERenderingHelper.GenerateMaterial(shader, m_main, m_normal, m_mask, m_control, m_emissive);
+        public Material GenerateMaterial(WEShader shader, TextureStreamingSystem tss)
+        {
+            if (IsVTRegistered)
+            {
+                var material = WERenderingHelper.CreateDefaultMaterial(shader);
+                if (material is null) return null;
+
+                // Bind VT stacks (sets shader properties and notifies VT system)
+                tss.BindMaterial(material, VTAtlasInfoStack0.stackGlobalIndex, VT_STACK_DEFAULT, VTParamBlock0);
+                tss.BindMaterial(material, VTAtlasInfoStack1.stackGlobalIndex, VT_STACK_EXTENDED, VTParamBlock1);
+
+                // Enable VT sampling in the shader
+                material.EnableKeyword("ENABLE_VT");
+
+                return material;
+            }
+
+            return WERenderingHelper.GenerateMaterial(shader, m_main, m_normal, m_mask, m_control, m_emissive);
+        }
 
         /// <summary>
         /// Reserves rectangular regions in the game's VT atlas for this texture atlas.

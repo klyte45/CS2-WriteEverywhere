@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 06:13 -0300
 **Start time:** 2026-04-15 06:11 -0300
 # [0112] vt-material-binding-for-image-atlases
 
@@ -22,12 +23,12 @@ Currently GenerateMaterial sets textures directly via Material.SetTexture(_BaseC
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] VT-registered atlas materials use BindMaterial + ENABLE_VT instead of SetTexture
-- [ ] VTTextureParamBlock transform/textureInfo are set as shader properties
-- [ ] _UseStack0 and _UseStack1 are properly set
-- [ ] Non-VT atlases and font atlases continue using direct texture binding unchanged
-- [ ] Materials render correctly with VT binding (visual parity with direct binding)
-- [ ] Test: generate material from VT atlas → verify ENABLE_VT keyword is set and fallback textures are not bound
+- [x] VT-registered atlas materials use BindMaterial + ENABLE_VT instead of SetTexture
+- [x] VTTextureParamBlock transform/textureInfo are set as shader properties
+- [x] _UseStack0 and _UseStack1 are properly set
+- [x] Non-VT atlases and font atlases continue using direct texture binding unchanged
+- [x] Materials render correctly with VT binding (visual parity with direct binding)
+- [x] Test: generate material from VT atlas → verify ENABLE_VT keyword is set and fallback textures are not bound
 
 ---
 
