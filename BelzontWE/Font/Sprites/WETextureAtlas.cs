@@ -644,8 +644,8 @@ namespace BelzontWE.Font
 
         /// <summary>
         /// Reserves rectangular regions in the game's VT atlas for this texture atlas.
-        /// Stack 0 (<c>DefaultPVTStack</c>): main (layer 0), normal (layer 1), mask (layer 2).
-        /// Stack 1 (<c>ExtendedPVTStack</c>): control (layer 0), emissive (layer 1).
+        /// Stack 0 (<c>DefaultPVTStack</c>, 4 layers): main (L0), mask (L1), normal (L2), control (L3).
+        /// Stack 1 (<c>ExtendedPVTStack</c>, 1 layer): emissive (L0).
         /// After successful reservation, <see cref="IsVTRegistered"/> is set to <c>true</c>
         /// and the param blocks are available via <see cref="VTParamBlock0"/>/<see cref="VTParamBlock1"/>.
         /// </summary>
@@ -689,8 +689,8 @@ namespace BelzontWE.Font
         /// <summary>
         /// Uploads all 5 atlas layers to the VT streaming system after reservation.
         /// <list type="bullet">
-        ///   <item>Stack 0 (DefaultPVTStack): main (layer 0), normal (layer 1), mask (layer 2)</item>
-        ///   <item>Stack 1 (ExtendedPVTStack): control (layer 0), emissive (layer 1)</item>
+        ///   <item>Stack 0 (DefaultPVTStack, 4 layers): main (L0, SRGB), mask (L1, SRGB), normal (L2, UNorm), control (L3, SRGB)</item>
+        ///   <item>Stack 1 (ExtendedPVTStack, 1 layer): emissive (L0, SRGB)</item>
         /// </list>
         /// Requires <see cref="IsVTRegistered"/> and valid BC7 data in <c>m_serializationOrder</c>.
         /// </summary>
@@ -707,28 +707,29 @@ namespace BelzontWE.Font
             m_vtRegistrationEpoch++;
             try
             {
-                // Stack 0 (DefaultPVTStack): main=layer0, normal=layer1, mask=layer2
+                // Stack 0 (DefaultPVTStack, 4 layers): game formats [BC7_SRGB, BC7_SRGB, BC7_UNorm, BC7_SRGB]
+                // Layer mapping: L0=_BaseColorMap, L1=_MaskMap, L2=_NormalMap, L3=control
                 // m_serializationOrder: [0]=main, [1]=emissive, [2]=control, [3]=mask, [4]=normal
                 var guid0 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 0);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 0, m_serializationOrder[0], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(false), guid0);
+                    WEAtlasVTUtils.GetBC7Format(false), guid0); // main → L0, SRGB
 
                 var guid1 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 1);
-                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 1, m_serializationOrder[4], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(true), guid1);
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 1, m_serializationOrder[3], Width, Height,
+                    WEAtlasVTUtils.GetBC7Format(false), guid1); // mask → L1, SRGB
 
                 var guid2 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 2);
-                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 2, m_serializationOrder[3], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(true), guid2);
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 2, m_serializationOrder[4], Width, Height,
+                    WEAtlasVTUtils.GetBC7Format(true), guid2); // normal → L2, UNorm
 
-                // Stack 1 (ExtendedPVTStack): control=layer0, emissive=layer1
-                var guid3 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack1.stackGlobalIndex, 0);
-                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack1, 0, m_serializationOrder[2], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(true), guid3);
+                var guid3 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 3);
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 3, m_serializationOrder[2], Width, Height,
+                    WEAtlasVTUtils.GetBC7Format(false), guid3); // control → L3, SRGB
 
-                var guid4 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack1.stackGlobalIndex, 1);
-                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack1, 1, m_serializationOrder[1], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(false), guid4);
+                // Stack 1 (ExtendedPVTStack, 1 layer only): emissive=L0
+                var guid4 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack1.stackGlobalIndex, 0);
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack1, 0, m_serializationOrder[1], Width, Height,
+                    WEAtlasVTUtils.GetBC7Format(false), guid4); // emissive → L0, SRGB
 
                 m_vtLayerGuids = new[] { guid0, guid1, guid2, guid3, guid4 };
                 return true;

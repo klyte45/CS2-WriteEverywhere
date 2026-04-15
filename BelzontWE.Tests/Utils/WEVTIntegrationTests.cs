@@ -47,14 +47,14 @@ namespace BelzontWE.Tests.Utils
         // ── Format mapping validation ──────────────────────────────────────
 
         [Test]
-        public void GetBC7Format_SRGB_MatchesMainAndEmissive()
+        public void GetBC7Format_SRGB_MatchesMainMaskControlEmissive()
         {
             var format = WEAtlasVTUtils.GetBC7Format(linear: false);
             Assert.That(format, Is.EqualTo(GraphicsFormat.RGBA_BC7_SRGB));
         }
 
         [Test]
-        public void GetBC7Format_Linear_MatchesNormalMaskControl()
+        public void GetBC7Format_Linear_MatchesNormal()
         {
             var format = WEAtlasVTUtils.GetBC7Format(linear: true);
             Assert.That(format, Is.EqualTo(GraphicsFormat.RGBA_BC7_UNorm));

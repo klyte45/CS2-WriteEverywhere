@@ -59,8 +59,8 @@ namespace BelzontWE
         /// <param name="width">Atlas width in pixels (must be power-of-two, ≥ 512).</param>
         /// <param name="height">Atlas height in pixels (must be power-of-two, ≥ 512).</param>
         /// <param name="format">
-        ///   <see cref="GraphicsFormat.RGBA_BC7_SRGB"/> for sRGB layers (main, emissive) or
-        ///   <see cref="GraphicsFormat.RGBA_BC7_UNorm"/> for linear layers (normal, mask, control).
+        ///   <see cref="GraphicsFormat.RGBA_BC7_SRGB"/> for sRGB layers (main, mask, control, emissive) or
+        ///   <see cref="GraphicsFormat.RGBA_BC7_UNorm"/> for linear layers (normal).
         /// </param>
         /// <returns>VT-tiled byte data ready for registration into the streaming system.</returns>
         public static NativeArray<byte> PreprocessForVT(byte[] bc7Data, int width, int height, GraphicsFormat format)
@@ -91,8 +91,8 @@ namespace BelzontWE
         /// Returns the <see cref="GraphicsFormat"/> for a given WE atlas layer.
         /// </summary>
         /// <param name="linear">
-        ///   <c>true</c> for linear layers (normal, mask, control);
-        ///   <c>false</c> for sRGB layers (main, emissive).
+        ///   <c>true</c> for linear layers (normal);
+        ///   <c>false</c> for sRGB layers (main, mask, control, emissive).
         /// </param>
         public static GraphicsFormat GetBC7Format(bool linear)
             => linear ? GraphicsFormat.RGBA_BC7_UNorm : GraphicsFormat.RGBA_BC7_SRGB;
