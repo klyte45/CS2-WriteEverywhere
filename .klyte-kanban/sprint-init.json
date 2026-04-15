@@ -1,5 +1,0 @@
-{
-  "name": "Sprint-013",
-  "description": "VT registration — register WE image atlases into the game Virtual Texturing system for on-demand tile streaming",
-  "objective": "All image atlas types (local, mod, city) register to VT on load, deregister on dispose, and materials render via VT streaming"
-}
