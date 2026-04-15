@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 02:21 -0300
 **Start time:** 2026-04-15 02:17 -0300
 # [0101] disk-cache-read-fast-load-path
 
@@ -22,12 +23,12 @@
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Valid cache skips PNG loading
-- [ ] Invalid checksum triggers rebuild
-- [ ] Missing cache falls through to build
-- [ ] Cache atlas renders identically
-- [ ] Test: build and cache comparison
-- [ ] Test: performance ≤ 50% build time
+- [x] Valid cache skips PNG loading
+- [x] Invalid checksum triggers rebuild
+- [x] Missing cache falls through to build
+- [x] Cache atlas renders identically
+- [x] Test: build and cache comparison
+- [x] Test: performance ≤ 50% build time
 
 ---
 

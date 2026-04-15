@@ -161,9 +161,25 @@ namespace BelzontWE.Sprites
                 };
                 NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, Mathf.RoundToInt((70f * i / folders.Length) + 25), textI18n: "generatingAtlasesCache.loadingFolders", argsText: argsNotif);
                 yield return 0;
+                var atlasName = Path.GetFileNameWithoutExtension(dir);
+                var cacheFilePath = Path.Combine(CACHED_VT_FOLDER, $"{atlasName}.cache.we.bc7");
+                var checksum = WEChecksumUtils.ComputeFolderChecksum(dir);
+                var cachedFile = Font.Sprites.WEAtlasCacheFile.ReadFrom(cacheFilePath);
+                if (cachedFile != null && cachedFile.Checksum == checksum)
+                {
+                    try
+                    {
+                        LocalAtlases[atlasName] = WETextureAtlas.FromCacheFile(cachedFile);
+                        continue;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogUtils.DoWarnLog($"[WEAtlasesLibrary] Failed to load BC7 cache for atlas '{atlasName}': {ex.GetType().Name}: {ex.Message}");
+                    }
+                }
                 var spritesToAdd = new List<WEImageInfo>();
                 WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, (img, msg) => errors[img] = msg);
-                var generatedAtlas = RegisterLocalAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25, sourceFolderPath: dir);
+                var generatedAtlas = RegisterLocalAtlas(atlasName, spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25, sourceFolderPath: dir);
             }
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
             yield return 0;

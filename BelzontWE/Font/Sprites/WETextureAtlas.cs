@@ -173,6 +173,42 @@ namespace BelzontWE.Font
             tex.name = name;
         }
 
+        /// <summary>
+        /// Reconstructs a <see cref="WETextureAtlas"/> from a pre-compressed <see cref="Sprites.WEAtlasCacheFile"/>
+        /// without re-encoding PNGs. All 5 layer textures are created from the BC7 data in the cache.
+        /// Requires a Unity GPU context (uses <see cref="WEAtlasBC7Utils.CreateFromBC7"/>).
+        /// </summary>
+        internal static WETextureAtlas FromCacheFile(Sprites.WEAtlasCacheFile cache)
+        {
+            var atlas = new WETextureAtlas
+            {
+                Width = cache.Width,
+                Height = cache.Height,
+                Size = cache.Size,
+                Method = cache.Method,
+                rectsPack = cache.RebuildRectsPack(),
+                WillSerialize = false,
+                IsApplied = true,
+                IsWritable = false,
+            };
+
+            atlas.m_main = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[0]!, false);
+            atlas.m_main.name = "Main";
+            atlas.m_emissive = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[1]!, false);
+            atlas.m_emissive.name = "Emissive";
+            atlas.m_control = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[2]!, true);
+            atlas.m_control.name = "Control";
+            atlas.m_mask = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[3]!, true);
+            atlas.m_mask.name = "Mask";
+            atlas.m_normal = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[4]!, true);
+            atlas.m_normal.name = "Normal";
+
+            foreach (var sp in cache.Sprites)
+                atlas.Sprites[sp.Name] = new BelzontWE.Sprites.WESpriteInfo { Name = sp.Name, Region = sp.Region, ExtraTextures = sp.Flags };
+
+            return atlas;
+        }
+
         private WESpriteInfo Write(Texture2D newMain, Texture2D newEmissive, Texture2D newControl, Texture2D newMask, Texture2D newNormal)
         {
             var offset = rectsPack.usedRectangles.Count == 0 ? 0 : 2;
