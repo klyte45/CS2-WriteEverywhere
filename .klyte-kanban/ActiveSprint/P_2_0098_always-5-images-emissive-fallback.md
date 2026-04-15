@@ -1,7 +1,7 @@
+**Start time:** 2026-04-15 02:02 -0300
 # [0098] always-5-images-emissive-fallback
 
-**Developed by:** 
-
+**Developed by:** GitHub Copilot (claude-sonnet-4-5@kwytco.com.br)
 ## User Story
 
 > Acting as **a user**, I want **the atlas to use the main image as emissive when missing**, so that I **sprite renders correctly with emission effects**.
