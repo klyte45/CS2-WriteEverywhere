@@ -1,5 +1,7 @@
+using Colossal;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine.Experimental.Rendering;
 
@@ -112,5 +114,62 @@ namespace BelzontWE
             int tileCount = GetTileCount(width, height, maxLevel);
             return tileCount * (layerInfo.tileBlockSize + layerInfo.trilinearTileBlockSize) * layerInfo.blockSizeInBytes;
         }
+
+        /// <summary>
+        /// Uploads a single preprocessed VT layer into the game's streaming system.
+        /// <para>
+        /// Flow: preprocess BC7 → register buffer → copy tile data → DoneLoading → AddTextureToCache → InvalidateRegion.
+        /// The <see cref="TextureStreamingSystem"/> assumes ownership of the registered buffer
+        /// and disposes it inside <c>AddTextureToCache</c>.
+        /// </para>
+        /// </summary>
+        /// <param name="tss">Game's texture streaming system.</param>
+        /// <param name="atlasInfo">VT atlas info returned from <see cref="TextureStreamingSystem.ReserveTextureRect"/>.</param>
+        /// <param name="layerIndex">Layer index within the VT stack (0-based).</param>
+        /// <param name="bc7Data">Raw BC7 bytes for this layer (mip0).</param>
+        /// <param name="width">Atlas width in pixels.</param>
+        /// <param name="height">Atlas height in pixels.</param>
+        /// <param name="format"><see cref="GraphicsFormat"/> matching the VT stack layer format.</param>
+        /// <param name="guid">Unique <see cref="Hash128"/> identifying this layer's tile data in the VT system.</param>
+        public static void UploadLayerToVT(
+            TextureStreamingSystem tss, VTAtlassingInfo atlasInfo,
+            int layerIndex, byte[] bc7Data, int width, int height,
+            GraphicsFormat format, Hash128 guid)
+        {
+            // 1. Preprocess BC7 into VT tile layout
+            NativeArray<byte> tileData = PreprocessForVT(bc7Data, width, height, format);
+            try
+            {
+                // 2. Register buffer allocation in VT system
+                tss.RegisterVTTextureData(guid, string.Empty, 0, 0, tileData.Length,
+                    new List<int> { 0 }, width, height);
+
+                // 3. Copy preprocessed tiles into the registered buffer
+                var buffer = tss.GetTextureData(guid);
+                NativeArray<byte>.Copy(tileData, buffer);
+            }
+            finally
+            {
+                // Dispose preprocessing output regardless of success
+                tileData.Dispose();
+            }
+
+            // 4. Mark loading complete (enables AddTextureToCache)
+            tss.DoneLoading(guid);
+
+            // 5. Transfer tile data to GPU cache (disposes registered buffer internally)
+            tss.AddTextureToCache(atlasInfo.stackGlobalIndex, layerIndex,
+                atlasInfo.indexInStack, width, height, guid, 0);
+
+            // 6. Force GPU to request fresh tiles for this region
+            tss.InvalidateRegion(atlasInfo.stackGlobalIndex, atlasInfo.indexInStack);
+        }
+
+        /// <summary>
+        /// Generates a deterministic <see cref="Hash128"/> for a WE atlas layer,
+        /// unique per atlas instance + stack + layer combination.
+        /// </summary>
+        internal static Hash128 GenerateLayerGuid(int atlasInstanceId, int stackGlobalIndex, int layerIndex)
+            => Hash128.CreateGuid($"WE_VT_{atlasInstanceId}_{stackGlobalIndex}_{layerIndex}");
     }
 }

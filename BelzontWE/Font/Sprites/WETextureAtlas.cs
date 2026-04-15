@@ -47,6 +47,8 @@ namespace BelzontWE.Font
         internal VTAtlassingInfo VTAtlasInfoStack1 { get; private set; }
         internal VTTextureParamBlock VTParamBlock0 { get; private set; }
         internal VTTextureParamBlock VTParamBlock1 { get; private set; }
+        internal Colossal.Hash128[] VTLayerGuids => m_vtLayerGuids;
+        private Colossal.Hash128[] m_vtLayerGuids;
 
         public IEnumerable<FixedString32Bytes> Keys => Sprites.Keys;
 
@@ -643,6 +645,57 @@ namespace BelzontWE.Font
             catch (System.Exception ex)
             {
                 Belzont.Utils.LogUtils.DoWarnLog($"[WETextureAtlas] VT reservation exception ({Width}x{Height}): {ex.GetType().Name}: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Uploads all 5 atlas layers to the VT streaming system after reservation.
+        /// <list type="bullet">
+        ///   <item>Stack 0 (DefaultPVTStack): main (layer 0), normal (layer 1), mask (layer 2)</item>
+        ///   <item>Stack 1 (ExtendedPVTStack): control (layer 0), emissive (layer 1)</item>
+        /// </list>
+        /// Requires <see cref="IsVTRegistered"/> and valid BC7 data in <c>m_serializationOrder</c>.
+        /// </summary>
+        /// <param name="tss">The game's texture streaming system.</param>
+        /// <returns><c>true</c> if all 5 layers were uploaded; <c>false</c> on failure.</returns>
+        internal bool UploadTilesToVT(TextureStreamingSystem tss)
+        {
+            if (!IsVTRegistered) return false;
+            if (m_serializationOrder == null || m_serializationOrder.Length < 5) return false;
+
+            int instanceId = GetHashCode();
+            try
+            {
+                // Stack 0 (DefaultPVTStack): main=layer0, normal=layer1, mask=layer2
+                // m_serializationOrder: [0]=main, [1]=emissive, [2]=control, [3]=mask, [4]=normal
+                var guid0 = WEAtlasVTUtils.GenerateLayerGuid(instanceId, VTAtlasInfoStack0.stackGlobalIndex, 0);
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 0, m_serializationOrder[0], Width, Height,
+                    WEAtlasVTUtils.GetBC7Format(false), guid0);
+
+                var guid1 = WEAtlasVTUtils.GenerateLayerGuid(instanceId, VTAtlasInfoStack0.stackGlobalIndex, 1);
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 1, m_serializationOrder[4], Width, Height,
+                    WEAtlasVTUtils.GetBC7Format(true), guid1);
+
+                var guid2 = WEAtlasVTUtils.GenerateLayerGuid(instanceId, VTAtlasInfoStack0.stackGlobalIndex, 2);
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 2, m_serializationOrder[3], Width, Height,
+                    WEAtlasVTUtils.GetBC7Format(true), guid2);
+
+                // Stack 1 (ExtendedPVTStack): control=layer0, emissive=layer1
+                var guid3 = WEAtlasVTUtils.GenerateLayerGuid(instanceId, VTAtlasInfoStack1.stackGlobalIndex, 0);
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack1, 0, m_serializationOrder[2], Width, Height,
+                    WEAtlasVTUtils.GetBC7Format(true), guid3);
+
+                var guid4 = WEAtlasVTUtils.GenerateLayerGuid(instanceId, VTAtlasInfoStack1.stackGlobalIndex, 1);
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack1, 1, m_serializationOrder[1], Width, Height,
+                    WEAtlasVTUtils.GetBC7Format(false), guid4);
+
+                m_vtLayerGuids = new[] { guid0, guid1, guid2, guid3, guid4 };
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                Belzont.Utils.LogUtils.DoWarnLog($"[WETextureAtlas] VT upload exception ({Width}x{Height}): {ex.GetType().Name}: {ex.Message}");
                 return false;
             }
         }

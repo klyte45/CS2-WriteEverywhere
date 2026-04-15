@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 06:10 -0300
 **Start time:** 2026-04-15 05:59 -0300
 # [0111] vt-tile-data-upload-to-streaming
 
@@ -22,12 +23,12 @@ After reserving VT space and preprocessing tile data, the actual BC7 tile bytes 
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Tile data is uploaded via RegisterVTTextureData/GetTextureData/DoneLoading pipeline
-- [ ] AddTextureToCache registers high-mip tiles for immediate visibility
-- [ ] InvalidateRegion triggers GPU to request fresh tiles
-- [ ] All 5 atlas layers are uploaded to their respective VT stack layers
-- [ ] No native memory leaks (NativeArray disposal verified)
-- [ ] Test: upload known tile data → verify via VT system that tiles are available
+- [x] Tile data is uploaded via RegisterVTTextureData/GetTextureData/DoneLoading pipeline
+- [x] AddTextureToCache registers high-mip tiles for immediate visibility
+- [x] InvalidateRegion triggers GPU to request fresh tiles
+- [x] All 5 atlas layers are uploaded to their respective VT stack layers
+- [x] No native memory leaks (NativeArray disposal verified)
+- [x] Test: upload known tile data → verify via VT system that tiles are available
 
 ---
 
