@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 02:07 -0300
 **Start time:** 2026-04-15 02:03 -0300
 # [0099] atlas-cache-file-binary-format
 
@@ -22,11 +23,11 @@
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Serialize and deserialize metadata + BC7
-- [ ] Magic bytes validated on read
-- [ ] Version field for future changes
-- [ ] Round-trip equality test
-- [ ] Corrupt file detection
+- [x] Serialize and deserialize metadata + BC7
+- [x] Magic bytes validated on read
+- [x] Version field for future changes
+- [x] Round-trip equality test
+- [x] Corrupt file detection
 
 ---
 
