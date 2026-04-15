@@ -1,7 +1,7 @@
+**Start time:** 2026-04-15 06:11 -0300
 # [0112] vt-material-binding-for-image-atlases
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **the atlas system**, I want **to bind image atlas materials to VT instead of direct texture references**, so that I **materials sample from the VT streaming atlas, enabling on-demand tile loading and reducing constant VRAM pressure**.
