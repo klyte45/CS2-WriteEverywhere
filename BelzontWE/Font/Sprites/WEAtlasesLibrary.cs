@@ -662,20 +662,28 @@ namespace BelzontWE.Sprites
                     && m_textureStreamingSystem.VTMaterialsDuplicatesToProcessCount == 0)
                 {
                     m_vtSystemReady = true;
-                    LogUtils.DoInfoLog($"[WEAtlasesLibrary] Game VT system ready — processing {m_pendingVTRegistrations.Count} deferred atlas registrations.");
+                    LogUtils.DoInfoLog($"[WEAtlasesLibrary] Game VT system ready (tileSize={m_textureStreamingSystem.tileSize}) — {m_pendingVTRegistrations.Count} deferred atlas registrations queued.");
                 }
             }
 
-            if (m_vtSystemReady)
+            if (m_vtSystemReady && m_pendingVTRegistrations.Count > 0)
             {
-                while (m_pendingVTRegistrations.TryDequeue(out var atlas))
+                // Rate-limit: process at most VT_REGISTRATIONS_PER_FRAME atlases per frame
+                // to avoid overwhelming the VT system (matches game's rate-limited loading pattern).
+                const int VT_REGISTRATIONS_PER_FRAME = 2;
+                int processed = 0;
+                while (processed < VT_REGISTRATIONS_PER_FRAME && m_pendingVTRegistrations.TryDequeue(out var atlas))
                 {
                     if (atlas == null || atlas.IsVTRegistered) continue;
+                    if (BasicIMod.VerboseMode) LogUtils.DoVerboseLog(
+                        "[WEAtlasesLibrary] VT registering atlas {0}x{1} (remaining={2})",
+                        atlas.Width, atlas.Height, m_pendingVTRegistrations.Count);
                     if (!atlas.ReserveVTSpace(m_textureStreamingSystem)) continue;
                     if (!atlas.UploadTilesToVT(m_textureStreamingSystem))
                     {
                         atlas.DeregisterFromVT(m_textureStreamingSystem);
                     }
+                    processed++;
                 }
             }
         }

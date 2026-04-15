@@ -702,6 +702,13 @@ namespace BelzontWE.Font
             if (m_serializationOrder == null || m_serializationOrder.Length < 5) return false;
             if (System.Array.Exists(m_serializationOrder, layer => layer == null || layer.Length == 0)) return false;
 
+            int tileSize = tss.tileSize;
+            if (Belzont.Interfaces.BasicIMod.VerboseMode) Belzont.Utils.LogUtils.DoVerboseLog(
+                "[WETextureAtlas] UploadTilesToVT: {0}x{1} tileSize={2} stack0={3}/{4} stack1={5}/{6}",
+                Width, Height, tileSize,
+                VTAtlasInfoStack0.stackGlobalIndex, VTAtlasInfoStack0.indexInStack,
+                VTAtlasInfoStack1.stackGlobalIndex, VTAtlasInfoStack1.indexInStack);
+
             // Use epoch to ensure unique GUIDs across re-registrations of the same atlas.
             int guidSeed = GetHashCode() ^ m_vtRegistrationEpoch;
             m_vtRegistrationEpoch++;
@@ -712,26 +719,37 @@ namespace BelzontWE.Font
                 // m_serializationOrder: [0]=main, [1]=emissive, [2]=control, [3]=mask, [4]=normal
                 var guid0 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 0);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 0, m_serializationOrder[0], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(false), guid0); // main → L0, SRGB
+                    WEAtlasVTUtils.GetBC7Format(false), guid0, tileSize); // main → L0, SRGB
 
                 var guid1 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 1);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 1, m_serializationOrder[3], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(false), guid1); // mask → L1, SRGB
+                    WEAtlasVTUtils.GetBC7Format(false), guid1, tileSize); // mask → L1, SRGB
 
                 var guid2 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 2);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 2, m_serializationOrder[4], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(true), guid2); // normal → L2, UNorm
+                    WEAtlasVTUtils.GetBC7Format(true), guid2, tileSize); // normal → L2, UNorm
 
                 var guid3 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 3);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 3, m_serializationOrder[2], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(false), guid3); // control → L3, SRGB
+                    WEAtlasVTUtils.GetBC7Format(false), guid3, tileSize); // control → L3, SRGB
+
+                // Invalidate Stack 0 region ONCE after all 4 layers are committed
+                // (matches game's TexturesAsyncLoader.CompleteIfReady pattern)
+                tss.InvalidateRegion(VTAtlasInfoStack0.stackGlobalIndex, VTAtlasInfoStack0.indexInStack);
 
                 // Stack 1 (ExtendedPVTStack, 1 layer only): emissive=L0
                 var guid4 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack1.stackGlobalIndex, 0);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack1, 0, m_serializationOrder[1], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(false), guid4); // emissive → L0, SRGB
+                    WEAtlasVTUtils.GetBC7Format(false), guid4, tileSize); // emissive → L0, SRGB
+
+                // Invalidate Stack 1 region
+                tss.InvalidateRegion(VTAtlasInfoStack1.stackGlobalIndex, VTAtlasInfoStack1.indexInStack);
 
                 m_vtLayerGuids = new[] { guid0, guid1, guid2, guid3, guid4 };
+
+                if (Belzont.Interfaces.BasicIMod.VerboseMode) Belzont.Utils.LogUtils.DoVerboseLog(
+                    "[WETextureAtlas] VT upload complete ({0}x{1}): 5 layers committed + 2 regions invalidated", Width, Height);
+
                 return true;
             }
             catch (System.Exception ex)

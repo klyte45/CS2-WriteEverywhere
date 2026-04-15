@@ -399,7 +399,7 @@ namespace BelzontWE.Font
 
                     if (BasicIMod.TraceMode) LogUtils.DoTraceLog($"charsToRender = ['{string.Join("', '", charsToRender)}']");
 
-                restartFor:
+                    restartFor:
                     var countSucceeded = 0;
                     foreach (var charact in charsToRender)
                     {
@@ -486,7 +486,7 @@ namespace BelzontWE.Font
                 }
             }
 
-            if (BasicIMod.DebugMode) LogUtils.DoLog($"Ending post-processing; strings yet to process at font {Name}: {results.Count}");
+            if (BasicIMod.DebugMode && results.Count > 0) LogUtils.DoLog($"Ending post-processing; strings yet to process at font {Name}: {results.Count}");
         }
 
         public JobHandle RunJobs(JobHandle dependency)
