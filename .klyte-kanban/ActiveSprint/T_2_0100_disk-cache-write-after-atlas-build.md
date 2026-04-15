@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 02:17 -0300
 **Start time:** 2026-04-15 02:07 -0300
 # [0100] disk-cache-write-after-atlas-build
 
@@ -22,12 +23,12 @@
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Cache written after each build
-- [ ] Directory created if absent
-- [ ] RGBA32 textures replaced with BC7
-- [ ] Serialization updated with BC7
-- [ ] Materials render correctly
-- [ ] Test: cache file matches content
+- [x] Cache written after each build
+- [x] Directory created if absent
+- [x] RGBA32 textures replaced with BC7
+- [x] Serialization updated with BC7
+- [x] Materials render correctly
+- [x] Test: cache file matches content
 
 ---
 

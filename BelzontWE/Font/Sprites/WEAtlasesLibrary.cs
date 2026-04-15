@@ -163,7 +163,7 @@ namespace BelzontWE.Sprites
                 yield return 0;
                 var spritesToAdd = new List<WEImageInfo>();
                 WEAtlasLoadingUtils.LoadAllImagesFromFolderRef(dir, spritesToAdd, (img, msg) => errors[img] = msg);
-                var generatedAtlas = RegisterLocalAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25);
+                var generatedAtlas = RegisterLocalAtlas(Path.GetFileNameWithoutExtension(dir), spritesToAdd, GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, "generatingAtlasesCache.loadingFolders", argsNotif, loopCompleteSizeProgress: 70f / folders.Length, progressOffset: (i * 70f / folders.Length) + 25, sourceFolderPath: dir);
             }
             NotificationHelper.NotifyProgress(GEN_IMAGE_ATLAS_CACHE_NOTIFICATION_ID, 95, textI18n: "generatingAtlasesCache.loadingInternalAtlas");
             yield return 0;
@@ -333,9 +333,23 @@ namespace BelzontWE.Sprites
         }
 
 
-        private WETextureAtlas RegisterLocalAtlas(string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)
+        private WETextureAtlas RegisterLocalAtlas(string atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0, string sourceFolderPath = null)
         {
-            return RegisterAtlas(LocalAtlases, atlasName, spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset);
+            var atlas = RegisterAtlas(LocalAtlases, atlasName, spritesToAdd, notificationGroupId, notificationI18n, argsNotif, argsTitle, notificationTitlei18n, loopCompleteSizeProgress, progressOffset);
+            if (atlas != null && sourceFolderPath != null)
+            {
+                try
+                {
+                    var checksum = WEChecksumUtils.ComputeFolderChecksum(sourceFolderPath);
+                    var cacheFilePath = Path.Combine(CACHED_VT_FOLDER, $"{atlasName}.cache.we.bc7");
+                    atlas.WriteBC7CacheAndReplaceTextures(cacheFilePath, checksum);
+                }
+                catch (Exception ex)
+                {
+                    LogUtils.DoWarnLog($"[WEAtlasesLibrary] Failed to write BC7 cache for atlas '{atlasName}': {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+            return atlas;
         }
 
         private WETextureAtlas RegisterAtlas<T>(Dictionary<T, WETextureAtlas> targetDict, T atlasName, List<WEImageInfo> spritesToAdd, string notificationGroupId, string notificationI18n, Dictionary<string, ILocElement> argsNotif, Dictionary<string, ILocElement> argsTitle = null, string notificationTitlei18n = null, float loopCompleteSizeProgress = 100, float progressOffset = 0)

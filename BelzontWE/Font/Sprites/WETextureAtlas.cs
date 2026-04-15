@@ -33,7 +33,7 @@ namespace BelzontWE.Font
         public int Count => Sprites.Count;
         public bool WillSerialize { get; private set; }
         private byte[][] m_serializationOrder;
-        public bool IsWritable { get; private set; } = true;
+        public bool IsWritable { get; internal set; } = true;
 
 
         public IEnumerable<FixedString32Bytes> Keys => Sprites.Keys;
@@ -124,6 +124,53 @@ namespace BelzontWE.Font
             }
 
             IsApplied = true;
+        }
+
+        /// <summary>
+        /// Compresses all 5 atlas layers to BC7, writes a <see cref="WEAtlasCacheFile"/> to
+        /// <paramref name="cacheFilePath"/>, updates the serialization order with BC7 data,
+        /// and replaces the RGBA32 <see cref="Texture2D"/> instances with GPU-only BC7 textures.
+        /// Must be called after <see cref="Apply()"/>.
+        /// </summary>
+        internal void WriteBC7CacheAndReplaceTextures(string cacheFilePath, uint checksum)
+        {
+            if (!IsApplied)
+                throw new InvalidOperationException("Apply() must be called before WriteBC7CacheAndReplaceTextures.");
+
+            var layers = new byte[]?[5];
+            layers[0] = WEAtlasBC7Utils.CompressToBC7(m_main, false);     // sRGB
+            layers[1] = WEAtlasBC7Utils.CompressToBC7(m_emissive, false); // sRGB
+            layers[2] = WEAtlasBC7Utils.CompressToBC7(m_control, true);   // linear
+            layers[3] = WEAtlasBC7Utils.CompressToBC7(m_mask, true);      // linear
+            layers[4] = WEAtlasBC7Utils.CompressToBC7(m_normal, true);    // linear
+
+            var spritesForCache = new System.Collections.Generic.List<Sprites.WEAtlasCacheFile.CachedSprite>(Sprites.Count);
+            foreach (var s in Sprites.Values)
+                spritesForCache.Add(new Sprites.WEAtlasCacheFile.CachedSprite(s.Name, s.Region, s.ExtraTextures));
+
+            var cache = new Sprites.WEAtlasCacheFile(
+                checksum, Width, Height, Size, Method, rectsPack,
+                spritesForCache.AsReadOnly(), layers);
+            cache.WriteTo(cacheFilePath);
+
+            if (WillSerialize)
+                m_serializationOrder = System.Array.ConvertAll(layers, l => l ?? System.Array.Empty<byte>());
+
+            ReplaceWithBC7(ref m_main, layers[0]!, false);
+            ReplaceWithBC7(ref m_emissive, layers[1]!, false);
+            ReplaceWithBC7(ref m_control, layers[2]!, true);
+            ReplaceWithBC7(ref m_mask, layers[3]!, true);
+            ReplaceWithBC7(ref m_normal, layers[4]!, true);
+
+            IsWritable = false;
+        }
+
+        private void ReplaceWithBC7(ref Texture2D tex, byte[] bc7Data, bool linear)
+        {
+            var name = tex.name;
+            if (tex.isReadable) GameObject.Destroy(tex);
+            tex = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bc7Data, linear);
+            tex.name = name;
         }
 
         private WESpriteInfo Write(Texture2D newMain, Texture2D newEmissive, Texture2D newControl, Texture2D newMask, Texture2D newNormal)
