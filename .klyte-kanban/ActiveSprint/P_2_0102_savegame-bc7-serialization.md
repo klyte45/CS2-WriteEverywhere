@@ -1,7 +1,7 @@
+**Start time:** 2026-04-15 02:21 -0300
 # [0102] savegame-bc7-serialization
 
-**Developed by:** 
-
+**Developed by:** GitHub Copilot <claude-sonnet-4-5@kwytco.com.br>
 ## User Story
 
 > Acting as **the atlas system**, I want **city atlas data in savegames use BC7 instead of PNG**, so that I **smaller save files (60-75% reduction)**.
