@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 03:28 -0300
 **Start time:** 2026-04-15 03:27 -0300
 # [0107] fix-stream-handler-make-readable
 
@@ -22,9 +23,9 @@ GameUIResourceHandlerOverrides.BeforeOnResourceStreamRequest (~line 106) calls t
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] BeforeOnResourceStreamRequest uses MakeReadable before EncodeToPNG
-- [ ] Temp texture is Destroy'd after encoding when isCopy is true
-- [ ] Build compiles 0 errors
+- [x] BeforeOnResourceStreamRequest uses MakeReadable before EncodeToPNG
+- [x] Temp texture is Destroy'd after encoding when isCopy is true
+- [x] Build compiles 0 errors
 
 ---
 

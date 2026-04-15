@@ -103,7 +103,10 @@ namespace BelzontWE
 
                 if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas))
                 {
-                    response.SetStreamReader(new StreamReader(textureAtlas.Main_preview.EncodeToPNG()));
+                    var tempStream = textureAtlas.Main_preview.MakeReadable(out var isStreamCopy);
+                    var pngData = tempStream.EncodeToPNG();
+                    if (isStreamCopy) GameObject.Destroy(tempStream);
+                    response.SetStreamReader(new StreamReader(pngData));
                     response.Finish(ResourceStreamResponse.Status.Success);
                     return false;
                 }
