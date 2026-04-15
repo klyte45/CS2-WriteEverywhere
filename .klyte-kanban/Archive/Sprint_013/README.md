@@ -10,10 +10,10 @@ All image atlas types (local, mod, city) register to VT on load, deregister on d
 
 - **Sprint number**: 013
 - **Start date**: 2026-04-15 05:31 -0300
-- **End date**:
+- **End date**: 2026-04-15 09:22 -0300
 - **Original tasks**: 07
 - **Original task IDs**: [0109], [0110], [0111], [0112], [0113], [0114], [0115]
-- **Delivered tasks (from original)**:
+- **Delivered tasks (from original)**: 7
 - **Added tasks**: 0
-- **Delivered tasks (from added)**:
-- **Total delivered tasks**:
+- **Delivered tasks (from added)**: 0
+- **Total delivered tasks**: 7
