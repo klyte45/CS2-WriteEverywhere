@@ -388,6 +388,13 @@ namespace BelzontWE.Sprites
                         try
                         {
                             atlas.WriteBC7CacheAndReplaceTextures(cacheFilePath, checksum);
+                            // Dispose RGBA32 atlas and reload from BC7 cache to free RAM.
+                            var reloadedCache = Font.Sprites.WEAtlasCacheFile.ReadFrom(cacheFilePath);
+                            if (reloadedCache != null && reloadedCache.Checksum == checksum)
+                            {
+                                ModAtlases[modAccessName].Dispose();
+                                ModAtlases[modAccessName] = WETextureAtlas.FromCacheFile(reloadedCache);
+                            }
                             m_modAtlasChecksums[modAccessName] = checksum;
                         }
                         catch (Exception ex)
@@ -432,6 +439,14 @@ namespace BelzontWE.Sprites
                     var checksum = WEChecksumUtils.ComputeFolderChecksum(sourceFolderPath);
                     var cacheFilePath = Path.Combine(CACHED_VT_FOLDER, $"{atlasName}.cache.we.bc7");
                     atlas.WriteBC7CacheAndReplaceTextures(cacheFilePath, checksum);
+                    // Dispose RGBA32 atlas and reload from BC7 cache to free RAM.
+                    var cachedFile = Font.Sprites.WEAtlasCacheFile.ReadFrom(cacheFilePath);
+                    if (cachedFile != null && cachedFile.Checksum == checksum)
+                    {
+                        LocalAtlases[atlasName].Dispose();
+                        LocalAtlases[atlasName] = WETextureAtlas.FromCacheFile(cachedFile);
+                        atlas = LocalAtlases[atlasName];
+                    }
                 }
                 catch (Exception ex)
                 {
