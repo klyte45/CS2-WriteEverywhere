@@ -12,6 +12,8 @@
 
 Two bugs share the same root cause. (1) On savegame load: WETextureAtlas.Apply() calls CompressToBC7() on textures created via Texture2D.LoadImage() which can change format away from RGBA32 causing ArgumentException. Stack trace: Apply() <- imageLoadAction lambda <- OnUpdate(). (2) Cache files never written to disk: WriteBC7CacheAndReplaceTextures() in RegisterLocalAtlas is silently swallowed by its try-catch because CompressToBC7 throws the same RGBA32 exception for PNG-loaded textures from WEAtlasLoadingUtils.
 
+There are aditional information from the Log. Look at `Logs\Mods_K45_WE.log` from AI Workspace for details.
+
 ---
 
 ## Definition of Ready (DoR)
