@@ -1,3 +1,4 @@
+**End time:** 2026-04-15 01:52 -0300
 **Start time:** 2026-04-15 01:46 -0300
 # [0096] fnv1a-checksum-utility
 
@@ -22,11 +23,11 @@
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] ComputeFolderChecksum() returns consistent uint
-- [ ] Empty folder returns sentinel value
-- [ ] Files sorted ordinally by name
-- [ ] Unit test: golden checksum
-- [ ] Unit test: verify changes detected
+- [x] ComputeFolderChecksum() returns consistent uint
+- [x] Empty folder returns sentinel value
+- [x] Files sorted ordinally by name
+- [x] Unit test: golden checksum
+- [x] Unit test: verify changes detected
 
 ---
 
