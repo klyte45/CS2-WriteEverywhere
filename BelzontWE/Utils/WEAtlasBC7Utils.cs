@@ -39,7 +39,7 @@ namespace BelzontWE
 
             Texture2D toCompress = source;
             bool isTemp = false;
-            if (source.format != TextureFormat.RGBA32)
+            if (source.format != TextureFormat.RGBA32 || !source.isReadable)
             {
                 var readable = source.MakeReadable(out _);
                 toCompress = new Texture2D(readable.width, readable.height, TextureFormat.RGBA32, false, linear);
@@ -54,11 +54,14 @@ namespace BelzontWE
             var dst = new byte[GetBC7SizeBytes(width, height)];
 
             // sRGB textures use perceptual quality; linear textures use no bias.
+            // Matches game's own TextureImporter.CompressBC sRGB flag usage.
             var flags = linear ? BlockCompressionFlags.None : BlockCompressionFlags.Perceptual;
 
             fixed (byte* srcPtr = raw)
             fixed (byte* dstPtr = dst)
             {
+                // NOTE: BlockCompress returns 0 on FAILURE, non-zero on SUCCESS.
+                // This matches the game's own TextureImporter which checks (result == 0) to detect failure.
                 int result = NativeTextures.BlockCompress(
                     (IntPtr)srcPtr, width, height,
                     (IntPtr)dstPtr,
@@ -66,8 +69,8 @@ namespace BelzontWE
                     flags,
                     effort: 3);
 
-                if (result != 0)
-                    throw new InvalidOperationException($"NativeTextures.BlockCompress failed (code {result}).");
+                if (result == 0)
+                    throw new InvalidOperationException($"NativeTextures.BlockCompress failed (code {result}) for {width}x{height} texture (original format: {source.format}).");
             }
 
             if (isTemp) UnityEngine.Object.Destroy(toCompress);

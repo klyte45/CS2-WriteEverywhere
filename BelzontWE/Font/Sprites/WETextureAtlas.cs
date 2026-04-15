@@ -143,11 +143,14 @@ namespace BelzontWE.Font
                 throw new InvalidOperationException("Apply() must be called before WriteBC7CacheAndReplaceTextures.");
 
             var layers = new byte[]?[5];
-            layers[0] = WEAtlasBC7Utils.CompressToBC7(m_main, false);     // sRGB
-            layers[1] = WEAtlasBC7Utils.CompressToBC7(m_emissive, false); // sRGB
-            layers[2] = WEAtlasBC7Utils.CompressToBC7(m_control, true);   // linear
-            layers[3] = WEAtlasBC7Utils.CompressToBC7(m_mask, true);      // linear
-            layers[4] = WEAtlasBC7Utils.CompressToBC7(m_normal, true);    // linear
+            layers[0] = CompressLayer(m_main,     "main",     false);
+            layers[1] = CompressLayer(m_emissive, "emissive", false);
+            layers[2] = CompressLayer(m_control,  "control",  true);
+            layers[3] = CompressLayer(m_mask,     "mask",     true);
+            layers[4] = CompressLayer(m_normal,   "normal",   true);
+
+            if (System.Array.Exists(layers, l => l is null))
+                throw new InvalidOperationException("One or more atlas layers failed BC7 compression — see preceding log entries for details.");
 
             var spritesForCache = new System.Collections.Generic.List<Sprites.WEAtlasCacheFile.CachedSprite>(Sprites.Count);
             foreach (var s in Sprites.Values)
@@ -168,6 +171,19 @@ namespace BelzontWE.Font
             ReplaceWithBC7(ref m_normal, layers[4]!, true);
 
             IsWritable = false;
+        }
+
+        private static byte[]? CompressLayer(Texture2D tex, string layerName, bool linear)
+        {
+            try
+            {
+                return WEAtlasBC7Utils.CompressToBC7(tex, linear);
+            }
+            catch (System.Exception ex)
+            {
+                Belzont.Utils.LogUtils.DoWarnLog($"[WETextureAtlas] BC7 compression failed for layer '{layerName}' ({tex.width}x{tex.height} {tex.format}): {ex.GetType().Name}: {ex.Message}");
+                return null;
+            }
         }
 
         private void ReplaceWithBC7(ref Texture2D tex, byte[] bc7Data, bool linear)
