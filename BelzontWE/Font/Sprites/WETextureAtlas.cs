@@ -186,9 +186,28 @@ namespace BelzontWE.Font
         private void ReplaceWithBC7(ref Texture2D tex, byte[] bc7Data, bool linear)
         {
             var name = tex.name;
-            if (tex.isReadable) GameObject.Destroy(tex);
+            if (tex) GameObject.Destroy(tex);
             tex = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bc7Data, linear);
             tex.name = name;
+        }
+
+        /// <summary>
+        /// Replaces all 5 RGBA32 atlas textures with BC7 equivalents using the data
+        /// already present in <see cref="m_serializationOrder"/>. After this call the
+        /// atlas is non-writable and textures are GPU-only BC7. Used when migrating
+        /// legacy (version &lt; 3) savegame data so that BRIs reference BC7 textures.
+        /// </summary>
+        private void ConvertToBC7InPlace()
+        {
+            if (m_serializationOrder is null || m_serializationOrder.Length < 5)
+                throw new InvalidOperationException("m_serializationOrder must be populated before ConvertToBC7InPlace.");
+
+            ReplaceWithBC7(ref m_main,     m_serializationOrder[0], false);
+            ReplaceWithBC7(ref m_emissive, m_serializationOrder[1], false);
+            ReplaceWithBC7(ref m_control,  m_serializationOrder[2], true);
+            ReplaceWithBC7(ref m_mask,     m_serializationOrder[3], true);
+            ReplaceWithBC7(ref m_normal,   m_serializationOrder[4], true);
+            IsWritable = false;
         }
 
         /// <summary>
@@ -486,6 +505,8 @@ namespace BelzontWE.Font
                 }
                 else
                 {
+                    // Legacy (version < 3): PNG data → decode to RGBA32 staging, compress to BC7,
+                    // then discard the RGBA32 textures so only BC7 lives in memory.
                     if (m_main) GameObject.Destroy(m_main);
                     m_main = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
                     m_main.LoadImage(bytesArrays[0].pngData);
@@ -501,7 +522,10 @@ namespace BelzontWE.Font
                     if (m_normal) GameObject.Destroy(m_normal);
                     m_normal = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
                     m_normal.LoadImage(bytesArrays[4].pngData);
+                    // Apply() to finalize RGBA32 + build m_serializationOrder as BC7 bytes
                     Apply();
+                    // Now replace RGBA32 textures with BC7 so BRIs are created from BC7
+                    ConvertToBC7InPlace();
                 }
                 foreach (var sprite in Sprites)
                 {
