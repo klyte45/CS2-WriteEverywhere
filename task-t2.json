@@ -1,0 +1,14 @@
+{
+  "title": "checksum-filter-png-only",
+  "priority": 2,
+  "userStory": "As a mod developer, I want the folder checksum to only reflect PNG files so that non-image files in the atlas folder do not cause unnecessary atlas rebuilds.",
+  "background": "WEChecksumUtils.ComputeFolderChecksum currently hashes ALL files in the folder. Only .png files are actually loaded by WEAtlasLoadingUtils, so the checksum should ignore all other files. For bridge-registered atlases coming from file paths, the full path must be part of the checksum (not just filename) because two mods can legitimately use identical image filenames. For memory-based producers (byte array producer), the checksum must cover: each entry's Name field and the total byte length of each array (Main, ControlMask, MaskMap, Normal, Emissive).",
+  "implementationNotes": "1. In WEChecksumUtils.ComputeFolderChecksum: add a filter to only include files matching *.png (case-insensitive) when sorting and hashing. Change the hashed string to use the full relative-or-absolute path instead of just the filename to accommodate bridge callers. 2. Add a new overload WEChecksumUtils.ComputeBridgeMemoryChecksum(IEnumerable<(string Name, byte[] Main, byte[] ControlMask, byte[] MaskMap, byte[] Normal, byte[] Emissive, string XmlInfo)> entries) — hashes Name + length of each non-null array per entry. 3. Update ComputeFolderChecksum callers in WEAtlasesLibrary to keep using the existing signature (folder path) — the path filtering change will take effect automatically.",
+  "dod": [
+    "ComputeFolderChecksum only hashes *.png files (case-insensitive)",
+    "ComputeFolderChecksum hashes full path (not just filename) to support bridge callers with colliding names",
+    "New ComputeBridgeMemoryChecksum method added for producer-based atlases",
+    "Existing test ComputeFolderChecksum_DifferentFileCountChangesChecksum still passes",
+    "New test: ComputeFolderChecksum_NonPngIgnored passes without Unity"
+  ]
+}

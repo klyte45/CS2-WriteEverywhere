@@ -1,0 +1,5 @@
+{
+  "name": "Sprint-012",
+  "description": "BC7 cache correctness — fix format guard, checksum PNG filter, stream handler and bridge caching",
+  "objective": "All 4 atlas-optimization bugs fixed: no RGBA32 exceptions, cache files written, PNG-only checksum, UI stream handler readable, bridge atlases cached"
+}
