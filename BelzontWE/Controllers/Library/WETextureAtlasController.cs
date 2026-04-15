@@ -1,4 +1,5 @@
 ﻿using Belzont.Interfaces;
+using Belzont.Systems;
 using BelzontWE.Sprites;
 using Colossal;
 using System;
@@ -9,7 +10,7 @@ using static BelzontWE.Sprites.WEAtlasesLibrary;
 
 namespace BelzontWE
 {
-    public partial class WETextureAtlasController : WEBindableSystemBase
+    public partial class WETextureAtlasController : BindableSystemBase
     {
         private const string PREFIX = "textureAtlas.";
         private WEAtlasesLibrary m_AtlasLibrary;

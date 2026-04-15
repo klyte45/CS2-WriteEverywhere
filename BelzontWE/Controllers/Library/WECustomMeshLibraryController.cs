@@ -1,11 +1,11 @@
-﻿using Belzont.Interfaces;
+﻿using Belzont.Systems;
 using System;
 using System.Collections.Generic;
 using Unity.Entities;
 
 namespace BelzontWE
 {
-    public partial class WECustomMeshLibraryController : WEBindableSystemBase
+    public partial class WECustomMeshLibraryController : BindableSystemBase
     {
         private const string PREFIX = "customMesh.";
         private WECustomMeshLibrary m_MeshLibrary;

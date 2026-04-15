@@ -1,4 +1,5 @@
 ﻿using Belzont.Interfaces;
+using Belzont.Systems;
 using Belzont.Utils;
 using Colossal;
 using Colossal.Entities;
@@ -13,7 +14,7 @@ using static BelzontWE.WETemplateManager;
 
 namespace BelzontWE
 {
-    public partial class WELayoutController : WEBindableSystemBase
+    public partial class WELayoutController : BindableSystemBase
     {
         private const string PREFIX = "layouts.";
         private WETemplateManager m_templateManager;

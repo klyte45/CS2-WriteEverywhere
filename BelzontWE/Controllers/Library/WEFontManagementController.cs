@@ -1,4 +1,5 @@
 ﻿using Belzont.Interfaces;
+using Belzont.Systems;
 using Belzont.Utils;
 using System;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ using Unity.Entities;
 
 namespace BelzontWE
 {
-    public partial class WEFontManagementController : WEBindableSystemBase
+    public partial class WEFontManagementController : BindableSystemBase
     {
         private const string PREFIX = "fonts.";
         private FontServer m_fontServer;

@@ -1,4 +1,5 @@
 ﻿using Belzont.Interfaces;
+using Belzont.Systems;
 using Belzont.Utils;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ using UnityEngine;
 
 namespace BelzontWE
 {
-    public partial class WEModulesSystem : WEBindableSystemBase
+    public partial class WEModulesSystem : BindableSystemBase
     {
         private const string PREFIX = "modules.";
         private readonly Dictionary<string, Dictionary<string, IWEModuleOptionField>> modulesOptions = new();

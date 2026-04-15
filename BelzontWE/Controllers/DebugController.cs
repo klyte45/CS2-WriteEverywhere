@@ -1,6 +1,7 @@
 ﻿#if DEBUG
 using Belzont.Interfaces;
 using Belzont.Utils;
+using Belzont.Systems;
 using BelzontWE.IO;
 using BelzontWE.Sprites;
 using Colossal.Entities;
@@ -15,7 +16,7 @@ using UnityEngine.Rendering;
 using static BelzontWE.Utils.WEMaterialUtils;
 namespace BelzontWE.Controllers
 {
-    public partial class DebugController : WEBindableSystemBase
+    public partial class DebugController : BindableSystemBase
     {
         private const string PREFIX = "debug.";
         private Action<string, object[]> eventCaller;

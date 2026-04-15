@@ -357,3 +357,4 @@ MigrationBackup/
 /BelzontWE/Properties/PublishConfiguration.xml
 .idea/
 /_auxFiles
+/.vscode

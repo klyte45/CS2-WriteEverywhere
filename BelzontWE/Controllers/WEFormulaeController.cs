@@ -1,4 +1,5 @@
 ﻿using Belzont.Interfaces;
+using Belzont.Systems;
 using Belzont.Utils;
 using Colossal.Entities;
 using System;
@@ -13,7 +14,7 @@ using static BelzontWE.WEFormulaeHelper;
 
 namespace BelzontWE
 {
-    public partial class WEFormulaeController : WEBindableSystemBase
+    public partial class WEFormulaeController : BindableSystemBase
     {
         private const string PREFIX = "formulae.";
         private WEWorldPickerController m_weToolController;
