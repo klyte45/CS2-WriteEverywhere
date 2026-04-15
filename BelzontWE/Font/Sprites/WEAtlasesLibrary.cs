@@ -672,9 +672,11 @@ namespace BelzontWE.Sprites
                 // to avoid overwhelming the VT system (matches game's rate-limited loading pattern).
                 const int VT_REGISTRATIONS_PER_FRAME = 2;
                 int processed = 0;
+                WEAtlasVTUtils.VTCrashLog($"[WEAtlasesLibrary] OnUpdate VT batch start: pending={m_pendingVTRegistrations.Count}");
                 while (processed < VT_REGISTRATIONS_PER_FRAME && m_pendingVTRegistrations.TryDequeue(out var atlas))
                 {
                     if (atlas == null || atlas.IsVTRegistered) continue;
+                    WEAtlasVTUtils.VTCrashLog($"[WEAtlasesLibrary] Processing atlas {atlas.Width}x{atlas.Height} remaining={m_pendingVTRegistrations.Count}");
                     if (BasicIMod.VerboseMode) LogUtils.DoVerboseLog(
                         "[WEAtlasesLibrary] VT registering atlas {0}x{1} (remaining={2})",
                         atlas.Width, atlas.Height, m_pendingVTRegistrations.Count);
@@ -685,6 +687,7 @@ namespace BelzontWE.Sprites
                     }
                     processed++;
                 }
+                WEAtlasVTUtils.VTCrashLog($"[WEAtlasesLibrary] OnUpdate VT batch end: processed={processed} remaining={m_pendingVTRegistrations.Count}");
             }
         }
 

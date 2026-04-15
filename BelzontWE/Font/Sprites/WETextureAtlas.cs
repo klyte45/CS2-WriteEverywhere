@@ -657,7 +657,9 @@ namespace BelzontWE.Font
 
             try
             {
+                WEAtlasVTUtils.VTCrashLog($"[ReserveVTSpace] START {Width}x{Height}");
                 var info0 = tss.ReserveTextureRect(VT_STACK_DEFAULT, Width, Height);
+                WEAtlasVTUtils.VTCrashLog($"[ReserveVTSpace] DefaultPVT: stackGlobalIndex={info0.stackGlobalIndex} indexInStack={info0.indexInStack}");
                 if (info0.stackGlobalIndex < 0 || info0.indexInStack < 0)
                 {
                     Belzont.Utils.LogUtils.DoWarnLog($"[WETextureAtlas] VT reservation failed for DefaultPVTStack ({Width}x{Height}): stackGlobalIndex={info0.stackGlobalIndex}, indexInStack={info0.indexInStack}");
@@ -665,6 +667,7 @@ namespace BelzontWE.Font
                 }
 
                 var info1 = tss.ReserveTextureRect(VT_STACK_EXTENDED, Width, Height);
+                WEAtlasVTUtils.VTCrashLog($"[ReserveVTSpace] ExtendedPVT: stackGlobalIndex={info1.stackGlobalIndex} indexInStack={info1.indexInStack}");
                 if (info1.stackGlobalIndex < 0 || info1.indexInStack < 0)
                 {
                     Belzont.Utils.LogUtils.DoWarnLog($"[WETextureAtlas] VT reservation failed for ExtendedPVTStack ({Width}x{Height}): stackGlobalIndex={info1.stackGlobalIndex}, indexInStack={info1.indexInStack}");
@@ -735,7 +738,9 @@ namespace BelzontWE.Font
 
                 // Invalidate Stack 0 region ONCE after all 4 layers are committed
                 // (matches game's TexturesAsyncLoader.CompleteIfReady pattern)
+                WEAtlasVTUtils.VTCrashLog($"[UploadTilesToVT] InvalidateRegion stack0={VTAtlasInfoStack0.stackGlobalIndex} idx={VTAtlasInfoStack0.indexInStack}");
                 tss.InvalidateRegion(VTAtlasInfoStack0.stackGlobalIndex, VTAtlasInfoStack0.indexInStack);
+                WEAtlasVTUtils.VTCrashLog($"[UploadTilesToVT] InvalidateRegion stack0 done");
 
                 // Stack 1 (ExtendedPVTStack, 1 layer only): emissive=L0
                 var guid4 = WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack1.stackGlobalIndex, 0);
@@ -743,7 +748,9 @@ namespace BelzontWE.Font
                     WEAtlasVTUtils.GetBC7Format(false), guid4, tileSize); // emissive → L0, SRGB
 
                 // Invalidate Stack 1 region
+                WEAtlasVTUtils.VTCrashLog($"[UploadTilesToVT] InvalidateRegion stack1={VTAtlasInfoStack1.stackGlobalIndex} idx={VTAtlasInfoStack1.indexInStack}");
                 tss.InvalidateRegion(VTAtlasInfoStack1.stackGlobalIndex, VTAtlasInfoStack1.indexInStack);
+                WEAtlasVTUtils.VTCrashLog($"[UploadTilesToVT] InvalidateRegion stack1 done");
 
                 m_vtLayerGuids = new[] { guid0, guid1, guid2, guid3, guid4 };
 

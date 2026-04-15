@@ -4,6 +4,7 @@ using Colossal;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Unity.Collections;
 using UnityEngine.Experimental.Rendering;
 
@@ -79,8 +80,27 @@ namespace BelzontWE
             // With mip0-only data, maxLevel = log2(min(w,h) / tileSize).
             int maxLevel = (int)Math.Log(Math.Min(width, height) / (double)tileSize, 2.0);
 
-            // Wrap raw bytes in a NativeArray for the NativeSlice API.
-            var input = new NativeArray<byte>(bc7Data, Allocator.TempJob);
+            // PreProcessData reads mip levels 0 through maxLevel from the source data,
+            // and ALSO reads mip (level+1) at each level for trilinear filtering
+            // (CopyFromTextureData with requiresCachedMip=true).
+            // Total mip levels accessed = maxLevel + 2 (levels 0..maxLevel, plus one more).
+            // We only have mip0. Allocate a buffer large enough for all expected mip levels
+            // and zero-fill the missing ones to prevent out-of-bounds native reads.
+            int mipLevelsNeeded = maxLevel + 2;
+            int totalSrcBytes = 0;
+            int mipW = width, mipH = height;
+            for (int m = 0; m < mipLevelsNeeded; m++)
+            {
+                totalSrcBytes += WEAtlasBC7Utils.GetBC7SizeBytes(mipW, mipH);
+                mipW = Math.Max(4, mipW / 2);
+                mipH = Math.Max(4, mipH / 2);
+            }
+
+            VTCrashLog($"[PreprocessForVT] {width}x{height} maxLevel={maxLevel} mipLevelsNeeded={mipLevelsNeeded} mip0={bc7Data.Length} totalSrc={totalSrcBytes}");
+
+            // Allocate zeroed buffer for all mip levels; copy mip0 at offset 0.
+            var input = new NativeArray<byte>(totalSrcBytes, Allocator.TempJob, NativeArrayOptions.ClearMemory);
+            NativeArray<byte>.Copy(bc7Data, 0, input, 0, bc7Data.Length);
             try
             {
                 var inputSlice = new NativeSlice<byte>(input);
@@ -146,21 +166,28 @@ namespace BelzontWE
             int layerIndex, byte[] bc7Data, int width, int height,
             GraphicsFormat format, Hash128 guid, int tileSize = VT_TILE_SIZE)
         {
+            string stepTag = $"stack={atlasInfo.stackGlobalIndex} layer={layerIndex} idx={atlasInfo.indexInStack} {width}x{height}";
+            VTCrashLog($"[UploadLayerToVT] START {stepTag} fmt={format} tile={tileSize} bc7len={bc7Data.Length} guid={guid}");
+
             if (BasicIMod.VerboseMode) LogUtils.DoVerboseLog(
                 "[WEAtlasVTUtils] UploadLayerToVT: stack={0} layer={1} idx={2} {3}x{4} fmt={5} tile={6} bc7len={7}",
                 atlasInfo.stackGlobalIndex, layerIndex, atlasInfo.indexInStack,
                 width, height, format, tileSize, bc7Data.Length);
 
             // 1. Preprocess BC7 into VT tile layout
+            VTCrashLog($"[UploadLayerToVT] Step1-PreProcess {stepTag}");
             NativeArray<byte> tileData = PreprocessForVT(bc7Data, width, height, format, tileSize);
+            VTCrashLog($"[UploadLayerToVT] Step1-Done {stepTag} produced={tileData.Length}");
             if (BasicIMod.VerboseMode) LogUtils.DoVerboseLog(
                 "[WEAtlasVTUtils] PreprocessForVT produced {0} bytes", tileData.Length);
 
             try
             {
                 // 2. Register buffer allocation in VT system
+                VTCrashLog($"[UploadLayerToVT] Step2-RegisterVTTextureData {stepTag} guid={guid} dataSize={tileData.Length}");
                 bool registered = tss.RegisterVTTextureData(guid, string.Empty, 0, 0, tileData.Length,
                     new List<int> { 0 }, width, height);
+                VTCrashLog($"[UploadLayerToVT] Step2-Done {stepTag} registered={registered}");
 
                 if (!registered)
                 {
@@ -169,12 +196,16 @@ namespace BelzontWE
                 }
 
                 // 3. Copy preprocessed tiles into the registered buffer
+                VTCrashLog($"[UploadLayerToVT] Step3-GetTextureData {stepTag}");
                 var buffer = tss.GetTextureData(guid);
+                VTCrashLog($"[UploadLayerToVT] Step3-GotBuffer {stepTag} bufLen={buffer.Length} tileLen={tileData.Length}");
                 if (buffer.Length != tileData.Length)
                 {
                     LogUtils.DoWarnLog($"[WEAtlasVTUtils] Buffer length mismatch: expected {tileData.Length}, got {buffer.Length}");
                 }
+                VTCrashLog($"[UploadLayerToVT] Step3-Copy {stepTag}");
                 NativeArray<byte>.Copy(tileData, buffer);
+                VTCrashLog($"[UploadLayerToVT] Step3-Done {stepTag}");
             }
             finally
             {
@@ -183,15 +214,41 @@ namespace BelzontWE
             }
 
             // 4. Mark loading complete (enables AddTextureToCache)
+            VTCrashLog($"[UploadLayerToVT] Step4-DoneLoading {stepTag}");
             tss.DoneLoading(guid);
+            VTCrashLog($"[UploadLayerToVT] Step4-Done {stepTag}");
 
             // 5. Transfer tile data to GPU cache (disposes registered buffer internally)
+            VTCrashLog($"[UploadLayerToVT] Step5-AddTextureToCache {stepTag}");
             tss.AddTextureToCache(atlasInfo.stackGlobalIndex, layerIndex,
                 atlasInfo.indexInStack, width, height, guid, 0);
+            VTCrashLog($"[UploadLayerToVT] Step5-Done {stepTag}");
 
             if (BasicIMod.VerboseMode) LogUtils.DoVerboseLog(
                 "[WEAtlasVTUtils] Layer {0} committed to VT cache (stack={1} idx={2})",
                 layerIndex, atlasInfo.stackGlobalIndex, atlasInfo.indexInStack);
+        }
+
+        /// <summary>
+        /// Crash-safe log: appends to a dedicated file and flushes immediately.
+        /// Survives native crashes that kill the process before normal logs are flushed.
+        /// </summary>
+        internal static void VTCrashLog(string message)
+        {
+            if (!BasicIMod.VerboseMode) return;
+            try
+            {
+                string path = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "Low",
+                    "Colossal Order", "Cities Skylines II", "Logs", "WE_VT_CrashLog.txt");
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                using (var sw = new StreamWriter(path, true, System.Text.Encoding.UTF8))
+                {
+                    sw.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {message}");
+                    sw.Flush();
+                }
+            }
+            catch { /* never let diagnostic logging crash the mod */ }
         }
 
         /// <summary>
