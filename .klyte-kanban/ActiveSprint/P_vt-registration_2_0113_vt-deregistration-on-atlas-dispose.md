@@ -1,7 +1,7 @@
+**Start time:** 2026-04-15 06:13 -0300
 # [0113] vt-deregistration-on-atlas-dispose
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **the atlas system**, I want **to release all VT resources (atlas slots, tile data, material bindings) when an atlas is disposed or modified**, so that I **VT atlas space is not leaked, allowing runtime atlas reload/modification without exhausting the global VT atlas**.
