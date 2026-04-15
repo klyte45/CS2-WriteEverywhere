@@ -1,7 +1,7 @@
+**Start time:** 2026-04-15 03:28 -0300
 # [0108] bridge-atlas-bc7-cache-generation
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 (claude-sonnet-4-6@kwytco.com.br)
 ## User Story
 
 > Acting as **a mod developer using ImageManagementBridge**, I want **my registered atlases to also benefit from BC7 caching**, so that I **my mod's images load faster on subsequent game starts without full re-encode**.
