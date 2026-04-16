@@ -158,7 +158,7 @@ namespace BelzontWE.Font
                 var bc7Control = WEAtlasBC7Utils.CompressToBC7(m_control, true);
                 var bc7Mask = WEAtlasBC7Utils.CompressToBC7(m_mask, true);
                 var bc7Normal = WEAtlasBC7Utils.CompressToBC7(m_normal, true);
-                m_serializationOrder = new byte[][] { bc7Main, bc7Emissive, bc7Control, bc7Mask, bc7Normal };
+                m_serializationOrder = new byte[][] { bc7Main, bc7Normal, bc7Mask, bc7Control, bc7Emissive, };
                 IsWritable = false;
             }
 
@@ -178,11 +178,11 @@ namespace BelzontWE.Font
                 throw new InvalidOperationException("Apply() must be called before WriteBC7CacheAndReplaceTextures.");
 
             var layers = new byte[]?[5];
-            layers[0] = CompressLayer(m_main,     "main",     false);
+            layers[0] = CompressLayer(m_main, "main", false);
             layers[1] = CompressLayer(m_emissive, "emissive", false);
-            layers[2] = CompressLayer(m_control,  "control",  true);
-            layers[3] = CompressLayer(m_mask,     "mask",     true);
-            layers[4] = CompressLayer(m_normal,   "normal",   true);
+            layers[2] = CompressLayer(m_control, "control", true);
+            layers[3] = CompressLayer(m_mask, "mask", true);
+            layers[4] = CompressLayer(m_normal, "normal", true);
 
             if (System.Array.Exists(layers, l => l is null))
                 throw new InvalidOperationException("One or more atlas layers failed BC7 compression — see preceding log entries for details.");
@@ -237,11 +237,11 @@ namespace BelzontWE.Font
             if (m_serializationOrder is null || m_serializationOrder.Length < 5)
                 throw new InvalidOperationException("m_serializationOrder must be populated before ConvertToBC7InPlace.");
 
-            ReplaceWithBC7(ref m_main,     m_serializationOrder[0], false);
-            ReplaceWithBC7(ref m_emissive, m_serializationOrder[1], false);
-            ReplaceWithBC7(ref m_control,  m_serializationOrder[2], true);
-            ReplaceWithBC7(ref m_mask,     m_serializationOrder[3], true);
-            ReplaceWithBC7(ref m_normal,   m_serializationOrder[4], true);
+            ReplaceWithBC7(ref m_main, m_serializationOrder[0], false);
+            ReplaceWithBC7(ref m_normal, m_serializationOrder[1], false);
+            ReplaceWithBC7(ref m_mask, m_serializationOrder[2], true);
+            ReplaceWithBC7(ref m_control, m_serializationOrder[3], true);
+            ReplaceWithBC7(ref m_emissive, m_serializationOrder[4], true);
             IsWritable = false;
         }
 
@@ -272,14 +272,14 @@ namespace BelzontWE.Font
 
             atlas.m_main = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[0]!, false);
             atlas.m_main.name = "Main";
-            atlas.m_emissive = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[1]!, false);
-            atlas.m_emissive.name = "Emissive";
-            atlas.m_control = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[2]!, true);
-            atlas.m_control.name = "Control";
-            atlas.m_mask = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[3]!, true);
-            atlas.m_mask.name = "Mask";
-            atlas.m_normal = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[4]!, true);
+            atlas.m_normal = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[1]!, true);
             atlas.m_normal.name = "Normal";
+            atlas.m_mask = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[2]!, true);
+            atlas.m_mask.name = "Mask";
+            atlas.m_control = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[3]!, true);
+            atlas.m_control.name = "Control";
+            atlas.m_emissive = WEAtlasBC7Utils.CreateFromBC7(cache.Width, cache.Height, cache.LayerBC7[4]!, false);
+            atlas.m_emissive.name = "Emissive";
 
             // Keep raw BC7 bytes for VT tile uploads (and for serialization if applicable).
             atlas.m_serializationOrder = new byte[][] { cache.LayerBC7[0]!, cache.LayerBC7[1]!, cache.LayerBC7[2]!, cache.LayerBC7[3]!, cache.LayerBC7[4]! };
@@ -533,18 +533,18 @@ namespace BelzontWE.Font
                     if (m_main) GameObject.Destroy(m_main);
                     m_main = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[0].pngData, false);
                     m_main.name = "Main";
-                    if (m_emissive) GameObject.Destroy(m_emissive);
-                    m_emissive = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[1].pngData, false);
-                    m_emissive.name = "Emissive";
-                    if (m_control) GameObject.Destroy(m_control);
-                    m_control = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[2].pngData, true);
-                    m_control.name = "Control";
-                    if (m_mask) GameObject.Destroy(m_mask);
-                    m_mask = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[3].pngData, true);
-                    m_mask.name = "Mask";
                     if (m_normal) GameObject.Destroy(m_normal);
-                    m_normal = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[4].pngData, true);
+                    m_normal = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[1].pngData, true);
                     m_normal.name = "Normal";
+                    if (m_mask) GameObject.Destroy(m_mask);
+                    m_mask = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[2].pngData, true);
+                    m_mask.name = "Mask";
+                    if (m_control) GameObject.Destroy(m_control);
+                    m_control = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[3].pngData, true);
+                    m_control.name = "Control";
+                    if (m_emissive) GameObject.Destroy(m_emissive);
+                    m_emissive = WEAtlasBC7Utils.CreateFromBC7(Width, Height, bytesArrays[4].pngData, false);
+                    m_emissive.name = "Emissive";
                     // Keep raw BC7 bytes for VT tile uploads and serialization.
                     m_serializationOrder = new byte[][] { bytesArrays[0].pngData, bytesArrays[1].pngData, bytesArrays[2].pngData, bytesArrays[3].pngData, bytesArrays[4].pngData };
                     IsWritable = false;
@@ -643,13 +643,14 @@ namespace BelzontWE.Font
             {
                 var material = WERenderingHelper.CreateDefaultMaterial(shader);
                 if (material is null) return null;
+                // Enable VT sampling in the shader
+                material.EnableKeyword("ENABLE_VT");
+
 
                 // Bind VT stacks (sets shader properties and notifies VT system)
                 tss.BindMaterial(material, VTAtlasInfoStack0.stackGlobalIndex, VT_STACK_DEFAULT, VTParamBlock0);
                 tss.BindMaterial(material, VTAtlasInfoStack1.stackGlobalIndex, VT_STACK_EXTENDED, VTParamBlock1);
 
-                // Enable VT sampling in the shader
-                material.EnableKeyword("ENABLE_VT");
 
                 return material;
             }
@@ -695,6 +696,14 @@ namespace BelzontWE.Font
                 VTParamBlock1 = tss.GetTextureParamBlock(info1);
                 IsVTRegistered = true;
                 m_textureStreamingSystem = tss;
+
+                for (var i = 0; i < Sprites.Count; i++)
+                {
+                    var sprite = Sprites.Values.ElementAt(i);
+                    if (sprite.CachedBRI.IsValid()) sprite.CachedBRI.Dispose();
+                    sprite.CachedBRI = WERenderingHelper.GenerateBri(this, sprite);
+                }
+
                 return true;
             }
             catch (System.Exception ex)
@@ -741,22 +750,22 @@ namespace BelzontWE.Font
             try
             {
                 // Stack 0 (DefaultPVTStack, 4 layers): game formats [BC7_SRGB, BC7_SRGB, BC7_UNorm, BC7_SRGB]
-                // Layer mapping: L0=_BaseColorMap, L1=_MaskMap, L2=_NormalMap, L3=control
-                // m_serializationOrder: [0]=main, [1]=emissive, [2]=control, [3]=mask, [4]=normal
+                // Layer mapping: L0=_BaseColorMap, L1=_NormalMap, L2=_MaskMap, L3=control
+                // m_serializationOrder: [0]=main, [1]=normal, [2]=mask, [3]=control, [4]=emissive
                 var guid0 = reusingSavedGuids ? m_vtLayerGuids[0] : WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 0);
                 WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 0, m_serializationOrder[0], Width, Height,
                     WEAtlasVTUtils.GetBC7Format(false), guid0, folderName, tileSize, IsCityAtlas); // main → L0, SRGB
 
                 var guid1 = reusingSavedGuids ? m_vtLayerGuids[1] : WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 1);
-                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 1, m_serializationOrder[3], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(false), guid1, folderName, tileSize, IsCityAtlas); // mask → L1, SRGB
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 1, m_serializationOrder[1], Width, Height,
+                    WEAtlasVTUtils.GetBC7Format(true), guid1, folderName, tileSize, IsCityAtlas); // normal → L1, UNorm
 
                 var guid2 = reusingSavedGuids ? m_vtLayerGuids[2] : WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 2);
-                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 2, m_serializationOrder[4], Width, Height,
-                    WEAtlasVTUtils.GetBC7Format(true), guid2, folderName, tileSize, IsCityAtlas); // normal → L2, UNorm
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 2, m_serializationOrder[2], Width, Height,
+                    WEAtlasVTUtils.GetBC7Format(false), guid2, folderName, tileSize, IsCityAtlas); // mask → L2, SRGB
 
                 var guid3 = reusingSavedGuids ? m_vtLayerGuids[3] : WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack0.stackGlobalIndex, 3);
-                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 3, m_serializationOrder[2], Width, Height,
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack0, 3, m_serializationOrder[3], Width, Height,
                     WEAtlasVTUtils.GetBC7Format(false), guid3, folderName, tileSize, IsCityAtlas); // control → L3, SRGB
 
                 // Invalidate Stack 0 region ONCE after all 4 layers are committed
@@ -767,7 +776,7 @@ namespace BelzontWE.Font
 
                 // Stack 1 (ExtendedPVTStack, 1 layer only): emissive=L0
                 var guid4 = reusingSavedGuids ? m_vtLayerGuids[4] : WEAtlasVTUtils.GenerateLayerGuid(guidSeed, VTAtlasInfoStack1.stackGlobalIndex, 0);
-                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack1, 0, m_serializationOrder[1], Width, Height,
+                WEAtlasVTUtils.UploadLayerToVT(tss, VTAtlasInfoStack1, 0, m_serializationOrder[4], Width, Height,
                     WEAtlasVTUtils.GetBC7Format(false), guid4, folderName, tileSize, IsCityAtlas); // emissive → L0, SRGB
 
                 // Invalidate Stack 1 region
