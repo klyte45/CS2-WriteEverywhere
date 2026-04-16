@@ -18,9 +18,9 @@ namespace BelzontWE.Font.Sprites
         public const uint MAGIC = 0x37434257; // little-endian "WBC7"
 
         /// <summary>Current binary format version.</summary>
-        /// <remarks>Bumped to 2 when BC7 layer data changed to full mip chains (mip0+mip1+...).
-        /// Old format-1 files (mip0-only BC7) are rejected so caches are rebuilt with correct mip data.</remarks>
-        public const uint FORMAT_VERSION = 2;
+        /// <remarks>Bumped to 3 when layer order was corrected to [Main, Normal, Mask, Control, Emissive].
+        /// Old format-2 files had order [Main, Emissive, Control, Mask, Normal] and are rejected so caches are rebuilt.</remarks>
+        public const uint FORMAT_VERSION = 3;
 
         public uint Checksum { get; }
         public int Width { get; }
@@ -40,8 +40,8 @@ namespace BelzontWE.Font.Sprites
 
         /// <summary>
         /// Raw BC7 bytes for each of the 5 atlas layers in order:
-        /// [0]=main [1]=emissive [2]=control [3]=mask [4]=normal.
-        /// A null element means the layer has no data.
+        /// [0]=main [1]=normal [2]=mask [3]=control [4]=emissive.
+        /// Each element contains the full mip chain (mip0+mip1+…); a null element means no data.
         /// </summary>
         public byte[]?[] LayerBC7 { get; }
 

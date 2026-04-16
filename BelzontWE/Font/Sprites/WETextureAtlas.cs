@@ -182,10 +182,10 @@ namespace BelzontWE.Font
 
             var layers = new byte[]?[5];
             layers[0] = CompressLayer(m_main, "main", false);
-            layers[1] = CompressLayer(m_emissive, "emissive", false);
-            layers[2] = CompressLayer(m_control, "control", true);
-            layers[3] = CompressLayer(m_mask, "mask", true);
-            layers[4] = CompressLayer(m_normal, "normal", true);
+            layers[1] = CompressLayer(m_normal, "normal", true);
+            layers[2] = CompressLayer(m_mask, "mask", true);
+            layers[3] = CompressLayer(m_control, "control", true);
+            layers[4] = CompressLayer(m_emissive, "emissive", false);
 
             if (System.Array.Exists(layers, l => l is null))
                 throw new InvalidOperationException("One or more atlas layers failed BC7 compression — see preceding log entries for details.");
@@ -244,10 +244,10 @@ namespace BelzontWE.Font
                 throw new InvalidOperationException("m_serializationOrder must be populated before ConvertToBC7InPlace.");
 
             ReplaceWithBC7(ref m_main, m_serializationOrder[0], false);
-            ReplaceWithBC7(ref m_normal, m_serializationOrder[1], false);
+            ReplaceWithBC7(ref m_normal, m_serializationOrder[1], true);
             ReplaceWithBC7(ref m_mask, m_serializationOrder[2], true);
             ReplaceWithBC7(ref m_control, m_serializationOrder[3], true);
-            ReplaceWithBC7(ref m_emissive, m_serializationOrder[4], true);
+            ReplaceWithBC7(ref m_emissive, m_serializationOrder[4], false);
             IsWritable = false;
         }
 

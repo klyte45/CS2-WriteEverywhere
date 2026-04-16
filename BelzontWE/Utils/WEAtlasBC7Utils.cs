@@ -168,11 +168,22 @@ namespace BelzontWE
         public static Texture2D CreateFromBC7(int width, int height, byte[] bc7Data, bool linear)
         {
             if (bc7Data == null) throw new ArgumentNullException(nameof(bc7Data));
-            if (bc7Data.Length != GetBC7SizeBytes(width, height))
-                throw new ArgumentException($"Expected {GetBC7SizeBytes(width, height)} bytes for {width}×{height} BC7 texture.", nameof(bc7Data));
+            int mip0Size = GetBC7SizeBytes(width, height);
+            if (bc7Data.Length < mip0Size)
+                throw new ArgumentException($"Expected at least {mip0Size} bytes for {width}×{height} BC7 texture, got {bc7Data.Length}.", nameof(bc7Data));
 
             var tex = new Texture2D(width, height, TextureFormat.BC7, false, linear);
-            tex.LoadRawTextureData(bc7Data);
+            // bc7Data may be a full mip chain (mip0+mip1+…); LoadRawTextureData only needs mip0.
+            if (bc7Data.Length == mip0Size)
+            {
+                tex.LoadRawTextureData(bc7Data);
+            }
+            else
+            {
+                var mip0 = new byte[mip0Size];
+                Buffer.BlockCopy(bc7Data, 0, mip0, 0, mip0Size);
+                tex.LoadRawTextureData(mip0);
+            }
             tex.Apply(false, makeNoLongerReadable: true);
             return tex;
         }
