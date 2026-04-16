@@ -8,6 +8,7 @@ using System.Text;
 using System.Web;
 using UnityEngine;
 using BelzontWE.Sprites;
+using IOPath = System.IO.Path;
 
 namespace BelzontWE
 {
@@ -58,16 +59,15 @@ namespace BelzontWE
 
                 if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas))
                 {
-                    response.SetStatus(200);
-                    //should reload from file if Main_preview is null!
-                    var temp = textureAtlas.Main_preview.MakeReadable(out var isCopy);
-                    var data = temp.EncodeToPNG();
-                    if(isCopy) GameObject.Destroy(temp);
-                    var size = (ulong)data.Length;
-                    var space = response.GetSpace(size);
-                    Marshal.Copy(data, 0, space, data.Length);
-                    response.Finish(ResourceResponse.Status.Success);
-                    return false;
+                    if (TryGetAtlasPreviewPng(atlasName, textureAtlas, out var data))
+                    {
+                        response.SetStatus(200);
+                        var size = (ulong)data.Length;
+                        var space = response.GetSpace(size);
+                        Marshal.Copy(data, 0, space, data.Length);
+                        response.Finish(ResourceResponse.Status.Success);
+                        return false;
+                    }
                 }
             }
             return true;
@@ -102,17 +102,66 @@ namespace BelzontWE
             {
                 var atlasName = HttpUtility.UrlDecode(url["coui://we.k45/_textureAtlas/".Length..]);
 
-                if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas) && textureAtlas.Main_preview != null)
+                if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas)
+                    && TryGetAtlasPreviewPng(atlasName, textureAtlas, out var pngData))
                 {
-                    var tempStream = textureAtlas.Main_preview.MakeReadable(out var isStreamCopy);
-                    var pngData = tempStream.EncodeToPNG();
-                    if (isStreamCopy) GameObject.Destroy(tempStream);
                     response.SetStreamReader(new StreamReader(pngData));
                     response.Finish(ResourceStreamResponse.Status.Success);
                     return false;
                 }
             }
             return true;
+        }
+
+        private static bool TryGetAtlasPreviewPng(string atlasName, Font.WETextureAtlas textureAtlas, out byte[] pngData)
+        {
+            pngData = null;
+            Texture2D sourceTexture = null;
+            Texture2D readableTexture = null;
+            bool destroyReadable = false;
+            bool destroySource = false;
+
+            try
+            {
+                sourceTexture = textureAtlas.Main_preview;
+
+                if (sourceTexture == null)
+                {
+                    var cachePath = atlasName.Contains(":")
+                        ? IOPath.Combine(WEAtlasesLibrary.CACHED_VT_FOLDER, atlasName.Replace(':', IOPath.DirectorySeparatorChar) + ".cache.we.bc7")
+                        : IOPath.Combine(WEAtlasesLibrary.CACHED_VT_FOLDER, $"{atlasName}.cache.we.bc7");
+
+                    var cachedFile = Font.Sprites.WEAtlasCacheFile.ReadFrom(cachePath);
+                    if (cachedFile?.LayerBC7 == null || cachedFile.LayerBC7.Length == 0 || cachedFile.LayerBC7[0] == null)
+                    {
+                        return false;
+                    }
+
+                    sourceTexture = WEAtlasBC7Utils.CreateFromBC7(cachedFile.Width, cachedFile.Height, cachedFile.LayerBC7[0], false);
+                    destroySource = true;
+                }
+
+                readableTexture = sourceTexture.MakeReadable(out var isCopy);
+                destroyReadable = isCopy;
+                pngData = readableTexture.EncodeToPNG();
+                return pngData != null && pngData.Length > 0;
+            }
+            catch (System.Exception ex)
+            {
+                LogUtils.DoWarnLog($"[GameUIResourceHandlerOverrides] Failed to fetch atlas preview for '{atlasName}': {ex.GetType().Name}: {ex.Message}");
+                return false;
+            }
+            finally
+            {
+                if (destroyReadable && readableTexture)
+                {
+                    GameObject.Destroy(readableTexture);
+                }
+                if (destroySource && sourceTexture)
+                {
+                    GameObject.Destroy(sourceTexture);
+                }
+            }
         }
     }
 }
