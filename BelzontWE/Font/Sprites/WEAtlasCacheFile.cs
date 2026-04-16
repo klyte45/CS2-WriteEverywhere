@@ -18,7 +18,9 @@ namespace BelzontWE.Font.Sprites
         public const uint MAGIC = 0x37434257; // little-endian "WBC7"
 
         /// <summary>Current binary format version.</summary>
-        public const uint FORMAT_VERSION = 1;
+        /// <remarks>Bumped to 2 when BC7 layer data changed to full mip chains (mip0+mip1+...).
+        /// Old format-1 files (mip0-only BC7) are rejected so caches are rebuilt with correct mip data.</remarks>
+        public const uint FORMAT_VERSION = 2;
 
         public uint Checksum { get; }
         public int Width { get; }
@@ -213,7 +215,7 @@ namespace BelzontWE.Font.Sprites
                 if (magic != MAGIC) return null;
 
                 var version = r.ReadUInt32();
-                if (version > FORMAT_VERSION) return null;
+                if (version != FORMAT_VERSION) return null;
 
                 var checksum = r.ReadUInt32();
                 var width = r.ReadInt32();

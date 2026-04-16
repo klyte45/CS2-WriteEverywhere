@@ -79,6 +79,18 @@ namespace BelzontWE.Tests.Utils
             Assert.DoesNotThrow(() => WEAtlasVTUtils.ValidatePreprocessInputs(new byte[bc7Size], 1024, 1024));
         }
 
+        [Test]
+        public void Validate_MipChainData_LargerThanMip0_DoesNotThrow()
+        {
+            // Full mip chain (mip0+mip1+...) is larger than mip0 alone — must be accepted.
+            // This is the format produced by CompressToBC7WithMipChain.
+            int mip0 = WEAtlasBC7Utils.GetBC7SizeBytes(1024, 1024);
+            int mip1 = WEAtlasBC7Utils.GetBC7SizeBytes(512, 512);
+            int mip2 = WEAtlasBC7Utils.GetBC7SizeBytes(256, 256);
+            int chain = mip0 + mip1 + mip2;
+            Assert.DoesNotThrow(() => WEAtlasVTUtils.ValidatePreprocessInputs(new byte[chain], 1024, 1024));
+        }
+
         // ── Tests requiring game runtime (Colossal.IO.AssetDatabase) ─────────
 
         [Test, Ignore("GetPreprocessedByteCount uses AtlassingUtils from Colossal.IO.AssetDatabase — requires game DLLs loaded")]

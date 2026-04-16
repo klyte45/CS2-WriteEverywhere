@@ -34,8 +34,8 @@ namespace BelzontWE.Tests.Font.Sprites
             => Assert.That(WEAtlasCacheFile.MAGIC, Is.EqualTo(0x37434257u));
 
         [Test]
-        public void FORMAT_VERSION_Is1()
-            => Assert.That(WEAtlasCacheFile.FORMAT_VERSION, Is.EqualTo(1u));
+        public void FORMAT_VERSION_Is2()
+            => Assert.That(WEAtlasCacheFile.FORMAT_VERSION, Is.EqualTo(2u));
 
         // ── Round-trip ────────────────────────────────────────────────────────
 

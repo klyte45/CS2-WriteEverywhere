@@ -47,23 +47,33 @@ namespace BelzontWE
             if (!IsPowerOf2(height))
                 throw new ArgumentException($"Atlas height ({height}) must be a power of 2.", nameof(height));
 
-            int expectedBytes = WEAtlasBC7Utils.GetBC7SizeBytes(width, height);
-            if (bc7Data.Length != expectedBytes)
-                throw new ArgumentException($"Expected {expectedBytes} bytes for {width}×{height} BC7 data, got {bc7Data.Length}.", nameof(bc7Data));
+            int mip0Bytes = WEAtlasBC7Utils.GetBC7SizeBytes(width, height);
+            if (bc7Data.Length < mip0Bytes)
+                throw new ArgumentException($"Expected at least {mip0Bytes} bytes for {width}\u00d7{height} BC7 mip0 data, got {bc7Data.Length}.", nameof(bc7Data));
         }
 
         internal static bool IsPowerOf2(int x) => x > 0 && (x & (x - 1)) == 0;
 
         /// <summary>
-        /// Preprocesses raw BC7 bytes (mip0 only) into the game's VT tile layout
+        /// Preprocesses raw BC7 bytes into the game's VT tile layout
         /// using <see cref="AtlassingUtils.PreProcessData"/>.
+        /// <para>
+        /// <paramref name="bc7Data"/> should be a full BC7 mip chain (concatenated mip0+mip1+...)
+        /// as produced by <see cref="WEAtlasBC7Utils.CompressToBC7WithMipChain"/>.
+        /// When only mip0 data is supplied (legacy or 512×512 atlases), coarser VT levels will
+        /// be zero-filled (decoding to solid black), which causes blurry/darkened rendering at
+        /// medium/far distances. Providing the full chain fixes this.
+        /// </para>
         /// <para>
         /// The returned <see cref="NativeArray{T}"/> is allocated with
         /// <see cref="Allocator.Persistent"/> — the caller <b>must</b> dispose it
         /// after uploading the tile data to the VT system.
         /// </para>
         /// </summary>
-        /// <param name="bc7Data">Raw BC7 block data for a single atlas layer (mip0).</param>
+        /// <param name="bc7Data">
+        ///   Concatenated BC7 block data for a single atlas layer: [mip0 bytes][mip1 bytes]...
+        ///   At minimum must contain mip0 (<c>GetBC7SizeBytes(width, height)</c> bytes).
+        /// </param>
         /// <param name="width">Atlas width in pixels (must be power-of-two, ≥ tileSize).</param>
         /// <param name="height">Atlas height in pixels (must be power-of-two, ≥ tileSize).</param>
         /// <param name="format">
@@ -86,8 +96,8 @@ namespace BelzontWE
             // and ALSO reads mip (level+1) at each level for trilinear filtering
             // (CopyFromTextureData with requiresCachedMip=true).
             // Total mip levels accessed = maxLevel + 2 (levels 0..maxLevel, plus one more).
-            // We only have mip0. Allocate a buffer large enough for all expected mip levels
-            // and zero-fill the missing ones to prevent out-of-bounds native reads.
+            // bc7Data contains the full mip chain (mip0+mip1+...) from CompressToBC7WithMipChain;
+            // for atlases with maxLevel==0 or legacy mip0-only data, higher levels are zero-filled.
             int mipLevelsNeeded = maxLevel + 2;
             int totalSrcBytes = 0;
             int mipW = width, mipH = height;
@@ -98,11 +108,16 @@ namespace BelzontWE
                 mipH = Math.Max(4, mipH / 2);
             }
 
-            VTCrashLog($"[PreprocessForVT] {width}x{height} maxLevel={maxLevel} mipLevelsNeeded={mipLevelsNeeded} mip0={bc7Data.Length} totalSrc={totalSrcBytes}");
+            VTCrashLog($"[PreprocessForVT] {width}x{height} maxLevel={maxLevel} mipLevelsNeeded={mipLevelsNeeded} bc7DataLen={bc7Data.Length} totalSrc={totalSrcBytes}");
 
-            // Allocate zeroed buffer for all mip levels; copy mip0 at offset 0.
+            // Allocate zeroed buffer for all mip levels; copy as many bytes as available
+            // (up to totalSrcBytes) from bc7Data. When bc7Data contains the full mip chain,
+            // all needed levels are populated. When only mip0 is available, higher levels
+            // remain zero-filled (black when decoded — only affects coarser VT LOD levels).
+            // IMPORTANT: must not copy more than totalSrcBytes to avoid buffer overflow when
+            // bc7Data holds extra tiny mip levels beyond what PreProcessData needs.
             var input = new NativeArray<byte>(totalSrcBytes, Allocator.TempJob, NativeArrayOptions.ClearMemory);
-            NativeArray<byte>.Copy(bc7Data, 0, input, 0, bc7Data.Length);
+            NativeArray<byte>.Copy(bc7Data, 0, input, 0, Math.Min(bc7Data.Length, totalSrcBytes));
             try
             {
                 var inputSlice = new NativeSlice<byte>(input);

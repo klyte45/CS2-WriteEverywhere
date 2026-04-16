@@ -95,11 +95,11 @@ namespace BelzontWE.Font
             Size = size;
             Width = 1 << Mathf.FloorToInt(size / 2f);
             Height = 1 << Mathf.CeilToInt(size / 2f);
-            m_main = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-            m_emissive = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-            m_control = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
-            m_mask = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
-            m_normal = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
+            m_main = new Texture2D(Width, Height, TextureFormat.RGBA32, true);
+            m_emissive = new Texture2D(Width, Height, TextureFormat.RGBA32, true);
+            m_control = new Texture2D(Width, Height, TextureFormat.RGBA32, true, true);
+            m_mask = new Texture2D(Width, Height, TextureFormat.RGBA32, true, true);
+            m_normal = new Texture2D(Width, Height, TextureFormat.RGBA32, true, true);
             var pixelsToSet = new Color[Width * Height];
             m_main.SetPixels(pixelsToSet);
             m_main.name = "Main";
@@ -148,16 +148,19 @@ namespace BelzontWE.Font
             m_normal.Apply();
             if (WillSerialize)
             {
-                // Compress to BC7 for GPU-efficient savegame storage (version 3+).
+                // Compress to BC7 mip chain for GPU-efficient savegame storage (version 3+).
+                // Using CompressToBC7WithMipChain so that VT tile preprocessing receives a full
+                // mip chain — without it, coarser VT levels (maxLevel > 0) would be zero-filled
+                // (decoding to black), causing blurry/darkened rendering at non-close distances.
                 // NOTE: We do NOT replace textures here — BRI materials already hold references
                 // to the RGBA32 textures (captured synchronously in PrimitiveRenderInformation
                 // constructor). Replacing textures would destroy those references → white quads.
                 // Serialization uses m_serializationOrder (byte arrays); textures stay RGBA32 for rendering.
-                var bc7Main = WEAtlasBC7Utils.CompressToBC7(m_main, false);
-                var bc7Emissive = WEAtlasBC7Utils.CompressToBC7(m_emissive, false);
-                var bc7Control = WEAtlasBC7Utils.CompressToBC7(m_control, true);
-                var bc7Mask = WEAtlasBC7Utils.CompressToBC7(m_mask, true);
-                var bc7Normal = WEAtlasBC7Utils.CompressToBC7(m_normal, true);
+                var bc7Main = WEAtlasBC7Utils.CompressToBC7WithMipChain(m_main, false);
+                var bc7Emissive = WEAtlasBC7Utils.CompressToBC7WithMipChain(m_emissive, false);
+                var bc7Control = WEAtlasBC7Utils.CompressToBC7WithMipChain(m_control, true);
+                var bc7Mask = WEAtlasBC7Utils.CompressToBC7WithMipChain(m_mask, true);
+                var bc7Normal = WEAtlasBC7Utils.CompressToBC7WithMipChain(m_normal, true);
                 m_serializationOrder = new byte[][] { bc7Main, bc7Normal, bc7Mask, bc7Control, bc7Emissive, };
                 IsWritable = false;
             }
@@ -209,7 +212,10 @@ namespace BelzontWE.Font
         {
             try
             {
-                return WEAtlasBC7Utils.CompressToBC7(tex, linear);
+                // CompressToBC7WithMipChain generates the full mip chain so that
+                // VT tile preprocessing (PreprocessForVT) can build correct coarser-level
+                // tiles — otherwise they'd be zero-filled → black → blurry at distance.
+                return WEAtlasBC7Utils.CompressToBC7WithMipChain(tex, linear);
             }
             catch (System.Exception ex)
             {
@@ -554,20 +560,21 @@ namespace BelzontWE.Font
                 {
                     // Legacy (version < 3): PNG data → decode to RGBA32 staging, compress to BC7,
                     // then discard the RGBA32 textures so only BC7 lives in memory.
+                    // mipChain=true so Apply() generates mip maps for CompressToBC7WithMipChain.
                     if (m_main) GameObject.Destroy(m_main);
-                    m_main = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+                    m_main = new Texture2D(Width, Height, TextureFormat.RGBA32, true);
                     m_main.LoadImage(bytesArrays[0].pngData);
                     if (m_emissive) GameObject.Destroy(m_emissive);
-                    m_emissive = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+                    m_emissive = new Texture2D(Width, Height, TextureFormat.RGBA32, true);
                     m_emissive.LoadImage(bytesArrays[1].pngData);
                     if (m_control) GameObject.Destroy(m_control);
-                    m_control = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
+                    m_control = new Texture2D(Width, Height, TextureFormat.RGBA32, true, true);
                     m_control.LoadImage(bytesArrays[2].pngData);
                     if (m_mask) GameObject.Destroy(m_mask);
-                    m_mask = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
+                    m_mask = new Texture2D(Width, Height, TextureFormat.RGBA32, true, true);
                     m_mask.LoadImage(bytesArrays[3].pngData);
                     if (m_normal) GameObject.Destroy(m_normal);
-                    m_normal = new Texture2D(Width, Height, TextureFormat.RGBA32, false, true);
+                    m_normal = new Texture2D(Width, Height, TextureFormat.RGBA32, true, true);
                     m_normal.LoadImage(bytesArrays[4].pngData);
                     // Apply() to finalize RGBA32 + build m_serializationOrder as BC7 bytes
                     Apply();
