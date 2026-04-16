@@ -118,6 +118,13 @@ namespace BelzontWE
             // bc7Data holds extra tiny mip levels beyond what PreProcessData needs.
             var input = new NativeArray<byte>(totalSrcBytes, Allocator.TempJob, NativeArrayOptions.ClearMemory);
             NativeArray<byte>.Copy(bc7Data, 0, input, 0, Math.Min(bc7Data.Length, totalSrcBytes));
+
+            // Unity's BC7 output has bottom-up row order (inherited from RGBA32 GetRawTextureData),
+            // but the game's VT pipeline (PreProcessData / CopyData) expects top-down row order
+            // (matching NativeTextures.FileLoad which loads PNGs top-down).
+            // Flip BC7 block-rows in-place for each mip level.
+            FlipBC7BlockRowsInPlace(input, width, height, mipLevelsNeeded);
+
             try
             {
                 var inputSlice = new NativeSlice<byte>(input);
@@ -127,6 +134,49 @@ namespace BelzontWE
             finally
             {
                 input.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Flips BC7 block-rows vertically (bottom-up → top-down) in-place for each mip level
+        /// in a concatenated mip chain buffer. BC7 blocks are 4×4 pixels, 16 bytes each.
+        /// </summary>
+        internal static void FlipBC7BlockRowsInPlace(NativeArray<byte> data, int mip0Width, int mip0Height, int mipLevels)
+        {
+            const int BLOCK_SIZE = 16; // BC7: 16 bytes per 4×4 block
+            int offset = 0;
+            int mipW = mip0Width, mipH = mip0Height;
+
+            for (int mip = 0; mip < mipLevels; mip++)
+            {
+                int blocksPerRow = Math.Max(1, mipW / 4);
+                int blockRows = Math.Max(1, mipH / 4);
+                int rowBytes = blocksPerRow * BLOCK_SIZE;
+                int mipBytes = WEAtlasBC7Utils.GetBC7SizeBytes(mipW, mipH);
+
+                if (offset + mipBytes > data.Length) break;
+
+                var tempRow = new byte[rowBytes];
+                var tempRow2 = new byte[rowBytes];
+
+                // Swap block-rows: row[r] ↔ row[blockRows-1-r]
+                for (int r = 0; r < blockRows / 2; r++)
+                {
+                    int topOff = offset + r * rowBytes;
+                    int botOff = offset + (blockRows - 1 - r) * rowBytes;
+                    // top → tempRow
+                    NativeArray<byte>.Copy(data, topOff, tempRow, 0, rowBytes);
+                    // bot → tempRow2
+                    NativeArray<byte>.Copy(data, botOff, tempRow2, 0, rowBytes);
+                    // tempRow2(bot) → top
+                    NativeArray<byte>.Copy(tempRow2, 0, data, topOff, rowBytes);
+                    // tempRow(top) → bot
+                    NativeArray<byte>.Copy(tempRow, 0, data, botOff, rowBytes);
+                }
+
+                offset += mipBytes;
+                mipW = Math.Max(4, mipW / 2);
+                mipH = Math.Max(4, mipH / 2);
             }
         }
 

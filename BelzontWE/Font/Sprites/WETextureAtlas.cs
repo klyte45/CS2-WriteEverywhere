@@ -338,15 +338,24 @@ namespace BelzontWE.Font
         public void Dispose()
         {
             DeregisterFromVT(m_textureStreamingSystem);
-            // Destroy all owned textures regardless of readability.
-            // Previously this skipped non-readable (BC7) textures, causing GPU memory leaks
-            // when caches loaded via FromCacheFile were later disposed.
-            if (m_main) GameObject.Destroy(m_main);
-            if (m_emissive) GameObject.Destroy(m_emissive);
-            if (m_control) GameObject.Destroy(m_control);
-            if (m_mask) GameObject.Destroy(m_mask);
-            if (m_normal) GameObject.Destroy(m_normal);
+            ReleaseTextures();
             ClearSprites();
+        }
+
+        /// <summary>
+        /// Releases all owned <see cref="Texture2D"/> instances to free GPU/CPU memory.
+        /// Called after successful VT registration (textures are no longer needed — VT
+        /// streams from <c>.vtd</c> tile files, and the resource interceptor reloads
+        /// preview images from the BC7 cache on demand).
+        /// Also called by <see cref="Dispose"/>.
+        /// </summary>
+        internal void ReleaseTextures()
+        {
+            if (m_main) { GameObject.Destroy(m_main); m_main = null; }
+            if (m_emissive) { GameObject.Destroy(m_emissive); m_emissive = null; }
+            if (m_control) { GameObject.Destroy(m_control); m_control = null; }
+            if (m_mask) { GameObject.Destroy(m_mask); m_mask = null; }
+            if (m_normal) { GameObject.Destroy(m_normal); m_normal = null; }
         }
 
         private void ClearSprites()
@@ -868,8 +877,9 @@ namespace BelzontWE.Font
                 Belzont.Utils.LogUtils.DoWarnLog($"[WETextureAtlas] VT deregistration exception ({Width}x{Height}): {ex.GetType().Name}: {ex.Message}");
             }
 
-            // Clean up cached tile files for re-streaming
-            if (m_vtLayerGuids != null)
+            // Clean up cached tile files only for city atlases (which change every session).
+            // Non-city atlas .vtd files are persistent and reused across sessions.
+            if (IsCityAtlas && m_vtLayerGuids != null)
             {
                 string folderName = VTTileFolderName ?? GetHashCode().ToString("X8");
                 foreach (var guid in m_vtLayerGuids)

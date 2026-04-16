@@ -647,7 +647,11 @@ namespace BelzontWE.Sprites
             if (!atlas.UploadTilesToVT(m_textureStreamingSystem))
             {
                 atlas.DeregisterFromVT(m_textureStreamingSystem);
+                return;
             }
+            // Textures are no longer needed after VT registration — VT streams from
+            // .vtd tile files, and the resource interceptor reloads previews from cache.
+            atlas.ReleaseTextures();
         }
 
         #endregion
@@ -695,7 +699,9 @@ namespace BelzontWE.Sprites
                     if (!atlas.UploadTilesToVT(m_textureStreamingSystem))
                     {
                         atlas.DeregisterFromVT(m_textureStreamingSystem);
+                        continue;
                     }
+                    atlas.ReleaseTextures();
                     processed++;
                 }
                 WEAtlasVTUtils.VTCrashLog($"[WEAtlasesLibrary] OnUpdate VT batch end: processed={processed} remaining={m_pendingVTRegistrations.Count}");
