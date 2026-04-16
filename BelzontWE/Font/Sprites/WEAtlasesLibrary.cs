@@ -232,7 +232,7 @@ namespace BelzontWE.Sprites
                 while (LocalAtlases[INTERNAL_ATLAS_NAME].Insert(img.ToString(), Texture) == 2)
                 {
                     var currentSize = LocalAtlases[INTERNAL_ATLAS_NAME].Size;
-                    if (currentSize >= 24) break;
+                    if (currentSize >= WETextureAtlas.MAX_SIZE) break;
                     var newAtlas = new WETextureAtlas(currentSize + 1);
                     newAtlas.InsertAll(LocalAtlases[INTERNAL_ATLAS_NAME]);
                     LocalAtlases[INTERNAL_ATLAS_NAME].Dispose();
@@ -485,14 +485,14 @@ namespace BelzontWE.Sprites
         {
             if (spritesToAdd.Count > 0)
             {
-                targetDict[atlasName] = new(18);
+                targetDict[atlasName] = new(WETextureAtlas.MIN_SIZE);
                 for (int j = 0; j < spritesToAdd.Count; j++)
                 {
                     WEImageInfo entry = spritesToAdd[j];
                     while (targetDict[atlasName].Insert(entry) == 2)
                     {
                         var currentSize = targetDict[atlasName].Size;
-                        if (currentSize >= 24) break;
+                        if (currentSize >= WETextureAtlas.MAX_SIZE) break;
                         var newAtlas = new WETextureAtlas(currentSize + 1);
                         newAtlas.InsertAll(targetDict[atlasName]);
                         targetDict[atlasName].Dispose();

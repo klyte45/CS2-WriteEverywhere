@@ -10,7 +10,7 @@ namespace BelzontWE.Layout
 {
     public class WEImageInfo : IDisposable
     {
-        public const int MAX_SIZE_IMAGE_IMPORT = 1000;
+        public const int MAX_SIZE_IMAGE_IMPORT = 2046;
         public const int MAX_SIZE_IMAGE_IMPORT_MODULES = 4094;
         public const string CONTROL_MASK_MAP_EXTENSION = "_ControlMask.png";
         public const string NORMAL_MAP_EXTENSION = "_Normal.png";

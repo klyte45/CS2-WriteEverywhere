@@ -21,6 +21,9 @@ namespace BelzontWE.Font
     public class WETextureAtlas : IDisposable, ISerializable
     {
         public const uint CURRENT_VERSION = 3;
+        public const int MIN_SIZE = 18;
+        // Game VT default maxTextureSize is 8192 (VirtualTexturingConfig / UberZOrderer).
+        public static readonly int MAX_SIZE = Mathf.RoundToInt(Mathf.Log(WEConstants.MAX_ATLAS_SIZE, 2f) * 2f);
 
         /// <summary>VT stack config index for DefaultPVTStack (basecolor, normal, mask).</summary>
         /// <remarks>
@@ -90,9 +93,9 @@ namespace BelzontWE.Font
 
         public WETextureAtlas(int size, HeuristicMethod method = HeuristicMethod.RectBestShortSideFit, bool willSerialize = false)
         {
-            if (size < 18 || size > 24)
+            if (size < MIN_SIZE || size > MAX_SIZE)
             {
-                throw new ArgumentOutOfRangeException(nameof(size), "Size must be between 18 (512x512) and 24 (4096x4096, inclusive). This is to ensure the atlas is not too small or too large for practical use.");
+                throw new ArgumentOutOfRangeException(nameof(size), $"Size must be between {MIN_SIZE} (512x512) and {MAX_SIZE} ({WEConstants.MAX_ATLAS_SIZE}x{WEConstants.MAX_ATLAS_SIZE}, inclusive). This is to ensure the atlas is not too small or too large for practical use.");
             }
 
             Size = size;
