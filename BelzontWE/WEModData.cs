@@ -111,6 +111,9 @@ namespace BelzontWE
         [SettingsUISection(kSourcesTab, null)]
         public bool TempDisableRendering { get; set; } = false;
 
+        [SettingsUISection(kSourcesTab, null)]
+        public bool UseVT { get; set; } = false;
+
         [SettingsUISlider(min = 110, max = 160, step = 2.5f, scalarMultiplier = 1)]
         [SettingsUISection(kSourcesTab, null)]
         public float RequiredLodForFormulaesUpdate { get; set; } = 150;

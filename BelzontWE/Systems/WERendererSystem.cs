@@ -26,6 +26,7 @@ namespace BelzontWE
         private WEWorldPickerTool m_pickerTool;
         internal static bool dumpNextFrame;
         private WEPreCullingSystem m_wePreCullSys;
+        private WEAtlasesLibrary m_atlasesLibrary;
 
 #if DEBUG
         public uint DrawCallsLastFrame { get; private set; } = 0;
@@ -39,6 +40,7 @@ namespace BelzontWE
             m_pickerController = World.GetExistingSystemManaged<WEWorldPickerController>();
             m_pickerTool = World.GetExistingSystemManaged<WEWorldPickerTool>();
             m_wePreCullSys = World.GetExistingSystemManaged<WEPreCullingSystem>();
+            m_atlasesLibrary = World.GetExistingSystemManaged<WEAtlasesLibrary>();
             RenderPipelineManager.beginContextRendering += Render;
         }
 #if BURST
@@ -137,10 +139,8 @@ namespace BelzontWE
                             else materialChanged = materialData.GetOwnMaterial(ref mesh, brii?.CubeCharCoordinates, out ownMaterial);
 
                             var bri2 = bri as PrimitiveRenderInformation;
-                            // Notify VT streaming system so it streams the correct mip tiles this frame.
-                            // Mirrors the game's RenderPrefabRenderer.Update() → RequestRegion pattern.
-                            // Called via the interface so it works for all IBasicRenderInformation
-                            // implementations (PrimitiveRenderInformation, CustomMeshRenderInformation, …).
+                            // VT RequestRegion calls are now batched per-atlas in WEVTRequestSystem
+                            // instead of per-entity here (O(entities) → O(atlases) reduction).
                             bri.NotifyRendering();
                             var meshCount = bri2 is null || mesh.TextType == WESimulationTextType.WhiteCube ? 1 : bri2.MeshCount(materialData.Shader);
 
@@ -180,6 +180,7 @@ namespace BelzontWE
                     }
 
                 }
+
                 dumpNextFrame = false;
             }
         }

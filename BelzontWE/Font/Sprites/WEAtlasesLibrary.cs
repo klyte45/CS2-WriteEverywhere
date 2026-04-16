@@ -111,6 +111,22 @@ namespace BelzontWE.Sprites
 
         private Dictionary<string, (AssetData info, Dictionary<string, (Action callback, Func<uint> checksumFactory, string modAccessName)> registrations)> RegisteredModsAtlases { get; } = [];
 
+        /// <summary>
+        /// Iterates all atlas dictionaries (local, city, mod) and calls
+        /// <see cref="WETextureAtlas.NotifyRendering"/> on each VT-registered atlas.
+        /// Called once per frame by <see cref="WEVTRequestSystem"/> instead of
+        /// per-entity in the render callback.
+        /// </summary>
+        internal void NotifyAllVTAtlasesRendering()
+        {
+            foreach (var atlas in LocalAtlases.Values)
+                atlas.NotifyRendering();
+            foreach (var atlas in CityAtlases.Values)
+                atlas.NotifyRendering();
+            foreach (var atlas in ModAtlases.Values)
+                atlas.NotifyRendering();
+        }
+
         #region Getters
 
         public Dictionary<string, bool> ListAvailableAtlases() => LocalAtlases.Where(x => x.Key != INTERNAL_ATLAS_NAME && !CityAtlases.ContainsKey(x.Key) && x.Value.Count > 0).Select(x => (x.Key.ToString(), false)).Concat(CityAtlases.Select(x => (x.Key.ToString(), true))).ToDictionary(x => x.Item1, x => x.Item2);
@@ -635,6 +651,7 @@ namespace BelzontWE.Sprites
         /// </summary>
         private void RegisterAtlasForVT(WETextureAtlas atlas)
         {
+            if (!WriteEverywhereCS2Mod.WeData.UseVT) return;
             if (atlas == null || atlas.IsVTRegistered) return;
 
             if (!m_vtSystemReady)
@@ -667,7 +684,7 @@ namespace BelzontWE.Sprites
             {
                 action();
             }
-
+            if (!WriteEverywhereCS2Mod.WeData.UseVT) return;
             if (!m_vtSystemReady)
             {
                 // Wait until the game's VT system has fully initialized:

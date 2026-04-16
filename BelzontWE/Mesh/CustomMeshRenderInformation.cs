@@ -102,7 +102,7 @@ namespace BelzontWE
         public void NotifyRendering()
         {
             if (handleCheck.IsAllocated && handleCheck.Target is WETextureAtlas atlas)
-                atlas.NotifyRendering();
+                atlas.MarkToNotify();
         }
 
         public void BindVTToMaterial(Material material)

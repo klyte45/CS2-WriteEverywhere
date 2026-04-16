@@ -5,13 +5,13 @@ using BelzontWE.Sprites;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Colossal.Mathematics;
 using Colossal.Serialization.Entities;
-using Unity.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 using Color = UnityEngine.Color;
 using HeuristicMethod = MaxRectsBinPack.FreeRectChoiceHeuristic;
@@ -834,6 +834,12 @@ namespace BelzontWE.Font
             }
         }
 
+        private bool m_shallNotifyVt;
+        internal void MarkToNotify()
+        {
+            m_shallNotifyVt = true;
+        }
+
         /// <summary>
         /// <summary>
         /// Notifies the VT streaming system that this atlas is visible this frame,
@@ -844,12 +850,13 @@ namespace BelzontWE.Font
         /// </summary>
         internal void NotifyRendering()
         {
-            if (!IsVTRegistered || m_textureStreamingSystem == null) return;
+            if (!m_shallNotifyVt || !IsVTRegistered || m_textureStreamingSystem == null) return;
             // full UV bounds — request tiles for the entire atlas slot
-            var fullBounds = MathUtils.Bounds(new float2(0f, 0f), new float2(1f, 1f));
+            var fullBounds = new Bounds2(new float2(0f, 0f), new float2(1f, 1f));
             // float.MaxValue → log2(size/MaxValue) → -∞ → clamped 0 → mip 0 (highest quality)
             m_textureStreamingSystem.RequestRegion(VTAtlasInfoStack0.stackGlobalIndex, VTAtlasInfoStack0.indexInStack, float.MaxValue, fullBounds);
             m_textureStreamingSystem.RequestRegion(VTAtlasInfoStack1.stackGlobalIndex, VTAtlasInfoStack1.indexInStack, float.MaxValue, fullBounds);
+            m_shallNotifyVt = false;
         }
 
         /// Deregisters this atlas from the VT streaming system.
