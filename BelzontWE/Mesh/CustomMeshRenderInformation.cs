@@ -99,6 +99,17 @@ namespace BelzontWE
         public Mesh GetMesh(WEShader shader, bool isBackface, int idx = 0) => CachedMesh;
         public bool IsValid() => handleCheck.IsAllocated && handleCheck.Target is not null;
         public bool IsError { get => false; set { } }
+        public void NotifyRendering()
+        {
+            if (handleCheck.IsAllocated && handleCheck.Target is WETextureAtlas atlas)
+                atlas.NotifyRendering();
+        }
+
+        public void BindVTToMaterial(Material material)
+        {
+            if (handleCheck.IsAllocated && handleCheck.Target is WETextureAtlas atlas)
+                atlas.BindVTToMaterial(material);
+        }
 
         public Bounds3 Bounds { get; }
 

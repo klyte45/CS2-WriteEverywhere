@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Unity.Collections;
+using Unity.Entities;
 using UnityEngine;
 using Color = UnityEngine.Color;
 using HeuristicMethod = MaxRectsBinPack.FreeRectChoiceHeuristic;
@@ -665,6 +666,19 @@ namespace BelzontWE.Font
             }
 
             return WERenderingHelper.GenerateMaterial(shader, m_main, m_normal, m_mask, m_control, m_emissive);
+        }
+
+        /// <summary>
+        /// Re-binds VT texture stacks to a material copy.
+        /// Must be called on every <c>new Material(baseMaterial)</c> copy, because the native
+        /// <c>CPUTextureStack.BindToMaterial</c> binding is NOT carried over by Unity's material copy.
+        /// </summary>
+        internal void BindVTToMaterial(Material material)
+        {
+            if (!IsVTRegistered || material == null) return;
+            var tss = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<TextureStreamingSystem>();
+            tss.BindMaterial(material, VTAtlasInfoStack0.stackGlobalIndex, VT_STACK_DEFAULT, VTParamBlock0);
+            tss.BindMaterial(material, VTAtlasInfoStack1.stackGlobalIndex, VT_STACK_EXTENDED, VTParamBlock1);
         }
 
         /// <summary>

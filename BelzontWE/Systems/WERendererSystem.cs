@@ -139,7 +139,9 @@ namespace BelzontWE
                             var bri2 = bri as PrimitiveRenderInformation;
                             // Notify VT streaming system so it streams the correct mip tiles this frame.
                             // Mirrors the game's RenderPrefabRenderer.Update() → RequestRegion pattern.
-                            bri2?.AtlasForVT?.NotifyRendering();
+                            // Called via the interface so it works for all IBasicRenderInformation
+                            // implementations (PrimitiveRenderInformation, CustomMeshRenderInformation, …).
+                            bri.NotifyRendering();
                             var meshCount = bri2 is null || mesh.TextType == WESimulationTextType.WhiteCube ? 1 : bri2.MeshCount(materialData.Shader);
 
                             var baseMatrix = item.transformMatrix;

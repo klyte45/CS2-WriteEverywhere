@@ -326,7 +326,11 @@ namespace BelzontWE
                         {
                             for (int i = 0; i < materialArray.Length; i++)
                             {
-                                materialArray[i] ??= new Material(baseMaterial);
+                                if (materialArray[i] == null)
+                                {
+                                    materialArray[i] = new Material(baseMaterial);
+                                    bri.BindVTToMaterial(materialArray[i]);
+                                }
                                 UpdateDecalMaterial(materialArray[i], mesh.TextType, coordinates?[i] ?? default);
                                 HDMaterial.ValidateMaterial(materialArray[i]);
                             }

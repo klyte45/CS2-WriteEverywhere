@@ -271,6 +271,10 @@ namespace BelzontWE.Font.Utility
         internal BelzontWE.Font.WETextureAtlas AtlasForVT
             => handleCheck.IsAllocated && handleCheck.Target is BelzontWE.Font.WETextureAtlas atlas ? atlas : null;
 
+        public void NotifyRendering() => AtlasForVT?.NotifyRendering();
+
+        public void BindVTToMaterial(Material material) => AtlasForVT?.BindVTToMaterial(material);
+
         public Vector2 m_sizeMetersUnscaled;
         public readonly string m_refText;
         private readonly bool2 m_invertUv;

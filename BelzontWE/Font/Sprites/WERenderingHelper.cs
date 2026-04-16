@@ -153,17 +153,23 @@ namespace BelzontWE
 
         public static Material GenerateMaterial(IBasicRenderInformation bri, WEShader shader)
         {
+            Material result;
             switch (shader)
             {
                 case WEShader.Default:
-                    return new Material(bri.BaseMaterialDefault);
+                    result = new Material(bri.BaseMaterialDefault);
+                    break;
                 case WEShader.Decal:
-                    return new Material(bri.BaseMaterialDecal);
+                    result = new Material(bri.BaseMaterialDecal);
+                    break;
                 case WEShader.Glass:
-                    return new Material(bri.BaseMaterialGlass);
+                    result = new Material(bri.BaseMaterialGlass);
+                    break;
                 default:
                     return null;
             }
+            bri.BindVTToMaterial(result);
+            return result;
         }
 
         public static Material GenerateMaterial(WEShader shader, Texture main, Texture normal = null, Texture mask = null, Texture control = null, Texture emissive = null)
