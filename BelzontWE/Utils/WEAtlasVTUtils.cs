@@ -119,12 +119,6 @@ namespace BelzontWE
             var input = new NativeArray<byte>(totalSrcBytes, Allocator.TempJob, NativeArrayOptions.ClearMemory);
             NativeArray<byte>.Copy(bc7Data, 0, input, 0, Math.Min(bc7Data.Length, totalSrcBytes));
 
-            // Unity's BC7 output has bottom-up row order (inherited from RGBA32 GetRawTextureData),
-            // but the game's VT pipeline (PreProcessData / CopyData) expects top-down row order
-            // (matching NativeTextures.FileLoad which loads PNGs top-down).
-            // Flip BC7 block-rows in-place for each mip level.
-            FlipBC7BlockRowsInPlace(input, width, height, mipLevelsNeeded);
-
             try
             {
                 var inputSlice = new NativeSlice<byte>(input);
@@ -134,49 +128,6 @@ namespace BelzontWE
             finally
             {
                 input.Dispose();
-            }
-        }
-
-        /// <summary>
-        /// Flips BC7 block-rows vertically (bottom-up → top-down) in-place for each mip level
-        /// in a concatenated mip chain buffer. BC7 blocks are 4×4 pixels, 16 bytes each.
-        /// </summary>
-        internal static void FlipBC7BlockRowsInPlace(NativeArray<byte> data, int mip0Width, int mip0Height, int mipLevels)
-        {
-            const int BLOCK_SIZE = 16; // BC7: 16 bytes per 4×4 block
-            int offset = 0;
-            int mipW = mip0Width, mipH = mip0Height;
-
-            for (int mip = 0; mip < mipLevels; mip++)
-            {
-                int blocksPerRow = Math.Max(1, mipW / 4);
-                int blockRows = Math.Max(1, mipH / 4);
-                int rowBytes = blocksPerRow * BLOCK_SIZE;
-                int mipBytes = WEAtlasBC7Utils.GetBC7SizeBytes(mipW, mipH);
-
-                if (offset + mipBytes > data.Length) break;
-
-                var tempRow = new byte[rowBytes];
-                var tempRow2 = new byte[rowBytes];
-
-                // Swap block-rows: row[r] ↔ row[blockRows-1-r]
-                for (int r = 0; r < blockRows / 2; r++)
-                {
-                    int topOff = offset + r * rowBytes;
-                    int botOff = offset + (blockRows - 1 - r) * rowBytes;
-                    // top → tempRow
-                    NativeArray<byte>.Copy(data, topOff, tempRow, 0, rowBytes);
-                    // bot → tempRow2
-                    NativeArray<byte>.Copy(data, botOff, tempRow2, 0, rowBytes);
-                    // tempRow2(bot) → top
-                    NativeArray<byte>.Copy(tempRow2, 0, data, topOff, rowBytes);
-                    // tempRow(top) → bot
-                    NativeArray<byte>.Copy(tempRow, 0, data, botOff, rowBytes);
-                }
-
-                offset += mipBytes;
-                mipW = Math.Max(4, mipW / 2);
-                mipH = Math.Max(4, mipH / 2);
             }
         }
 
@@ -242,6 +193,27 @@ namespace BelzontWE
                 atlasInfo.stackGlobalIndex, layerIndex, atlasInfo.indexInStack,
                 width, height, format, tileSize, bc7Data.Length);
 
+            // ── Compute high-mip boundary ──────────────────────────────────────
+            // Atlas.AddTextureToCache reads the registered buffer as raw BC7 mip
+            // chain data for "high mip" levels (those where the texture rect is
+            // smaller than tileSize).  PreProcessData handles levels 0..maxLevel
+            // as padded tiles; levels maxLevel+1 onwards must be supplied as a
+            // flat BC7 mip chain starting at offset 0 of the registered buffer.
+            int maxLevel = (int)Math.Log(Math.Min(width, height) / (double)tileSize, 2.0);
+            int highMipStart = 0;
+            {
+                int mw = width, mh = height;
+                for (int m = 0; m <= maxLevel; m++)
+                {
+                    highMipStart += WEAtlasBC7Utils.GetBC7SizeBytes(mw, mh);
+                    mw = Math.Max(1, mw >> 1);
+                    mh = Math.Max(1, mh >> 1);
+                }
+            }
+            int highMipSize = Math.Max(16, bc7Data.Length - highMipStart);
+
+            VTCrashLog($"[UploadLayerToVT] HighMip {stepTag} maxLevel={maxLevel} highMipStart={highMipStart} highMipSize={highMipSize}");
+
             // 1. Preprocess BC7 into VT tile layout
             VTCrashLog($"[UploadLayerToVT] Step1-PreProcess {stepTag}");
             NativeArray<byte> tileData = PreprocessForVT(bc7Data, width, height, format, tileSize);
@@ -270,9 +242,13 @@ namespace BelzontWE
 
             try
             {
-                // 3. Register buffer allocation in VT system with correct path and offsets
-                VTCrashLog($"[UploadLayerToVT] Step3-RegisterVTTextureData {stepTag} guid={guid} dataSize={tileData.Length}");
-                bool registered = tss.RegisterVTTextureData(guid, filePath, 0, 0, tileData.Length,
+                // 3. Register buffer allocation in VT system.
+                //    The buffer will hold the raw BC7 high-mip chain (NOT preprocessed tiles).
+                //    Atlas.AddTextureToCache reads srcData[0..] as flat BC7 mip data for levels
+                //    beyond the tile boundary (maxLevel+1 onwards).  Preprocessed tiles are
+                //    served from the .vtd file via ReadVTTextureDataAsync.
+                VTCrashLog($"[UploadLayerToVT] Step3-RegisterVTTextureData {stepTag} guid={guid} dataSize={highMipSize}");
+                bool registered = tss.RegisterVTTextureData(guid, filePath, 0, 0, highMipSize,
                     tileOffsets, width, height);
                 VTCrashLog($"[UploadLayerToVT] Step3-Done {stepTag} registered={registered}");
 
@@ -282,17 +258,16 @@ namespace BelzontWE
                     return;
                 }
 
-                // 4. Copy preprocessed tiles into the registered buffer
+                // 4. Fill registered buffer with raw BC7 high-mip chain
                 VTCrashLog($"[UploadLayerToVT] Step4-GetTextureData {stepTag}");
                 var buffer = tss.GetTextureData(guid);
-                VTCrashLog($"[UploadLayerToVT] Step4-GotBuffer {stepTag} bufLen={buffer.Length} tileLen={tileData.Length}");
-                if (buffer.Length != tileData.Length)
+                VTCrashLog($"[UploadLayerToVT] Step4-GotBuffer {stepTag} bufLen={buffer.Length} highMipSize={highMipSize}");
+                int copyLen = Math.Min(highMipSize, bc7Data.Length - highMipStart);
+                if (copyLen > 0)
                 {
-                    LogUtils.DoWarnLog($"[WEAtlasVTUtils] Buffer length mismatch: expected {tileData.Length}, got {buffer.Length}");
+                    NativeArray<byte>.Copy(bc7Data, highMipStart, buffer, 0, copyLen);
                 }
-                VTCrashLog($"[UploadLayerToVT] Step4-Copy {stepTag}");
-                NativeArray<byte>.Copy(tileData, buffer);
-                VTCrashLog($"[UploadLayerToVT] Step4-Done {stepTag}");
+                VTCrashLog($"[UploadLayerToVT] Step4-Done {stepTag} copied={copyLen}");
             }
             finally
             {

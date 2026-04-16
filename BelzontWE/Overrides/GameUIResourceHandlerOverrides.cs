@@ -59,6 +59,7 @@ namespace BelzontWE
                 if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas))
                 {
                     response.SetStatus(200);
+                    //should reload from file if Main_preview is null!
                     var temp = textureAtlas.Main_preview.MakeReadable(out var isCopy);
                     var data = temp.EncodeToPNG();
                     if(isCopy) GameObject.Destroy(temp);
@@ -101,7 +102,7 @@ namespace BelzontWE
             {
                 var atlasName = HttpUtility.UrlDecode(url["coui://we.k45/_textureAtlas/".Length..]);
 
-                if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas))
+                if (WEAtlasesLibrary.Instance.TryGetAtlas(atlasName, out var textureAtlas) && textureAtlas.Main_preview != null)
                 {
                     var tempStream = textureAtlas.Main_preview.MakeReadable(out var isStreamCopy);
                     var pngData = tempStream.EncodeToPNG();
