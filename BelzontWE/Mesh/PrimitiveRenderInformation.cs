@@ -266,6 +266,11 @@ namespace BelzontWE.Font.Utility
 
         public Material BaseMaterialGlass { get; private set; }
 
+        /// <summary>Returns the <see cref="WETextureAtlas"/> backing this BRI when it was created
+        /// from an atlas (VT path). Returns <c>null</c> for font/direct-texture BRIs.</summary>
+        internal BelzontWE.Font.WETextureAtlas AtlasForVT
+            => handleCheck.IsAllocated && handleCheck.Target is BelzontWE.Font.WETextureAtlas atlas ? atlas : null;
+
         public Vector2 m_sizeMetersUnscaled;
         public readonly string m_refText;
         private readonly bool2 m_invertUv;

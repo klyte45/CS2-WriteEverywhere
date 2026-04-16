@@ -3,7 +3,9 @@ using Belzont.Utils;
 using BelzontWE.Layout;
 using BelzontWE.Sprites;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
+using Colossal.Mathematics;
 using Colossal.Serialization.Entities;
+using Unity.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -807,6 +809,23 @@ namespace BelzontWE.Font
         }
 
         /// <summary>
+        /// <summary>
+        /// Notifies the VT streaming system that this atlas is visible this frame,
+        /// requesting mip-0 tiles for both stacks to ensure maximum rendering quality.
+        /// Must be called each rendered frame for any atlas whose sprites are in view.
+        /// Matches the per-frame <c>RequestRegion</c> pattern used by the game's
+        /// <c>RenderPrefabRenderer</c> and <c>VTTextureRequester.UpdateTexturesVTRequests</c>.
+        /// </summary>
+        internal void NotifyRendering()
+        {
+            if (!IsVTRegistered || m_textureStreamingSystem == null) return;
+            // full UV bounds — request tiles for the entire atlas slot
+            var fullBounds = MathUtils.Bounds(new float2(0f, 0f), new float2(1f, 1f));
+            // float.MaxValue → log2(size/MaxValue) → -∞ → clamped 0 → mip 0 (highest quality)
+            m_textureStreamingSystem.RequestRegion(VTAtlasInfoStack0.stackGlobalIndex, VTAtlasInfoStack0.indexInStack, float.MaxValue, fullBounds);
+            m_textureStreamingSystem.RequestRegion(VTAtlasInfoStack1.stackGlobalIndex, VTAtlasInfoStack1.indexInStack, float.MaxValue, fullBounds);
+        }
+
         /// Deregisters this atlas from the VT streaming system.
         /// Invalidates VT regions for both stacks, resets all VT state, and clears stored GUIDs.
         /// <para>
