@@ -2,6 +2,7 @@ using NUnit.Framework;
 using System;
 using System.IO;
 using System.Collections.Generic;
+using BelzontWE.Commons.Utils.AssetPipeline;
 
 namespace BelzontWE.Tests.Font.Sprites
 {
@@ -37,17 +38,17 @@ namespace BelzontWE.Tests.Font.Sprites
         {
             // Build a minimal WEAtlasCacheFile and verify round-trip
             var pack = new MaxRectsBinPack(64, 64, false);
-            var sprites = new List<BelzontWE.Font.Sprites.WEAtlasCacheFile.CachedSprite>
+            var sprites = new List<KAtlasCacheFile.CachedSprite>
             {
-                new("testSprite", new UnityEngine.Rect(0, 0, 32, 32), BelzontWE.Sprites.WESpriteInfo.ExtraTexturesFlag.Emissive)
+                new("testSprite", new UnityEngine.Rect(0, 0, 32, 32), KSpriteInfo.ExtraTexturesFlag.Emissive)
             };
             var layerData = new byte[]?[5];
             for (int i = 0; i < 5; i++) layerData[i] = new byte[] { (byte)(i * 10), (byte)(i * 20) };
 
-            var cache = new BelzontWE.Font.Sprites.WEAtlasCacheFile(
+            var cache = new KAtlasCacheFile(
                 checksum: 0xDEADBEEFu,
                 width: 64, height: 64, size: 12,
-                method: MaxRectsBinPack.FreeRectChoiceHeuristic.RectBestShortSideFit,
+                method: KMaxRectsBinPack.FreeRectChoiceHeuristic.RectBestShortSideFit,
                 rectsPack: pack,
                 sprites: sprites.AsReadOnly(),
                 layerBC7: layerData);
@@ -56,7 +57,7 @@ namespace BelzontWE.Tests.Font.Sprites
             try
             {
                 cache.WriteTo(path);
-                var loaded = BelzontWE.Font.Sprites.WEAtlasCacheFile.ReadFrom(path);
+                var loaded = KAtlasCacheFile.ReadFrom(path);
                 Assert.IsNotNull(loaded);
                 Assert.AreEqual(0xDEADBEEFu, loaded.Checksum);
                 Assert.AreEqual(64, loaded.Width);
@@ -82,19 +83,19 @@ namespace BelzontWE.Tests.Font.Sprites
             // Simulate what happens in WEAtlasesLibrary: if cache checksum != folder checksum,
             // the cached file is not used (the condition `cachedFile.Checksum == checksum` is false)
             var pack = new MaxRectsBinPack(64, 64, false);
-            var cache = new BelzontWE.Font.Sprites.WEAtlasCacheFile(
+            var cache = new KAtlasCacheFile(
                 checksum: 0xAAAAAAAAu,
                 width: 64, height: 64, size: 12,
-                method: MaxRectsBinPack.FreeRectChoiceHeuristic.RectBestShortSideFit,
+                method: KMaxRectsBinPack.FreeRectChoiceHeuristic.RectBestShortSideFit,
                 rectsPack: pack,
-                sprites: new List<BelzontWE.Font.Sprites.WEAtlasCacheFile.CachedSprite>().AsReadOnly(),
+                sprites: new List<KAtlasCacheFile.CachedSprite>().AsReadOnly(),
                 layerBC7: new byte[]?[5]);
 
             var path = Path.Combine(Path.GetTempPath(), $"wetest_{Guid.NewGuid()}.cache.we.bc7");
             try
             {
                 cache.WriteTo(path);
-                var loaded = BelzontWE.Font.Sprites.WEAtlasCacheFile.ReadFrom(path);
+                var loaded = KAtlasCacheFile.ReadFrom(path);
                 uint freshChecksum = 0xBBBBBBBBu; // simulated different checksum
                 Assert.IsFalse(loaded.Checksum == freshChecksum, "Different checksums should not match");
             }

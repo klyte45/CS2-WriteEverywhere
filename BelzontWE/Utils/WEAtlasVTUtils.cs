@@ -1,5 +1,6 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
+using BelzontWE.Commons.Utils.AssetPipeline;
 using BelzontWE.Sprites;
 using Colossal;
 using Colossal.Compression;
@@ -29,30 +30,11 @@ namespace BelzontWE
         /// </summary>
         public const int VT_PADDING = 8;
 
-        /// <summary>
-        /// Validates inputs for <see cref="PreprocessForVT"/> without referencing
-        /// <c>Colossal.IO.AssetDatabase</c> types, so it can be unit-tested in isolation.
-        /// </summary>
+        // Extracted to KVTPreprocessingUtils — delegating for backward compatibility.
         internal static void ValidatePreprocessInputs(byte[] bc7Data, int width, int height, int tileSize = VT_TILE_SIZE)
-        {
-            if (bc7Data == null) throw new ArgumentNullException(nameof(bc7Data));
-            if (tileSize <= 0 || !IsPowerOf2(tileSize))
-                throw new ArgumentOutOfRangeException(nameof(tileSize), $"Tile size ({tileSize}) must be a positive power of 2.");
-            if (width < tileSize)
-                throw new ArgumentOutOfRangeException(nameof(width), $"Atlas width ({width}) must be ≥ tileSize ({tileSize}).");
-            if (height < tileSize)
-                throw new ArgumentOutOfRangeException(nameof(height), $"Atlas height ({height}) must be ≥ tileSize ({tileSize}).");
-            if (!IsPowerOf2(width))
-                throw new ArgumentException($"Atlas width ({width}) must be a power of 2.", nameof(width));
-            if (!IsPowerOf2(height))
-                throw new ArgumentException($"Atlas height ({height}) must be a power of 2.", nameof(height));
+            => KVTPreprocessingUtils.ValidatePreprocessInputs(bc7Data, width, height, tileSize);
 
-            int mip0Bytes = WEAtlasBC7Utils.GetBC7SizeBytes(width, height);
-            if (bc7Data.Length < mip0Bytes)
-                throw new ArgumentException($"Expected at least {mip0Bytes} bytes for {width}\u00d7{height} BC7 mip0 data, got {bc7Data.Length}.", nameof(bc7Data));
-        }
-
-        internal static bool IsPowerOf2(int x) => x > 0 && (x & (x - 1)) == 0;
+        internal static bool IsPowerOf2(int x) => KVTPreprocessingUtils.IsPowerOf2(x);
 
         /// <summary>
         /// Preprocesses raw BC7 bytes into the game's VT tile layout
@@ -82,82 +64,18 @@ namespace BelzontWE
         /// </param>
         /// <param name="tileSize">VT tile size from <c>TextureStreamingSystem.tileSize</c>.</param>
         /// <returns>VT-tiled byte data ready for registration into the streaming system.</returns>
+        // Extracted to KVTPreprocessingUtils — delegating for backward compatibility.
         public static NativeArray<byte> PreprocessForVT(byte[] bc7Data, int width, int height, GraphicsFormat format, int tileSize = VT_TILE_SIZE)
-        {
-            ValidatePreprocessInputs(bc7Data, width, height, tileSize);
+            => KVTPreprocessingUtils.PreprocessForVT(bc7Data, width, height, format, tileSize);
 
-            var layerInfo = new AtlassingUtils.LayerInfo(tileSize, format);
-
-            // maxLevel = number of mip subdivisions within the tile structure.
-            // With mip0-only data, maxLevel = log2(min(w,h) / tileSize).
-            int maxLevel = (int)Math.Log(Math.Min(width, height) / (double)tileSize, 2.0);
-
-            // PreProcessData reads mip levels 0 through maxLevel from the source data,
-            // and ALSO reads mip (level+1) at each level for trilinear filtering
-            // (CopyFromTextureData with requiresCachedMip=true).
-            // Total mip levels accessed = maxLevel + 2 (levels 0..maxLevel, plus one more).
-            // bc7Data contains the full mip chain (mip0+mip1+...) from CompressToBC7WithMipChain;
-            // for atlases with maxLevel==0 or legacy mip0-only data, higher levels are zero-filled.
-            int mipLevelsNeeded = maxLevel + 2;
-            int totalSrcBytes = 0;
-            int mipW = width, mipH = height;
-            for (int m = 0; m < mipLevelsNeeded; m++)
-            {
-                totalSrcBytes += WEAtlasBC7Utils.GetBC7SizeBytes(mipW, mipH);
-                mipW = Math.Max(4, mipW / 2);
-                mipH = Math.Max(4, mipH / 2);
-            }
-
-            VTCrashLog($"[PreprocessForVT] {width}x{height} maxLevel={maxLevel} mipLevelsNeeded={mipLevelsNeeded} bc7DataLen={bc7Data.Length} totalSrc={totalSrcBytes}");
-
-            // Allocate zeroed buffer for all mip levels; copy as many bytes as available
-            // (up to totalSrcBytes) from bc7Data. When bc7Data contains the full mip chain,
-            // all needed levels are populated. When only mip0 is available, higher levels
-            // remain zero-filled (black when decoded — only affects coarser VT LOD levels).
-            // IMPORTANT: must not copy more than totalSrcBytes to avoid buffer overflow when
-            // bc7Data holds extra tiny mip levels beyond what PreProcessData needs.
-            var input = new NativeArray<byte>(totalSrcBytes, Allocator.TempJob, NativeArrayOptions.ClearMemory);
-            NativeArray<byte>.Copy(bc7Data, 0, input, 0, Math.Min(bc7Data.Length, totalSrcBytes));
-
-            try
-            {
-                var inputSlice = new NativeSlice<byte>(input);
-                AtlassingUtils.PreProcessData(inputSlice, out var processedData, width, height, tileSize, maxLevel, VT_PADDING, layerInfo);
-                return processedData;
-            }
-            finally
-            {
-                input.Dispose();
-            }
-        }
-
-        /// <summary>
-        /// Returns the <see cref="GraphicsFormat"/> for a given WE atlas layer.
-        /// </summary>
-        /// <param name="linear">
-        ///   <c>true</c> for linear layers (normal);
-        ///   <c>false</c> for sRGB layers (main, mask, control, emissive).
-        /// </param>
         public static GraphicsFormat GetBC7Format(bool linear)
-            => linear ? GraphicsFormat.RGBA_BC7_UNorm : GraphicsFormat.RGBA_BC7_SRGB;
+            => KVTPreprocessingUtils.GetBC7Format(linear);
 
-        /// <summary>
-        /// Computes the total number of VT tiles for a given texture at the specified
-        /// max level. Useful for validating preprocessed output sizes.
-        /// </summary>
         public static int GetTileCount(int width, int height, int maxLevel, int tileSize = VT_TILE_SIZE)
-            => AtlassingUtils.TextureRelativeTileIndex(width, height, maxLevel + 1, 0, 0, tileSize);
+            => KVTPreprocessingUtils.GetTileCount(width, height, maxLevel, tileSize);
 
-        /// <summary>
-        /// Computes the expected preprocessed byte count for a given atlas layer.
-        /// </summary>
         public static int GetPreprocessedByteCount(int width, int height, GraphicsFormat format, int tileSize = VT_TILE_SIZE)
-        {
-            var layerInfo = new AtlassingUtils.LayerInfo(tileSize, format);
-            int maxLevel = (int)Math.Log(Math.Min(width, height) / (double)tileSize, 2.0);
-            int tileCount = GetTileCount(width, height, maxLevel, tileSize);
-            return tileCount * (layerInfo.tileBlockSize + layerInfo.trilinearTileBlockSize) * layerInfo.blockSizeInBytes;
-        }
+            => KVTPreprocessingUtils.GetPreprocessedByteCount(width, height, format, tileSize);
 
         /// <summary>
         /// Uploads a single preprocessed VT layer into the game's streaming system.

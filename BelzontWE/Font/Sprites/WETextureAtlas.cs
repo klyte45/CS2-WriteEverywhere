@@ -1,5 +1,6 @@
 ﻿using Belzont.Interfaces;
 using Belzont.Utils;
+using BelzontWE.Commons.Utils.AssetPipeline;
 using BelzontWE.Layout;
 using BelzontWE.Sprites;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
@@ -14,7 +15,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 using Color = UnityEngine.Color;
-using HeuristicMethod = MaxRectsBinPack.FreeRectChoiceHeuristic;
+using HeuristicMethod = BelzontWE.Commons.Utils.AssetPipeline.KMaxRectsBinPack.FreeRectChoiceHeuristic;
 
 namespace BelzontWE.Font
 {
@@ -79,7 +80,7 @@ namespace BelzontWE.Font
 
         public IEnumerable<FixedString32Bytes> Keys => Sprites.Keys;
 
-        private MaxRectsBinPack rectsPack;
+        private KMaxRectsBinPack rectsPack;
         private Texture2D m_main;
         private Texture2D m_emissive;
         private Texture2D m_control;
@@ -196,11 +197,11 @@ namespace BelzontWE.Font
             if (System.Array.Exists(layers, l => l is null))
                 throw new InvalidOperationException("One or more atlas layers failed BC7 compression — see preceding log entries for details.");
 
-            var spritesForCache = new System.Collections.Generic.List<Sprites.WEAtlasCacheFile.CachedSprite>(Sprites.Count);
+            var spritesForCache = new System.Collections.Generic.List<KAtlasCacheFile.CachedSprite>(Sprites.Count);
             foreach (var s in Sprites.Values)
-                spritesForCache.Add(new Sprites.WEAtlasCacheFile.CachedSprite(s.Name, s.Region, s.ExtraTextures));
+                spritesForCache.Add(new KAtlasCacheFile.CachedSprite(s.Name, s.Region, s.ExtraTextures));
 
-            var cache = new Sprites.WEAtlasCacheFile(
+            var cache = new KAtlasCacheFile(
                 checksum, Width, Height, Size, Method, rectsPack,
                 spritesForCache.AsReadOnly(), layers, m_vtLayerGuids);
             cache.WriteTo(cacheFilePath);
@@ -258,11 +259,11 @@ namespace BelzontWE.Font
         }
 
         /// <summary>
-        /// Reconstructs a <see cref="WETextureAtlas"/> from a pre-compressed <see cref="Sprites.WEAtlasCacheFile"/>
+        /// Reconstructs a <see cref="WETextureAtlas"/> from a pre-compressed <see cref="KAtlasCacheFile"/>
         /// without re-encoding PNGs. All 5 layer textures are created from the BC7 data in the cache.
-        /// Requires a Unity GPU context (uses <see cref="WEAtlasBC7Utils.CreateFromBC7"/>).
+        /// Requires a Unity GPU context (uses <see cref="KAtlasBC7Utils.CreateFromBC7"/>).
         /// </summary>
-        internal static WETextureAtlas FromCacheFile(Sprites.WEAtlasCacheFile cache)
+        internal static WETextureAtlas FromCacheFile(KAtlasCacheFile cache)
         {
             var atlas = new WETextureAtlas
             {

@@ -1,4 +1,5 @@
-﻿using BelzontWE.Layout;
+﻿using BelzontWE.Commons.Utils.AssetPipeline;
+using BelzontWE.Layout;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -46,33 +47,11 @@ namespace BelzontWE.Sprites
             }
         }
 
+        // Extracted to KTextureLoadingUtils — delegating for backward compatibility.
         internal static Texture2D TryLoadTexture(string file, int width, int height)
-        {
-            if (!File.Exists(file)) return null;
-            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            if (tex.LoadImage(File.ReadAllBytes(file)) && tex.width == width && tex.height == height)
-            {
-                return tex;
-            }
-            else
-            {
-                GameObject.Destroy(tex);
-                return null;
-            }
-        }
+            => KTextureLoadingUtils.TryLoadTexture(file, width, height);
+
         internal static Texture2D TryLoadTexture(byte[] contents, int width, int height)
-        {
-            if (contents == null || contents.Length == 0) return null;
-            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            if (tex.LoadImage(contents) && tex.width == width && tex.height == height)
-            {
-                return tex;
-            }
-            else
-            {
-                GameObject.Destroy(tex);
-                return null;
-            }
-        }
+            => KTextureLoadingUtils.TryLoadTexture(contents, width, height);
     }
 }

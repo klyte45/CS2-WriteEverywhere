@@ -9,6 +9,7 @@ using System.Web;
 using UnityEngine;
 using BelzontWE.Sprites;
 using IOPath = System.IO.Path;
+using BelzontWE.Commons.Utils.AssetPipeline;
 
 namespace BelzontWE
 {
@@ -131,7 +132,7 @@ namespace BelzontWE
                         ? IOPath.Combine(WEAtlasesLibrary.CACHED_VT_FOLDER, atlasName.Replace(':', IOPath.DirectorySeparatorChar) + ".cache.we.bc7")
                         : IOPath.Combine(WEAtlasesLibrary.CACHED_VT_FOLDER, $"{atlasName}.cache.we.bc7");
 
-                    var cachedFile = Font.Sprites.WEAtlasCacheFile.ReadFrom(cachePath);
+                    var cachedFile = KAtlasCacheFile.ReadFrom(cachePath);
                     if (cachedFile?.LayerBC7 == null || cachedFile.LayerBC7.Length == 0 || cachedFile.LayerBC7[0] == null)
                     {
                         return false;

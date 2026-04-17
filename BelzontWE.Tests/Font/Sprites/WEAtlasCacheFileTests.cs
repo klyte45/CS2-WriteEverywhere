@@ -1,10 +1,11 @@
-using BelzontWE.Font.Sprites;
+using BelzontWE;
+using BelzontWE.Commons.Utils.AssetPipeline;
 using BelzontWE.Sprites;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using HeuristicMethod = MaxRectsBinPack.FreeRectChoiceHeuristic;
+using HeuristicMethod = BelzontWE.Commons.Utils.AssetPipeline.KMaxRectsBinPack.FreeRectChoiceHeuristic;
 
 namespace BelzontWE.Tests.Font.Sprites
 {
@@ -31,11 +32,11 @@ namespace BelzontWE.Tests.Font.Sprites
 
         [Test]
         public void MAGIC_IsExpectedValue()
-            => Assert.That(WEAtlasCacheFile.MAGIC, Is.EqualTo(0x37434257u));
+            => Assert.That(KAtlasCacheFile.MAGIC, Is.EqualTo(0x37434257u));
 
         [Test]
-        public void FORMAT_VERSION_Is2()
-            => Assert.That(WEAtlasCacheFile.FORMAT_VERSION, Is.EqualTo(2u));
+        public void FORMAT_VERSION_Is3()
+            => Assert.That(KAtlasCacheFile.FORMAT_VERSION, Is.EqualTo(3u));
 
         // ── Round-trip ────────────────────────────────────────────────────────
 
@@ -46,7 +47,7 @@ namespace BelzontWE.Tests.Font.Sprites
             var path = Path.Combine(_tempDir, "test.cache.we.bc7");
 
             cache.WriteTo(path);
-            var loaded = WEAtlasCacheFile.ReadFrom(path);
+            var loaded = KAtlasCacheFile.ReadFrom(path);
 
             Assert.That(loaded, Is.Not.Null);
             Assert.That(loaded!.Checksum, Is.EqualTo(cache.Checksum));
@@ -67,7 +68,7 @@ namespace BelzontWE.Tests.Font.Sprites
             var path = Path.Combine(_tempDir, "layer.cache.we.bc7");
 
             cache.WriteTo(path);
-            var loaded = WEAtlasCacheFile.ReadFrom(path);
+            var loaded = KAtlasCacheFile.ReadFrom(path);
 
             Assert.That(loaded, Is.Not.Null);
             Assert.That(loaded!.LayerBC7[0], Is.EqualTo(layer));
@@ -80,7 +81,7 @@ namespace BelzontWE.Tests.Font.Sprites
             var path = Path.Combine(_tempDir, "nulllayer.cache.we.bc7");
 
             cache.WriteTo(path);
-            var loaded = WEAtlasCacheFile.ReadFrom(path);
+            var loaded = KAtlasCacheFile.ReadFrom(path);
 
             Assert.That(loaded, Is.Not.Null);
             Assert.That(loaded!.LayerBC7[1], Is.Null, "Emissive layer should be null");
@@ -98,14 +99,14 @@ namespace BelzontWE.Tests.Font.Sprites
                 w.Write(1u);          // version
             }
 
-            var result = WEAtlasCacheFile.ReadFrom(path);
+            var result = KAtlasCacheFile.ReadFrom(path);
             Assert.That(result, Is.Null);
         }
 
         [Test]
         public void ReadFrom_NonExistentFile_ReturnsNull()
         {
-            var result = WEAtlasCacheFile.ReadFrom(Path.Combine(_tempDir, "doesnotexist.we.bc7"));
+            var result = KAtlasCacheFile.ReadFrom(Path.Combine(_tempDir, "doesnotexist.we.bc7"));
             Assert.That(result, Is.Null);
         }
 
@@ -115,7 +116,7 @@ namespace BelzontWE.Tests.Font.Sprites
             var path = Path.Combine(_tempDir, "truncated.we.bc7");
             File.WriteAllBytes(path, new byte[] { 0x57, 0x42, 0x43, 0x37 }); // just 4 bytes of magic
 
-            var result = WEAtlasCacheFile.ReadFrom(path);
+            var result = KAtlasCacheFile.ReadFrom(path);
             Assert.That(result, Is.Null);
         }
 
@@ -141,7 +142,7 @@ namespace BelzontWE.Tests.Font.Sprites
             var cache = BuildSampleCache();
             var path = Path.Combine(_tempDir, "repack.we.bc7");
             cache.WriteTo(path);
-            var loaded = WEAtlasCacheFile.ReadFrom(path)!;
+            var loaded = KAtlasCacheFile.ReadFrom(path)!;
 
             var pack = loaded.RebuildRectsPack();
 
@@ -151,19 +152,19 @@ namespace BelzontWE.Tests.Font.Sprites
 
         // ── Helper ────────────────────────────────────────────────────────────
 
-        private static WEAtlasCacheFile BuildSampleCache(byte[]? layerData = null)
+        private static KAtlasCacheFile BuildSampleCache(byte[]? layerData = null)
         {
             var pack = new MaxRectsBinPack(512, 512);
-            var sprites = new List<WEAtlasCacheFile.CachedSprite>
+            var sprites = new List<KAtlasCacheFile.CachedSprite>
             {
-                new("sprite_a", new Rect(0, 0, 64, 64), WESpriteInfo.ExtraTexturesFlag.Emissive),
+                new("sprite_a", new Rect(0, 0, 64, 64), KSpriteInfo.ExtraTexturesFlag.Emissive),
             };
             var layers = new byte[]?[]
             {
                 layerData ?? new byte[WEAtlasBC7Utils.GetBC7SizeBytes(512, 512)],
                 null, null, null, null
             };
-            return new WEAtlasCacheFile(
+            return new KAtlasCacheFile(
                 checksum: 0xABCD1234u,
                 width: 512, height: 512, size: 19,
                 method: HeuristicMethod.RectBestShortSideFit,

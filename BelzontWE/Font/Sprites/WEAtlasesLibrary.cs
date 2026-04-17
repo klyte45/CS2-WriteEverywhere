@@ -1,5 +1,6 @@
 using Belzont.Interfaces;
 using Belzont.Utils;
+using BelzontWE.Commons.Utils.AssetPipeline;
 using BelzontWE.Font;
 using BelzontWE.Layout;
 using Colossal.IO.AssetDatabase;
@@ -215,7 +216,7 @@ namespace BelzontWE.Sprites
                     continue;
                 }
                 var cacheFilePath = Path.Combine(CACHED_VT_FOLDER, $"{atlasName}.cache.we.bc7");
-                var cachedFile = Font.Sprites.WEAtlasCacheFile.ReadFrom(cacheFilePath);
+                var cachedFile = KAtlasCacheFile.ReadFrom(cacheFilePath);
                 if (cachedFile != null && cachedFile.Checksum == checksum)
                 {
                     try
@@ -362,7 +363,7 @@ namespace BelzontWE.Sprites
 
                     if (checksum != 0)
                     {
-                        var cachedFile = Font.Sprites.WEAtlasCacheFile.ReadFrom(cacheFilePath);
+                        var cachedFile = KAtlasCacheFile.ReadFrom(cacheFilePath);
                         if (cachedFile != null && cachedFile.Checksum == checksum)
                         {
                             try
@@ -424,7 +425,7 @@ namespace BelzontWE.Sprites
                         {
                             atlas.WriteBC7CacheAndReplaceTextures(cacheFilePath, checksum);
                             // Dispose RGBA32 atlas and reload from BC7 cache to free RAM.
-                            var reloadedCache = Font.Sprites.WEAtlasCacheFile.ReadFrom(cacheFilePath);
+                            var reloadedCache = KAtlasCacheFile.ReadFrom(cacheFilePath);
                             if (reloadedCache != null && reloadedCache.Checksum == checksum)
                             {
                                 ModAtlases[modAccessName].Dispose();
@@ -479,7 +480,7 @@ namespace BelzontWE.Sprites
                     var cacheFilePath = Path.Combine(CACHED_VT_FOLDER, $"{atlasName}.cache.we.bc7");
                     atlas.WriteBC7CacheAndReplaceTextures(cacheFilePath, checksum);
                     // Dispose RGBA32 atlas and reload from BC7 cache to free RAM.
-                    var cachedFile = Font.Sprites.WEAtlasCacheFile.ReadFrom(cacheFilePath);
+                    var cachedFile = KAtlasCacheFile.ReadFrom(cacheFilePath);
                     if (cachedFile != null && cachedFile.Checksum == checksum)
                     {
                         LocalAtlases[atlasName].Dispose();
