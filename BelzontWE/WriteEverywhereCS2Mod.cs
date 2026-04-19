@@ -5,6 +5,7 @@ using BelzontWE.UI;
 using BelzontWE.Utils;
 using Colossal.Core;
 using Colossal.IO.AssetDatabase;
+using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Game;
 using Game.Modding;
 using Game.SceneFlow;
@@ -96,7 +97,6 @@ namespace BelzontWE
             LogUtils.DoInfoLog("WETextDataMaterial = " + sizeof(WETextDataMaterial));
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<GamePanelUISystem>().SetDefaultArgs(new WEMainPanel());
             LogUtils.DoInfoLog($"Registered panel: {typeof(WEMainPanel).FullName}");
-            initFrame = Time.frameCount;
 
             MainThreadDispatcher.RegisterUpdater(() =>
             {
@@ -106,8 +106,17 @@ namespace BelzontWE
             });
         }
 
-        internal static int initFrame = 0;
-        internal static bool IsInitializationComplete => Time.frameCount - initFrame >= 120;
+        internal static bool IsInitializationComplete
+        {
+            get
+            {
+                var tss = World.DefaultGameObjectInjectionWorld?.GetExistingSystemManaged<TextureStreamingSystem>();
+                return tss != null
+                    && tss.VTMaterialsCountAssetsCount > 0
+                    && tss.VTMaterialsLeftToLoadCount == 0
+                    && tss.VTMaterialsDuplicatesToProcessCount == 0;
+            }
+        }
 
         public override BasicModData CreateSettingsFile()
         {

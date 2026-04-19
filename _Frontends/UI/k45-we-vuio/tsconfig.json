@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "jsx": "react-jsx",
+    "ignoreDeprecations": "6.0",
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Node",
@@ -17,7 +18,25 @@
     "paths": {
       "mod.json": [
         "../mod.json"
-      ]
+      ],
+      "#components/*": [
+        "components/*"
+      ],
+      "#enum/*": [
+        "enum/*"
+      ],
+      "#service/*": [
+        "service/*"
+      ],
+      "#utility/*": [
+        "utility/*"
+      ],
+      "#styles/*": [
+        "style/*"
+      ],
+      "#images/*": [
+        "images/*"
+      ],
     }
-  },
+  }
 }
