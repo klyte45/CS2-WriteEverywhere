@@ -117,6 +117,8 @@ namespace BelzontWE
                 m_ownerLkp = GetComponentLookup<Game.Common.Owner>(true),
                 m_meshesLkp = GetBufferLookup<MeshBatch>(true),
                 m_subObjectsLkp = GetBufferLookup<SubObject>(true),
+                m_weSubObjectsLkp = GetBufferLookup<WESubObject>(true),
+                m_weInheritedVarsCacheLkp = GetComponentLookup<WEInheritedVarsCache>(false),
                 frameCount = UnityEngine.Time.frameCount,
                 minLodUpdateSetting = Mathf.CeilToInt(WriteEverywhereCS2Mod.WeData.RequiredLodForFormulaesUpdate),
                 indexStartString = indexStartString,
@@ -187,6 +189,8 @@ namespace BelzontWE
             public BufferLookup<SubObject> m_subObjectsLkp;
             public ComponentLookup<Game.Common.Owner> m_ownerLkp;
             public ComponentLookup<CullingInfo> m_CullInfoLkp;
+            [ReadOnly] public BufferLookup<WESubObject> m_weSubObjectsLkp;
+            public ComponentLookup<WEInheritedVarsCache> m_weInheritedVarsCacheLkp;
             public NativeList<PreCullingData> m_CullingActions;
             public int frameCount;
             public int minLodUpdateSetting;
@@ -311,6 +315,8 @@ namespace BelzontWE
                     geomMatrix = Matrix4x4.identity;
                 }
                 FixedString512Bytes variables = new();
+                if (m_weInheritedVarsCacheLkp.HasEnabledComponent(entity))
+                    variables = m_weInheritedVarsCacheLkp[entity].vars;
                 PopulateVars(entity, ref variables, out _);
                 if (prefabWeLayout.childEntity != Entity.Null)
                 {
@@ -581,6 +587,18 @@ namespace BelzontWE
                         return;
                     case WESimulationTextType.GameProp:
                         CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, 0);
+                        if (m_weSubObjectsLkp.TryGetBuffer(nextEntity, out var subObjBuf))
+                        {
+                            for (int si = 0; si < subObjBuf.Length; si++)
+                            {
+                                var subObjEntity = subObjBuf[si].m_SubObject;
+                                if (m_weInheritedVarsCacheLkp.HasComponent(subObjEntity))
+                                {
+                                    m_CommandBuffer.SetComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars });
+                                    m_CommandBuffer.SetComponentEnabled<WEInheritedVarsCache>(unfilteredChunkIndex, subObjEntity, true);
+                                }
+                            }
+                        }
                         break;
                     default:
                         {

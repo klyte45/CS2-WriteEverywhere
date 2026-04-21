@@ -1,3 +1,4 @@
+**End time:** 2026-04-21 18:07 -0300
 **Start time:** 2026-04-21 18:04 -0300
 # [0121] Implement Game Prop Variable Inheritance
 
@@ -22,12 +23,12 @@ Doc 04 v2. WEInheritedVarsCache on spawned prop stores parent inheritableVars (e
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] WEPreCullingSystem.PassedCulling() seeds initial variables from WEInheritedVarsCache when present (read even if disabled)
-- [ ] DrawTree() GameProp case writes inheritableVars (no !-local vars) to WEInheritedVarsCache on each WESubObject entity
-- [ ] WETextDataMesh.UpdateFormulaes() has GameProp case calling valueData.UpdateEffectiveValue
-- [ ] Parent non-local variables visible in spawned prop default prefab layout formulae
-- [ ] Parent !-local variables are NOT visible in spawned prop layout
-- [ ] Unit tests verify variable inheritance and local-var exclusion
+- [x] WEPreCullingSystem.PassedCulling() seeds initial variables from WEInheritedVarsCache when present (read even if disabled)
+- [x] DrawTree() GameProp case writes inheritableVars (no !-local vars) to WEInheritedVarsCache on each WESubObject entity
+- [x] WETextDataMesh.UpdateFormulaes() has GameProp case calling valueData.UpdateEffectiveValue
+- [x] Parent non-local variables visible in spawned prop default prefab layout formulae
+- [x] Parent !-local variables are NOT visible in spawned prop layout
+- [x] Unit tests verify variable inheritance and local-var exclusion
 
 ---
 
