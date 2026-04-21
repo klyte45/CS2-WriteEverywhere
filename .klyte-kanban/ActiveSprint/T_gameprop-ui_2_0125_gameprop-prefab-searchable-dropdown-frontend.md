@@ -1,3 +1,4 @@
+**End time:** 2026-04-21 20:01 -0300
 **Start time:** 2026-04-21 20:00 -0300
 # [0125] gameprop-prefab-searchable-dropdown-frontend
 
@@ -22,12 +23,12 @@ PopupSearchField is available at 'game-ui/editor/widgets/search-field/popup-sear
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] PopupSearchField added to VanillaWidgets with correct type definition and registryIndex entry
-- [ ] WorldPickerService exposes getGamePropEntries() async method calling dataMesh.getGamePropEntries
-- [ ] GameProp block in WETextValueSettings uses PopupSearchField inside FormulaeEditRow as defaultInputField
-- [ ] Typing in the field filters suggestions matching either prefabName or localizedName
-- [ ] Selecting a suggestion stores the prefabName in mesh.ValueText
-- [ ] Frontend build succeeds with no TS errors
+- [x] PopupSearchField added to VanillaWidgets with correct type definition and registryIndex entry
+- [x] WorldPickerService exposes getGamePropEntries() async method calling dataMesh.getGamePropEntries
+- [x] GameProp block in WETextValueSettings uses PopupSearchField inside FormulaeEditRow as defaultInputField
+- [x] Typing in the field filters suggestions matching either prefabName or localizedName
+- [x] Selecting a suggestion stores the prefabName in mesh.ValueText
+- [x] Frontend build succeeds with no TS errors
 
 ---
 
