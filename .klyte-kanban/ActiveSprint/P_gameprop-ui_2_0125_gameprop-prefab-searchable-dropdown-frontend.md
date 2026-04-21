@@ -1,7 +1,7 @@
+**Start time:** 2026-04-21 20:00 -0300
 # [0125] gameprop-prefab-searchable-dropdown-frontend
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 (claude-sonnet-4@kwytco.com.br)
 ## User Story
 
 > Acting as **a WE editor user**, I want **a searchable dropdown for the prefab name field when I select GameProp as content type**, so that I **I can find and select the correct prop by typing either its prefab name or localized name**.
