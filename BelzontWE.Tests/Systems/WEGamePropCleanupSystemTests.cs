@@ -1,5 +1,4 @@
 using NUnit.Framework;
-using Unity.Collections;
 
 namespace BelzontWE.Tests.Systems
 {
@@ -22,22 +21,6 @@ namespace BelzontWE.Tests.Systems
             // WEOwner must NOT serialize — after load, spawned props have WEChild but no WEOwner.
             Assert.That(typeof(WEOwner).GetInterface("IEmptySerializable"), Is.Null);
             Assert.That(typeof(WEOwner).GetInterface("ISerializable"), Is.Null);
-        }
-
-        // ── WEGamePropLastSpawned ─────────────────────────────────────────
-
-        [Test]
-        public void WEGamePropLastSpawned_DefaultValue_IsEmpty()
-        {
-            var c = new WEGamePropLastSpawned();
-            Assert.That(c.LastSpawnedPrefabName.Length, Is.EqualTo(0));
-        }
-
-        [Test]
-        public void WEGamePropLastSpawned_CanStorePrefabName()
-        {
-            var c = new WEGamePropLastSpawned { LastSpawnedPrefabName = new FixedString128Bytes("my_prefab") };
-            Assert.That(c.LastSpawnedPrefabName.ToString(), Is.EqualTo("my_prefab"));
         }
     }
 }
