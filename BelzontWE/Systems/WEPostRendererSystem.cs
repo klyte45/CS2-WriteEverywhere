@@ -16,6 +16,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Mathematics;
 
 
 #if BURST
@@ -198,18 +199,83 @@ namespace BelzontWE
                 gameIndex.TryGetValue(currentPrefabName, out var prefabEntity);
                 var hasValidPrefab = !string.IsNullOrEmpty(currentPrefabName) && prefabEntity != Entity.Null;
 
-                // Check if already spawned with correct prefab
-                if (hasValidPrefab && m_SubObjectLkp.TryGetBuffer(entity, out var existingBuf) && existingBuf.Length > 0)
+                // Get geometry/text-node transform
+                m_WeMainLkp.TryGetComponent(entity, out var main);
+                var geomTransform = default(Game.Objects.Transform);
+                m_GameTransformLkp.TryGetComponent(main.TargetEntity, out geomTransform);
+                var hasGeom = main.TargetEntity != Entity.Null && m_entityLookup.Exists(main.TargetEntity);
+                m_WeTransformLkp.TryGetComponent(entity, out var weTransform);
+
+                // Compute instancing layout
+                uint targetSize = 1;
+                Unity.Mathematics.float3[] spacingOffsets = null;
+                uint3 instancingCount = new(1, 1, 1);
+                Unity.Mathematics.float3 pivotOffset = default;
+                (WEPlacementAlignment m, WEPlacementAlignment n, WEPlacementAlignment o) alignmentByAxisOrder = default;
+
+                if (hasValidPrefab)
                 {
-                    for (int j = 0; j < existingBuf.Length; j++)
+                    var instCount = weTransform.InstanceCountFn.EffectiveValue;
+                    targetSize = instCount < 0
+                        ? (uint)Unity.Mathematics.math.clamp(weTransform.ArrayInstancing.x * weTransform.ArrayInstancing.y * weTransform.ArrayInstancing.z, 1, 256)
+                        : (uint)Unity.Mathematics.math.min(256, (uint)instCount);
+                    if (targetSize == 0) targetSize = 1;
+                    spacingOffsets = weTransform.SpacingByAxisOrder;
+                    instancingCount = (uint3)Unity.Mathematics.math.min(weTransform.InstanceCountByAxisOrder,
+                        Unity.Mathematics.math.ceil(targetSize / new Unity.Mathematics.float3(1,
+                            weTransform.InstanceCountByAxisOrder[0],
+                            weTransform.InstanceCountByAxisOrder[0] * weTransform.InstanceCountByAxisOrder[1])));
+                    var totalArea = (weTransform.ArrayInstancing - 1) * weTransform.arrayInstancingGapMeters;
+                    var effectivePivot = weTransform.PivotAsFloat3 - (Unity.Mathematics.math.sign(totalArea.xyz) / 2) - .5f;
+                    pivotOffset = effectivePivot * Unity.Mathematics.math.abs(totalArea);
+                    alignmentByAxisOrder = weTransform.AlignmentByAxisOrder;
+                }
+
+                // Read existing sub-objects
+                m_SubObjectLkp.TryGetBuffer(entity, out var existingBuf);
+                int existingCount = existingBuf.IsCreated ? existingBuf.Length : 0;
+
+                // Check if already correctly spawned (same prefab, same count)
+                if (hasValidPrefab && existingCount == (int)targetSize && existingCount > 0)
+                {
+                    bool allMatch = true;
+                    for (int j = 0; j < existingCount; j++)
                     {
                         var sub = existingBuf[j].m_SubObject;
-                        if (m_entityLookup.Exists(sub)
-                            && m_PrefabRefLkp.TryGetComponent(sub, out var subPrefabRef)
-                            && subPrefabRef.m_Prefab == prefabEntity)
+                        if (!m_entityLookup.Exists(sub) || !m_PrefabRefLkp.TryGetComponent(sub, out var subPrefabRef) || subPrefabRef.m_Prefab != prefabEntity)
                         {
-                            return; // already spawned correctly
+                            allMatch = false;
+                            break;
                         }
+                    }
+                    if (allMatch)
+                    {
+                        // Update transforms only 
+                        if (hasGeom && spacingOffsets != null)
+                        {
+                            var geomMatrix = Unity.Mathematics.float4x4.TRS(geomTransform.m_Position, geomTransform.m_Rotation, new Unity.Mathematics.float3(1f));
+                            int idx = 0;
+                            for (int o = 0; o < instancingCount.z && idx < existingCount; o++)
+                            {
+                                var spacingO = spacingOffsets[2];
+                                WETemplateManager.GetSpacingAndOffset((uint)(targetSize - idx), instancingCount.z, instancingCount.y * instancingCount.x, alignmentByAxisOrder.o, ref spacingO, out var offsetO);
+                                for (int n = 0; n < instancingCount.y && idx < existingCount; n++)
+                                {
+                                    var spacingN = spacingOffsets[1];
+                                    WETemplateManager.GetSpacingAndOffset((uint)(targetSize - idx), instancingCount.y, instancingCount.x, alignmentByAxisOrder.n, ref spacingN, out var offsetN);
+                                    for (int m2 = 0; m2 < instancingCount.x && idx < existingCount; m2++, idx++)
+                                    {
+                                        var spacingM = spacingOffsets[0];
+                                        WETemplateManager.GetSpacingAndOffset((uint)(targetSize - idx), instancingCount.x, 1, alignmentByAxisOrder.m, ref spacingM, out var offsetM);
+                                        var localPos = weTransform.offsetPosition + pivotOffset + offsetM + offsetN + offsetO + (m2 * spacingM) + (n * spacingN) + (o * spacingO);
+                                        var worldPos = Unity.Mathematics.math.transform(geomMatrix, localPos);
+                                        var worldRot = Unity.Mathematics.math.mul(geomTransform.m_Rotation, weTransform.offsetRotation);
+                                        cmd.SetComponent(unfilteredChunkIndex, existingBuf[idx].m_SubObject, new Game.Objects.Transform(worldPos, worldRot));
+                                    }
+                                }
+                            }
+                        }
+                        return;
                     }
                 }
 
@@ -218,25 +284,53 @@ namespace BelzontWE
 
                 if (!hasValidPrefab) return;
 
-                // Spawn new prop
-                var spawnedEntity = cmd.Instantiate(unfilteredChunkIndex, prefabEntity);
+                // Spawn all instances
+                Unity.Mathematics.float4x4 geomMtx = hasGeom
+                    ? Unity.Mathematics.float4x4.TRS(geomTransform.m_Position, geomTransform.m_Rotation, new Unity.Mathematics.float3(1f))
+                    : Unity.Mathematics.float4x4.identity;
+                var baseRot = hasGeom
+                    ? Unity.Mathematics.math.mul(geomTransform.m_Rotation, weTransform.offsetRotation)
+                    : weTransform.offsetRotation;
 
-                if (m_WeMainLkp.TryGetComponent(entity, out var main)
-                    && m_GameTransformLkp.TryGetComponent(main.TargetEntity, out var geomTransform)
-                    && m_WeTransformLkp.TryGetComponent(entity, out var weTransform))
+                if (spacingOffsets != null)
                 {
-                    var geomMatrix = Unity.Mathematics.float4x4.TRS(geomTransform.m_Position, geomTransform.m_Rotation, new Unity.Mathematics.float3(1f));
-                    var worldPos = Unity.Mathematics.math.transform(geomMatrix, weTransform.offsetPosition);
-                    var worldRot = Unity.Mathematics.math.mul(geomTransform.m_Rotation, weTransform.offsetRotation);
-                    cmd.SetComponent(unfilteredChunkIndex, spawnedEntity, new Game.Objects.Transform(worldPos, worldRot));
+                    int spawned = 0;
+                    for (int o = 0; o < instancingCount.z && spawned < targetSize; o++)
+                    {
+                        var spacingO = spacingOffsets[2];
+                        WETemplateManager.GetSpacingAndOffset((uint)(targetSize - spawned), instancingCount.z, instancingCount.y * instancingCount.x, alignmentByAxisOrder.o, ref spacingO, out var offsetO);
+                        for (int n = 0; n < instancingCount.y && spawned < targetSize; n++)
+                        {
+                            var spacingN = spacingOffsets[1];
+                            WETemplateManager.GetSpacingAndOffset((uint)(targetSize - spawned), instancingCount.y, instancingCount.x, alignmentByAxisOrder.n, ref spacingN, out var offsetN);
+                            for (int m2 = 0; m2 < instancingCount.x && spawned < targetSize; m2++, spawned++)
+                            {
+                                var spacingM = spacingOffsets[0];
+                                WETemplateManager.GetSpacingAndOffset((uint)(targetSize - spawned), instancingCount.x, 1, alignmentByAxisOrder.m, ref spacingM, out var offsetM);
+                                var localPos = weTransform.offsetPosition + pivotOffset + offsetM + offsetN + offsetO + (m2 * spacingM) + (n * spacingN) + (o * spacingO);
+                                var worldPos = Unity.Mathematics.math.transform(geomMtx, localPos);
+                                SpawnPropInstance(entity, prefabEntity, worldPos, baseRot, unfilteredChunkIndex, cmd);
+                            }
+                        }
+                    }
                 }
+                else
+                {
+                    for (int idx = 0; idx < targetSize; idx++)
+                        SpawnPropInstance(entity, prefabEntity, Unity.Mathematics.math.transform(geomMtx, weTransform.offsetPosition), baseRot, unfilteredChunkIndex, cmd);
+                }
+            }
 
-                cmd.AddComponent(unfilteredChunkIndex, spawnedEntity, new WEOwner { m_weOwnerEntity = entity });
+            private void SpawnPropInstance(Entity textNode, Entity prefabEntity, Unity.Mathematics.float3 worldPos, Unity.Mathematics.quaternion worldRot, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+            {
+                var spawnedEntity = cmd.Instantiate(unfilteredChunkIndex, prefabEntity);
+                cmd.SetComponent(unfilteredChunkIndex, spawnedEntity, new Game.Objects.Transform(worldPos, worldRot));
+                cmd.AddComponent(unfilteredChunkIndex, spawnedEntity, new WEOwner { m_weOwnerEntity = textNode });
                 cmd.AddComponent<WEChild>(unfilteredChunkIndex, spawnedEntity);
                 cmd.AddComponent<WEInheritedVarsCache>(unfilteredChunkIndex, spawnedEntity);
                 cmd.SetComponentEnabled<WEInheritedVarsCache>(unfilteredChunkIndex, spawnedEntity, false);
                 cmd.AddComponent<Secondary>(unfilteredChunkIndex, spawnedEntity);
-                cmd.AppendToBuffer(unfilteredChunkIndex, entity, new WESubObject { m_SubObject = spawnedEntity });
+                cmd.AppendToBuffer(unfilteredChunkIndex, textNode, new WESubObject { m_SubObject = spawnedEntity });
             }
 
             private bool UpdatePlaceholder(Entity e, ref WETextDataMain weCustomData, string templateName, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)

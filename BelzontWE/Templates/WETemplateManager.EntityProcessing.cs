@@ -135,7 +135,7 @@ namespace BelzontWE
         /// Calculates spacing and offset for array instancing based on alignment settings.
         /// Used for justified, centered, and right-aligned layout patterns.
         /// </summary>
-        private static void GetSpacingAndOffset(uint remaining, uint rowCount, uint rowCapacity, WEPlacementAlignment axisAlignment, ref float3 spacing, out float3 offset)
+        internal static void GetSpacingAndOffset(uint remaining, uint rowCount, uint rowCapacity, WEPlacementAlignment axisAlignment, ref float3 spacing, out float3 offset)
         {
             offset = float3.zero;
             uint capacity = rowCapacity * (rowCount - 1);
