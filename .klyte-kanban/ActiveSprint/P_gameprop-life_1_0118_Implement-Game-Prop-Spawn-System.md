@@ -1,7 +1,7 @@
+**Start time:** 2026-04-21 12:18 -0300
 # [0118] Implement Game Prop Spawn System
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.5 (claude-sonnet-4-5@kwytco.com.br)
 ## User Story
 
 > Acting as **a player**, I want **GameProp WE nodes to spawn real CS2 prop entities in the world positioned relative to the parent geometry entity**, so that I **WE layouts can include 3D props as part of the information display**.
