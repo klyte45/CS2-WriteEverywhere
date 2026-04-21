@@ -244,6 +244,7 @@ namespace BelzontWE
             if (m_Controller.CurrentEntity.Value == default)
             {
                 bool collide = GetRaycastResult(out Entity entity, out RaycastHit raycastHit);
+                if (collide && EntityManager.HasComponent<WEOwner>(entity)) collide = false;
 
                 LastPos = raycastHit.m_HitPosition;
                 m_Controller.CurrentSubEntity.Value = Entity.Null;

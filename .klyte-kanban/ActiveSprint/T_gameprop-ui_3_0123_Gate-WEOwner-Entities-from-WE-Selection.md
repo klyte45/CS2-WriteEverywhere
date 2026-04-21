@@ -1,3 +1,4 @@
+**End time:** 2026-04-21 18:13 -0300
 **Start time:** 2026-04-21 18:09 -0300
 # [0123] Gate WEOwner Entities from WE Selection
 
@@ -22,10 +23,10 @@ Doc 04 section 9. Spawned prop entities have WEOwner component. WEWorldPickerSys
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] WEWorldPickerSystem entity query excludes entities with WEOwner component
-- [ ] WEWorldPickerTooltip entity query excludes entities with WEOwner component
-- [ ] Spawned GameProp props cannot be selected as WE editing targets in-game
-- [ ] All existing world-picker behavior for non-WEOwner entities is unchanged
+- [x] WEWorldPickerSystem entity query excludes entities with WEOwner component
+- [x] WEWorldPickerTooltip entity query excludes entities with WEOwner component
+- [x] Spawned GameProp props cannot be selected as WE editing targets in-game
+- [x] All existing world-picker behavior for non-WEOwner entities is unchanged
 
 ---
 
