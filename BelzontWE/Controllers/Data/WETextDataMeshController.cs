@@ -127,16 +127,12 @@ namespace BelzontWE
             ValueTextFormulaeStr.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { ValueTextFormulaeCompileResult.Value = currentItem.SetFormulae(x, out var cmpErr); ValueTextFormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
             TextSourceType.OnScreenValueChanged += (x) =>
             {
-                if ((WESimulationTextType)x == WESimulationTextType.GameProp)
+                if ((WESimulationTextType)x == WESimulationTextType.GameProp
+                    && EntityManager.HasComponent<Game.Rendering.InterpolatedTransform>(PickerController.CurrentEntity.Value))
                 {
-                    var subEntity = PickerController.CurrentSubEntity.Value;
-                    if (EntityManager.TryGetComponent<WETextDataMain>(subEntity, out var main)
-                        && EntityManager.HasComponent<Game.Rendering.InterpolatedTransform>(main.TargetEntity))
-                    {
-                        LogUtils.DoWarnLog($"[WE] GameProp type is not supported on Moveable Objects (entity {main.TargetEntity} has InterpolatedTransform). Ignoring change.");
-                        TextSourceType.Value = (int)EntityManager.GetComponentData<WETextDataMesh>(subEntity).TextType;
-                        return;
-                    }
+                    LogUtils.DoWarnLog($"[WE] GameProp type is not supported on Moveable Objects. Ignoring change.");
+                    TextSourceType.Value = (int)EntityManager.GetComponentData<WETextDataMesh>(PickerController.CurrentSubEntity.Value).TextType;
+                    return;
                 }
                 PickerController.EnqueueModification<int, WETextDataMesh>(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; PickerController.ReloadTreeDelayed(); return currentItem; });
             };
