@@ -429,21 +429,14 @@ namespace BelzontWE
                     var materialChanged = material.UpdateFormulaes(em, dirtyData.geometry, vars);
                     var canMultiply = mesh.TextType == WESimulationTextType.Placeholder;
                     var transformChanged = transform.UpdateFormulae(em, dirtyData.geometry, vars, canMultiply);
-                    var meshChanged = mesh.UpdateFormulaes(em, dirtyData.geometry, vars);
+                    var meshChanged = mesh.UpdateFormulaes(em, dirtyData.geometry, vars);                    
                     if (materialChanged | transformChanged | meshChanged)
                     {
                         main.lastChangeFrame = main.nextUpdateFrame;
-                    }
-                    if (mesh.TextType == WESimulationTextType.GameProp)
-                    {
-                        if(meshChanged)
+                        if (mesh.TextType == WESimulationTextType.GameProp)
                         {
                             m_CommandBuffer.AddComponent<WEWaitingRendering>(entities[i]);
                             m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(entities[i], true);
-                        }
-                        if(transformChanged)
-                        {
-                            //Shall mark all wesubobjects referenced entities as dirty to sync the transform change with the game prop sub-entities
                         }
                     }
                     main.nextUpdateFrame = nextUpdateFrame + intervalUpdate + (i % intervalUpdate);
