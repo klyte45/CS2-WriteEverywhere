@@ -5,6 +5,8 @@ using BelzontWE.Font.Utility;
 using BelzontWE.Sprites;
 using Game;
 using Game.Common;
+using Game.Objects;
+using Game.Prefabs;
 using Game.SceneFlow;
 using Game.Tools;
 using System.Collections.Generic;
@@ -71,7 +73,12 @@ namespace BelzontWE
                     m_WeMeshLkp = GetComponentLookup<WETextDataMesh>(true),
                     m_WeMainLkp = GetComponentLookup<WETextDataMain>(true),
                     m_WeIsPlaceholderLkp = GetComponentLookup<WEIsPlaceholder>(true),
-                    m_templateManagerEntries = layoutsAvailable
+                    m_templateManagerEntries = layoutsAvailable,
+                    GamePropIndexPtr = GCHandle.Alloc(m_templateManager.WEGamePropIndex),
+                    m_SubObjectLkp = GetBufferLookup<WESubObject>(true),
+                    m_PrefabRefLkp = GetComponentLookup<PrefabRef>(true),
+                    m_WeTransformLkp = GetComponentLookup<WETextDataTransform>(true),
+                    m_GameTransformLkp = GetComponentLookup<Game.Objects.Transform>(true),
                 }.Schedule(m_pendingQueueEntities, Dependency).Complete();
 
                 layoutsAvailable.Dispose();
@@ -93,6 +100,11 @@ namespace BelzontWE
             public EntityStorageInfoLookup m_entityLookup;
             public BufferLookup<WETemplateUpdater> m_templateUpdaterLkp;
             public NativeArray<FixedString128Bytes> m_templateManagerEntries;
+            public GCHandle GamePropIndexPtr;
+            [ReadOnly] public BufferLookup<WESubObject> m_SubObjectLkp;
+            [ReadOnly] public ComponentLookup<PrefabRef> m_PrefabRefLkp;
+            [ReadOnly] public ComponentLookup<WETextDataTransform> m_WeTransformLkp;
+            [ReadOnly] public ComponentLookup<Game.Objects.Transform> m_GameTransformLkp;
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -147,15 +159,83 @@ namespace BelzontWE
                                 m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
                             }
                             break;
+                        case WESimulationTextType.GameProp:
+                            SpawnOrUpdateGameProp(entity, ref weMeshData, unfilteredChunkIndex, m_CommandBuffer);
+                            if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.SetComponentEnabled<WEIsPlaceholder>(unfilteredChunkIndex, entity, false);
+                            m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
+                            m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
+                            break;
                         default:
                             if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.SetComponentEnabled<WEIsPlaceholder>(unfilteredChunkIndex, entity, false);
                             m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
+                            ClearGamePropSubObjects(entity, unfilteredChunkIndex, m_CommandBuffer);
                             m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
                             break;
 
                     }
                 }
             }
+            private void ClearGamePropSubObjects(Entity entity, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+            {
+                if (!m_SubObjectLkp.TryGetBuffer(entity, out var subBuf) || subBuf.Length == 0) return;
+                for (int j = 0; j < subBuf.Length; j++)
+                {
+                    var sub = subBuf[j].m_SubObject;
+                    if (sub != Entity.Null) cmd.AddComponent<Game.Common.Deleted>(unfilteredChunkIndex, sub);
+                }
+                cmd.SetBuffer<WESubObject>(unfilteredChunkIndex, entity).Clear();
+            }
+
+            private void SpawnOrUpdateGameProp(Entity entity, ref WETextDataMesh weMeshData, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+            {
+                var gameIndex = GamePropIndexPtr.IsAllocated ? GamePropIndexPtr.Target as Dictionary<string, Entity> : null;
+                if (gameIndex == null) return;
+
+                var currentPrefabName = weMeshData.ValueData.EffectiveValue.ToString();
+                gameIndex.TryGetValue(currentPrefabName, out var prefabEntity);
+                var hasValidPrefab = !string.IsNullOrEmpty(currentPrefabName) && prefabEntity != Entity.Null;
+
+                // Check if already spawned with correct prefab
+                if (hasValidPrefab && m_SubObjectLkp.TryGetBuffer(entity, out var existingBuf) && existingBuf.Length > 0)
+                {
+                    for (int j = 0; j < existingBuf.Length; j++)
+                    {
+                        var sub = existingBuf[j].m_SubObject;
+                        if (m_entityLookup.Exists(sub)
+                            && m_PrefabRefLkp.TryGetComponent(sub, out var subPrefabRef)
+                            && subPrefabRef.m_Prefab == prefabEntity)
+                        {
+                            return; // already spawned correctly
+                        }
+                    }
+                }
+
+                // Clear existing sub-objects
+                ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd);
+
+                if (!hasValidPrefab) return;
+
+                // Spawn new prop
+                var spawnedEntity = cmd.Instantiate(unfilteredChunkIndex, prefabEntity);
+
+                if (m_WeMainLkp.TryGetComponent(entity, out var main)
+                    && m_GameTransformLkp.TryGetComponent(main.TargetEntity, out var geomTransform)
+                    && m_WeTransformLkp.TryGetComponent(entity, out var weTransform))
+                {
+                    var geomMatrix = Unity.Mathematics.float4x4.TRS(geomTransform.m_Position, geomTransform.m_Rotation, new Unity.Mathematics.float3(1f));
+                    var worldPos = Unity.Mathematics.math.transform(geomMatrix, weTransform.offsetPosition);
+                    var worldRot = Unity.Mathematics.math.mul(geomTransform.m_Rotation, weTransform.offsetRotation);
+                    cmd.SetComponent(unfilteredChunkIndex, spawnedEntity, new Game.Objects.Transform(worldPos, worldRot));
+                }
+
+                cmd.AddComponent(unfilteredChunkIndex, spawnedEntity, new WEOwner { m_weOwnerEntity = entity });
+                cmd.AddComponent<WEChild>(unfilteredChunkIndex, spawnedEntity);
+                cmd.AddComponent<WEInheritedVarsCache>(unfilteredChunkIndex, spawnedEntity);
+                cmd.SetComponentEnabled<WEInheritedVarsCache>(unfilteredChunkIndex, spawnedEntity, false);
+                cmd.AddComponent<Secondary>(unfilteredChunkIndex, spawnedEntity);
+                cmd.AppendToBuffer(unfilteredChunkIndex, entity, new WESubObject { m_SubObject = spawnedEntity });
+            }
+
             private bool UpdatePlaceholder(Entity e, ref WETextDataMain weCustomData, string templateName, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
             {
                 if (!m_entityLookup.Exists(weCustomData.TargetEntity)

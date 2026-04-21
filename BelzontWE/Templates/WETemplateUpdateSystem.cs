@@ -433,6 +433,11 @@ namespace BelzontWE
                     if (anyChanged)
                     {
                         main.lastChangeFrame = main.nextUpdateFrame;
+                        if (mesh.TextType == WESimulationTextType.GameProp)
+                        {
+                            m_CommandBuffer.AddComponent<WEWaitingRendering>(entities[i]);
+                            m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(entities[i], true);
+                        }
                     }
                     main.nextUpdateFrame = nextUpdateFrame + intervalUpdate + (i % intervalUpdate);
                     mainData[i] = main;

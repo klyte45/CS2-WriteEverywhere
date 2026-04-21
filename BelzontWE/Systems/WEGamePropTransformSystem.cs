@@ -16,7 +16,6 @@ namespace BelzontWE
     /// Runs at ModificationEnd, after SubObjectSystem (Modification2B).
     /// </summary>
     [UpdateAfter(typeof(WEGamePropCleanupSystem))]
-    [UpdateAfter(typeof(WEGamePropSpawnSystem))]
     public partial class WEGamePropTransformSystem : BelzontBasicSystem
     {
         protected override AllowedPhase UpdatePhase => AllowedPhase.ModificationEnd;
