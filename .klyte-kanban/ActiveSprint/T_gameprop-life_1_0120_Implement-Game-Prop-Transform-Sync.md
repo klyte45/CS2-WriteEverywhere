@@ -1,3 +1,4 @@
+**End time:** 2026-04-21 15:19 -0300
 **Start time:** 2026-04-21 15:13 -0300
 # [0120] Implement Game Prop Transform Sync
 
@@ -22,10 +23,10 @@ Doc 02: WEGamePropTransformSystem at PreRendering. Reads WEOwner.m_weOwnerEntity
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Spawned prop LocalTransform updates every frame to match parent geometry entity + WE node offset
-- [ ] Transform sync works for static buildings, road segment nodes, and vehicles
-- [ ] System uses IJobChunk and is Burst-compiled
-- [ ] Graceful skip when parent geometry entity does not exist (no error)
+- [x] Spawned prop LocalTransform updates every frame to match parent geometry entity + WE node offset
+- [x] Transform sync works for static buildings, road segment nodes, and vehicles
+- [x] System uses IJobChunk and is Burst-compiled
+- [x] Graceful skip when parent geometry entity does not exist (no error)
 
 ---
 
