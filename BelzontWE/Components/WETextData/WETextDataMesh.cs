@@ -181,6 +181,9 @@ namespace BelzontWE
                     }
                     result |= valueData.UpdateEffectiveValue(em, geometryEntity, vars);
                     break;
+                case WESimulationTextType.GameProp:
+                    result |= valueData.UpdateEffectiveValue(em, geometryEntity, vars);
+                    break;
                 case WESimulationTextType.WhiteTexture:
                 case WESimulationTextType.WhiteCube:
                     templateDirty = dirty = false;

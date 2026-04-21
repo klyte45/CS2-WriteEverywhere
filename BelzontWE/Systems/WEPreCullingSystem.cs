@@ -579,6 +579,9 @@ namespace BelzontWE
                             }
                         }
                         return;
+                    case WESimulationTextType.GameProp:
+                        CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, 0);
+                        break;
                     default:
                         {
                             if (m_weTemplateUpdaterLookup.HasBuffer(nextEntity))

@@ -50,7 +50,7 @@ namespace BelzontWE.Tests.Enum
     [TestFixture]
     public class WESimulationTextTypeTests
     {
-        [Test] public void HasExactly_SevenValues() => Assert.That(System.Enum.GetValues(typeof(WESimulationTextType)).Length, Is.EqualTo(7));
+        [Test] public void HasExactly_EightValues() => Assert.That(System.Enum.GetValues(typeof(WESimulationTextType)).Length, Is.EqualTo(8));
         [Test] public void Text_HasValue_Zero() => Assert.That((int)WESimulationTextType.Text, Is.EqualTo(0));
         [Test] public void Image_HasValue_One() => Assert.That((int)WESimulationTextType.Image, Is.EqualTo(1));
         [Test] public void Placeholder_HasValue_Two() => Assert.That((int)WESimulationTextType.Placeholder, Is.EqualTo(2));
