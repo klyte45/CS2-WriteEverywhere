@@ -1,0 +1,5 @@
+{
+  "name": "GameProp Backend Foundation",
+  "description": "Implement the complete CS2 prop spawn/cleanup/transform pipeline for WESimulationTextType.GameProp=7: enum, data components, prefab index, and all three lifecycle systems.",
+  "objective": "Props spawn in the world, follow their parent entity, and clean up correctly on load/removal. No UI or variable inheritance yet. All covered by unit tests."
+}
