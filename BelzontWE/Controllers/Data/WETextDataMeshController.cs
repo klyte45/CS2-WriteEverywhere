@@ -125,7 +125,21 @@ namespace BelzontWE
                 return currentItem;
             });
             ValueTextFormulaeStr.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { ValueTextFormulaeCompileResult.Value = currentItem.SetFormulae(x, out var cmpErr); ValueTextFormulaeCompileResultErrorArgs.Value = cmpErr; return currentItem; });
-            TextSourceType.OnScreenValueChanged += (x) => PickerController.EnqueueModification<int, WETextDataMesh>(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; PickerController.ReloadTreeDelayed(); return currentItem; });
+            TextSourceType.OnScreenValueChanged += (x) =>
+            {
+                if ((WESimulationTextType)x == WESimulationTextType.GameProp)
+                {
+                    var subEntity = PickerController.CurrentSubEntity.Value;
+                    if (EntityManager.TryGetComponent<WETextDataMain>(subEntity, out var main)
+                        && EntityManager.HasComponent<Game.Rendering.InterpolatedTransform>(main.TargetEntity))
+                    {
+                        LogUtils.DoWarnLog($"[WE] GameProp type is not supported on Moveable Objects (entity {main.TargetEntity} has InterpolatedTransform). Ignoring change.");
+                        TextSourceType.Value = (int)EntityManager.GetComponentData<WETextDataMesh>(subEntity).TextType;
+                        return;
+                    }
+                }
+                PickerController.EnqueueModification<int, WETextDataMesh>(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; PickerController.ReloadTreeDelayed(); return currentItem; });
+            };
             ImageAtlasName.OnScreenValueChanged += (x) => PickerController.EnqueueModification<string, WETextDataMesh>(x, (x, currentItem) => { currentItem.Atlas = x ?? ""; return currentItem; });
             RescaleHeightOnTextOverflow.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMesh>(x, (x, currentItem) => { currentItem.RescaleHeightOnTextOverflow = x; return currentItem; });
             ChildrenRefersToFrontFace.OnScreenValueChanged += (x) => PickerController.EnqueueModification<bool, WETextDataMesh>(x, (x, currentItem) => { currentItem.childrenRefersToFrontFace = x; return currentItem; });
