@@ -1,7 +1,7 @@
+**Start time:** 2026-04-21 15:03 -0300
 # [0119] Implement Game Prop Cleanup System
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 <claude-sonnet-4@kwytco.com.br>
 ## User Story
 
 > Acting as **a player**, I want **spawned GameProp entities to be cleaned up when their parent WE node is removed or becomes invalid**, so that I **orphaned props do not remain in the world after layout changes or save/load cycles**.
