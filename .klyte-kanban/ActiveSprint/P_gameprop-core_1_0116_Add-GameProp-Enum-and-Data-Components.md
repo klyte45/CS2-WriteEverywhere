@@ -1,7 +1,7 @@
+**Start time:** 2026-04-21 12:01 -0300
 # [0116] Add GameProp Enum and Data Components
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.5 (claude-sonnet-4-5@kwytco.com.br)
 ## User Story
 
 > Acting as **a developer**, I want **WESimulationTextType.GameProp=7 and all supporting data components to be available**, so that I **subsequent systems can compile and reference the new type without errors**.
