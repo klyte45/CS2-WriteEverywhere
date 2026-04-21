@@ -1,7 +1,7 @@
+**Start time:** 2026-04-21 18:04 -0300
 # [0121] Implement Game Prop Variable Inheritance
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 <claude-sonnet-4@kwytco.com.br>
 ## User Story
 
 > Acting as **a WE layout author**, I want **variables defined on a parent WE tree to be automatically available in the default prefab layout of any GameProp spawned from that tree**, so that I **dynamic templated prop layouts work without requiring duplicate variable definitions**.
