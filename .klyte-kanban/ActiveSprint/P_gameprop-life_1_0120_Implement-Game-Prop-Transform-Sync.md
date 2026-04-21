@@ -1,7 +1,7 @@
+**Start time:** 2026-04-21 15:13 -0300
 # [0120] Implement Game Prop Transform Sync
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 <claude-sonnet-4@kwytco.com.br>
 ## User Story
 
 > Acting as **a player**, I want **spawned GameProp entities to follow their parent geometry entity position and rotation every frame**, so that I **props on moving vehicles or relocated buildings remain correctly positioned**.
