@@ -21,7 +21,7 @@ namespace BelzontWE
         /// Atlas-backed implementations call <see cref="Font.WETextureAtlas.NotifyRendering"/>.
         /// Non-atlas BRIs (font, plain texture) may use the default no-op.
         /// </summary>
-        void NotifyRendering() { }
+        void NotifyRendering();
 
         /// <summary>
         /// Re-binds VT texture stacks to the given material copy.
@@ -30,6 +30,6 @@ namespace BelzontWE
         /// Atlas-backed implementations must call <c>TextureStreamingSystem.BindMaterial</c>
         /// on every material copy that will be rendered with VT.
         /// </summary>
-        void BindVTToMaterial(Material material) { }
+        void BindVTToMaterial(Material material);
     }
 }
