@@ -8,40 +8,24 @@ using Unity.Entities;
 namespace BelzontWE
 {
     /// <summary>
-    /// Removes orphaned GameProp sub-entities spawned by WEGamePropSpawnSystem:
-    ///   1. WEChild without WEOwner (post-load stale — owner was not serialized across save)
-    ///   2. WEChild + WEOwner where the owner entity no longer has WETextDataMesh
-    /// Also keeps WESubObject buffers on text nodes consistent.
+    /// Cleans up stale entries in WESubObject buffers on GameProp text nodes:
+    ///   - Iterates only entities that have a WESubObject buffer (text nodes that spawned props)
+    ///   - For each buffer entry, if the referenced sub-entity no longer exists or lacks WEChild, destroys it and removes it from the buffer
+    /// This is O(spawned-text-nodes), not O(all-entities).
     /// </summary>
     public partial class WEGamePropCleanupSystem : BelzontBasicSystem
     {
         protected override AllowedPhase UpdatePhase => AllowedPhase.ModificationEnd;
 
-        private EntityQuery m_staleOrphanQuery;   // WEChild, no WEOwner
-        private EntityQuery m_orphanWithOwnerQuery; // WEChild + WEOwner
+        private EntityQuery m_textNodesWithSubObjectsQuery;
 
         protected override void OnCreateWithBarrier()
         {
-            m_staleOrphanQuery = GetEntityQuery(new EntityQueryDesc
+            m_textNodesWithSubObjectsQuery = GetEntityQuery(new EntityQueryDesc
             {
                 All = new ComponentType[]
                 {
-                    ComponentType.ReadOnly<WEChild>(),
-                },
-                None = new ComponentType[]
-                {
-                    ComponentType.ReadOnly<WEOwner>(),
-                    ComponentType.ReadOnly<Deleted>(),
-                    ComponentType.ReadOnly<Temp>(),
-                }
-            });
-
-            m_orphanWithOwnerQuery = GetEntityQuery(new EntityQueryDesc
-            {
-                All = new ComponentType[]
-                {
-                    ComponentType.ReadOnly<WEChild>(),
-                    ComponentType.ReadOnly<WEOwner>(),
+                    ComponentType.ReadWrite<WESubObject>(),
                 },
                 None = new ComponentType[]
                 {
@@ -53,46 +37,31 @@ namespace BelzontWE
 
         protected override void OnUpdate()
         {
+            if (m_textNodesWithSubObjectsQuery.IsEmpty) return;
+
             var cmd = Barrier.CreateCommandBuffer();
+            var childLkp = GetComponentLookup<WEChild>(true);
 
-            // Pass 1: Post-load stale — WEChild but no WEOwner
-            if (!m_staleOrphanQuery.IsEmpty)
+            var textNodes = m_textNodesWithSubObjectsQuery.ToEntityArray(Allocator.Temp);
+            for (int i = 0; i < textNodes.Length; i++)
             {
-                var stale = m_staleOrphanQuery.ToEntityArray(Allocator.Temp);
-                for (int i = 0; i < stale.Length; i++)
+                var textNode = textNodes[i];
+                var subBuf = EntityManager.GetBuffer<WESubObject>(textNode);
+
+                for (int j = subBuf.Length - 1; j >= 0; j--)
                 {
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"[WEGamePropCleanup] Destroying stale orphan (no owner): {stale[i]}");
-                    cmd.AddComponent<Deleted>(stale[i]);
+                    var subEntity = subBuf[j].m_SubObject;
+                    if (EntityManager.Exists(subEntity) && childLkp.HasComponent(subEntity)) continue;
+
+                    if (BasicIMod.DebugMode) LogUtils.DoLog($"[WEGamePropCleanup] Removing stale WESubObject entry {subEntity} from text node {textNode}");
+
+                    if (EntityManager.Exists(subEntity))
+                        cmd.AddComponent<Deleted>(subEntity);
+
+                    subBuf.RemoveAtSwapBack(j);
                 }
-                stale.Dispose();
             }
-
-            // Pass 2: Runtime orphans — WEOwner entity no longer has WETextDataMesh
-            if (!m_orphanWithOwnerQuery.IsEmpty)
-            {
-                var meshLkp = GetComponentLookup<WETextDataMesh>(true);
-                var subObjLkp = GetBufferLookup<WESubObject>(false);
-
-                var candidates = m_orphanWithOwnerQuery.ToEntityArray(Allocator.Temp);
-                for (int i = 0; i < candidates.Length; i++)
-                {
-                    var e = candidates[i];
-                    var owner = EntityManager.GetComponentData<WEOwner>(e);
-                    if (meshLkp.HasComponent(owner.m_weOwnerEntity)) continue;
-
-                    if (BasicIMod.DebugMode) LogUtils.DoLog($"[WEGamePropCleanup] Destroying orphan (owner lost mesh): {e}, owner={owner.m_weOwnerEntity}");
-
-                    // Remove from WESubObject buffer on the owner text node (best-effort; owner may be gone)
-                    if (EntityManager.Exists(owner.m_weOwnerEntity)
-                        && subObjLkp.TryGetBuffer(owner.m_weOwnerEntity, out var subBuf))
-                    {
-                        RemoveFromSubObjectBuffer(ref subBuf, e);
-                    }
-
-                    cmd.AddComponent<Deleted>(e);
-                }
-                candidates.Dispose();
-            }
+            textNodes.Dispose();
         }
 
         private static void RemoveFromSubObjectBuffer(ref DynamicBuffer<WESubObject> buf, Entity toRemove)
