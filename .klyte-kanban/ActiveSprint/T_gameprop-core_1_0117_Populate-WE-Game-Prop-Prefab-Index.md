@@ -1,3 +1,4 @@
+**End time:** 2026-04-21 12:17 -0300
 **Start time:** 2026-04-21 12:10 -0300
 # [0117] Populate WE Game Prop Prefab Index
 
@@ -22,11 +23,11 @@ Doc 02 sections 1.2-1.4. WEGamePropIndex = Dictionary<string, Entity> populated 
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] WEGamePropIndex property exists on WETemplateManager and is populated at game load
-- [ ] Eligibility filter correctly includes StaticObjectPrefab-derived props and excludes buildings, extensions, vehicles
-- [ ] Index populated in same coroutine pass as PrefabNameToIndex (single pass, no separate system)
-- [ ] WEGamePropIndex rebuilt when SpritesAndLayoutsDataVersion changes (same trigger as PrefabNameToIndex)
-- [ ] Unit tests verify eligible props appear and ineligible ones do not
+- [x] WEGamePropIndex property exists on WETemplateManager and is populated at game load
+- [x] Eligibility filter correctly includes StaticObjectPrefab-derived props and excludes buildings, extensions, vehicles
+- [x] Index populated in same coroutine pass as PrefabNameToIndex (single pass, no separate system)
+- [x] WEGamePropIndex rebuilt when SpritesAndLayoutsDataVersion changes (same trigger as PrefabNameToIndex)
+- [x] Unit tests verify eligible props appear and ineligible ones do not
 
 ---
 

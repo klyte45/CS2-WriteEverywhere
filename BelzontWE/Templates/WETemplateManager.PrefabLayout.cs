@@ -22,6 +22,9 @@ namespace BelzontWE
         #region Prefab Layout
         public void MarkPrefabsDirty() => isPrefabListDirty = true;
         private readonly Dictionary<string, HashSet<long>> PrefabNameToIndex = new();
+        public Dictionary<string, Entity> WEGamePropIndex { get; } = new();
+        internal static bool IsEligibleForGamePropIndex(bool hasStaticObjectData, bool hasBuildingData, bool hasBuildingExtensionData)
+            => hasStaticObjectData && !hasBuildingData && !hasBuildingExtensionData;
         private Dictionary<(string prefabName, int meshIdx), ObjectState> MeshesHidden = new();
         private bool isPrefabListDirty = true;
 
@@ -50,6 +53,7 @@ namespace BelzontWE
                 NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 0);
                 yield return 0;
                 PrefabNameToIndex.Clear();
+                WEGamePropIndex.Clear();
                 var prefabs = PrefabSystemOverrides.LoadedPrefabBaseList(m_prefabSystem);
                 var entities = PrefabSystemOverrides.LoadedPrefabEntitiesList(m_prefabSystem);
 
@@ -57,16 +61,24 @@ namespace BelzontWE
                 yield return 0;
                 foreach (var prefab in prefabs)
                 {
-                    var data = EntityManager.GetComponentData<PrefabData>(entities[prefab]);
+                    var entity = entities[prefab];
+                    var data = EntityManager.GetComponentData<PrefabData>(entity);
                     if (!PrefabNameToIndex.ContainsKey(prefab.name)) PrefabNameToIndex[prefab.name] = new();
                     PrefabNameToIndex[prefab.name].Add(data.m_Index);
-                    if (EntityManager.TryGetBuffer<PlaceholderObjectElement>(entities[prefab], true, out var buff))
+                    if (EntityManager.TryGetBuffer<PlaceholderObjectElement>(entity, true, out var buff))
                     {
                         for (int j = 0; j < buff.Length; j++)
                         {
                             var otherData = EntityManager.GetComponentData<PrefabData>(buff[j].m_Object);
                             PrefabNameToIndex[prefab.name].Add(otherData.m_Index);
                         }
+                    }
+                    if (IsEligibleForGamePropIndex(
+                        EntityManager.HasComponent<StaticObjectData>(entity),
+                        EntityManager.HasComponent<BuildingData>(entity),
+                        EntityManager.HasComponent<BuildingExtensionData>(entity)))
+                    {
+                        WEGamePropIndex[prefab.name] = entity;
                     }
                 }
                 NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 20, textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.prefabIndexesLoaded");
