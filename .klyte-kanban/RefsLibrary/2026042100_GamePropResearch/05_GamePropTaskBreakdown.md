@@ -220,16 +220,31 @@ A1 (enum + components)
 
 ---
 
+## kk Task IDs
+
+| Code | kk ID | Title | Status | Epic |
+|------|-------|-------|--------|------|
+| A1 | [0116] | Add GameProp Enum and Data Components | N | gameprop-core |
+| A2 | [0117] | Populate WE Game Prop Prefab Index | N | gameprop-core |
+| B1 | [0118] | Implement Game Prop Spawn System | N | gameprop-life |
+| B2 | [0119] | Implement Game Prop Cleanup System | N | gameprop-life |
+| B3 | [0120] | Implement Game Prop Transform Sync | N | gameprop-life |
+| C1 | [0121] | Implement Game Prop Variable Inheritance | L | gameprop-vars |
+| D1 | [0122] | Add GameProp Frontend UI | L | gameprop-ui |
+| D2 | [0123] | Gate WEOwner Entities from WE Selection | L | gameprop-ui |
+
+---
+
 ## Sprint Split Suggestion
 
 Given scope, this is recommended as **two sprints**:
 
 ### Sprint 1 — Backend Foundation
-Tasks: **A1, A2, B1, B2, B3**  
+Tasks: **A1 [0116], A2 [0117], B1 [0118], B2 [0119], B3 [0120]**  
 Goal: Spawn pipeline works — props appear, move, and clean up correctly. No UI yet, tested via unit tests and in-game observation.
 
 ### Sprint 2 — Variable Inheritance + UI
-Tasks: **C1, D1, D2**  
+Tasks: **C1 [0121], D1 [0122], D2 [0123]**  
 Goal: Variables cascade into spawned prop layouts; full UI including type selection, formula editing, icon, and selection gating.
 
 ---
