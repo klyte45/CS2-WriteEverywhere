@@ -80,6 +80,7 @@ namespace BelzontWE
                     m_PrefabRefLkp = GetComponentLookup<PrefabRef>(true),
                     m_WeTransformLkp = GetComponentLookup<WETextDataTransform>(true),
                     m_GameTransformLkp = GetComponentLookup<Game.Objects.Transform>(true),
+                    m_InterpolatedTransformLkp = GetComponentLookup<Game.Rendering.InterpolatedTransform>(true),
                 }.Schedule(m_pendingQueueEntities, Dependency).Complete();
 
                 layoutsAvailable.Dispose();
@@ -106,6 +107,7 @@ namespace BelzontWE
             [ReadOnly] public ComponentLookup<PrefabRef> m_PrefabRefLkp;
             [ReadOnly] public ComponentLookup<WETextDataTransform> m_WeTransformLkp;
             [ReadOnly] public ComponentLookup<Game.Objects.Transform> m_GameTransformLkp;
+            [ReadOnly] public ComponentLookup<Game.Rendering.InterpolatedTransform> m_InterpolatedTransformLkp;
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -210,6 +212,13 @@ namespace BelzontWE
                 m_SubObjectLkp.TryGetBuffer(entity, out var existingBuf);
                 int existingCount = existingBuf.IsCreated ? existingBuf.Length : 0;
 
+                // Block GameProp on Moveable Objects (InterpolatedTransform geometry)
+                if (m_InterpolatedTransformLkp.HasComponent(main.TargetEntity))
+                {
+                    if (existingCount > 0) ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd);
+                    return;
+                }
+
                 if (!hasValidPrefab)
                 {
                     if (existingCount > 0) ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd);
@@ -278,19 +287,16 @@ namespace BelzontWE
                     return;
                 }
 
-                // existingCount < targetSize — spawn delta, reposition existing in buffer
+                // existingCount < targetSize — spawn delta at correct grid positions, reposition existing
                 RepositionInstances(existingBuf, existingCount, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, (int)targetSize, hasGeom, unfilteredChunkIndex, cmd);
-                int missing = (int)targetSize - existingCount;
-                var fallbackPos = Unity.Mathematics.math.transform(geomMtx, weTransform.offsetPosition);
-                for (int j = 0; j < missing; j++)
-                    SpawnPropInstance(entity, prefabEntity, fallbackPos, baseRot, unfilteredChunkIndex, cmd);
+                SpawnAllInstances(entity, prefabEntity, (int)targetSize, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd, existingCount);
             }
 
             private void SpawnAllInstances(Entity entity, Entity prefabEntity, int targetSize, uint3 instancingCount,
                 Unity.Mathematics.float3[] spacingOffsets, Unity.Mathematics.float3 pivotOffset,
                 (WEPlacementAlignment m, WEPlacementAlignment n, WEPlacementAlignment o) alignmentByAxisOrder,
                 WETextDataTransform weTransform, Unity.Mathematics.float4x4 geomMtx, Unity.Mathematics.quaternion baseRot,
-                int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+                int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, int startIndex = 0)
             {
                 if (spacingOffsets != null)
                 {
@@ -305,6 +311,7 @@ namespace BelzontWE
                             WETemplateManager.GetSpacingAndOffset((uint)(targetSize - spawned), instancingCount.y, instancingCount.x, alignmentByAxisOrder.n, ref spacingN, out var offsetN);
                             for (int m2 = 0; m2 < instancingCount.x && spawned < targetSize; m2++, spawned++)
                             {
+                                if (spawned < startIndex) continue;
                                 var spacingM = spacingOffsets[0];
                                 WETemplateManager.GetSpacingAndOffset((uint)(targetSize - spawned), instancingCount.x, 1, alignmentByAxisOrder.m, ref spacingM, out var offsetM);
                                 var localPos = weTransform.offsetPosition + pivotOffset + offsetM + offsetN + offsetO + (m2 * spacingM) + (n * spacingN) + (o * spacingO);
@@ -316,7 +323,7 @@ namespace BelzontWE
                 else
                 {
                     var pos = Unity.Mathematics.math.transform(geomMtx, weTransform.offsetPosition);
-                    for (int idx = 0; idx < targetSize; idx++)
+                    for (int idx = startIndex; idx < targetSize; idx++)
                         SpawnPropInstance(entity, prefabEntity, pos, baseRot, unfilteredChunkIndex, cmd);
                 }
             }
