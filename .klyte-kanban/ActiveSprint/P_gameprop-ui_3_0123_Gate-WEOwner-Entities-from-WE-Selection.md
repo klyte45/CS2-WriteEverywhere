@@ -1,7 +1,7 @@
+**Start time:** 2026-04-21 18:09 -0300
 # [0123] Gate WEOwner Entities from WE Selection
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 (claude-sonnet-4@kwytco.com.br)
 ## User Story
 
 > Acting as **a player using the WE editor**, I want **spawned GameProp prop entities to be invisible to the WE picker and hierarchy tree**, so that I **I cannot accidentally select and edit spawned props as if they were regular WE layout targets**.
