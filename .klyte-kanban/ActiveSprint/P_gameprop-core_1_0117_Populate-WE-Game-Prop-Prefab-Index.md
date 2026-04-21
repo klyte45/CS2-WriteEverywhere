@@ -1,7 +1,7 @@
+**Start time:** 2026-04-21 12:10 -0300
 # [0117] Populate WE Game Prop Prefab Index
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.5 (claude-sonnet-4-5@kwytco.com.br)
 ## User Story
 
 > Acting as **the spawn system**, I want **a fast O(1) lookup from prefab name to Entity for eligible static-object prefabs**, so that I **prop spawning does not stall gameplay with expensive PrefabSystem lookups**.
