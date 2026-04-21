@@ -1,7 +1,7 @@
+**Start time:** 2026-04-21 19:54 -0300
 # [0124] expose-gameprop-entries-call-binding
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 (claude-sonnet-4@kwytco.com.br)
 ## User Story
 
 > Acting as **a WE editor user**, I want **the frontend to retrieve the list of eligible game prop prefabs with their localized names**, so that I **a searchable dropdown can be displayed when configuring a GameProp text node**.
