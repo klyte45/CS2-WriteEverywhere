@@ -131,7 +131,6 @@ namespace BelzontWE
                     && EntityManager.HasComponent<Game.Rendering.InterpolatedTransform>(PickerController.CurrentEntity.Value))
                 {
                     LogUtils.DoWarnLog($"[WE] GameProp type is not supported on Moveable Objects. Ignoring change.");
-                    TextSourceType.Value = (int)EntityManager.GetComponentData<WETextDataMesh>(PickerController.CurrentSubEntity.Value).TextType;
                     return;
                 }
                 PickerController.EnqueueModification<int, WETextDataMesh>(x, (x, currentItem) => { currentItem.TextType = (WESimulationTextType)x; PickerController.ReloadTreeDelayed(); return currentItem; });
