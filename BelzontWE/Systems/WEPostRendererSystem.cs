@@ -135,6 +135,7 @@ namespace BelzontWE
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
                                 m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
                             }
+                            ClearGamePropSubObjects(entity, unfilteredChunkIndex, m_CommandBuffer);
                             break;
                         case WESimulationTextType.Image:
                             if (UpdateImageMesh(entity, ref weMeshData, weMeshData.ValueData.EffectiveValue.ToString(), unfilteredChunkIndex, m_CommandBuffer))
@@ -143,6 +144,7 @@ namespace BelzontWE
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
                                 m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
                             }
+                            ClearGamePropSubObjects(entity, unfilteredChunkIndex, m_CommandBuffer);
                             break;
                         case WESimulationTextType.Placeholder:
                             if (UpdatePlaceholder(entity, ref weCustomData, weMeshData.ValueData.EffectiveValue.ToString(), unfilteredChunkIndex, m_CommandBuffer))
@@ -158,6 +160,7 @@ namespace BelzontWE
                                 m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
                                 m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
                             }
+                            ClearGamePropSubObjects(entity, unfilteredChunkIndex, m_CommandBuffer);
                             break;
                         case WESimulationTextType.GameProp:
                             SpawnOrUpdateGameProp(entity, ref weMeshData, unfilteredChunkIndex, m_CommandBuffer);
