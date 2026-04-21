@@ -1,3 +1,4 @@
+**End time:** 2026-04-21 15:13 -0300
 **Start time:** 2026-04-21 15:03 -0300
 # [0119] Implement Game Prop Cleanup System
 
@@ -22,11 +23,11 @@ Doc 01 CPs 1-3. Stale detection: entities with WEChild but without WEOwner are s
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] Entities with WEChild but without WEOwner (post-load stale) are destroyed during startup cleanup
-- [ ] Props whose WEOwner.m_weOwnerEntity entity no longer has WETextDataMesh are destroyed
-- [ ] WESubObject buffer on the GameProp text node is updated when props are destroyed
-- [ ] Props survive save/load correctly when parent is still valid
-- [ ] Unit tests cover post-load stale cleanup and runtime orphan detection
+- [x] Entities with WEChild but without WEOwner (post-load stale) are destroyed during startup cleanup
+- [x] Props whose WEOwner.m_weOwnerEntity entity no longer has WETextDataMesh are destroyed
+- [x] WESubObject buffer on the GameProp text node is updated when props are destroyed
+- [x] Props survive save/load correctly when parent is still valid
+- [x] Unit tests cover post-load stale cleanup and runtime orphan detection
 
 ---
 
