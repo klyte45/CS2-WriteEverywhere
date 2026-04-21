@@ -1,3 +1,4 @@
+**End time:** 2026-04-21 12:09 -0300
 **Start time:** 2026-04-21 12:01 -0300
 # [0116] Add GameProp Enum and Data Components
 
@@ -22,12 +23,12 @@ Foundational types for the GameProp feature. No logic, just type declarations. S
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] WESimulationTextType.GameProp = 7 added after WhiteCube=6 and project compiles
-- [ ] WESubObject.cs created: IBufferElementData+ICleanupBufferElementData, field Entity m_SubObject
-- [ ] WEOwner.cs created: IComponentData+ICleanupComponentData, field Entity m_weOwnerEntity, NOT ISerializable
-- [ ] WEChild.cs created: IComponentData+IEmptySerializable (serialized stale marker, survives save/load)
-- [ ] WEInheritedVarsCache.cs created: IComponentData+IEnableableComponent, field FixedString512Bytes vars
-- [ ] All existing tests continue to pass
+- [x] WESimulationTextType.GameProp = 7 added after WhiteCube=6 and project compiles
+- [x] WESubObject.cs created: IBufferElementData+ICleanupBufferElementData, field Entity m_SubObject
+- [x] WEOwner.cs created: IComponentData+ICleanupComponentData, field Entity m_weOwnerEntity, NOT ISerializable
+- [x] WEChild.cs created: IComponentData+IEmptySerializable (serialized stale marker, survives save/load)
+- [x] WEInheritedVarsCache.cs created: IComponentData+IEnableableComponent, field FixedString512Bytes vars
+- [x] All existing tests continue to pass
 
 ---
 

@@ -9,5 +9,6 @@
         WhiteTexture = 4,
         MatrixTransform = 5,
         WhiteCube = 6,
+        GameProp = 7,
     }
 }
