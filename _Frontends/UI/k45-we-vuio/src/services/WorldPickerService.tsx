@@ -374,6 +374,9 @@ export class WorldPickerService {
     static async getBuildingTree(entity: Entity): Promise<BuildingTreeWe> {
         return await engine.call("k45::we.wpicker.getBuildingTree", entity);
     }
+    static async getGamePropEntries(): Promise<{ prefabName: string, localizedName: string }[]> {
+        return await engine.call("k45::we.dataMesh.getGamePropEntries");
+    }
 }
 
 export enum NodeType {

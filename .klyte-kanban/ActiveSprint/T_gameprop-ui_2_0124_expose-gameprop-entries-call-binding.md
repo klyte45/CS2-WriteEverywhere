@@ -1,3 +1,4 @@
+**End time:** 2026-04-21 20:00 -0300
 **Start time:** 2026-04-21 19:54 -0300
 # [0124] expose-gameprop-entries-call-binding
 
@@ -22,11 +23,11 @@ WETemplateManager.WEGamePropIndex already contains Dictionary<string,Entity> of 
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] WETextDataMeshController exposes call-binding 'dataMesh.getGamePropEntries' returning GamePropEntry[]
-- [ ] Each GamePropEntry has both prefabName and localizedName fields populated
-- [ ] Entries are sorted by localizedName (case-insensitive)
-- [ ] Returns empty array (not null) when WEGamePropIndex is empty
-- [ ] Unit tests verify structure and sort order
+- [x] WETextDataMeshController exposes call-binding 'dataMesh.getGamePropEntries' returning GamePropEntry[]
+- [x] Each GamePropEntry has both prefabName and localizedName fields populated
+- [x] Entries are sorted by localizedName (case-insensitive)
+- [x] Returns empty array (not null) when WEGamePropIndex is empty
+- [x] Unit tests verify structure and sort order
 
 ---
 

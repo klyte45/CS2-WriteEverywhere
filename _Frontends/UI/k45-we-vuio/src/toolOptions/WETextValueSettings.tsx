@@ -69,6 +69,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const DropdownField = VanillaWidgets.instance.DropdownField<string>();
     const NumberDropdownField = VanillaWidgets.instance.DropdownField<number>();
     const StringInputField = VanillaWidgets.instance.StringInputField;
+    const PopupSearchField = VanillaWidgets.instance.PopupSearchField;
     const ToggleField = VanillaWidgets.instance.ToggleField;
     const FloatInputField = VanillaWidgets.instance.FloatInputField;
     const Float2InputField = VanillaWidgets.instance.Float2InputField;
@@ -83,6 +84,9 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const [atlases, setAtlases] = useState([] as string[]);
     const [meshes, setMeshes] = useState([] as DropdownItem<string>[]);
     const [imgOptions, setImgOptions] = useState([] as string[]);
+    const [gamePropEntries, setGamePropEntries] = useState([] as { prefabName: string, localizedName: string }[]);
+
+    useEffect(() => { WorldPickerService.getGamePropEntries().then(setGamePropEntries); }, []);
 
     const [height, setHeight] = useState(transform.CurrentScale.value[1]);
     const [widthDistortion, setWidthDistortion] = useState(transform.CurrentScale.value[0] / transform.CurrentScale.value[1]);
@@ -232,14 +236,19 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                     </>}
                 {mesh.TextSourceType.value == WESimulationTextType.GameProp && <>
                     <FormulaeEditRow formulaeField={valueFormulaeField} formulaeModule={valueFormulaeModule} label={T_gamePropName}
-                        defaultInputField={<StringInputField
+                        defaultInputField={<PopupSearchField
                             value={fixedTextTyping}
-                            onChange={(x) => { setFixedTextTyping(x) }}
-                            onChangeEnd={() => {
-                                mesh.ValueText.set(fixedTextTyping.trim());
+                            suggestions={gamePropEntries
+                                .filter(e => {
+                                    const q = fixedTextTyping.toLowerCase();
+                                    return e.prefabName.toLowerCase().includes(q) || e.localizedName.toLowerCase().includes(q);
+                                })
+                                .map(e => ({ value: e.prefabName, favorite: false }))}
+                            onChange={(v) => {
+                                setFixedTextTyping(v);
+                                mesh.ValueText.set(v);
                                 mesh.ValueTextFormulaeStr.set("");
                             }}
-                            maxLength={400}
                         />} />
                 </>}
                 {mesh.TextSourceType.value != WESimulationTextType.MatrixTransform && mesh.TextSourceType.value != WESimulationTextType.GameProp && <>

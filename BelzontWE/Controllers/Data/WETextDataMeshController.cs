@@ -1,6 +1,9 @@
 ﻿using Belzont.Utils;
 using Colossal.Entities;
+using Game.UI;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -10,6 +13,14 @@ namespace BelzontWE
     public partial class WETextDataMeshController : WETextDataBaseController
     {
         private const string PREFIX = "dataMesh.";
+
+        private NameSystem m_nameSystem;
+
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+            m_nameSystem = World.GetExistingSystemManaged<NameSystem>();
+        }
         public MultiUIValueBinding<string> ValueText { get; private set; }
         public MultiUIValueBinding<string> SelectedFont { get; private set; }
         public MultiUIValueBinding<int> TextSourceType { get; private set; }
@@ -54,8 +65,24 @@ namespace BelzontWE
         public MultiUIValueBinding<string[]> CustomMeshNameFormulaeCompileResultErrorArgs { get; private set; }
 
 
+        internal struct GamePropEntry
+        {
+            public string prefabName;
+            public string localizedName;
+        }
+
+        internal static GamePropEntry[] SortGamePropEntries(IEnumerable<GamePropEntry> entries)
+            => entries.OrderBy(x => x.localizedName, StringComparer.InvariantCultureIgnoreCase).ToArray();
+
+        private GamePropEntry[] GetGamePropEntries()
+        {
+            return SortGamePropEntries(WETemplateManager.Instance.WEGamePropIndex
+                .Select(kvp => new GamePropEntry { prefabName = kvp.Key, localizedName = m_nameSystem.GetName(kvp.Value).Translate() }));
+        }
+
         protected override void DoInitValueBindings(Action<string, object[]> EventCaller, Action<string, Delegate> CallBinder)
         {
+            CallBinder($"{PREFIX}getGamePropEntries", (Func<GamePropEntry[]>)GetGamePropEntries);
             ValueText = new(default, $"{PREFIX}{nameof(ValueText)}", EventCaller, CallBinder);
             SelectedFont = new(default, $"{PREFIX}{nameof(SelectedFont)}", EventCaller, CallBinder);
             TextSourceType = new(default, $"{PREFIX}{nameof(TextSourceType)}", EventCaller, CallBinder);
