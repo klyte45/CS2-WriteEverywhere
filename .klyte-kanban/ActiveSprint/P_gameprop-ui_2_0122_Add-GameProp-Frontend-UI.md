@@ -1,7 +1,7 @@
+**Start time:** 2026-04-21 18:13 -0300
 # [0122] Add GameProp Frontend UI
 
-**Developed by:** 
-
+**Developed by:** Claude Sonnet 4.6 (claude-sonnet-4@kwytco.com.br)
 ## User Story
 
 > Acting as **a player using the WE editor**, I want **to select GameProp as a content type, enter a prefab name with formula support, and see correct UI without irrelevant panels**, so that I **I can place and configure prop-spawning WE nodes intuitively**.
