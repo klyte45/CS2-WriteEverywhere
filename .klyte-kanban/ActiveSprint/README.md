@@ -14,6 +14,6 @@ Make the GameProp text type fully usable end-to-end: variables flow from parent 
 - **Original tasks**: 03
 - **Original task IDs**: [0121], [0122], [0123]
 - **Delivered tasks (from original)**:
-- **Added tasks**: 0
+- **Added tasks**: 2
 - **Delivered tasks (from added)**:
 - **Total delivered tasks**:

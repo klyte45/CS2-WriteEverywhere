@@ -216,5 +216,5 @@ Run `kk schema task` to see the full JSON schema.
 
 ## Mutable data
 
-- Last task ID: 0123
+- Last task ID: 0125
 - Last sprint number: 015
