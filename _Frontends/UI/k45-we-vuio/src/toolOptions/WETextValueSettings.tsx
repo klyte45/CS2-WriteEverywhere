@@ -38,6 +38,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const T_offsetRotation = translate("textValueSettings.offsetRotation"); //
     const T_scaleByAxis = translate("textValueSettings.scaleByAxis"); //
     const T_flipZ = translate("textValueSettings.flipZ"); //
+    const T_gamePropName = translate("textValueSettings.gamePropName"); //
 
     const mesh = WorldPickerService.instance.bindingList.mesh;
     const material = WorldPickerService.instance.bindingList.material;
@@ -142,7 +143,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                 <EditorItemRow label={T_contentType}>
                     <NumberDropdownField
                         value={mesh.TextSourceType.value}
-                        items={[0, 1, 2, 4, 5, 6].map(x => { return { displayName: { __Type: LocElementType.String, value: translate(`textValueSettings.contentType.${x}`) }, value: x } })}
+                        items={[0, 1, 2, 4, 5, 6, 7].map(x => { return { displayName: { __Type: LocElementType.String, value: translate(`textValueSettings.contentType.${x}`) }, value: x } })}
                         onChange={(x) => mesh.TextSourceType.set(x)}
                         style={{ flexGrow: 1, width: "inherit" }}
                     />
@@ -229,7 +230,19 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                             />
                         </EditorItemRow>
                     </>}
-                {mesh.TextSourceType.value != WESimulationTextType.MatrixTransform && <>
+                {mesh.TextSourceType.value == WESimulationTextType.GameProp && <>
+                    <FormulaeEditRow formulaeField={valueFormulaeField} formulaeModule={valueFormulaeModule} label={T_gamePropName}
+                        defaultInputField={<StringInputField
+                            value={fixedTextTyping}
+                            onChange={(x) => { setFixedTextTyping(x) }}
+                            onChangeEnd={() => {
+                                mesh.ValueText.set(fixedTextTyping.trim());
+                                mesh.ValueTextFormulaeStr.set("");
+                            }}
+                            maxLength={400}
+                        />} />
+                </>}
+                {mesh.TextSourceType.value != WESimulationTextType.MatrixTransform && mesh.TextSourceType.value != WESimulationTextType.GameProp && <>
                     <ToggleField label={T_flipZ} value={transform.CurrentScale.value[2] < 0} onChange={(x) => transform.CurrentScale.set([transform.CurrentScale.value[0], transform.CurrentScale.value[1], -transform.CurrentScale.value[2]])} />
                 </>}
                 {mesh.TextSourceType.value == WESimulationTextType.MatrixTransform &&

@@ -1,3 +1,4 @@
+**End time:** 2026-04-21 19:12 -0300
 **Start time:** 2026-04-21 18:13 -0300
 # [0122] Add GameProp Frontend UI
 
@@ -22,13 +23,13 @@ Doc 03 (all TSX changes + i18n). WEFormulaeElement.ts enum update. WETextValueSe
 
 ## Acceptance Criteria / Definition of Done (DoD)
 
-- [ ] WESimulationTextType.GameProp=7 added to TS enum in WEFormulaeElement.ts (or equivalent service file)
-- [ ] Content type dropdown includes GameProp(7), Archetype(3) still hidden
-- [ ] GameProp content block shows prefab name field with FormulaeEditRow (formula support; same pattern as Text type)
-- [ ] Appearance and Shader buttons and windows hidden when isGameProp=true
-- [ ] Flip-Z toggle hidden for GameProp nodes (alongside MatrixTransform exclusion)
-- [ ] BenchAndParkProps.svg icon shown for GameProp nodes in WE hierarchy tree
-- [ ] All 3 i18n keys added to i18n.csv (English + pt-BR) following project convention
+- [x] WESimulationTextType.GameProp=7 added to TS enum in WEFormulaeElement.ts (or equivalent service file)
+- [x] Content type dropdown includes GameProp(7), Archetype(3) still hidden
+- [x] GameProp content block shows prefab name field with FormulaeEditRow (formula support; same pattern as Text type)
+- [x] Appearance and Shader buttons and windows hidden when isGameProp=true
+- [x] Flip-Z toggle hidden for GameProp nodes (alongside MatrixTransform exclusion)
+- [x] BenchAndParkProps.svg icon shown for GameProp nodes in WE hierarchy tree
+- [x] All 3 i18n keys added to i18n.csv (English + pt-BR) following project convention
 
 ---
 

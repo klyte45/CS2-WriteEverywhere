@@ -15,7 +15,8 @@ export enum WESimulationTextType {
     Placeholder = 2,
     WhiteTexture = 4,
     MatrixTransform = 5,
-    WhiteCube = 6
+    WhiteCube = 6,
+    GameProp = 7
 }
 
 export type EnumWrapper<T> = { value__: T; };

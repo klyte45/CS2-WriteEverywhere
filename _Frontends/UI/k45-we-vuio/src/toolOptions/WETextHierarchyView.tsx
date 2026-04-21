@@ -38,6 +38,7 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
     const i_typeWhiteTexture = "coui://uil/Standard/SingleRhombus.svg";
     const i_typeWhiteCube = "coui://uil/Standard/BoxSide.svg";
     const i_typeMatrixTransform = "coui://uil/Standard/ArrowsMoveAll.svg";
+    const i_typeGameProp = "coui://uil/Standard/BenchAndParkProps.svg";
     const i_bookmarkMods = "coui://uil/Standard/Puzzle.svg";
 
 
@@ -169,6 +170,8 @@ export const WETextHierarchyView = ({ clipboard, setClipboard }: { clipboard: En
                 return i_typeMatrixTransform;
             case WESimulationTextType.WhiteCube:
                 return i_typeWhiteCube;
+            case WESimulationTextType.GameProp:
+                return i_typeGameProp;
         }
     }
 

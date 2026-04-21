@@ -206,6 +206,7 @@ const WEWorldPickerToolPanel = () => {
     }, [currentEditingFormulaeDefaultValue()])
 
     const isMatrixTransform = WorldPickerService.instance.bindingList.mesh.TextSourceType.value == WESimulationTextType.MatrixTransform;
+    const isGameProp = WorldPickerService.instance.bindingList.mesh.TextSourceType.value == WESimulationTextType.GameProp;
 
     return !wps.CurrentEntity.value?.Index ?
         <VanillaComponentResolver.instance.Section title={L_selectItem} children={[]} /> :
@@ -347,7 +348,7 @@ const WEWorldPickerToolPanel = () => {
                         }
                         <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayInstancingWindow(!displayInstancingWindow)} selected={displayInstancingWindow} src={i_InstancingBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_InstancingBtn} />
                         <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayVariablesWindow(!displayVariablesWindow)} selected={displayVariablesWindow} src={i_VariablesBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_VariablesBtn} />
-                        {!isMatrixTransform && <>
+                        {!isMatrixTransform && !isGameProp && <>
                             <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayShaderWindow(!displayShaderWindow)} selected={displayShaderWindow} src={i_ShaderBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ShaderBtn} />
                             <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
                             <div style={{ width: "10rem" }}></div>
@@ -356,8 +357,8 @@ const WEWorldPickerToolPanel = () => {
                     <VanillaComponentResolver.instance.ToolButton onSelect={() => wps.CurrentEntity.set(null)} src={i_UnselectCurrentIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_picker} />
                 </>
             </VanillaComponentResolver.instance.Section>
-            {currentItemIsValid && !isMatrixTransform && displayAppearenceWindow && <WETextAppearenceSettings />}
-            {currentItemIsValid && !isMatrixTransform && displayShaderWindow && <WETextShaderProperties />}
+            {currentItemIsValid && !isMatrixTransform && !isGameProp && displayAppearenceWindow && <WETextAppearenceSettings />}
+            {currentItemIsValid && !isMatrixTransform && !isGameProp && displayShaderWindow && <WETextShaderProperties />}
             {currentItemIsValid && displayVariablesWindow && <WELayoutVariablesView />}
             {currentItemIsValid && displayInstancingWindow && <WEInstancingView />}
             {currentItemIsValid && <WETextValueSettings />}
