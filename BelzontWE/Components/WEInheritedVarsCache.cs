@@ -3,7 +3,7 @@ using Unity.Entities;
 
 namespace BelzontWE
 {
-    public struct WEInheritedVarsCache : IComponentData, IEnableableComponent
+    public struct WEInheritedVarsCache : IComponentData
     {
         public FixedString512Bytes vars;
     }

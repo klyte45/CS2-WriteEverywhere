@@ -2,7 +2,6 @@
 using Belzont.Utils;
 using BelzontWE.Font.Utility;
 using BelzontWE.Sprites;
-using Game;
 using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
@@ -85,7 +84,7 @@ namespace BelzontWE
                     bool doRender = mesh.TextType switch
                     {
                         WESimulationTextType.Placeholder => m_pickerTool.IsSelected,
-                        WESimulationTextType.MatrixTransform => false,
+                        WESimulationTextType.MatrixTransform or WESimulationTextType.GameProp => false,
                         _ => true,
                     };
                     if (doRender)

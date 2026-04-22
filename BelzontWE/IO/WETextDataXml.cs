@@ -37,7 +37,7 @@ namespace BelzontWE
     }
     public class WETextDataXml : ISerializable
     {
-        private const int CURRENT_VERSION = 3;
+        private const int CURRENT_VERSION = 4;
         [XmlAttribute] public string itemName;
 
         [XmlElement] public TransformXml transform;
@@ -47,6 +47,7 @@ namespace BelzontWE
         [XmlElement][DefaultValue(null)] public MeshDataWhiteTextureXml whiteMesh;
         [XmlElement][DefaultValue(null)] public MeshDataWhiteCubeXml whiteCubeMesh;
         [XmlElement][DefaultValue(null)] public MeshDataMatrixTransformXml matrixTransform;
+        [XmlElement][DefaultValue(null)] public MeshDataGamePropXml gameProp;
         [XmlElement] public DefaultStyleXml defaultStyle;
         [XmlElement] public GlassStyleXml glassStyle;
         [XmlElement] public DecalStyleXml decalStyle;
@@ -71,6 +72,7 @@ namespace BelzontWE
             defaultStyle?.PreCompileFormulas();
             glassStyle?.PreCompileFormulas();
             decalStyle?.PreCompileFormulas();
+            gameProp?.PreCompileFormulas();
         }
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
@@ -86,6 +88,7 @@ namespace BelzontWE
             writer.WriteNullCheck(decalStyle);
             writer.WriteNullCheck(matrixTransform);
             writer.WriteNullCheck(whiteCubeMesh);
+            writer.WriteNullCheck(gameProp);
         }
 
         public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -115,6 +118,10 @@ namespace BelzontWE
             if (version >= 3)
             {
                 reader.ReadNullCheck(out whiteCubeMesh);
+            }
+            if (version >= 4)
+            {
+                reader.ReadNullCheck(out gameProp);
             }
 
         }
@@ -469,6 +476,29 @@ namespace BelzontWE
             }
         }
 
+        public class MeshDataGamePropXml : ISerializable
+        {
+            private const int CURRENT_VERSION = 0;
+            [XmlIgnore] public WESimulationTextType textType => WESimulationTextType.GameProp;
+            [XmlElement] public FormulaeStringXml propName;
+            public void PreCompileFormulas() => WEFormulaeHelper.WarmCache<string>(propName?.formulae);
+            public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+            {
+                writer.Write(CURRENT_VERSION);
+                writer.WriteNullCheck(propName);
+            }
+            public void Deserialize<TReader>(TReader reader) where TReader : IReader
+            {
+                reader.Read(out int version);
+                if (version > CURRENT_VERSION)
+                {
+                    LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                    return;
+                }
+                reader.ReadNullCheck(out propName);
+            }
+        }
+
         public class DefaultStyleXml : ISerializable
         {
             private const int CURRENT_VERSION = 2;
@@ -586,7 +616,7 @@ namespace BelzontWE
                 writer.Write(affectSmoothness);
                 writer.Write(drawOrder);
                 writer.WriteNullCheck(normalOpacity);
-                writer.WriteNullCheck(metallicOpacity);                
+                writer.WriteNullCheck(metallicOpacity);
                 writer.Write(renderBackface);
             }
             public void Deserialize<TReader>(TReader reader) where TReader : IReader
@@ -644,7 +674,7 @@ namespace BelzontWE
             [XmlElement] public FormulaeFloatXml metallic;
             [XmlElement] public FormulaeFloatXml smoothness;
             [XmlElement] public FormulaeFloatXml normalStrength;
-            [XmlElement] public FormulaeFloatXml glassThickness = new() { defaultValue = .5f }; 
+            [XmlElement] public FormulaeFloatXml glassThickness = new() { defaultValue = .5f };
             [XmlAttribute][DefaultValue(false)] public bool renderBackface = false;
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
             {

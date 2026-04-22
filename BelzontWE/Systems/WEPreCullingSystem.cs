@@ -315,7 +315,7 @@ namespace BelzontWE
                     geomMatrix = Matrix4x4.identity;
                 }
                 FixedString512Bytes variables = new();
-                if (m_weInheritedVarsCacheLkp.HasEnabledComponent(entity))
+                if (m_weInheritedVarsCacheLkp.HasComponent(entity))
                     variables = m_weInheritedVarsCacheLkp[entity].vars;
                 PopulateVars(entity, ref variables, out _);
                 if (prefabWeLayout.childEntity != Entity.Null)
@@ -368,6 +368,7 @@ namespace BelzontWE
                 {
                     case WESimulationTextType.Text:
                     case WESimulationTextType.Image:
+                    case WESimulationTextType.GameProp:
                         if (mesh.IsDirty() && !m_weWaitingRenderingLookup.HasEnabledComponent(nextEntity))
                         {
                             if (!m_weWaitingRenderingLookup.HasComponent(nextEntity))
@@ -586,17 +587,31 @@ namespace BelzontWE
                         }
                         return;
                     case WESimulationTextType.GameProp:
-                        CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, 0);
-                        if (m_weSubObjectsLkp.TryGetBuffer(nextEntity, out var subObjBuf))
+                        if (CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, 0))
                         {
-                            for (int si = 0; si < subObjBuf.Length; si++)
+                            m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, new WETextDataDirtyFormulae { vars = currentVars });
+                            m_CommandBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(unfilteredChunkIndex, nextEntity, true);
+                            if (m_weSubObjectsLkp.TryGetBuffer(nextEntity, out var subObjBuf))
                             {
-                                var subObjEntity = subObjBuf[si].m_SubObject;
-                                if (m_weInheritedVarsCacheLkp.HasComponent(subObjEntity))
+                                for (int si = 0; si < subObjBuf.Length; si++)
                                 {
-                                    m_CommandBuffer.SetComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars });
-                                    m_CommandBuffer.SetComponentEnabled<WEInheritedVarsCache>(unfilteredChunkIndex, subObjEntity, true);
+                                    var subObjEntity = subObjBuf[si].m_SubObject;
+                                    if (m_weInheritedVarsCacheLkp.HasComponent(subObjEntity))
+                                    {
+                                        m_CommandBuffer.SetComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars });
+                                    }
+                                    else
+                                    {
+                                        m_CommandBuffer.AddComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars });
+                                    }
                                 }
+                                m_newItemsRender.Enqueue(new WERenderData
+                                {
+                                    textDataEntity = nextEntity,
+                                    geometryEntity = geometryEntity,
+                                    transformMatrix = prevMatrix,
+                                    lastLod = 200
+                                });
                             }
                         }
                         break;
@@ -701,10 +716,10 @@ namespace BelzontWE
                 }
             }
 
-            private void CheckForUpdates(Entity geometryEntity, Entity nextEntity, int unfilteredChunkIndex, in FixedString512Bytes variables, int currentLod)
+            private bool CheckForUpdates(Entity geometryEntity, Entity nextEntity, int unfilteredChunkIndex, in FixedString512Bytes variables, int currentLod)
             {
-                if (minLodUpdateSetting > currentLod) return;
-                if (m_weDirtyFormulae.HasEnabledComponent(nextEntity)) return;
+                if (minLodUpdateSetting > currentLod) return false;
+                if (m_weDirtyFormulae.HasEnabledComponent(nextEntity)) return false;
                 if (m_weMainLookup[nextEntity].nextUpdateFrame < frameCount)
                 {
                     m_CommandBuffer.SetComponent(unfilteredChunkIndex, nextEntity, new WETextDataDirtyFormulae
@@ -713,7 +728,9 @@ namespace BelzontWE
                         vars = variables
                     });
                     m_CommandBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(unfilteredChunkIndex, nextEntity, true);
+                    return true;
                 }
+                return false;
             }
 
             private float GetEmissiveMultiplier(ref WETextDataMaterial material) => 1 << (int)math.ceil(math.clamp(material.EmissiveIntensityEffective, 0, 10) * .5f);

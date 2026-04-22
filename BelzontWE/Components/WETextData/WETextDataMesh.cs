@@ -32,7 +32,7 @@ namespace BelzontWE
                 textType = value;
                 dirty = true;
                 templateDirty = true;
-                if (value == WESimulationTextType.Placeholder || value == WESimulationTextType.WhiteTexture || value == WESimulationTextType.WhiteCube)
+                if (value == WESimulationTextType.Placeholder || value == WESimulationTextType.WhiteTexture || value == WESimulationTextType.WhiteCube || value == WESimulationTextType.GameProp)
                 {
                     ResetBri();
                 }

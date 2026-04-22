@@ -167,7 +167,7 @@ namespace BelzontWE
                             break;
                         case WESimulationTextType.GameProp:
                             SpawnOrUpdateGameProp(entity, ref weMeshData, unfilteredChunkIndex, m_CommandBuffer);
-                            if (m_WeIsPlaceholderLkp.HasComponent(entity)) m_CommandBuffer.SetComponentEnabled<WEIsPlaceholder>(unfilteredChunkIndex, entity, false);
+
                             m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
                             m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, entity, false);
                             break;
@@ -371,7 +371,6 @@ namespace BelzontWE
                 cmd.AddComponent(unfilteredChunkIndex, spawnedEntity, new WEOwner { m_weOwnerEntity = textNode });
                 cmd.AddComponent<WEChild>(unfilteredChunkIndex, spawnedEntity);
                 cmd.AddComponent<WEInheritedVarsCache>(unfilteredChunkIndex, spawnedEntity);
-                cmd.SetComponentEnabled<WEInheritedVarsCache>(unfilteredChunkIndex, spawnedEntity, false);
                 cmd.AddComponent<Secondary>(unfilteredChunkIndex, spawnedEntity);
                 cmd.AppendToBuffer(unfilteredChunkIndex, textNode, new WESubObject { m_SubObject = spawnedEntity });
             }

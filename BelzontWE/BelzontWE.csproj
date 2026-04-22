@@ -5,8 +5,7 @@
     <Configurations>Debug;Release</Configurations>
     <RootNamespace>BelzontWE</RootNamespace> 
     <Bursted Condition="'$(Configuration)'=='Release'">true</Bursted>
-    <Bursted Condition="'$(Configuration)'=='Debug'">true</Bursted>
-    <DefineConstants Condition="'$(Configuration)'=='Debug'">ENABLE_EUIS;$(DefineConstants)</DefineConstants>
+    <Bursted Condition="'$(Configuration)'=='Debug'">false</Bursted>    
     <!--The file where mod information which is required for publishing mod on PDX mods are stored--> 
     <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
   </PropertyGroup>

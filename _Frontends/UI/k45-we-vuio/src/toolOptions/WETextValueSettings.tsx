@@ -14,6 +14,7 @@ import { CustomMeshService } from "services/CustomMeshService";
 import { DropdownItem } from "cs2/bindings";
 
 const i_focus = "coui://uil/Standard/Magnifier.svg";
+let cachedPropList: { prefabName: string, localizedName: string }[] | null = null;
 
 export const WETextValueSettings = (props: { initialPosition?: { x: number, y: number } }) => {
     const T_title = translate("textValueSettings.title"); //"Appearance Settings"
@@ -84,9 +85,15 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const [atlases, setAtlases] = useState([] as string[]);
     const [meshes, setMeshes] = useState([] as DropdownItem<string>[]);
     const [imgOptions, setImgOptions] = useState([] as string[]);
-    const [gamePropEntries, setGamePropEntries] = useState([] as { prefabName: string, localizedName: string }[]);
+    const [gamePropEntries, setGamePropEntries] = useState(cachedPropList ?? []);
 
-    useEffect(() => { WorldPickerService.getGamePropEntries().then(setGamePropEntries); }, []);
+    useEffect(() => {
+        if (!cachedPropList)
+            WorldPickerService.getGamePropEntries().then(entries => {
+                cachedPropList = entries;
+                setGamePropEntries(entries);
+            });
+    }, []);
 
     const [height, setHeight] = useState(transform.CurrentScale.value[1]);
     const [widthDistortion, setWidthDistortion] = useState(transform.CurrentScale.value[0] / transform.CurrentScale.value[1]);
@@ -243,7 +250,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                                     const q = fixedTextTyping.toLowerCase();
                                     return e.prefabName.toLowerCase().includes(q) || e.localizedName.toLowerCase().includes(q);
                                 })
-                                .map(e => ({ value: e.prefabName, favorite: false }))}
+                                .map(e => ({ value: e.prefabName, favorite: false })).slice(0, 100)}
                             onChange={(v) => {
                                 setFixedTextTyping(v);
                                 mesh.ValueText.set(v);

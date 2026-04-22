@@ -63,7 +63,7 @@ namespace BelzontWE
                     continue;
 
                 // MatrixTransform nodes are never rendered; skip them.
-                if (mesh.TextType == WESimulationTextType.MatrixTransform || mesh.TextType == WESimulationTextType.Archetype || mesh.TextType == WESimulationTextType.Placeholder)
+                if (mesh.TextType == WESimulationTextType.MatrixTransform || mesh.TextType == WESimulationTextType.Archetype || mesh.TextType == WESimulationTextType.Placeholder || mesh.TextType == WESimulationTextType.GameProp)
                     continue;
 
                 // Only Default shader with positive emissive intensity and UseGlobalLight enabled emits scene light.

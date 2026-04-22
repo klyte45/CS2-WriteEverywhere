@@ -345,7 +345,7 @@ namespace BelzontWE
             result = materialArray;
             return requireUpdate;
         }
-        public readonly bool CheckIsDecal(WETextDataMesh mesh) => Shader == WEShader.Decal && (mesh.TextType) switch { WESimulationTextType.WhiteCube or WESimulationTextType.Placeholder => false, _ => true };
+        public readonly bool CheckIsDecal(WETextDataMesh mesh) => Shader == WEShader.Decal && (mesh.TextType) switch { WESimulationTextType.WhiteCube or WESimulationTextType.Placeholder or WESimulationTextType.GameProp => false, _ => true };
 
         public WETextDataXml.DefaultStyleXml ToDefaultXml()
             => new()

@@ -62,6 +62,9 @@ namespace BelzontWE.Utils
                     case WESimulationTextType.MatrixTransform:
                         result.matrixTransform = weMesh.ToScalerXml();
                         break;
+                    case WESimulationTextType.GameProp:
+                        result.gameProp = weMesh.ToGamePropXml();
+                        break;
                 }
             }
             result.transform = hasTransf ? weTransf.ToXml() : default;
@@ -106,6 +109,7 @@ namespace BelzontWE.Utils
                 ?? xml.whiteMesh?.ToComponent()
                 ?? xml.matrixTransform?.ToComponent()
                 ?? xml.whiteCubeMesh?.ToComponent()
+                ?? xml.gameProp?.ToComponent()
                 ?? new() { TextType = WESimulationTextType.Archetype };
 
         }
@@ -245,6 +249,17 @@ namespace BelzontWE.Utils
                 TextType = value.textType
             };
 
+        public static WETextDataXml.MeshDataGamePropXml ToGamePropXml(this WETextDataMesh value)
+            => new()
+            {
+                propName = value.ValueData.ToXml()
+            };
+        public static WETextDataMesh ToComponent(this WETextDataXml.MeshDataGamePropXml value)
+                => value is null ? default : new()
+                {
+                    ValueData = value.propName.ToComponent(),
+                    TextType = value.textType
+                };
 
 
 
