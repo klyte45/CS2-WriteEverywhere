@@ -71,8 +71,12 @@ namespace BelzontWE
                     || !EntityManager.TryGetComponent(item.textDataEntity, out WETextDataMain main)
                     || !EntityManager.TryGetComponent(item.textDataEntity, out WETextDataMaterial materialData)
                     || !EntityManager.TryGetComponent(item.textDataEntity, out WETextDataTransform transformData)
-                    || item.transformMatrix == default
-                    || main.nextUpdateFrame == 0) continue;
+                    || item.transformMatrix == default) continue;
+
+                    bool allowSelectedGamePropMatrix = mesh.TextType == WESimulationTextType.GameProp
+                        && m_pickerTool.Enabled
+                        && m_pickerController.CurrentSubEntity.Value == item.textDataEntity;
+                    if (main.nextUpdateFrame == 0 && !allowSelectedGamePropMatrix) continue;
 
                     bool willCheckUpdate = ((FrameCounter + item.textDataEntity.Index) & WEConstants.RENDERER_FRAME_CHECK_MASK) == 0;
 
@@ -83,10 +87,26 @@ namespace BelzontWE
 
                     bool doRender = mesh.TextType switch
                     {
-                        WESimulationTextType.Placeholder => m_pickerTool.IsSelected,
-                        WESimulationTextType.MatrixTransform or WESimulationTextType.GameProp => false,
+                        WESimulationTextType.Placeholder or WESimulationTextType.GameProp => m_pickerTool.IsSelected,
+                        WESimulationTextType.MatrixTransform => false,
                         _ => true,
                     };
+                    if (doRender && allowSelectedGamePropMatrix)
+                    {
+                        var baseMatrix = item.transformMatrix;
+                        if (EntityManager.HasComponent<InterpolatedTransform>(item.geometryEntity))
+                        {
+                            var transformInterpolated = EntityManager.GetComponentData<InterpolatedTransform>(item.geometryEntity);
+                            var interpolatedMatrix = Matrix4x4.TRS(transformInterpolated.m_Position, transformInterpolated.m_Rotation, Vector3.one);
+                            baseMatrix = interpolatedMatrix * item.transformMatrix;
+                        }
+                        if (baseMatrix.ValidTRS())
+                        {
+                            m_pickerController.SetCurrentTargetMatrix(item.textDataEntity, baseMatrix);
+                        }
+                        EntityManager.SafeSetComponentEnabled<WEWaitingGamePropRendering>(item.textDataEntity);
+                        continue;
+                    }
                     if (doRender)
                     {
                         IBasicRenderInformation bri = mesh.RenderInformation;
@@ -131,7 +151,7 @@ namespace BelzontWE
 
                         var brii = bri as PrimitiveRenderInformation;
                         bool materialChanged = false;
-                        if (doRender && (brii is null || brii.m_refText != ""))
+                        if (doRender && bri != null && (brii is null || brii.m_refText != ""))
                         {
                             Material[] ownMaterial = null;
                             if (isPlaceholder) ownMaterial = WEAtlasesLibrary.DefaultMaterialWhiteTexture();

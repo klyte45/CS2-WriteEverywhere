@@ -588,11 +588,28 @@ namespace BelzontWE
                         return;
                     case WESimulationTextType.GameProp:
                         {
-                            if (CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, 2000))
+                            var forceEditorRefresh = isAtWeEditor && nextEntity == m_selectedSubEntity;
+                            if (forceEditorRefresh || CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, 2000))
                             {
-                                m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, new WETextDataDirtyFormulae { vars = currentVars });
+                                var dirtyFormulae = new WETextDataDirtyFormulae { geometry = geometryEntity, vars = currentVars };
+                                if (m_weDirtyFormulae.HasComponent(nextEntity))
+                                {
+                                    m_CommandBuffer.SetComponent(unfilteredChunkIndex, nextEntity, dirtyFormulae);
+                                }
+                                else
+                                {
+                                    m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, dirtyFormulae);
+                                }
                                 m_CommandBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(unfilteredChunkIndex, nextEntity, true);
-                                m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, new WEInheritedVarsCache { vars = inheritableVars });
+                                var inheritedCache = new WEInheritedVarsCache { vars = inheritableVars };
+                                if (m_weInheritedVarsCacheLkp.HasComponent(nextEntity))
+                                {
+                                    m_CommandBuffer.SetComponent(unfilteredChunkIndex, nextEntity, inheritedCache);
+                                }
+                                else
+                                {
+                                    m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, inheritedCache);
+                                }
                                 if (m_weSubObjectsLkp.TryGetBuffer(nextEntity, out var subObjBuf))
                                 {
                                     for (int si = 0; si < subObjBuf.Length; si++)
@@ -607,6 +624,25 @@ namespace BelzontWE
                                             m_CommandBuffer.AddComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars });
                                         }
                                     }
+                                }
+                                if (forceEditorRefresh)
+                                {
+                                    if (m_weWaitingRenderingLookup.HasComponent(nextEntity))
+                                    {
+                                        m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, nextEntity, true);
+                                    }
+                                    else
+                                    {
+                                        m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
+                                    }
+                                    var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
+                                    m_newItemsRender.Enqueue(new WERenderData
+                                    {
+                                        textDataEntity = nextEntity,
+                                        geometryEntity = geometryEntity,
+                                        transformMatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, transform.offsetRotation, Vector3.one),
+                                        lastLod = 0
+                                    });
                                 }
                             }
                         }

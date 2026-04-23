@@ -41,7 +41,6 @@ namespace BelzontWE
                     },
                     None = new ComponentType[]
                     {
-                        ComponentType.ReadOnly<Temp>(),
                         ComponentType.ReadOnly<Deleted>(),
                     }
                 }
@@ -67,6 +66,7 @@ namespace BelzontWE
                 m_PrefabRefLkp = GetComponentLookup<PrefabRef>(true),
                 m_PrefabObjectDataLkp = GetComponentLookup<ObjectData>(true),
                 m_OwnerLkp = GetComponentLookup<Owner>(true),
+                m_UpdatedLkp = GetComponentLookup<Updated>(true),
                 m_WeTransformLkp = GetComponentLookup<WETextDataTransform>(true),
                 m_GameTransformLkp = GetComponentLookup<Game.Objects.Transform>(true),
                 m_InterpolatedTransformLkp = GetComponentLookup<InterpolatedTransform>(true),
@@ -88,6 +88,7 @@ namespace BelzontWE
             [ReadOnly] public ComponentLookup<PrefabRef> m_PrefabRefLkp;
             [ReadOnly] public ComponentLookup<ObjectData> m_PrefabObjectDataLkp;
             [ReadOnly] public ComponentLookup<Owner> m_OwnerLkp;
+            [ReadOnly] public ComponentLookup<Updated> m_UpdatedLkp;
             [ReadOnly] public ComponentLookup<WETextDataTransform> m_WeTransformLkp;
             [ReadOnly] public ComponentLookup<Game.Objects.Transform> m_GameTransformLkp;
             [ReadOnly] public ComponentLookup<InterpolatedTransform> m_InterpolatedTransformLkp;
@@ -310,7 +311,7 @@ namespace BelzontWE
                                 var spacingM = spacingOffsets[0];
                                 WETemplateManager.GetSpacingAndOffset((uint)(totalTarget - idx), instancingCount.x, 1, alignmentByAxisOrder.m, ref spacingM, out var offsetM);
                                 var localPos = weTransform.offsetPosition + pivotOffset + offsetM + offsetN + offsetO + (m2 * spacingM) + (n * spacingN) + (o * spacingO);
-                                cmd.SetComponent(unfilteredChunkIndex, existingBuf[idx].m_SubObject, new Game.Objects.Transform(math.transform(geomMtx, localPos), baseRot));
+                                SetInstanceTransform(existingBuf[idx].m_SubObject, math.transform(geomMtx, localPos), baseRot, unfilteredChunkIndex, cmd);
                             }
                         }
                     }
@@ -319,7 +320,16 @@ namespace BelzontWE
                 {
                     var worldPos = math.transform(geomMtx, weTransform.offsetPosition);
                     for (int j = 0; j < count; j++)
-                        cmd.SetComponent(unfilteredChunkIndex, existingBuf[j].m_SubObject, new Game.Objects.Transform(worldPos, baseRot));
+                        SetInstanceTransform(existingBuf[j].m_SubObject, worldPos, baseRot, unfilteredChunkIndex, cmd);
+                }
+            }
+
+            private void SetInstanceTransform(Entity spawnedEntity, float3 worldPos, quaternion worldRot, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+            {
+                cmd.SetComponent(unfilteredChunkIndex, spawnedEntity, new Game.Objects.Transform(worldPos, worldRot));
+                if (!m_UpdatedLkp.HasComponent(spawnedEntity))
+                {
+                    cmd.AddComponent<Updated>(unfilteredChunkIndex, spawnedEntity);
                 }
             }
 

@@ -533,6 +533,7 @@ namespace BelzontWE
                 _ => default
             };
             EntityManager.SetComponentData(m_Controller.CurrentSubEntity.Value, currentItem);
+            m_Controller.MarkItemDirtyForRendering(m_Controller.CurrentSubEntity.Value);
             cmdBuff.AddComponent<BatchesUpdated>(m_Controller.CurrentEntity.Value);
         }
 
@@ -574,6 +575,7 @@ namespace BelzontWE
             };
             currentItem.offsetRotation = Quaternion.Euler(m_TransformController.CurrentRotation.Value);
             EntityManager.SetComponentData(m_Controller.CurrentSubEntity.Value, currentItem);
+            m_Controller.MarkItemDirtyForRendering(m_Controller.CurrentSubEntity.Value);
             cmdBuff.AddComponent<BatchesUpdated>(m_Controller.CurrentEntity.Value);
         }
 

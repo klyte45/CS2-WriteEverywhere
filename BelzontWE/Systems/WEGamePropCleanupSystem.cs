@@ -31,8 +31,6 @@ namespace BelzontWE
                 None = new ComponentType[]
                 {
                     ComponentType.ReadOnly<WEOwner>(),
-                    ComponentType.ReadOnly<Deleted>(),
-                    ComponentType.ReadOnly<Temp>(),
                 }
             });
 
@@ -45,8 +43,6 @@ namespace BelzontWE
                 None = new ComponentType[]
                 {
                     ComponentType.ReadOnly<WETextDataMain>(),
-                    ComponentType.ReadOnly<Deleted>(),
-                    ComponentType.ReadOnly<Temp>(),
                 }
             });
 

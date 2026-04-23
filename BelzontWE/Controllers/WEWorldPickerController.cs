@@ -304,6 +304,26 @@ namespace BelzontWE
 
         private readonly Queue<System.Action> m_executionQueue = new();
 
+        internal void MarkItemDirtyForRendering(Entity subEntity)
+        {
+            if (!EntityManager.TryGetComponent<WETextDataMesh>(subEntity, out var mesh)) return;
+
+            if (mesh.TextType == WESimulationTextType.GameProp)
+            {
+                if (EntityManager.TryGetComponent<WETextDataMain>(subEntity, out var main))
+                {
+                    main.nextUpdateFrame = 0;
+                    EntityManager.SetComponentData(subEntity, main);
+                }
+                EntityManager.SafeSetComponentEnabled<WEWaitingRendering>(subEntity);
+                EntityManager.SafeSetComponentEnabled<WEWaitingGamePropRendering>(subEntity);
+                return;
+            }
+
+            EntityManager.SafeSetComponentEnabled<WEWaitingRendering>(subEntity);
+            if (EntityManager.HasComponent<WEWaitingGamePropRendering>(subEntity)) EntityManager.SetComponentEnabled<WEWaitingGamePropRendering>(subEntity, false);
+        }
+
         internal void EnqueueModification<T, W>(T newVal, Func<T, W, W> x) where W : unmanaged, IComponentData
         {
             if (IsValidEditingItem())
@@ -316,6 +336,7 @@ namespace BelzontWE
                     //  if (BasicIMod.DebugMode) LogUtils.DoLog($"x = {x}; CurrentSubEntity = {currentItem.ItemName}");
                     currentItem = x(newVal, currentItem);
                     EntityManager.SetComponentData(subEntity, currentItem);
+                    MarkItemDirtyForRendering(subEntity);
                 });
             }
         }
