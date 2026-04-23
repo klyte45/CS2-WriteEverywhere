@@ -63,10 +63,14 @@ namespace BelzontWE
                 m_WeMainLkp = GetComponentLookup<WETextDataMain>(true),
                 GamePropIndexPtr = GCHandle.Alloc(m_templateManager.WEGamePropIndex),
                 m_SubObjectLkp = GetBufferLookup<WESubObject>(true),
+                m_GameSubObjectLkp = GetBufferLookup<Game.Objects.SubObject>(true),
                 m_PrefabRefLkp = GetComponentLookup<PrefabRef>(true),
+                m_PrefabObjectDataLkp = GetComponentLookup<ObjectData>(true),
+                m_OwnerLkp = GetComponentLookup<Owner>(true),
                 m_WeTransformLkp = GetComponentLookup<WETextDataTransform>(true),
                 m_GameTransformLkp = GetComponentLookup<Game.Objects.Transform>(true),
                 m_InterpolatedTransformLkp = GetComponentLookup<InterpolatedTransform>(true),
+                m_inheritedVarsCacheLkp = GetComponentLookup<WEInheritedVarsCache>(true),
             }.Schedule(m_pendingGamePropEntities, Dependency).Complete();
         }
 
@@ -80,7 +84,10 @@ namespace BelzontWE
             public EntityStorageInfoLookup m_entityLookup;
             public GCHandle GamePropIndexPtr;
             [ReadOnly] public BufferLookup<WESubObject> m_SubObjectLkp;
+            [ReadOnly] public BufferLookup<Game.Objects.SubObject> m_GameSubObjectLkp;
             [ReadOnly] public ComponentLookup<PrefabRef> m_PrefabRefLkp;
+            [ReadOnly] public ComponentLookup<ObjectData> m_PrefabObjectDataLkp;
+            [ReadOnly] public ComponentLookup<Owner> m_OwnerLkp;
             [ReadOnly] public ComponentLookup<WETextDataTransform> m_WeTransformLkp;
             [ReadOnly] public ComponentLookup<Game.Objects.Transform> m_GameTransformLkp;
             [ReadOnly] public ComponentLookup<InterpolatedTransform> m_InterpolatedTransformLkp;
@@ -141,6 +148,8 @@ namespace BelzontWE
 
                 // Get geometry/text-node transform
                 m_WeMainLkp.TryGetComponent(entity, out var main);
+                var nativeOwnerEntity = main.TargetEntity;
+                var hasNativeOwnerBuffer = nativeOwnerEntity != Entity.Null && m_GameSubObjectLkp.HasBuffer(nativeOwnerEntity);
                 var geomTransform = default(Game.Objects.Transform);
                 m_GameTransformLkp.TryGetComponent(main.TargetEntity, out geomTransform);
                 var hasGeom = main.TargetEntity != Entity.Null && m_entityLookup.Exists(main.TargetEntity);
@@ -163,12 +172,21 @@ namespace BelzontWE
                     return;
                 }
 
+                if (!m_PrefabObjectDataLkp.TryGetComponent(prefabEntity, out var prefabObjectData) || !prefabObjectData.m_Archetype.Valid)
+                {
+                    ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd, out _);
+                    return;
+                }
+
                 // Check if all existing sub-objects use the correct prefab
                 bool allSamePrefab = existingCount > 0;
                 for (int j = 0; allSamePrefab && j < existingCount; j++)
                 {
                     var sub = existingBuf[j].m_SubObject;
-                    if (!m_entityLookup.Exists(sub) || !m_PrefabRefLkp.TryGetComponent(sub, out var subPrefabRef) || subPrefabRef.m_Prefab != prefabEntity)
+                    if (!m_entityLookup.Exists(sub)
+                        || !m_PrefabRefLkp.TryGetComponent(sub, out var subPrefabRef)
+                        || subPrefabRef.m_Prefab != prefabEntity
+                        || (hasNativeOwnerBuffer && (!m_OwnerLkp.TryGetComponent(sub, out var subOwner) || subOwner.m_Owner != nativeOwnerEntity)))
                     {
                         allSamePrefab = false;
                         break;
@@ -203,7 +221,7 @@ namespace BelzontWE
                 {
                     // Prefab changed — clear all, then spawn fresh
                     ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd, out _);
-                    SpawnAllInstances(entity, prefabEntity, (int)targetSize, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd, inheritedVars);
+                    SpawnAllInstances(entity, nativeOwnerEntity, hasNativeOwnerBuffer, prefabEntity, prefabObjectData, (int)targetSize, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd, inheritedVars);
                     return;
                 }
 
@@ -230,10 +248,10 @@ namespace BelzontWE
 
                 // existingCount < targetSize — spawn delta at correct grid positions, reposition existing
                 RepositionInstances(existingBuf, existingCount, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, (int)targetSize, hasGeom, unfilteredChunkIndex, cmd);
-                SpawnAllInstances(entity, prefabEntity, (int)targetSize, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd, inheritedVars, existingCount);
+                SpawnAllInstances(entity, nativeOwnerEntity, hasNativeOwnerBuffer, prefabEntity, prefabObjectData, (int)targetSize, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd, inheritedVars, existingCount);
             }
 
-            private void SpawnAllInstances(Entity entity, Entity prefabEntity, int targetSize, uint3 instancingCount,
+            private void SpawnAllInstances(Entity entity, Entity nativeOwnerEntity, bool hasNativeOwnerBuffer, Entity prefabEntity, ObjectData prefabObjectData, int targetSize, uint3 instancingCount,
                 float3[] spacingOffsets, float3 pivotOffset,
                 (WEPlacementAlignment m, WEPlacementAlignment n, WEPlacementAlignment o) alignmentByAxisOrder,
                 WETextDataTransform weTransform, float4x4 geomMtx, quaternion baseRot,
@@ -256,7 +274,7 @@ namespace BelzontWE
                                 var spacingM = spacingOffsets[0];
                                 WETemplateManager.GetSpacingAndOffset((uint)(targetSize - spawned), instancingCount.x, 1, alignmentByAxisOrder.m, ref spacingM, out var offsetM);
                                 var localPos = weTransform.offsetPosition + pivotOffset + offsetM + offsetN + offsetO + (m2 * spacingM) + (n * spacingN) + (o * spacingO);
-                                SpawnPropInstance(entity, prefabEntity, math.transform(geomMtx, localPos), baseRot, unfilteredChunkIndex, cmd, inheritedVarsCache);
+                                SpawnPropInstance(entity, nativeOwnerEntity, hasNativeOwnerBuffer, prefabEntity, prefabObjectData, math.transform(geomMtx, localPos), baseRot, unfilteredChunkIndex, cmd, inheritedVarsCache);
                             }
                         }
                     }
@@ -265,7 +283,7 @@ namespace BelzontWE
                 {
                     var pos = math.transform(geomMtx, weTransform.offsetPosition);
                     for (int idx = startIndex; idx < targetSize; idx++)
-                        SpawnPropInstance(entity, prefabEntity, pos, baseRot, unfilteredChunkIndex, cmd, inheritedVarsCache);
+                        SpawnPropInstance(entity, nativeOwnerEntity, hasNativeOwnerBuffer, prefabEntity, prefabObjectData, pos, baseRot, unfilteredChunkIndex, cmd, inheritedVarsCache);
                 }
             }
 
@@ -305,14 +323,18 @@ namespace BelzontWE
                 }
             }
 
-            private void SpawnPropInstance(Entity textNode, Entity prefabEntity, float3 worldPos, quaternion worldRot, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, WEInheritedVarsCache inheritedVarsCache)
+            private void SpawnPropInstance(Entity textNode, Entity nativeOwnerEntity, bool hasNativeOwnerBuffer, Entity prefabEntity, ObjectData prefabObjectData, float3 worldPos, quaternion worldRot, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, WEInheritedVarsCache inheritedVarsCache)
             {
-                var spawnedEntity = cmd.Instantiate(unfilteredChunkIndex, prefabEntity);
+                var spawnedEntity = cmd.CreateEntity(unfilteredChunkIndex, prefabObjectData.m_Archetype);
+                cmd.SetComponent(unfilteredChunkIndex, spawnedEntity, new PrefabRef(prefabEntity));
                 cmd.SetComponent(unfilteredChunkIndex, spawnedEntity, new Game.Objects.Transform(worldPos, worldRot));
+                if (hasNativeOwnerBuffer)
+                {
+                    cmd.AddComponent(unfilteredChunkIndex, spawnedEntity, new Owner(nativeOwnerEntity));
+                }
+                cmd.AddComponent<Secondary>(unfilteredChunkIndex, spawnedEntity);
                 cmd.AddComponent(unfilteredChunkIndex, spawnedEntity, new WEOwner { m_weOwnerEntity = textNode });
                 cmd.AddComponent<WEChild>(unfilteredChunkIndex, spawnedEntity);
-                cmd.AddComponent<WEInheritedVarsCache>(unfilteredChunkIndex, spawnedEntity);
-                cmd.AddComponent<Secondary>(unfilteredChunkIndex, spawnedEntity);
                 cmd.AddComponent(unfilteredChunkIndex, spawnedEntity, inheritedVarsCache);
                 cmd.AppendToBuffer(unfilteredChunkIndex, textNode, new WESubObject { m_SubObject = spawnedEntity });
             }
