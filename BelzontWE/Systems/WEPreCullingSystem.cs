@@ -588,14 +588,11 @@ namespace BelzontWE
                         return;
                     case WESimulationTextType.GameProp:
                         {
-                            var effRot = (Quaternion)transform.offsetRotation;
-                            var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
-                            var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one);
-                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod, ref this);
-                            if (CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, lod))
+                            if (CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, 2000))
                             {
                                 m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, new WETextDataDirtyFormulae { vars = currentVars });
                                 m_CommandBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(unfilteredChunkIndex, nextEntity, true);
+                                m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, new WEInheritedVarsCache { vars = inheritableVars });
                                 if (m_weSubObjectsLkp.TryGetBuffer(nextEntity, out var subObjBuf))
                                 {
                                     for (int si = 0; si < subObjBuf.Length; si++)
@@ -610,13 +607,6 @@ namespace BelzontWE
                                             m_CommandBuffer.AddComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars });
                                         }
                                     }
-                                    m_newItemsRender.Enqueue(new WERenderData
-                                    {
-                                        textDataEntity = nextEntity,
-                                        geometryEntity = geometryEntity,
-                                        transformMatrix = prevMatrix,
-                                        lastLod = 200
-                                    });
                                 }
                             }
                         }

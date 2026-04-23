@@ -1,5 +1,4 @@
 using Belzont.Interfaces;
-using BelzontWE.Font;
 using Game.Common;
 using Game.Objects;
 using Game.Prefabs;
@@ -85,6 +84,7 @@ namespace BelzontWE
             [ReadOnly] public ComponentLookup<WETextDataTransform> m_WeTransformLkp;
             [ReadOnly] public ComponentLookup<Game.Objects.Transform> m_GameTransformLkp;
             [ReadOnly] public ComponentLookup<InterpolatedTransform> m_InterpolatedTransformLkp;
+            [ReadOnly] public ComponentLookup<WEInheritedVarsCache> m_inheritedVarsCacheLkp;
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -98,6 +98,7 @@ namespace BelzontWE
                     var weCustomData = weTextDatas[i];
                     var weMeshData = weMeshDatas[i];
 
+                    m_CommandBuffer.SetComponentEnabled<WEWaitingGamePropRendering>(unfilteredChunkIndex, entity, false);
                     if (weMeshData.TextType != WESimulationTextType.GameProp) continue;
 
                     if (!m_entityLookup.Exists(weCustomData.TargetEntity) || weCustomData.TargetEntity == Entity.Null)
@@ -105,25 +106,31 @@ namespace BelzontWE
                         m_CommandBuffer.AddComponent<Deleted>(unfilteredChunkIndex, entity);
                         continue;
                     }
-
-                    SpawnOrUpdateGameProp(entity, ref weMeshData, unfilteredChunkIndex, m_CommandBuffer);
+                    var inheritedVars = m_inheritedVarsCacheLkp.TryGetComponent(entity, out var cache) ? cache : default;
+                    SpawnOrUpdateGameProp(entity, ref weMeshData, unfilteredChunkIndex, m_CommandBuffer, inheritedVars);
                     m_CommandBuffer.SetComponent(unfilteredChunkIndex, entity, weMeshData);
-                    m_CommandBuffer.SetComponentEnabled<WEWaitingGamePropRendering>(unfilteredChunkIndex, entity, false);
                 }
             }
 
-            private void ClearGamePropSubObjects(Entity entity, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+            private void ClearGamePropSubObjects(Entity entity, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, out DynamicBuffer<WESubObject> newBuf)
             {
-                if (!m_SubObjectLkp.TryGetBuffer(entity, out var subBuf) || subBuf.Length == 0) return;
-                for (int j = 0; j < subBuf.Length; j++)
+
+                if (!m_SubObjectLkp.TryGetBuffer(entity, out newBuf))
                 {
-                    var sub = subBuf[j].m_SubObject;
+                    newBuf = cmd.AddBuffer<WESubObject>(unfilteredChunkIndex, entity);
+                    return;
+                }
+                if (newBuf.Length == 0) return;
+                for (int j = 0; j < newBuf.Length; j++)
+                {
+                    var sub = newBuf[j].m_SubObject;
                     if (sub != Entity.Null) cmd.AddComponent<Deleted>(unfilteredChunkIndex, sub);
                 }
-                cmd.SetBuffer<WESubObject>(unfilteredChunkIndex, entity).Clear();
+                newBuf = cmd.SetBuffer<WESubObject>(unfilteredChunkIndex, entity);
+                newBuf.Clear();
             }
 
-            private void SpawnOrUpdateGameProp(Entity entity, ref WETextDataMesh weMeshData, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+            private void SpawnOrUpdateGameProp(Entity entity, ref WETextDataMesh weMeshData, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, WEInheritedVarsCache inheritedVars)
             {
                 var gameIndex = GamePropIndexPtr.IsAllocated ? GamePropIndexPtr.Target as Dictionary<string, Entity> : null;
                 if (gameIndex == null) return;
@@ -146,13 +153,13 @@ namespace BelzontWE
                 // Block GameProp on Moveable Objects (InterpolatedTransform geometry)
                 if (m_InterpolatedTransformLkp.HasComponent(main.TargetEntity))
                 {
-                    if (existingCount > 0) ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd);
+                    ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd, out _);
                     return;
                 }
 
                 if (!hasValidPrefab)
                 {
-                    if (existingCount > 0) ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd);
+                    ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd, out _);
                     return;
                 }
 
@@ -162,7 +169,10 @@ namespace BelzontWE
                 {
                     var sub = existingBuf[j].m_SubObject;
                     if (!m_entityLookup.Exists(sub) || !m_PrefabRefLkp.TryGetComponent(sub, out var subPrefabRef) || subPrefabRef.m_Prefab != prefabEntity)
+                    {
                         allSamePrefab = false;
+                        break;
+                    }
                 }
 
                 // Compute instancing layout
@@ -192,8 +202,8 @@ namespace BelzontWE
                 if (!allSamePrefab)
                 {
                     // Prefab changed — clear all, then spawn fresh
-                    if (existingCount > 0) ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd);
-                    SpawnAllInstances(entity, prefabEntity, (int)targetSize, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd);
+                    ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd, out _);
+                    SpawnAllInstances(entity, prefabEntity, (int)targetSize, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd, inheritedVars);
                     return;
                 }
 
@@ -220,14 +230,14 @@ namespace BelzontWE
 
                 // existingCount < targetSize — spawn delta at correct grid positions, reposition existing
                 RepositionInstances(existingBuf, existingCount, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, (int)targetSize, hasGeom, unfilteredChunkIndex, cmd);
-                SpawnAllInstances(entity, prefabEntity, (int)targetSize, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd, existingCount);
+                SpawnAllInstances(entity, prefabEntity, (int)targetSize, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd, inheritedVars, existingCount);
             }
 
             private void SpawnAllInstances(Entity entity, Entity prefabEntity, int targetSize, uint3 instancingCount,
                 float3[] spacingOffsets, float3 pivotOffset,
                 (WEPlacementAlignment m, WEPlacementAlignment n, WEPlacementAlignment o) alignmentByAxisOrder,
                 WETextDataTransform weTransform, float4x4 geomMtx, quaternion baseRot,
-                int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, int startIndex = 0)
+                int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, WEInheritedVarsCache inheritedVarsCache, int startIndex = 0)
             {
                 if (spacingOffsets != null)
                 {
@@ -246,7 +256,7 @@ namespace BelzontWE
                                 var spacingM = spacingOffsets[0];
                                 WETemplateManager.GetSpacingAndOffset((uint)(targetSize - spawned), instancingCount.x, 1, alignmentByAxisOrder.m, ref spacingM, out var offsetM);
                                 var localPos = weTransform.offsetPosition + pivotOffset + offsetM + offsetN + offsetO + (m2 * spacingM) + (n * spacingN) + (o * spacingO);
-                                SpawnPropInstance(entity, prefabEntity, math.transform(geomMtx, localPos), baseRot, unfilteredChunkIndex, cmd);
+                                SpawnPropInstance(entity, prefabEntity, math.transform(geomMtx, localPos), baseRot, unfilteredChunkIndex, cmd, inheritedVarsCache);
                             }
                         }
                     }
@@ -255,7 +265,7 @@ namespace BelzontWE
                 {
                     var pos = math.transform(geomMtx, weTransform.offsetPosition);
                     for (int idx = startIndex; idx < targetSize; idx++)
-                        SpawnPropInstance(entity, prefabEntity, pos, baseRot, unfilteredChunkIndex, cmd);
+                        SpawnPropInstance(entity, prefabEntity, pos, baseRot, unfilteredChunkIndex, cmd, inheritedVarsCache);
                 }
             }
 
@@ -295,7 +305,7 @@ namespace BelzontWE
                 }
             }
 
-            private void SpawnPropInstance(Entity textNode, Entity prefabEntity, float3 worldPos, quaternion worldRot, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
+            private void SpawnPropInstance(Entity textNode, Entity prefabEntity, float3 worldPos, quaternion worldRot, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, WEInheritedVarsCache inheritedVarsCache)
             {
                 var spawnedEntity = cmd.Instantiate(unfilteredChunkIndex, prefabEntity);
                 cmd.SetComponent(unfilteredChunkIndex, spawnedEntity, new Game.Objects.Transform(worldPos, worldRot));
@@ -303,6 +313,7 @@ namespace BelzontWE
                 cmd.AddComponent<WEChild>(unfilteredChunkIndex, spawnedEntity);
                 cmd.AddComponent<WEInheritedVarsCache>(unfilteredChunkIndex, spawnedEntity);
                 cmd.AddComponent<Secondary>(unfilteredChunkIndex, spawnedEntity);
+                cmd.AddComponent(unfilteredChunkIndex, spawnedEntity, inheritedVarsCache);
                 cmd.AppendToBuffer(unfilteredChunkIndex, textNode, new WESubObject { m_SubObject = spawnedEntity });
             }
         }
