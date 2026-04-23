@@ -55,10 +55,13 @@ namespace BelzontWE
             // │  Phase: Cleanup                                                          │
             // │    WETemplateDisposalSystem → disposes orphaned WETextData components    │
             // │                                                                          │
-            // │  Self-registered (EndFrame via BelzontBasicSystem):                      │
-            // │    WERendererSystem       → reads WEPreCullingSystem, WEWorldPicker*     │
-            // │    WEPostRendererSystem   → reads WETemplateManager; resolves text/image │
-            // │    WEEmissiveLightSystem  → reads WEPreCullingSystem; emissive lighting  │
+            // │  Self-registered (Modification2B via BelzontBasicSystem):                │
+            // │    WEGamePropSpawnSystem  → reads WETemplateManager; spawns game props  │
+            // │                                                                          │
+            // │  Self-registered (EndFrame via BelzontBasicSystem):                     │
+            // │    WERendererSystem       → reads WEPreCullingSystem, WEWorldPicker*    │
+            // │    WEPostRendererSystem   → reads WETemplateManager; resolves text/image│
+            // │    WEEmissiveLightSystem  → reads WEPreCullingSystem; emissive lighting │
             // │                                                                          │
             // └──────────────────────────────────────────────────────────────────────────┘
             updateSystem.UpdateAfter<WEWorldPickerTooltip>(SystemUpdatePhase.UITooltip);

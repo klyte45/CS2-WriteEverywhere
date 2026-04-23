@@ -587,31 +587,37 @@ namespace BelzontWE
                         }
                         return;
                     case WESimulationTextType.GameProp:
-                        if (CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, 0))
                         {
-                            m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, new WETextDataDirtyFormulae { vars = currentVars });
-                            m_CommandBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(unfilteredChunkIndex, nextEntity, true);
-                            if (m_weSubObjectsLkp.TryGetBuffer(nextEntity, out var subObjBuf))
+                            var effRot = (Quaternion)transform.offsetRotation;
+                            var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
+                            var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one);
+                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod, ref this);
+                            if (CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, lod))
                             {
-                                for (int si = 0; si < subObjBuf.Length; si++)
+                                m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, new WETextDataDirtyFormulae { vars = currentVars });
+                                m_CommandBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(unfilteredChunkIndex, nextEntity, true);
+                                if (m_weSubObjectsLkp.TryGetBuffer(nextEntity, out var subObjBuf))
                                 {
-                                    var subObjEntity = subObjBuf[si].m_SubObject;
-                                    if (m_weInheritedVarsCacheLkp.HasComponent(subObjEntity))
+                                    for (int si = 0; si < subObjBuf.Length; si++)
                                     {
-                                        m_CommandBuffer.SetComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars });
+                                        var subObjEntity = subObjBuf[si].m_SubObject;
+                                        if (m_weInheritedVarsCacheLkp.HasComponent(subObjEntity))
+                                        {
+                                            m_CommandBuffer.SetComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars });
+                                        }
+                                        else
+                                        {
+                                            m_CommandBuffer.AddComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars });
+                                        }
                                     }
-                                    else
+                                    m_newItemsRender.Enqueue(new WERenderData
                                     {
-                                        m_CommandBuffer.AddComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars });
-                                    }
+                                        textDataEntity = nextEntity,
+                                        geometryEntity = geometryEntity,
+                                        transformMatrix = prevMatrix,
+                                        lastLod = 200
+                                    });
                                 }
-                                m_newItemsRender.Enqueue(new WERenderData
-                                {
-                                    textDataEntity = nextEntity,
-                                    geometryEntity = geometryEntity,
-                                    transformMatrix = prevMatrix,
-                                    lastLod = 200
-                                });
                             }
                         }
                         break;
