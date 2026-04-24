@@ -368,7 +368,6 @@ namespace BelzontWE
                 {
                     case WESimulationTextType.Text:
                     case WESimulationTextType.Image:
-                    case WESimulationTextType.GameProp:
                         if (mesh.IsDirty() && !m_weWaitingRenderingLookup.HasEnabledComponent(nextEntity))
                         {
                             if (!m_weWaitingRenderingLookup.HasComponent(nextEntity))
@@ -627,14 +626,6 @@ namespace BelzontWE
                                 }
                                 if (forceEditorRefresh)
                                 {
-                                    if (m_weWaitingRenderingLookup.HasComponent(nextEntity))
-                                    {
-                                        m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, nextEntity, true);
-                                    }
-                                    else
-                                    {
-                                        m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
-                                    }
                                     var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
                                     m_newItemsRender.Enqueue(new WERenderData
                                     {

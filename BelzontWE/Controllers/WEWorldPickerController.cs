@@ -315,7 +315,6 @@ namespace BelzontWE
                     main.nextUpdateFrame = 0;
                     EntityManager.SetComponentData(subEntity, main);
                 }
-                EntityManager.SafeSetComponentEnabled<WEWaitingRendering>(subEntity);
                 EntityManager.SafeSetComponentEnabled<WEWaitingGamePropRendering>(subEntity);
                 return;
             }
