@@ -427,7 +427,7 @@ namespace BelzontWE
 
                     var vars = WEVarsCacheBank.Instance[WEVarsCacheBank.Instance[dirtyData.vars]];
                     var materialChanged = material.UpdateFormulaes(em, dirtyData.geometry, vars);
-                    var canMultiply = mesh.TextType == WESimulationTextType.Placeholder;
+                    var canMultiply = mesh.TextType == WESimulationTextType.Placeholder || mesh.TextType == WESimulationTextType.GameProp;
                     var transformChanged = transform.UpdateFormulae(em, dirtyData.geometry, vars, canMultiply);
                     var meshChanged = mesh.UpdateFormulaes(em, dirtyData.geometry, vars);                    
                     if (materialChanged | transformChanged | meshChanged)

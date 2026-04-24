@@ -207,7 +207,10 @@ const WEWorldPickerToolPanel = () => {
 
     const isMatrixTransform = WorldPickerService.instance.bindingList.mesh.TextSourceType.value == WESimulationTextType.MatrixTransform;
     const isGameProp = WorldPickerService.instance.bindingList.mesh.TextSourceType.value == WESimulationTextType.GameProp;
+    const isPlaceholder = WorldPickerService.instance.bindingList.mesh.TextSourceType.value == WESimulationTextType.Placeholder;
+    const hasMultiInstancesXY = wps.CurrentEntity.value?.Index && (transform.ArrayInstancing.value[0] > 1 || transform.ArrayInstancing.value[1] > 1) && (isGameProp || isPlaceholder);
 
+    const hasMultiInstances = wps.CurrentEntity.value?.Index && transform.ArrayInstancing.value[0] * transform.ArrayInstancing.value[1] * transform.ArrayInstancing.value[2] > 1 && (isGameProp || isPlaceholder);
     return !wps.CurrentEntity.value?.Index ?
         <VanillaComponentResolver.instance.Section title={L_selectItem} children={[]} /> :
         <>
@@ -273,7 +276,7 @@ const WEWorldPickerToolPanel = () => {
 
                     </div>
                 </VanillaComponentResolver.instance.Section>
-                <VanillaComponentResolver.instance.Section title={L_pivot}>
+                {(!isGameProp || hasMultiInstancesXY) && <VanillaComponentResolver.instance.Section title={L_pivot}>
                     {ObjectTyped.values(WEPlacementPivot)
                         .filter(x => typeof x == "number")
                         .map(x => <>
@@ -289,7 +292,7 @@ const WEWorldPickerToolPanel = () => {
                         </>)
                     }
 
-                </VanillaComponentResolver.instance.Section>
+                </VanillaComponentResolver.instance.Section>}
                 <VectorSectionEditable title={L_position}
                     valueGetter={() => transform.CurrentPosition.value?.map(x => x.toFixed(3))}
                     valueGetterFormatted={() => transform.CurrentPosition.value?.map(x => decimalsFormat(x) + "m")}
@@ -308,7 +311,7 @@ const WEWorldPickerToolPanel = () => {
                         if (isNaN(newVal[i])) return;
                         transform.CurrentRotation.set(newVal);
                     }} />
-                {(transform.ArrayInstancing.value[0] * transform.ArrayInstancing.value[1] * transform.ArrayInstancing.value[2] > 1 && wps.CameraLocked.value) && (() => {
+                {(hasMultiInstances && wps.CameraLocked.value) && (() => {
                     const counts: [number, number, number] = [transform.ArrayInstancing.value[0], transform.ArrayInstancing.value[1], transform.ArrayInstancing.value[2]];
                     const order = transform.ArrayAxisGrowthOrder.value;
                     const linearIdx = wps.CurrentInstanceIdx.value;

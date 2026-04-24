@@ -94,7 +94,7 @@ export const WEInstancingView = (props: { initialPosition?: { x: number, y: numb
             {wps.transform.UseFormulaeToCheckIfDraw.value && <div style={{ color: "var(--textColorDim)", fontSize: "var(--fontSizeXS)", textAlign: "center", display: "flex", alignContent: "center", justifyContent: "center" }}>{T_showWhenTooltip}</div>}
             <hr />
             <h4>{T_arrayTitle}</h4>
-            {wps.mesh.TextSourceType.value != WESimulationTextType.Placeholder ? <>
+            {![WESimulationTextType.GameProp, WESimulationTextType.Placeholder].includes(wps.mesh.TextSourceType.value) ? <>
                 {T_arraysOnlyForTemplates}
             </> : <>
                 <FormulaeEditRow
