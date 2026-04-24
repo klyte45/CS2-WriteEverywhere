@@ -213,7 +213,8 @@ namespace BelzontWE
                 uint targetSize = instCount < 0
                     ? (uint)math.clamp(weTransform.ArrayInstancing.x * weTransform.ArrayInstancing.y * weTransform.ArrayInstancing.z, 1, 256)
                     : (uint)math.min(256, (uint)instCount);
-                if (targetSize == 0) targetSize = 1;
+
+                if (existingCount == (int)targetSize && targetSize == 0) return; // No instances before or after, skip
 
                 var spacingOffsets = weTransform.SpacingByAxisOrder;
                 var instancingCount = (uint3)math.min(weTransform.InstanceCountByAxisOrder,
