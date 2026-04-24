@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -170,7 +169,7 @@ namespace BelzontWE
             => new()
             {
                 offsetPosition = new(0, 0, 0),
-                offsetRotation = new(),
+                offsetRotation = new(0, 0, 0, 1),
                 scale = new(1, 1, 1),
                 pivot = WEPlacementPivot.MiddleCenter,
                 mustDrawFn = new WETextDataValueFloat

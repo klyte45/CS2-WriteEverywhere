@@ -94,12 +94,6 @@ namespace BelzontWE
                     if (doRender && allowSelectedGamePropMatrix)
                     {
                         var baseMatrix = item.transformMatrix;
-                        if (EntityManager.HasComponent<InterpolatedTransform>(item.geometryEntity))
-                        {
-                            var transformInterpolated = EntityManager.GetComponentData<InterpolatedTransform>(item.geometryEntity);
-                            var interpolatedMatrix = Matrix4x4.TRS(transformInterpolated.m_Position, transformInterpolated.m_Rotation, Vector3.one);
-                            baseMatrix = interpolatedMatrix * item.transformMatrix;
-                        }
                         if (baseMatrix.ValidTRS())
                         {
                             m_pickerController.SetCurrentTargetMatrix(item.textDataEntity, baseMatrix);

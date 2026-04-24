@@ -55,6 +55,7 @@ namespace BelzontWE
                 },
                 None = new ComponentType[]
                 {
+                    ComponentType.ReadOnly<WETextComponentValid>(),
                     ComponentType.ReadOnly<PrefabRef>(),
                 }
             });
@@ -74,6 +75,7 @@ namespace BelzontWE
                 {
                     if (BasicIMod.DebugMode) LogUtils.DoLog($"[WEGamePropCleanup] Destroying stale orphan (no owner): {stale[i]}");
                     cmd.AddComponent<Deleted>(stale[i]);
+                    cmd.RemoveComponent<WEChild>(stale[i]);
                 }
                 stale.Dispose();
             }
@@ -114,6 +116,7 @@ namespace BelzontWE
                 for (int i = buff.Length - 1; i >= 0; i--)
                 {
                     EntityManager.AddComponent<Game.Common.Deleted>(buff[i].m_weTextData);
+                    if (EntityManager.HasComponent<WETextComponentValid>(buff[i].m_weTextData)) EntityManager.RemoveComponent<WETextComponentValid>(buff[i].m_weTextData);
                     buff.RemoveAt(i);
                 }
                 EntityManager.RemoveComponent<WESubTextRef>(refNode);

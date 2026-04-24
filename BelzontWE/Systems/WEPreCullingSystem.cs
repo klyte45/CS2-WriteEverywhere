@@ -1,6 +1,6 @@
 ﻿using Colossal.Entities;
 using Colossal.Mathematics;
-using Game.Objects;
+using Game.Prefabs;
 using Game.Rendering;
 using Unity.Collections;
 using Unity.Entities;
@@ -8,6 +8,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
+using SubObject = Game.Objects.SubObject;
 
 namespace BelzontWE
 {
@@ -123,6 +124,8 @@ namespace BelzontWE
                 minLodUpdateSetting = Mathf.CeilToInt(WriteEverywhereCS2Mod.WeData.RequiredLodForFormulaesUpdate),
                 indexStartString = indexStartString,
                 m_CullInfoLkp = GetComponentLookup<CullingInfo>(true),
+                m_objGeomLkp = GetComponentLookup<ObjectGeometryData>(true),
+                m_PrefabRefLkp = GetComponentLookup<PrefabRef>(true),
             };
 
             cullingActionJob.Schedule(data.Length, 1, JobHandle.CombineDependencies(deps, Dependency)).Complete();
@@ -189,6 +192,8 @@ namespace BelzontWE
             public BufferLookup<SubObject> m_subObjectsLkp;
             public ComponentLookup<Game.Common.Owner> m_ownerLkp;
             public ComponentLookup<CullingInfo> m_CullInfoLkp;
+            public ComponentLookup<PrefabRef> m_PrefabRefLkp;
+            public ComponentLookup<ObjectGeometryData> m_objGeomLkp;
             [ReadOnly] public BufferLookup<WESubObject> m_weSubObjectsLkp;
             public ComponentLookup<WEInheritedVarsCache> m_weInheritedVarsCacheLkp;
             public NativeList<PreCullingData> m_CullingActions;
@@ -469,7 +474,7 @@ namespace BelzontWE
                                 return;
                             }
 
-                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, geomMatrix * prevMatrix, out int minLod, ref this);
+                            int lod = CalculateLod(whiteTextureBounds, ref mesh, ref transform, geomMatrix * prevMatrix, out int minLod);
                             CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, lod);
                             if (!mesh.ValueData.InitializedEffectiveText || lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
@@ -478,7 +483,7 @@ namespace BelzontWE
                                 if (scale2.z < 0) scale2.z = -scale2.z;
 
                                 // Optimize: Use already loaded mesh instead of re-looking up
-                                var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
+                                var effectiveOffsetPosition = GetEffectiveOffsetPosition(nextEntity, mesh, transform);
 
                                 m_newItemsRender.Enqueue(new WERenderData
                                 {
@@ -516,11 +521,11 @@ namespace BelzontWE
                             var cubeMaterial = m_weMaterialLookup[nextEntity];
                             var effRot = (Quaternion)transform.offsetRotation;
                             // Optimize: Calculate effectiveOffsetPosition using already loaded mesh
-                            var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
+                            var effectiveOffsetPosition = GetEffectiveOffsetPosition(nextEntity, mesh, transform);
 
                             var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(localScale.xyz);
                             var lumMultiplier = GetEmissiveMultiplier(ref cubeMaterial);
-                            int lod = CalculateLod(whiteCubeBounds * lumMultiplier, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod, ref this);
+                            int lod = CalculateLod(whiteCubeBounds * lumMultiplier, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod);
                             CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, lod);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
@@ -555,11 +560,11 @@ namespace BelzontWE
                             var isDecal = textureMaterial.CheckIsDecal(mesh);
                             var effRot = isDecal ? ((Quaternion)transform.offsetRotation) * Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)transform.offsetRotation;
                             // Optimize: Use already loaded mesh instead of re-looking up
-                            var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
+                            var effectiveOffsetPosition = GetEffectiveOffsetPosition(nextEntity, mesh, transform);
 
                             var WTmatrix = prevMatrix * Matrix4x4.TRS(effectiveOffsetPosition, effRot, Vector3.one) * Matrix4x4.Scale(isDecal ? localScale.xzy : new float3(localScale.xy, math.sign(localScale.z)));
                             var lumMultiplier = GetEmissiveMultiplier(ref textureMaterial);
-                            int lod = CalculateLod(whiteTextureBounds * lumMultiplier, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod, ref this);
+                            int lod = CalculateLod(whiteTextureBounds * lumMultiplier, ref mesh, ref transform, geomMatrix * WTmatrix, out int minLod);
                             CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, lod);
                             if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                             {
@@ -626,7 +631,7 @@ namespace BelzontWE
                                 }
                                 if (forceEditorRefresh)
                                 {
-                                    var effectiveOffsetPosition = GetEffectiveOffsetPosition(mesh, transform);
+                                    var effectiveOffsetPosition = GetEffectiveOffsetPosition(nextEntity, mesh, transform);
                                     m_newItemsRender.Enqueue(new WERenderData
                                     {
                                         textDataEntity = nextEntity,
@@ -688,7 +693,7 @@ namespace BelzontWE
                                 }
                             }
                             // Optimize: Use already loaded mesh instead of re-looking up
-                            var refPos = GetEffectiveOffsetPosition(mesh, transform.offsetPosition, transform.PivotAsFloat3, scale);
+                            var refPos = GetEffectiveOffsetPosition(nextEntity, mesh, transform.offsetPosition, transform.PivotAsFloat3, scale);
                             var refRot = parentIsPlaceholder ? default : transform.offsetRotation;
                             var effRot = (parentIsPlaceholder ? quaternion.identity : (Quaternion)refRot) * (isDecal ? Quaternion.Euler(new Vector3(-90, 180, 0)) : (Quaternion)quaternion.identity);
                             var matrix = prevMatrix * Matrix4x4.TRS(refPos, effRot, Vector3.one)
@@ -701,7 +706,7 @@ namespace BelzontWE
                                 {
                                     int minLod = -1;
                                     float lumMultiplier = GetEmissiveMultiplier(ref defaultMaterial);
-                                    int lod = invalidBri ? 0 : CalculateLod(mesh.Bounds * lumMultiplier, ref mesh, ref transform, geomMatrix * matrix, out minLod, ref this);
+                                    int lod = invalidBri ? 0 : CalculateLod(mesh.Bounds * lumMultiplier, ref mesh, ref transform, geomMatrix * matrix, out minLod);
                                     CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, lod);
                                     if (lod >= minLod || (isAtWeEditor && geometryEntity == m_selectedEntity))
                                     {
@@ -758,24 +763,39 @@ namespace BelzontWE
 
             private float GetEmissiveMultiplier(ref WETextDataMaterial material) => 1 << (int)math.ceil(math.clamp(material.EmissiveIntensityEffective, 0, 10) * .5f);
 
-            private readonly float3 GetEffectiveOffsetPosition(WETextDataMesh meshData, WETextDataTransform transform)
+            private readonly float3 GetEffectiveOffsetPosition(Entity currentEntity, WETextDataMesh meshData, WETextDataTransform transform)
             {
-                return GetEffectiveOffsetPosition(meshData, transform.offsetPosition, transform.PivotAsFloat3, transform.scale);
+                return GetEffectiveOffsetPosition(currentEntity, meshData, transform.offsetPosition, transform.PivotAsFloat3, transform.scale);
             }
 
-            private readonly float3 GetEffectiveOffsetPosition(WETextDataMesh meshData, float3 offsetPosition, float3 pivot, float3 scale)
+            private readonly float3 GetEffectiveOffsetPosition(Entity currentEntity, WETextDataMesh meshData, float3 offsetPosition, float3 pivot, float3 scale)
             {
                 var effectiveOffsetPosition = offsetPosition;
-                var meshSize = meshData.Bounds.max - meshData.Bounds.min;
-                effectiveOffsetPosition += (pivot - new float3(.5f, .5f, .5f)) * meshSize * scale;
+
+                if (meshData.TextType == WESimulationTextType.GameProp)
+                {
+                    if (m_weSubObjectsLkp.TryGetBuffer(currentEntity, out var subObjects)
+                        && subObjects.Length > 0
+                        && m_PrefabRefLkp.TryGetComponent(subObjects[0].m_SubObject, out var prefabRef)
+                        && m_objGeomLkp.TryGetComponent(prefabRef.m_Prefab, out var geom))
+                    {
+                        var center = (geom.m_Bounds.min + geom.m_Bounds.max) * 0.5f;
+                        effectiveOffsetPosition += center;
+                    }
+                }
+                else
+                {
+                    float3 meshSize = meshData.Bounds.max - meshData.Bounds.min;
+                    effectiveOffsetPosition += (pivot - new float3(.5f, .5f, .5f)) * meshSize * scale;
+                }
 
                 return effectiveOffsetPosition;
             }
 
-            private int CalculateLod(Bounds3 meshBounds, ref WETextDataMesh meshData, ref WETextDataTransform transformData, Matrix4x4 matrix, out int minLod, ref WERenderingJob job)
+            private int CalculateLod(Bounds3 meshBounds, ref WETextDataMesh meshData, ref WETextDataTransform transformData, Matrix4x4 matrix, out int minLod)
             {
                 var refBounds = new Bounds3(matrix.MultiplyPoint(meshBounds.min), matrix.MultiplyPoint(meshBounds.max));
-                var minDist = RenderingUtils.CalculateMinDistance(refBounds, job.m_CameraPosition, job.m_CameraDirection, job.m_LodParameters);
+                var minDist = RenderingUtils.CalculateMinDistance(refBounds, m_CameraPosition, m_CameraDirection, m_LodParameters);
                 var isDirty = meshData.LodReferenceScale != transformData.scale;
                 if (isDirty.x || isDirty.y || isDirty.z || meshData.MinLod <= 0)
                 {
@@ -784,7 +804,7 @@ namespace BelzontWE
                     meshData.LodReferenceScale = transformData.scale;
                 }
                 minLod = meshData.MinLod;
-                meshData.LastLod = RenderingUtils.CalculateLod(minDist * minDist, job.m_LodParameters);
+                meshData.LastLod = RenderingUtils.CalculateLod(minDist * minDist, m_LodParameters);
                 return meshData.LastLod;
             }
 
