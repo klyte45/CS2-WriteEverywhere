@@ -52,6 +52,7 @@ namespace BelzontWE
 
         protected override void OnUpdate()
         {
+            var ensuredNativeOwnerBuffers = new NativeParallelHashSet<Entity>(math.max(16, m_pendingGamePropEntities.CalculateEntityCount()), Allocator.TempJob);
             new WEGamePropSpawnJob
             {
                 m_EntityType = GetEntityTypeHandle(),
@@ -62,7 +63,7 @@ namespace BelzontWE
                 m_WeMainLkp = GetComponentLookup<WETextDataMain>(true),
                 GamePropIndexPtr = GCHandle.Alloc(m_templateManager.WEGamePropIndex),
                 m_SubObjectLkp = GetBufferLookup<WESubObject>(true),
-                m_GameSubObjectLkp = GetBufferLookup<Game.Objects.SubObject>(true),
+                m_GameSubObjectLkp = GetBufferLookup<Game.Objects.SubObject>(false),
                 m_PrefabRefLkp = GetComponentLookup<PrefabRef>(true),
                 m_PrefabObjectDataLkp = GetComponentLookup<ObjectData>(true),
                 m_OwnerLkp = GetComponentLookup<Owner>(true),
@@ -71,7 +72,9 @@ namespace BelzontWE
                 m_GameTransformLkp = GetComponentLookup<Game.Objects.Transform>(true),
                 m_InterpolatedTransformLkp = GetComponentLookup<InterpolatedTransform>(true),
                 m_inheritedVarsCacheLkp = GetComponentLookup<WEInheritedVarsCache>(true),
+                m_EnsuredNativeOwnerBuffers = ensuredNativeOwnerBuffers.AsParallelWriter(),
             }.Schedule(m_pendingGamePropEntities, Dependency).Complete();
+            ensuredNativeOwnerBuffers.Dispose();
         }
 
         private struct WEGamePropSpawnJob : IJobChunk
@@ -84,7 +87,7 @@ namespace BelzontWE
             public EntityStorageInfoLookup m_entityLookup;
             public GCHandle GamePropIndexPtr;
             [ReadOnly] public BufferLookup<WESubObject> m_SubObjectLkp;
-            [ReadOnly] public BufferLookup<Game.Objects.SubObject> m_GameSubObjectLkp;
+            public BufferLookup<Game.Objects.SubObject> m_GameSubObjectLkp;
             [ReadOnly] public ComponentLookup<PrefabRef> m_PrefabRefLkp;
             [ReadOnly] public ComponentLookup<ObjectData> m_PrefabObjectDataLkp;
             [ReadOnly] public ComponentLookup<Owner> m_OwnerLkp;
@@ -93,6 +96,7 @@ namespace BelzontWE
             [ReadOnly] public ComponentLookup<Game.Objects.Transform> m_GameTransformLkp;
             [ReadOnly] public ComponentLookup<InterpolatedTransform> m_InterpolatedTransformLkp;
             [ReadOnly] public ComponentLookup<WEInheritedVarsCache> m_inheritedVarsCacheLkp;
+            public NativeParallelHashSet<Entity>.ParallelWriter m_EnsuredNativeOwnerBuffers;
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -150,7 +154,8 @@ namespace BelzontWE
                 // Get geometry/text-node transform
                 m_WeMainLkp.TryGetComponent(entity, out var main);
                 var nativeOwnerEntity = main.TargetEntity;
-                var hasNativeOwnerBuffer = nativeOwnerEntity != Entity.Null && m_GameSubObjectLkp.HasBuffer(nativeOwnerEntity);
+                var canUseNativeOwner = nativeOwnerEntity != Entity.Null && m_entityLookup.Exists(nativeOwnerEntity);
+                var hasNativeOwnerBuffer = canUseNativeOwner && m_GameSubObjectLkp.HasBuffer(nativeOwnerEntity);
                 var geomTransform = default(Game.Objects.Transform);
                 m_GameTransformLkp.TryGetComponent(main.TargetEntity, out geomTransform);
                 var hasGeom = main.TargetEntity != Entity.Null && m_entityLookup.Exists(main.TargetEntity);
@@ -177,6 +182,15 @@ namespace BelzontWE
                 {
                     ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd, out _);
                     return;
+                }
+
+                if (canUseNativeOwner && !hasNativeOwnerBuffer)
+                {
+                    if (m_EnsuredNativeOwnerBuffers.Add(nativeOwnerEntity))
+                    {
+                        cmd.AddBuffer<Game.Objects.SubObject>(unfilteredChunkIndex, nativeOwnerEntity);
+                    }
+                    hasNativeOwnerBuffer = true;
                 }
 
                 // Check if all existing sub-objects use the correct prefab
