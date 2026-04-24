@@ -95,7 +95,7 @@ namespace BelzontWE
         public const string kActionToggleLockCameraRotation = "K45_WE_ToggleLockCameraRotation";
 
         private static readonly int[] m_qualityArray = new[] { 50, 75, 100, 125, 150, 200, 400, 800 };
-        private static readonly int[] m_framesUpdate = new[] { 0xf, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff };
+        private static readonly int[] m_framesUpdate = new[] { 0x4, 0x8, 0xf, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff };
 
         public static WEModData InstanceWE => Instance as WEModData;
         public WEModData(IMod mod) : base(mod)
@@ -149,8 +149,8 @@ namespace BelzontWE
         [SettingsUIDropdown(typeof(WEModData), nameof(FramesCheckUpdateValues))]
         [SettingsUISection(kSourcesTab, kFontsSection)]
         public int FramesCheckUpdate { get; set; } = 1;
-        public int FramesCheckUpdateVal => m_framesUpdate[FramesCheckUpdate];
-        private DropdownItem<int>[] FramesCheckUpdateValues() => m_framesUpdate.Select((x, i) => new DropdownItem<int> { value = i, displayName = i == 0 ? "32 Frames (Fixed)" : $"{x + 1:0} ~ {(x + 1) * 2:0} Frames {(i == 1 ? $" (Default)" : "")}" }).ToArray();
+        public int FramesCheckUpdateVal => m_framesUpdate[FramesCheckUpdate + 2];
+        private DropdownItem<int>[] FramesCheckUpdateValues() => m_framesUpdate.Select((x, i) => new DropdownItem<int> { value = i - 2, displayName = i == 0 ? "8 Frames (Fixed)" : $"{x + 1:0} ~ {(x + 1) * 2:0} Frames {(i == 3 ? $" (Default)" : "")}" }).ToArray();
 
         [SettingsUIButton]
         [SettingsUISection(kSourcesTab, kFontsSection)]
@@ -291,7 +291,7 @@ namespace BelzontWE
         [SettingsUISection(kKeybindingSection, kItemTreeNavigationSection)][SettingsUIKeyboardBinding(BindingKeyboard.Delete, kActionTreeDelete)] public ProxyBinding ActionTreeDelete { get; set; }
         [SettingsUISection(kKeybindingSection, kItemTreeNavigationSection)][SettingsUIKeyboardBinding(BindingKeyboard.Home, kActionTreeFoldAll)] public ProxyBinding ActionTreeFoldAll { get; set; }
         [SettingsUISection(kKeybindingSection, kItemTreeNavigationSection)][SettingsUIKeyboardBinding(BindingKeyboard.End, kActionTreeUnfoldAll)] public ProxyBinding ActionTreeUnfoldAll { get; set; }
-        
+
         [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, kActionInstanceNavXNext)] public ProxyBinding ActionInstanceNavXNext { get; set; }
         [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, kActionInstanceNavXPrev)] public ProxyBinding ActionInstanceNavXPrev { get; set; }
         [SettingsUISection(kKeybindingSection, kArrayItemViewSection)][SettingsUIKeyboardBinding(BindingKeyboard.UpArrow, kActionInstanceNavYNext)] public ProxyBinding ActionInstanceNavYNext { get; set; }
