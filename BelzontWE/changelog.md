@@ -1,4 +1,13 @@
-# v1.2.0r0 (08-APR-26)
+# v2.0.0r0 (29-APR-26)
+- **Virtual texture startup**: WE now waits for the game's Virtual Texturing system before loading layouts, preventing blank or missing image atlases after the 1.5.7 game update
+- **Image atlas pipeline**: atlases now use BC7 cache data and VT streaming (optional but recommended), which reduces VRAM pressure, makes unchanged atlas reloads much faster, shrinks city save data, and raises supported image limits to **2046 per image and 8196 per atlas**
+- **GameProp layouts**: a new GameProp content type lets WE nodes spawn real in-game props, including array-instanced props that follow the parent object's transforms
+- **GameProp authoring tools**: the editor now offers a formula-enabled prefab field, a searchable localized prop picker, and automatic inheritance of parent WE variables for spawned prop layouts
+- **Formula authoring**: module-check expressions now support logical operators, module fonts can be referenced directly, and train-like vehicles expose a raw car number formula
+- **Safer prop editing**: spawned GameProp entities are excluded from WE selection so they cannot be picked or edited as regular layout targets
+- **Fixes**: missing emissive, control, and normal maps now fall back safely, the default route destination name is corrected, formula evaluation blocks unsupported generic methods, and the camera no longer flies out of the game space on zeroed layouts
+
+## FROM v1.2.0r0 (08-APR-26)
 - XZ plane camera view corrected: the top of the screen now corresponds to positive Z direction
 - Emissive light effects are now rectangle or cube-shaped based on the geometry of the layout item, instead of using point light emission
 - Reduced overall slowdown when loading a city with many active layouts (1000+)
