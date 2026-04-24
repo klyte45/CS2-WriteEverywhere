@@ -53,10 +53,8 @@ namespace BelzontWE
                 NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 0);
                 yield return 0;
                 PrefabNameToIndex.Clear();
-                WEGamePropIndex.Clear();
                 var prefabs = PrefabSystemOverrides.LoadedPrefabBaseList(m_prefabSystem);
                 var entities = PrefabSystemOverrides.LoadedPrefabEntitiesList(m_prefabSystem);
-
                 NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 1, textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.gettingPrefabIndexes");
                 yield return 0;
                 foreach (var prefab in prefabs)
@@ -73,20 +71,32 @@ namespace BelzontWE
                             PrefabNameToIndex[prefab.name].Add(otherData.m_Index);
                         }
                     }
-                    if (IsEligibleForGamePropIndex(
-                        EntityManager.HasComponent<StaticObjectData>(entity),
-                        EntityManager.HasComponent<BuildingData>(entity),
-                        EntityManager.HasComponent<BuildingExtensionData>(entity)))
-                    {
-                        WEGamePropIndex[prefab.name] = entity;
-                    }
                 }
                 NotificationHelper.NotifyProgress(LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID, 20, textI18n: $"{LOADING_PREFAB_LAYOUTS_NOTIFICATION_ID}.prefabIndexesLoaded");
                 yield return LoadTemplatesFromFolder(20, 80f);
+                UpdateEligiblePropsDict();
             }
             finally
             {
                 LoadingPrefabLayoutsCoroutine = null;
+            }
+        }
+
+        internal void UpdateEligiblePropsDict()
+        {
+            var entities = PrefabSystemOverrides.LoadedPrefabEntitiesList(m_prefabSystem);
+            List<PrefabBase> prefabs = PrefabSystemOverrides.LoadedPrefabBaseList(m_prefabSystem);
+            WEGamePropIndex.Clear();
+            foreach (var prefab in prefabs)
+            {
+                var entity = entities[prefab];
+                if (IsEligibleForGamePropIndex(
+                    EntityManager.HasComponent<StaticObjectData>(entity),
+                    EntityManager.HasComponent<BuildingData>(entity),
+                    EntityManager.HasComponent<BuildingExtensionData>(entity)))
+                {
+                    WEGamePropIndex[prefab.name] = entity;
+                }
             }
         }
 
@@ -280,7 +290,8 @@ namespace BelzontWE
                     }
                 }
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"Loaded template for prefab: //{prefabName}// => {tree} from {fileItem[SAVED_PREFABS_FOLDER.Length..]}");
-                tree.PreCompileFormulas();            }
+                tree.PreCompileFormulas();
+            }
             else if (modId != null)
             {
                 if (BasicIMod.DebugMode) LogUtils.DoLog($"An integration mod have a broken template for prefab '{prefabName}' (File at: '{fileItem}'). Contact the developer of the corrupted file to get assistance ({validationResults})");

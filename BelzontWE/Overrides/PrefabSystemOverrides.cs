@@ -20,18 +20,21 @@ namespace BelzontWE
             AddRedirect(typeof(PrefabSystem).GetMethod("UpdatePrefabs", RedirectorUtils.allFlags), GetType().GetMethod(nameof(BeforeUpdatePrefab)), GetType().GetMethod(nameof(AfterUpdatePrefabs), RedirectorUtils.allFlags));
             AddRedirect(typeof(AssetImportPipeline).GetMethod("GetTextureReferenceCount", RedirectorUtils.allFlags), GetType().GetMethod(nameof(GetTextureReferenceCount), RedirectorUtils.allFlags));
         }
-        private static void BeforeUpdatePrefab(PrefabSystem __instance, bool __result, ref bool __state)
+        private static void BeforeUpdatePrefab(PrefabSystem __instance, bool __result, ref int __state)
         {
             m_templateManager ??= World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<WETemplateManager>();
             var updateList = UpdateMapList(__instance);
-            __state = updateList.Count > 0 && updateList.Any(x => x.Value != m_templateManager.PrefabUpdateSource);
+            __state = (updateList.Count > 0 ? 0 : 1) | (updateList.Any(x => x.Value != m_templateManager.PrefabUpdateSource) ? 0 : 2);
         }
-        private static void AfterUpdatePrefabs(bool __result, bool __state)
+        private static void AfterUpdatePrefabs(bool __result, int __state)
         {
-            if (__result && __state)
+            if (__result)
             {
                 m_templateManager ??= World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<WETemplateManager>();
-                m_templateManager.MarkPrefabsDirty();
+                if (__state == 3)
+                    m_templateManager.MarkPrefabsDirty();
+                else if (__state == 1)
+                    m_templateManager.UpdateEligiblePropsDict();
             }
         }
 

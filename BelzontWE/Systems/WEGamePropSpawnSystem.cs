@@ -3,14 +3,13 @@ using Game.Common;
 using Game.Objects;
 using Game.Prefabs;
 using Game.Rendering;
-using Game.Tools;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using static Game.Rendering.Debug.RenderPrefabRenderer;
 
 
 namespace BelzontWE
@@ -24,11 +23,14 @@ namespace BelzontWE
     {
         protected override AllowedPhase UpdatePhase => AllowedPhase.Modification2B;
 
+        private static WEGamePropSpawnSystem Instance { get; set; }
+
         private EntityQuery m_pendingGamePropEntities;
         private WETemplateManager m_templateManager;
 
         protected override void OnCreateWithBarrier()
         {
+            Instance = this;
             m_pendingGamePropEntities = GetEntityQuery(new EntityQueryDesc[]
             {
                 new()
@@ -61,7 +63,6 @@ namespace BelzontWE
                 m_dataMainHdl = GetComponentTypeHandle<WETextDataMain>(true),
                 m_dataMeshHdl = GetComponentTypeHandle<WETextDataMesh>(false),
                 m_WeMainLkp = GetComponentLookup<WETextDataMain>(true),
-                GamePropIndexPtr = GCHandle.Alloc(m_templateManager.WEGamePropIndex),
                 m_SubObjectLkp = GetBufferLookup<WESubObject>(true),
                 m_GameSubObjectLkp = GetBufferLookup<Game.Objects.SubObject>(false),
                 m_PrefabRefLkp = GetComponentLookup<PrefabRef>(true),
@@ -85,7 +86,6 @@ namespace BelzontWE
             public EntityCommandBuffer.ParallelWriter m_CommandBuffer;
             [ReadOnly] public ComponentLookup<WETextDataMain> m_WeMainLkp;
             public EntityStorageInfoLookup m_entityLookup;
-            public GCHandle GamePropIndexPtr;
             [ReadOnly] public BufferLookup<WESubObject> m_SubObjectLkp;
             public BufferLookup<Game.Objects.SubObject> m_GameSubObjectLkp;
             [ReadOnly] public ComponentLookup<PrefabRef> m_PrefabRefLkp;
@@ -144,7 +144,7 @@ namespace BelzontWE
 
             private void SpawnOrUpdateGameProp(Entity entity, ref WETextDataMesh weMeshData, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd, WEInheritedVarsCache inheritedVars)
             {
-                var gameIndex = GamePropIndexPtr.IsAllocated ? GamePropIndexPtr.Target as Dictionary<string, Entity> : null;
+                var gameIndex = Instance.m_templateManager.WEGamePropIndex;
                 if (gameIndex == null) return;
 
                 var currentPrefabName = weMeshData.ValueData.EffectiveValue.ToString();
