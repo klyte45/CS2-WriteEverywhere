@@ -5,6 +5,7 @@ using Game.Buildings;
 using Game.Common;
 using Game.Objects;
 using Game.Prefabs;
+using Game.Rendering;
 using Game.SceneFlow;
 using Game.UI;
 using System;
@@ -239,6 +240,7 @@ namespace BelzontWE
         public MultiUIValueBinding<float> PlaneTilt { get; private set; }
         public MultiUIValueBinding<string[]> FontList { get; private set; }
         public MultiUIValueBinding<int> CurrentInstanceIdx { get; private set; }
+        public MultiUIValueBinding<bool> IsMoveableGeometry { get; private set; }
         private void InitValueBindings()
         {
             if (m_initialized) return;
@@ -257,6 +259,7 @@ namespace BelzontWE
             FontList = new(default, $"{PREFIX}{nameof(FontList)}", m_eventCaller, m_callBinder);
             PlaneTilt = new(22.5f, $"{PREFIX}{nameof(PlaneTilt)}", m_eventCaller, m_callBinder, (x, _) => Math.Clamp(x, -45, 45)); // All, Horizontal, Vertical
             CurrentInstanceIdx = new(0, $"{PREFIX}{nameof(CurrentInstanceIdx)}", m_eventCaller, m_callBinder, (x, _) => Math.Max(0, x));
+            IsMoveableGeometry = new(false, $"{PREFIX}{nameof(IsMoveableGeometry)}", m_eventCaller, m_callBinder, isReadOnlyForUI: true);
             CurrentSubEntity.OnScreenValueChanged += (x) => OnCurrentItemChanged();
             FontList.Value = [.. FontServer.Instance.GetLoadedFontsNames(), .. m_templateManager.ListAllFontsMapped()];
             FontList.UpdateUIs();
@@ -272,9 +275,9 @@ namespace BelzontWE
                 {
                     CurrentEntity.Value = x;
                     CurrentSubEntity.Value = Entity.Null;
+                    IsMoveableGeometry.Value = EntityManager.HasComponent<InterpolatedTransform>(x);
                     OnCurrentItemChanged();
                 });
-
             };
 
 

@@ -1,4 +1,4 @@
-import { Entity, MultiUIValueBinding, UIColorRGBA } from "@klyte45/vuio-commons";
+import { Entity, MultiUIValueBinding, MultiUIValueReadOnlyBinding, UIColorRGBA } from "@klyte45/vuio-commons";
 import { EnumWrapper, WEComponentTypeDesc, WEStaticMethodDesc, WETextItemResume } from "./WEFormulaeElement";
 import { ObjectTyped } from "object-typed";
 import { translate } from "utils/translate";
@@ -57,6 +57,7 @@ const WEWorldPickerController = {
     FontList: MultiUIValueBinding<string[]>,
     ShowProjectionCube: MultiUIValueBinding<boolean>,
     CurrentInstanceIdx: MultiUIValueBinding<number>,
+    IsMoveableGeometry: MultiUIValueReadOnlyBinding<boolean>,
 }
 const WETextDataMainController = {
     _prefix: "k45::we.dataMain",

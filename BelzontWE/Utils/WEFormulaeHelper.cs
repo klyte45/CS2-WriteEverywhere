@@ -147,12 +147,14 @@ namespace BelzontWE
                 for (int i = 0; i < path.Length; i++)
                 {
                     var codePart = path[i];
+                    if (codePart.Length == 0) continue;
 
                     switch (codePart[0])
                     {
                         case '&':
                             {
                                 var parts = codePart.Substring(1).Split(new char[] { ';' });
+                                if (parts.Length != 2) return result = 11;// Invalid static method call syntax. Expected format: &ClassName;MethodName[.NavField1.NavField2...]
                                 var className = parts[0];
                                 var pathNav = parts[1].Split(new char[] { '.' });
                                 var method = pathNav[0];
@@ -188,6 +190,13 @@ namespace BelzontWE
                                 skipValueTypeVar = false;
                                 var navPathRes = NavigateThroughPath(ref currentComponentType, iLGenerator, ref errorFmtArgs, navFields, ref skipValueTypeVar);
                                 if (navPathRes != 0) return result = navPathRes;
+                            }
+                            break;
+                        case '"':
+                            {
+                                if (i != 0) return result = 10; // String literals can only be used as the first component of the path.
+                                iLGenerator.Emit(OpCodes.Ldstr, codePart[1..]);
+                                currentComponentType = typeof(string);
                             }
                             break;
                         default:
@@ -332,7 +341,21 @@ namespace BelzontWE
             return false;
         }
 
-        public static string[] GetPathParts(string newFormulae) => newFormulae?.Split(new char[] { '/' });
+        public static string[] GetPathParts(string newFormulae)
+        {
+            if (newFormulae.StartsWith("\""))
+            {
+                var parts = Regex.Match(newFormulae[1..], "(^.*)(?<!\\\\)\"(.*$)", RegexOptions.RightToLeft).Groups.ToArray();
+                if (parts.Length <= 1) return [newFormulae[1..]];
+                var strPart = parts[1].Value.Replace("\\\"", "\"").Replace(@"\n", "\n").Replace(@"\t", "\t");
+                var afterStrPart = parts[2].Value;
+                return afterStrPart.Length == 0 ? ["\"" + strPart] : ["\"" + strPart, .. afterStrPart.Split(['/'])[1..]];
+            }
+            else
+            {
+                return newFormulae.Split(['/']);
+            }
+        }
 
         private static List<MethodInfo> CACHED_AVAILABLE_STATIC_METHODS;
 

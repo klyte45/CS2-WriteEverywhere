@@ -1,6 +1,6 @@
 import { Entity } from "@klyte45/vuio-commons";
 
-export type WEFormulaeElement = WETypeMemberDesc | WEComponentTypeDesc | WEStaticMethodDesc | WEMathOperationDesc;
+export type WEFormulaeElement = WETypeMemberDesc | WEComponentTypeDesc | WEStaticMethodDesc | WEMathOperationDesc | WEStringDesc;
 
 export type WETextItemResume = {
     name: string;
@@ -41,6 +41,7 @@ export enum WEDescType {
     STATIC_METHOD = "STATIC_METHOD",
     ARRAY_INDEXING = "ARRAY_INDEXING",
     MATH_OPERATION = "MATH_OPERATION",
+    STRING = "STRING",
 }
 
 export enum WEFormulaeMathOperation {
@@ -135,6 +136,13 @@ export type WEArrayIndexingDesc = {
     WEDescType: WEDescType.ARRAY_INDEXING,
     index: number
 }
+
+export type WEStringDesc = {
+    WEDescType: WEDescType.STRING,
+    value: string,
+    supportsMathOp?: false;
+}
+
 export type WEMathOperationDesc = {
     WEDescType: WEDescType.MATH_OPERATION,
     value: string,
@@ -149,7 +157,8 @@ export function getDllNameFrom(el: WEFormulaeElement) {
         case WEDescType.COMPONENT: return el.returnDllName;
         case WEDescType.STATIC_METHOD: return el.returnTypeDll;
         case WEDescType.MEMBER: return el.memberTypeDllName;
-        case WEDescType.MATH_OPERATION: return "mscorlib";
+        case WEDescType.MATH_OPERATION:
+        case WEDescType.STRING: return "mscorlib";
     }
 }
 export function getClassNameFrom(el: WEFormulaeElement) {
@@ -158,6 +167,7 @@ export function getClassNameFrom(el: WEFormulaeElement) {
         case WEDescType.STATIC_METHOD: return el.returnType;
         case WEDescType.MEMBER: return el.memberTypeClassName;
         case WEDescType.MATH_OPERATION: return el.isDecimalResult ? "System.Single" : "System.Int32";
+        case WEDescType.STRING: return "System.String";
     }
 }
 

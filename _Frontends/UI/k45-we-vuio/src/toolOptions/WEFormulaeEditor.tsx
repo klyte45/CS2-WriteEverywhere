@@ -84,6 +84,10 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
         let output = "";
         for (let item of arr) {
             switch (item?.WEDescType) {
+                case WEDescType.STRING:
+                    if (output.length > 0) continue;
+                    output = `"${item.value}"`
+                    break;
                 case WEDescType.COMPONENT:
                     if (output.length > 0) output += '/';
                     output += `${item.className};`
@@ -110,6 +114,8 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
         switch (x?.WEDescType) {
             case WEDescType.COMPONENT:
                 return true
+            case WEDescType.STRING:
+                return "System.String" != getTargetClass()
             case WEDescType.MEMBER:
                 return x.memberTypeClassName != getTargetClass()
             case WEDescType.STATIC_METHOD:
@@ -157,19 +163,32 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
             <div className="k45_we_formulaeEditor_title">{T_title}{WorldPickerService.instance.getCurrentEditingFormulaeFieldTitle()}</div>
             <EditorScrollable className="k45_we_formulaeEditor_content">
                 {!formulaeSteps.length ? <><div className="k45_we_formulaeEditor_initial_dot" >{valueToString(WorldPickerService.instance.getCurrentEditingFormulaeValueField()?.value)}</div></> : <>
-                    <div className="k45_we_formulaeEditor_initial_dot" >Entity</div>
-                    <div className="k45_we_formulaeEditor_downArrow" />
+
                     {formulaeSteps.map((x, i) => {
+                        var result: JSX.Element[] = [];
+                        if (i == 0) {
+                            if (x.WEDescType == WEDescType.STRING) {
+                                result.push(<div className="k45_we_formulaeEditor_initial_dot" >{`"${x.value}"`}</div>);
+                            } else {
+                                result.push(<div className="k45_we_formulaeEditor_initial_dot" >Entity</div>);
+                            }
+                            result.push(<div className="k45_we_formulaeEditor_downArrow" />)
+                        }
                         switch (x.WEDescType) {
                             case WEDescType.COMPONENT:
-                                return <WEComponentGetterBlock {...x} i={i} />
+                                result.push(<WEComponentGetterBlock {...x} i={i} />);
+                                break;
                             case WEDescType.MEMBER:
-                                return <WEComponentMemberBlock {...x} i={i} />
+                                result.push(<WEComponentMemberBlock {...x} i={i} />);
+                                break;
                             case WEDescType.MATH_OPERATION:
-                                return <WEMathOperatorBlock {...x} i={i} />
+                                result.push(<WEMathOperatorBlock {...x} i={i} />);
+                                break;
                             case WEDescType.STATIC_METHOD:
-                                return <WEMethodCallBlock {...x} i={i} />
+                                result.push(<WEMethodCallBlock {...x} i={i} />);
+                                break;
                         }
+                        return result;
                     })}
                     {requiresConvert(formulaeSteps[formulaeSteps.length - 1]) && <>
                         <div className="k45_we_formulaeEditor_implicitConversion">{getImplicitConversionWarning()}</div>

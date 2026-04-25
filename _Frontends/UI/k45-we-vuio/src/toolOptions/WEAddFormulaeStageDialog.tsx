@@ -4,13 +4,13 @@ import { FocusDisabled } from "cs2/input";
 import { ObjectTyped } from "object-typed";
 import { useEffect, useState } from "react";
 import { FormulaeService } from "services/FormulaeService";
-import { EnforceType, getClassNameFrom, getDllNameFrom, WEArrayIndexingDesc, WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEFormulaeMathOperation, WEMathOperationDesc, WEMemberType } from "services/WEFormulaeElement";
+import { EnforceType, getClassNameFrom, getDllNameFrom, WEArrayIndexingDesc, WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEFormulaeMathOperation, WEMathOperationDesc, WEMemberType, WEStringDesc } from "services/WEFormulaeElement";
 import { IndexedComponentListing, IndexedStaticMethodsListing } from "services/WorldPickerService";
 import { breakIntoFlexComponents } from "utils/breakIntoFlexComponents";
 import { translate } from "utils/translate";
 
 type Props = {
-    callback: (appendResult?: WEFormulaeElement | WEArrayIndexingDesc | WEMathOperationDesc) => any,
+    callback: (appendResult?: WEFormulaeElement | WEArrayIndexingDesc | WEMathOperationDesc | WEStringDesc) => any,
     referenceElement: WEFormulaeElement,
     formulaeStr: string
 }
@@ -30,6 +30,7 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
     const T_pickCurrentComponent = translate("formulaeEditor.addDialog.pickFromCurrent")//Pick component
     const T_arrayIndexing = translate("formulaeEditor.addDialog.arrayIndexing")//Array indexing
     const T_mathOperation = translate("formulaeEditor.addDialog.mathOperation")//Math operation
+    const T_inputString = translate("formulaeEditor.addDialog.inputString")//Input string
 
     const Dialog = VanillaComponentResolver.instance.Dialog;
     const EditorScrollable = VanillaWidgets.instance.EditorScrollable;
@@ -90,6 +91,8 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
                     currentNavigation={selectedPath} setNavigation={setSelectedPath} setElement={setSelectedElement} />
             case WEDescType.MATH_OPERATION:
                 return <MathOperatorSelect operand={mathOperand} setOperand={setMathOperand} operator={mathOperator} setOperator={setMathOperator} forceDecimal={mathOperationForceDecimal} setForceDecimal={setMathOperationForceDecimal} />
+            case WEDescType.STRING:
+                return <StringInputSelect value={selectedElement?.WEDescType == WEDescType.STRING ? selectedElement.value : ""} setValue={(val) => setSelectedElement({ WEDescType: WEDescType.STRING, value: val })} />
         }
     }
 
@@ -109,6 +112,7 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
                 ? <div className="k45_we_formulaeDialog"><div className="k45_we_formulaeDialog_content">{T_noWay}</div></div>
                 : <div className="k45_we_formulaeDialog">
                     <div className="k45_we_formulaeDialog_tabRow">
+                        {!formulaeStr && <button onClick={() => setSelectedTab(WEDescType.STRING)} className={["tabBtn", selectedTab == WEDescType.STRING ? "selected" : ""].join(" ").trim()}>{T_inputString}</button>}
                         {!!optionsMembers?.length && <button onClick={() => setSelectedTab(WEDescType.MEMBER)} className={["tabBtn", selectedTab == WEDescType.MEMBER ? "selected" : ""].join(" ").trim()}>{T_navigate}</button>}
                         {!!Object.keys(optionsStaticMethods || {}).length && <button onClick={() => setSelectedTab(WEDescType.STATIC_METHOD)} className={["tabBtn", selectedTab == WEDescType.STATIC_METHOD ? "selected" : ""].join(" ").trim()}>{T_runStatic}</button>}
                         {currentEntityComponent && !!currentEntityComponent.length && <button onClick={() => setSelectedTab(WEDescTypeUI.CURRENT_COMPONENT)} className={["tabBtn", selectedTab == WEDescTypeUI.CURRENT_COMPONENT ? "selected" : ""].join(" ").trim()}>{T_pickCurrentComponent}</button>}
@@ -170,6 +174,12 @@ const ArrayIndexingSelect = ({ indexSet, setIndexSet }: { indexSet: number, setI
     return <EditorRow label={T_arrayIndexingFieldLabel}>
         <IntInput className={editorItemTheme.sliderInput} min={0} onChange={(x) => setIndexSet(x)} value={indexSet} />
     </EditorRow>;
+}
+const StringInputSelect = ({ value, setValue }: { value: string, setValue: (val: string) => any }) => {
+    const T_inputString = translate("formulaeEditor.addDialog.inputString")//Input string
+    const StringInput = VanillaWidgets.instance.StringInputRow;
+    const editorItemTheme = VanillaComponentResolver.instance.editorItemTheme;
+    return <StringInput label={T_inputString} className={editorItemTheme.input} onChange={(x) => setValue(x)} value={value} />;
 }
 const MathOperatorSelect = ({ operator, setOperator, operand, setOperand, forceDecimal, setForceDecimal }: {
     operand: number, setOperand: (val: number) => any,
@@ -258,6 +268,7 @@ const WEFormulaeItemBtn: <T extends string | WEFormulaeElement | number>(x: Prop
             }
         case WEDescType.STATIC_METHOD:
             return <div className={["k45_we_formulaeDialog_btn_staticMethod", isSelected ? "selected" : ""].join(" ").trim()} onClick={() => onSelect(item)} >{displayName ?? item.methodName}</div>
+        case WEDescType.STRING:
         case WEDescType.MATH_OPERATION:
             return <></>
     }

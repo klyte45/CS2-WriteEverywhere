@@ -132,13 +132,20 @@ namespace BelzontWE
             var currentType = typeof(Entity);
             foreach (var part in pathParts)
             {
-                if (part.StartsWith("&"))
+                if (part.StartsWith("\""))
+                {
+                    result.Add(new WEStringDesc
+                    {
+                        value = part[1..]
+                    });
+                }
+                else if (part.StartsWith("&"))
                 {
                     var kv = part[1..].Split(";");
                     if (kv.Length != 2) break;
                     var parts = kv[1].Split(".");
                     var methodName = parts[0];
-                    var fieldPath = parts.Length > 1 ? parts[1..] : Array.Empty<string>();
+                    var fieldPath = parts.Length > 1 ? parts[1..] : [];
                     var methodQuery = WEFormulaeHelper.FilterAvailableMethodsForFormulae(currentType, kv[0], methodName).ToList();
                     if (methodQuery.Count != 1) break;
                     var resultMethod = methodQuery[0];
@@ -238,7 +245,7 @@ namespace BelzontWE
                     result.Add(WETypeMemberDesc.FromMemberInfo(targetProperty));
                     continue;
                 }
-                else if (currentType.GetMethod(field, ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly, null, new Type[] {typeof(Dictionary<string,string>)}, null) is MethodInfo targetMethod2 && targetMethod2.ReturnType != typeof(void))
+                else if (currentType.GetMethod(field, ReflectionUtils.allFlags & ~BindingFlags.Static & ~BindingFlags.NonPublic & ~BindingFlags.DeclaredOnly, null, new Type[] { typeof(Dictionary<string, string>) }, null) is MethodInfo targetMethod2 && targetMethod2.ReturnType != typeof(void))
                 {
                     currentType = targetMethod2.ReturnType;
                     result.Add(WETypeMemberDesc.FromMemberInfo(targetMethod2));

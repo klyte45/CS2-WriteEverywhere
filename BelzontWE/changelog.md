@@ -1,11 +1,26 @@
-# v2.0.0r0 (29-APR-26)
-- **Virtual texture startup**: WE now waits for the game's Virtual Texturing system before loading layouts, preventing blank or missing image atlases after the 1.5.7 game update
-- **Image atlas pipeline**: atlases now use BC7 cache data and VT streaming (optional but recommended), which reduces VRAM pressure, makes unchanged atlas reloads much faster, shrinks city save data, and raises supported image limits to **2046 per image and 8196 per atlas**
-- **GameProp layouts**: a new GameProp content type lets WE nodes spawn real in-game props, including array-instanced props that follow the parent object's transforms
-- **GameProp authoring tools**: the editor now offers a formula-enabled prefab field, a searchable localized prop picker, and automatic inheritance of parent WE variables for spawned prop layouts
-- **Formula authoring**: module-check expressions now support logical operators, module fonts can be referenced directly, and train-like vehicles expose a raw car number formula
-- **Safer prop editing**: spawned GameProp entities are excluded from WE selection so they cannot be picked or edited as regular layout targets
-- **Fixes**: missing emissive, control, and normal maps now fall back safely, the default route destination name is corrected, formula evaluation blocks unsupported generic methods, and the camera no longer flies out of the game space on zeroed layouts
+# v2.0.0r1 (29-APR-26)
+- **GameProp layout type**: a new "GameProp" content type lets WE nodes spawn real in-game props directly;
+  - The editor provides a searchable, localized prop-picker dropdown (filter by prefab name or display name), formula support in the prefab name field, and a park-bench icon in the hierarchy tree
+  - Spawned props follow their parent entity's transforms, support array instancing across X/Y/Z axes, and automatically inherit non-local parent WE variables so formula-driven prop appearances work without duplicate variable definitions
+  - Appearance and Shader panels are automatically hidden for GameProp nodes
+  - Entities spawned by a GameProp node are invisible to the WE world-picker so they cannot be accidentally selected or edited as regular layout targets  
+- **Image atlas pipeline overhaul**:
+  - Atlases now generate and cache BC7-compressed data on disk, reducing VRAM usage and city save-file size
+  - Unchanged atlases are detected by checksum and reload instantly without reprocessing
+  - Optional virtual-texture (VT) streaming is supported for further GPU memory savings (enabled by default, recommended); a new setting controls whether virtual-texture streaming is used for image atlases
+  - Maximum single-image size raised to **2046 × 2046 px**; maximum atlas size raised to **8196 × 8196 px**
+- **Formula authoring**: 
+  - Module-check expressions now support logical operators (`&&` / `||`)
+  - Module fonts can be referenced directly by name at dropdown
+  - Train-like vehicles expose a raw car-number formula
+  - Added **Initial Text** formula type that can be used to set the initial value of a formula instead of using the selected Entity (useful for i18n getters)
+- FIXED: WE layouts no longer attempt to load before the game's Virtual Texturing system is ready, preventing blank or missing image atlases introduced by certain game updates
+- FIXED: Atlas image rendering when an emissive, control, or normal map texture is absent now falls back to the main image instead of showing a broken-texture result
+- FIXED: Child layout node references were not cleaned up when the parent entity was deleted
+- FIXED: Decal layout nodes had incorrect initial rotation immediately after creation
+- FIXED: Default route destination name returned by the destination formula was wrong in some edge cases
+- FIXED: Camera could jump far outside the playable area when a layout node was scaled to zero on all axes
+- FIXED: Formulas using parameterized generic methods caused runtime errors; such references are now rejected at parse time
 
 ## FROM v1.2.0r0 (08-APR-26)
 - XZ plane camera view corrected: the top of the screen now corresponds to positive Z direction
@@ -21,16 +36,3 @@
 - FIXED: Pasting or cloning a layout item did not auto-select the newly created item
 - FIXED: Text cache entries not cleared when the font atlas version changed
 - FIXED: Crash when using WE alongside other mods that also patch the game's debug system
-
-## FROM v1.1.0r1 (29-MAR-26)
-- Added point lights support: set emissive on a WE text mesh and toggle the "Use Global Illumination" checkbox on to enable point light emission from that element
-- New `WEAttachedFn` formula functions for sidewalk-relative offset calculations
-- Added formulae for indirect value getter: reference another formula's result value indirectly within an expression
-- Added waypoints indexing formulae: access waypoint indexes within formula expressions
-- Added support to render WE layouts on unmeshed entities that belong to a meshed entity and have a transform component
-- New mod logo - CS1 classic style
-- Added support for Z-reversed white cube geometry
-- Plane movement offset directions now match the current view orientation
-- Camera position for XZ planes corrected
-- FIXED: UI for WE tool options when using decal shader becomes messy
-- FIXED: Layouts failed to load when more than 10,000 chunks were waiting to be processed

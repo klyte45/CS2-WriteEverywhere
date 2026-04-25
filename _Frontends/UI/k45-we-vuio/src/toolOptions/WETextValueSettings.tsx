@@ -154,7 +154,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                 <EditorItemRow label={T_contentType}>
                     <NumberDropdownField
                         value={mesh.TextSourceType.value}
-                        items={[0, 1, 2, 4, 5, 6, 7].map(x => { return { displayName: { __Type: LocElementType.String, value: translate(`textValueSettings.contentType.${x}`) }, value: x } })}
+                        items={[0, 1, 2, 4, 5, 6, picker.IsMoveableGeometry ? undefined : 7].filter(x => x !== undefined).map(x => { return { displayName: { __Type: LocElementType.String, value: translate(`textValueSettings.contentType.${x}`) }, value: x! } })}
                         onChange={(x) => mesh.TextSourceType.set(x)}
                         style={{ flexGrow: 1, width: "inherit" }}
                     />
