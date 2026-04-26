@@ -99,17 +99,19 @@ namespace BelzontWE
                     var alignmentByAxisOrder = transformData.AlignmentByAxisOrder;
 
                     var spacingO = spacingOffsets[2];
-                    GetSpacingAndOffset(targetSize, instancingCount.z, instancingCount.y * instancingCount.x, alignmentByAxisOrder.o, ref spacingO, out float3 offsetO);
+                    GetSpacingAndOffset(instancingCount.z, transformData.InstanceCountByAxisOrder.z, alignmentByAxisOrder.o, ref spacingO, out float3 offsetO);
                     for (int o = 0; o < instancingCount.z; o++)
                     {
                         var spacingN = spacingOffsets[1];
-                        GetSpacingAndOffset(targetSize - (uint)buff.Length, instancingCount.y, instancingCount.x, alignmentByAxisOrder.n, ref spacingN, out float3 offsetN);
-                        for (int n = 0; n < instancingCount.y; n++)
+                        var effectiveCountN = (uint)math.min(math.ceil((targetSize - buff.Length) / (float)instancingCount.x), instancingCount.y);
+                        GetSpacingAndOffset(effectiveCountN, transformData.InstanceCountByAxisOrder.y, alignmentByAxisOrder.n, ref spacingN, out float3 offsetN);
+                        for (int n = 0; n < effectiveCountN; n++)
                         {
                             var spacingM = spacingOffsets[0];
-                            GetSpacingAndOffset(targetSize - (uint)buff.Length, instancingCount.x, 1, alignmentByAxisOrder.m, ref spacingM, out float3 offsetM);
+                            var effectiveCountM = (uint)math.min(targetSize - buff.Length, instancingCount.x);
+                            GetSpacingAndOffset(effectiveCountM, transformData.InstanceCountByAxisOrder.x, alignmentByAxisOrder.m, ref spacingM, out float3 offsetM);
                             var totalOffset = pivotOffset + offsetM + offsetN + offsetO;
-                            for (int m = 0; m < instancingCount.x; m++)
+                            for (int m = 0; m < effectiveCountM; m++)
                             {
                                 targetTemplate.self.transform.offsetPosition = (Vector3Xml)(Vector3)(totalOffset + (m * spacingM) + (n * spacingN) + (o * spacingO));
                                 targetTemplate.self.transform.pivot = transformData.pivot;
@@ -135,25 +137,23 @@ namespace BelzontWE
         /// Calculates spacing and offset for array instancing based on alignment settings.
         /// Used for justified, centered, and right-aligned layout patterns.
         /// </summary>
-        internal static void GetSpacingAndOffset(uint remaining, uint rowCount, uint rowCapacity, WEPlacementAlignment axisAlignment, ref float3 spacing, out float3 offset)
+        internal static void GetSpacingAndOffset(uint totalSlotsRow, uint originalTotalSlots, WEPlacementAlignment axisAlignment, ref float3 spacing, out float3 offset)
         {
             offset = float3.zero;
-            uint capacity = rowCapacity * (rowCount - 1);
-            if (remaining <= capacity && axisAlignment != WEPlacementAlignment.Left)
+            if (totalSlotsRow <= originalTotalSlots && axisAlignment != WEPlacementAlignment.Left)
             {
-                var totalWidth = (rowCount - 1) * spacing;
-                var effectiveRowsCount = math.ceil(remaining / rowCapacity);
-                var effectiveWidth = (effectiveRowsCount - 1) * spacing;
+                var lineWidth = (totalSlotsRow - 1) * spacing;
+                var originalWidth = (originalTotalSlots - 1) * spacing;
                 switch (axisAlignment)
                 {
                     case WEPlacementAlignment.Center:
-                        offset = (totalWidth - effectiveWidth) / 2;
+                        offset = (originalWidth - lineWidth) / 2;
                         break;
                     case WEPlacementAlignment.Right:
-                        offset = totalWidth - effectiveWidth;
+                        offset = originalWidth - lineWidth;
                         break;
                     case WEPlacementAlignment.Justified:
-                        spacing = effectiveRowsCount == 1 ? 0 : totalWidth / (effectiveRowsCount - 1);
+                        spacing = totalSlotsRow == 1 ? 0 : originalWidth / (totalSlotsRow - 1);
                         break;
                 }
             }

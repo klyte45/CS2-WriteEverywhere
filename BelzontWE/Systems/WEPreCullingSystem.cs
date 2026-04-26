@@ -123,6 +123,7 @@ namespace BelzontWE
                 frameCount = UnityEngine.Time.frameCount,
                 minLodUpdateSetting = Mathf.CeilToInt(WriteEverywhereCS2Mod.WeData.RequiredLodForFormulaesUpdate),
                 indexStartString = indexStartString,
+                counterStartString = counterStartString,
                 m_CullInfoLkp = GetComponentLookup<CullingInfo>(true),
                 m_objGeomLkp = GetComponentLookup<ObjectGeometryData>(true),
                 m_PrefabRefLkp = GetComponentLookup<PrefabRef>(true),
@@ -159,7 +160,8 @@ namespace BelzontWE
         }
 
 
-        private readonly FixedString32Bytes indexStartString = new($"$idx{WEConstants.VARIABLE_KV_SEPARATOR}");
+        private readonly FixedString32Bytes indexStartString = new($"{WEConstants.INSTANCE_IDX_KEY}{WEConstants.VARIABLE_KV_SEPARATOR}");
+        private readonly FixedString32Bytes counterStartString = new($"{WEConstants.INSTANCE_COUNT_TOTAL_KEY}{WEConstants.VARIABLE_KV_SEPARATOR}");
 #if BURST
         [Unity.Burst.BurstCompile]
 #endif
@@ -200,6 +202,7 @@ namespace BelzontWE
             public int frameCount;
             public int minLodUpdateSetting;
             public FixedString32Bytes indexStartString;
+            public FixedString32Bytes counterStartString;
             internal NativeParallelHashSet<Entity>.ParallelWriter m_unmodifiedEntities;
             internal NativeParallelHashSet<Entity>.ReadOnly m_geomEntitiesLastFrame;
 
@@ -352,7 +355,27 @@ namespace BelzontWE
                 {
                     for (int i = 0; i < variableBuffer.Length; i++)
                     {
-                        if (variableBuffer[i].Key[0] != '!')
+                        var targetKey = variableBuffer[i].Key;
+                        var optional = false;
+                        if (variableBuffer[i].Key[0] == '?')
+                        {
+                            optional = true;
+                            targetKey = targetKey.Substring(1);
+                        }
+
+                        if (optional)
+                        {
+                            FixedString64Bytes keyToSearch;
+                            FixedString64Bytes keyToSearch2;
+                            keyToSearch = new FixedString64Bytes(targetKey);
+                            keyToSearch.Append(WEConstants.VARIABLE_KV_SEPARATOR);
+                            if (inheritableVars.StartsWith(keyToSearch)) continue;
+                            keyToSearch2 = new FixedString64Bytes(WEConstants.VARIABLE_ITEM_SEPARATOR);
+                            keyToSearch2.Append(keyToSearch);
+                            if (inheritableVars.Contains(keyToSearch2)) continue;
+                        }
+
+                        if (targetKey[0] != '!')
                         {
                             inheritableVars.Append(variableBuffer[i].Key);
                             inheritableVars.Append(WEConstants.VARIABLE_KV_SEPARATOR);
@@ -503,6 +526,8 @@ namespace BelzontWE
                                     if (updater.childEntity.Index < 0) continue;
                                     // Optimize: Build variable string - only copy once per child that needs it
                                     var layoutVars = new FixedString512Bytes(inheritableVars);
+                                    layoutVars.Append(counterStartString);
+                                    layoutVars.Append(updaterBuff.Length);
                                     layoutVars.Append(indexStartString);
                                     layoutVars.Append(i);
                                     layoutVars.Append(WEConstants.VARIABLE_ITEM_SEPARATOR);

@@ -3,13 +3,11 @@ using Game.Common;
 using Game.Objects;
 using Game.Prefabs;
 using Game.Rendering;
-using System.Runtime.InteropServices;
 using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using static Game.Rendering.Debug.RenderPrefabRenderer;
 
 
 namespace BelzontWE
@@ -237,14 +235,14 @@ namespace BelzontWE
                 {
                     // Prefab changed — clear all, then spawn fresh
                     ClearGamePropSubObjects(entity, unfilteredChunkIndex, cmd, out _);
-                    SpawnAllInstances(entity, nativeOwnerEntity, hasNativeOwnerBuffer, prefabEntity, prefabObjectData, (int)targetSize, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd, inheritedVars);
+                    SpawnAllInstances(entity, nativeOwnerEntity, hasNativeOwnerBuffer, prefabEntity, prefabObjectData, (int)targetSize, instancingCount, weTransform.InstanceCountByAxisOrder, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd, inheritedVars);
                     return;
                 }
 
                 if (existingCount == (int)targetSize)
                 {
                     // Count matches, prefab matches — reposition only
-                    RepositionInstances(existingBuf, existingCount, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, (int)targetSize, hasGeom, unfilteredChunkIndex, cmd);
+                    RepositionInstances(existingBuf, existingCount, instancingCount, weTransform.InstanceCountByAxisOrder, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, (int)targetSize, hasGeom, unfilteredChunkIndex, cmd);
                     return;
                 }
 
@@ -258,16 +256,17 @@ namespace BelzontWE
                     }
                     var newBuf = cmd.SetBuffer<WESubObject>(unfilteredChunkIndex, entity);
                     for (int j = 0; j < (int)targetSize; j++) newBuf.Add(existingBuf[j]);
-                    RepositionInstances(existingBuf, (int)targetSize, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, (int)targetSize, hasGeom, unfilteredChunkIndex, cmd);
+                    RepositionInstances(existingBuf, (int)targetSize, instancingCount, weTransform.InstanceCountByAxisOrder, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, (int)targetSize, hasGeom, unfilteredChunkIndex, cmd);
                     return;
                 }
 
                 // existingCount < targetSize — spawn delta at correct grid positions, reposition existing
-                RepositionInstances(existingBuf, existingCount, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, (int)targetSize, hasGeom, unfilteredChunkIndex, cmd);
-                SpawnAllInstances(entity, nativeOwnerEntity, hasNativeOwnerBuffer, prefabEntity, prefabObjectData, (int)targetSize, instancingCount, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd, inheritedVars, existingCount);
+                RepositionInstances(existingBuf, existingCount, instancingCount, weTransform.InstanceCountByAxisOrder, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, (int)targetSize, hasGeom, unfilteredChunkIndex, cmd);
+                SpawnAllInstances(entity, nativeOwnerEntity, hasNativeOwnerBuffer, prefabEntity, prefabObjectData, (int)targetSize, instancingCount, weTransform.InstanceCountByAxisOrder, spacingOffsets, pivotOffset, alignmentByAxisOrder, weTransform, geomMtx, baseRot, unfilteredChunkIndex, cmd, inheritedVars, existingCount);
             }
 
-            private void SpawnAllInstances(Entity entity, Entity nativeOwnerEntity, bool hasNativeOwnerBuffer, Entity prefabEntity, ObjectData prefabObjectData, int targetSize, uint3 instancingCount,
+            private void SpawnAllInstances(Entity entity, Entity nativeOwnerEntity, bool hasNativeOwnerBuffer, Entity prefabEntity, ObjectData prefabObjectData, int targetSize,
+                uint3 instancingCount, uint3 originalCount,
                 float3[] spacingOffsets, float3 pivotOffset,
                 (WEPlacementAlignment m, WEPlacementAlignment n, WEPlacementAlignment o) alignmentByAxisOrder,
                 WETextDataTransform weTransform, float4x4 geomMtx, quaternion baseRot,
@@ -279,16 +278,16 @@ namespace BelzontWE
                     for (int o = 0; o < instancingCount.z && spawned < targetSize; o++)
                     {
                         var spacingO = spacingOffsets[2];
-                        WETemplateManager.GetSpacingAndOffset((uint)(targetSize - spawned), instancingCount.z, instancingCount.y * instancingCount.x, alignmentByAxisOrder.o, ref spacingO, out var offsetO);
+                        WETemplateManager.GetSpacingAndOffset(instancingCount.z, originalCount.z, alignmentByAxisOrder.o, ref spacingO, out var offsetO);
                         for (int n = 0; n < instancingCount.y && spawned < targetSize; n++)
                         {
                             var spacingN = spacingOffsets[1];
-                            WETemplateManager.GetSpacingAndOffset((uint)(targetSize - spawned), instancingCount.y, instancingCount.x, alignmentByAxisOrder.n, ref spacingN, out var offsetN);
+                            WETemplateManager.GetSpacingAndOffset(instancingCount.y, originalCount.y, alignmentByAxisOrder.n, ref spacingN, out var offsetN);
                             for (int m2 = 0; m2 < instancingCount.x && spawned < targetSize; m2++, spawned++)
                             {
                                 if (spawned < startIndex) continue;
                                 var spacingM = spacingOffsets[0];
-                                WETemplateManager.GetSpacingAndOffset((uint)(targetSize - spawned), instancingCount.x, 1, alignmentByAxisOrder.m, ref spacingM, out var offsetM);
+                                WETemplateManager.GetSpacingAndOffset(instancingCount.x, originalCount.x, alignmentByAxisOrder.m, ref spacingM, out var offsetM);
                                 var localPos = weTransform.offsetPosition + pivotOffset + offsetM + offsetN + offsetO + (m2 * spacingM) + (n * spacingN) + (o * spacingO);
                                 SpawnPropInstance(entity, nativeOwnerEntity, hasNativeOwnerBuffer, prefabEntity, prefabObjectData, math.transform(geomMtx, localPos), baseRot, unfilteredChunkIndex, cmd, inheritedVarsCache);
                             }
@@ -304,7 +303,7 @@ namespace BelzontWE
             }
 
             private void RepositionInstances(DynamicBuffer<WESubObject> existingBuf, int count, uint3 instancingCount,
-                float3[] spacingOffsets, float3 pivotOffset,
+                uint3 originalInstancingCount, float3[] spacingOffsets, float3 pivotOffset,
                 (WEPlacementAlignment m, WEPlacementAlignment n, WEPlacementAlignment o) alignmentByAxisOrder,
                 WETextDataTransform weTransform, float4x4 geomMtx, quaternion baseRot,
                 int totalTarget, bool hasGeom, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)
@@ -316,15 +315,15 @@ namespace BelzontWE
                     for (int o = 0; o < instancingCount.z && idx < count; o++)
                     {
                         var spacingO = spacingOffsets[2];
-                        WETemplateManager.GetSpacingAndOffset((uint)(totalTarget - idx), instancingCount.z, instancingCount.y * instancingCount.x, alignmentByAxisOrder.o, ref spacingO, out var offsetO);
+                        WETemplateManager.GetSpacingAndOffset(instancingCount.z, originalInstancingCount.z, alignmentByAxisOrder.o, ref spacingO, out var offsetO);
                         for (int n = 0; n < instancingCount.y && idx < count; n++)
                         {
                             var spacingN = spacingOffsets[1];
-                            WETemplateManager.GetSpacingAndOffset((uint)(totalTarget - idx), instancingCount.y, instancingCount.x, alignmentByAxisOrder.n, ref spacingN, out var offsetN);
+                            WETemplateManager.GetSpacingAndOffset(instancingCount.y, originalInstancingCount.y, alignmentByAxisOrder.n, ref spacingN, out var offsetN);
                             for (int m2 = 0; m2 < instancingCount.x && idx < count; m2++, idx++)
                             {
                                 var spacingM = spacingOffsets[0];
-                                WETemplateManager.GetSpacingAndOffset((uint)(totalTarget - idx), instancingCount.x, 1, alignmentByAxisOrder.m, ref spacingM, out var offsetM);
+                                WETemplateManager.GetSpacingAndOffset(instancingCount.x, originalInstancingCount.x, alignmentByAxisOrder.m, ref spacingM, out var offsetM);
                                 var localPos = weTransform.offsetPosition + pivotOffset + offsetM + offsetN + offsetO + (m2 * spacingM) + (n * spacingN) + (o * spacingO);
                                 SetInstanceTransform(existingBuf[idx].m_SubObject, math.transform(geomMtx, localPos), baseRot, unfilteredChunkIndex, cmd);
                             }

@@ -5,6 +5,8 @@ namespace BelzontWE
         // Variable serialization separators (used in WEPreCullingSystem / WEVarsCacheBank)
         public const char VARIABLE_ITEM_SEPARATOR = '↓';
         public const char VARIABLE_KV_SEPARATOR = '→';
+        public const string INSTANCE_IDX_KEY = "$idx";
+        public const string INSTANCE_COUNT_TOTAL_KEY = "$ct";
 
         // Template replacement serialization separators (used in WETemplateManager)
         public const string REPLACEMENT_ITEM_SEPARATOR = "|";

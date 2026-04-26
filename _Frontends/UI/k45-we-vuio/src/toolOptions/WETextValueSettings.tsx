@@ -86,6 +86,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     const [meshes, setMeshes] = useState([] as DropdownItem<string>[]);
     const [imgOptions, setImgOptions] = useState([] as string[]);
     const [gamePropEntries, setGamePropEntries] = useState(cachedPropList ?? []);
+    const [allowedItemType, setAllowedItemType] = useState([0, 1, 2, 4, 5, 6, 7] as number[]);
 
     useEffect(() => {
         if (!cachedPropList)
@@ -114,6 +115,13 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     useEffect(() => { setFixedTextTyping(mesh.ValueText.value); }, [mesh.ValueText.value, picker.CurrentSubEntity.value])
     useEffect(() => { if (usingFormulae) WorldPickerService.instance.setCurrentEditingFormulaeParam("mesh", "") }, [usingFormulae])
 
+    useEffect(() => {
+        if (picker.IsMoveableGeometry) {
+            setAllowedItemType([0, 1, 2, 4, 5, 6]);
+        } else {
+            setAllowedItemType([0, 1, 2, 4, 5, 6, 7]);
+        }
+    }, [picker.CurrentEntity.value])
     const saveHeight = (height: number) => {
         const scale = transform.CurrentScale.value;
         if ([WESimulationTextType.Text, WESimulationTextType.Image].includes(mesh.TextSourceType.value)) {
@@ -154,7 +162,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
                 <EditorItemRow label={T_contentType}>
                     <NumberDropdownField
                         value={mesh.TextSourceType.value}
-                        items={[0, 1, 2, 4, 5, 6, picker.IsMoveableGeometry ? undefined : 7].filter(x => x !== undefined).map(x => { return { displayName: { __Type: LocElementType.String, value: translate(`textValueSettings.contentType.${x}`) }, value: x! } })}
+                        items={allowedItemType.map(x => { return { displayName: { __Type: LocElementType.String, value: translate(`textValueSettings.contentType.${x}`) }, value: x! } })}
                         onChange={(x) => mesh.TextSourceType.set(x)}
                         style={{ flexGrow: 1, width: "inherit" }}
                     />
