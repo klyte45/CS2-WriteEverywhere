@@ -17,6 +17,11 @@ import { WELayoutVariablesView } from "./WELayoutVariablesView";
 import { WEInstancingView } from "./WEInstancingView";
 import { WESimulationTextType } from "services/WEFormulaeElement";
 import "../style/toolbox.scss"
+import { FocusDisabled } from "cs2/input";
+import { Portal } from "cs2/ui";
+import { Engine } from "cohtml/cohtml";
+
+const engine = (window as any).engine as Engine;
 
 const precisions = [1, 1 / 2, 1 / 4, 1 / 10, 1 / 20, 1 / 40, 1 / 100, 1 / 200, 1 / 400, 1 / 1000]
 
@@ -33,6 +38,7 @@ const i_AppearenceBtnIcon = "coui://uil/Standard/ColorPalette.svg";
 const i_ShaderBtnIcon = "coui://uil/Standard/HouseAlternative.svg";
 const i_VariablesBtnIcon = "coui://uil/Standard/ExclamationMark.svg";
 const i_InstancingBtnIcon = "coui://uil/Standard/SameRhombus.svg";
+const i_keysHelp = "coui://uil/Standard/CircleInfo.svg";
 
 
 const i_unselectedPivot = "coui://uil/Standard/Circle.svg";
@@ -131,6 +137,7 @@ const WEWorldPickerToolPanel = () => {
     const T_instanceNavX = translate("instancingSettings.instanceNav.x");
     const T_instanceNavY = translate("instancingSettings.instanceNav.y");
     const T_instanceNavZ = translate("instancingSettings.instanceNav.z");
+    const T_keysHelp = translate("toolOption.keysHelp.tooltip");
 
     const descriptionPivotPosition: Record<WEPlacementPivot, string> = {
         [WEPlacementPivot.TopLeft]: `${T_pivot_Top}, ${T_pivot_Left}`,
@@ -163,6 +170,7 @@ const WEWorldPickerToolPanel = () => {
     const [displayInstancingWindow, setDisplayInstancingWindow] = useState(false);
     const [displayDebugWindow, setDisplayDebugWindow] = useState(false);
     const [debugAvailable, setDebugAvailable] = useState(false);
+    const [displayKeysHelpWindow, setDisplayKeysHelpWindow] = useState(false);
 
     useEffect(() => {
         WorldPickerService.debugAvailable().then(setDebugAvailable);
@@ -342,23 +350,25 @@ const WEWorldPickerToolPanel = () => {
                 })()}
             </>}
             <VanillaComponentResolver.instance.Section title={L_actions} >
-                <>
+                <FocusDisabled>
                     {currentItemIsValid && <>
                         {debugAvailable && <>
-                            <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayDebugWindow(!displayDebugWindow)} selected={displayDebugWindow} src={i_debug} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={"DEBUG"} />
+                            <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayDebugWindow(!displayDebugWindow)} selected={displayDebugWindow} src={i_debug} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={"DEBUG"} />
                             <div style={{ width: "20rem", flexShrink: 1 }}></div>
                         </>
                         }
-                        <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayInstancingWindow(!displayInstancingWindow)} selected={displayInstancingWindow} src={i_InstancingBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_InstancingBtn} />
-                        <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayVariablesWindow(!displayVariablesWindow)} selected={displayVariablesWindow} src={i_VariablesBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_VariablesBtn} />
+                        <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayInstancingWindow(!displayInstancingWindow)} selected={displayInstancingWindow} src={i_InstancingBtnIcon} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_InstancingBtn} />
+                        <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayVariablesWindow(!displayVariablesWindow)} selected={displayVariablesWindow} src={i_VariablesBtnIcon} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_VariablesBtn} />
                         {!isMatrixTransform && !isGameProp && <>
-                            <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayShaderWindow(!displayShaderWindow)} selected={displayShaderWindow} src={i_ShaderBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ShaderBtn} />
-                            <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
+                            <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayShaderWindow(!displayShaderWindow)} selected={displayShaderWindow} src={i_ShaderBtnIcon} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_ShaderBtn} />
+                            <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayAppearenceWindow(!displayAppearenceWindow)} selected={displayAppearenceWindow} src={i_AppearenceBtnIcon} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_AppearenceBtn} />
                             <div style={{ width: "10rem" }}></div>
                         </>}
                     </>}
-                    <VanillaComponentResolver.instance.ToolButton onSelect={() => wps.CurrentEntity.set(null)} src={i_UnselectCurrentIcon} focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_picker} />
-                </>
+                    <VanillaComponentResolver.instance.ToolButton onSelect={() => wps.CurrentEntity.set(null)} src={i_UnselectCurrentIcon} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_picker} />
+                    <div style={{ width: "10rem" }}></div>
+                    <VanillaComponentResolver.instance.ToolButton onSelect={() => setDisplayKeysHelpWindow(true)} selected={displayKeysHelpWindow} src={i_keysHelp} className={VanillaComponentResolver.instance.toolButtonTheme.button} tooltip={T_keysHelp} />
+                </FocusDisabled>
             </VanillaComponentResolver.instance.Section>
             {currentItemIsValid && !isMatrixTransform && !isGameProp && displayAppearenceWindow && <WETextAppearenceSettings />}
             {currentItemIsValid && !isMatrixTransform && !isGameProp && displayShaderWindow && <WETextShaderProperties />}
@@ -368,9 +378,24 @@ const WEWorldPickerToolPanel = () => {
             {debugAvailable && currentItemIsValid && displayDebugWindow && <WEDebugWindow />}
             {<WETextHierarchyView clipboard={clipboard} setClipboard={setClipboard} />}
             {currentEditingFormulaeStr() && <WEFormulaeEditor formulaeStr={currentEditingFormulaeStr()!} formulaeType={getCurrentEditingFormulaeType()!} lastCompileStatus={currentEditingFormulaeResult()!} />}
+            {displayKeysHelpWindow && <WEKeysHelpWindow onClose={() => setDisplayKeysHelpWindow(false)} />}
         </>
-
 }
 
+const WEKeysHelpWindow = ({ onClose }: { onClose: () => void }) => {
+    const T_keysHelp = translate("toolOption.keysHelp.tooltip");
+    const T_keysHelpMove = translate("toolOption.keysHelp.move");
+
+    const PanelBackdrop = VanillaComponentResolver.instance.PanelBackdrop;
+
+    return <Portal>
+        <PanelBackdrop className="k45_modal">
+            <div style={{ position: "absolute", top: "1rem", left: "1rem", right: "1rem", bottom: "1rem", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ backgroundImage: "url('coui://we.k45/UI/images/cheatsheet.png')", height: "80%", top: "10%", width: "80%", backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center", pointerEvents: "none" }} />
+                <button onClick={onClose} className="positiveBtn">{engine.translate("Common.OK")}</button>
+            </div>
+        </PanelBackdrop>
+    </Portal>
+}
 
 
