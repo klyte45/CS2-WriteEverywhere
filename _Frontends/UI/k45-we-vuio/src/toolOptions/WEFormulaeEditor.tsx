@@ -77,7 +77,9 @@ export const WEFormulaeEditor = ({ formulaeStr, formulaeType, lastCompileStatus 
 
 
     useEffect(() => {
-        FormulaeService.formulaeToPathObjects(formulaeStr.value).then(x => setFormulaeSteps(x))
+        FormulaeService.formulaeToPathObjects(formulaeStr.value).then(x => {
+            setFormulaeSteps(x)
+        })
     }, [formulaeStr.value])
 
     const pathObjectsToFormulae = (arr: (WEFormulaeElement | WEArrayIndexingDesc | WEMathOperationDesc)[]) => {

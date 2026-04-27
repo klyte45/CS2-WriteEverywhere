@@ -22,4 +22,5 @@ namespace BelzontWE.Builtin
         [WEFormula(typeof(Color))]
         public static Color GetMainMeshColor3(Entity reference) => World.DefaultGameObjectInjectionWorld.EntityManager.TryGetBuffer<MeshColor>(reference, true, out var meshes) && meshes.Length > 0 ? meshes[0].m_ColorSet.m_Channel2 : Color.magenta;
     }
+
 }

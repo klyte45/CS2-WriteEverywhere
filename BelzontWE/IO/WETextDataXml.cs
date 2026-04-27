@@ -160,7 +160,7 @@ namespace BelzontWE
 
         public class TransformXml : ISerializable
         {
-            private const int CURRENT_VERSION = 4;
+            private const int CURRENT_VERSION = 5;
             public Vector3Xml offsetPosition = new();
             public Vector3Xml offsetRotation = new();
             public Vector3Xml scale = (Vector3Xml)Vector3.one;
@@ -176,8 +176,40 @@ namespace BelzontWE
                 WEFormulaeHelper.WarmCache<float>(mustDraw?.formulae);
                 WEFormulaeHelper.WarmCache<int>(instanceCount?.formulae);
             }
-            public Vector3Xml arrayInstances = (Vector3Xml)Vector3.one;
-            public Vector3Xml arraySpacing = new();
+            [DefaultValue(null)]
+            public Vector3Xml arrayInstances
+            {
+                set
+                {
+                    if (arrayInstancesData == null)
+                    {
+                        arrayInstancesData = new() { defaultValue = value };
+                    }
+                    else
+                    {
+                        arrayInstancesData.defaultValue = value;
+                    }
+                }
+                get => default;
+            }
+            [DefaultValue(null)]
+            public Vector3Xml arraySpacing
+            {
+                set
+                {
+                    if (arraySpacingData == null)
+                    {
+                        arraySpacingData = new() { defaultValue = value };
+                    }
+                    else
+                    {
+                        arraySpacingData.defaultValue = value;
+                    }
+                }
+                get => default;
+            }
+            public WETextDataXml.FormulaeFloat3Xml arraySpacingData = new();
+            public WETextDataXml.FormulaeInt3Xml arrayInstancesData = new();
             [XmlAttribute] public WETextDataTransform.ArrayInstancingAxisOrder arrayAxisOrder;
 
             public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
@@ -191,7 +223,7 @@ namespace BelzontWE
                 writer.Write(useFormulaeToCheckIfDraw);
                 writer.WriteNullCheck(mustDraw);
                 writer.Write((Vector3)arrayInstances);
-                writer.Write((Vector3)arraySpacing);
+                writer.WriteNullCheck(arraySpacingData);
                 writer.Write(arrayAxisOrder);
                 writer.WriteNullCheck(instanceCount);
                 writer.Write(alignment);
@@ -233,9 +265,16 @@ namespace BelzontWE
 
 
                     reader.Read(out float3 arrayInstances);
-                    reader.Read(out float3 arraySpacing);
                     this.arrayInstances = (Vector3Xml)(Vector3)arrayInstances;
-                    this.arraySpacing = (Vector3Xml)(Vector3)arraySpacing;
+                    if (version <= 4)
+                    {
+                        reader.Read(out float3 arraySpacing);
+                        this.arraySpacing = (Vector3Xml)(Vector3)arraySpacing;
+                    }
+                    else
+                    {
+                        reader.ReadNullCheck(out arraySpacingData);
+                    }
                     reader.Read(out arrayAxisOrder);
                 }
                 if (version >= 4)
@@ -789,6 +828,32 @@ namespace BelzontWE
                     return;
                 }
                 reader.Read(out float3 defaultValue);
+                this.defaultValue = (Vector3Xml)defaultValue;
+                reader.Read(out formulae);
+            }
+        }
+        public class FormulaeInt3Xml : ISerializable
+        {
+            private const int CURRENT_VERSION = 0;
+            public Vector3Xml defaultValue = new();
+            [XmlAttribute] public string formulae;
+            public bool ShouldSerializeformulae() => !formulae.IsNullOrWhitespace();
+            public bool ShouldSerializedefaultValue() => (Vector3Int)(defaultValue) != Vector3Int.zero;
+            public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
+            {
+                writer.Write(CURRENT_VERSION);
+                writer.Write((int3)defaultValue);
+                writer.Write(formulae ?? "");
+            }
+            public void Deserialize<TReader>(TReader reader) where TReader : IReader
+            {
+                reader.Read(out int version);
+                if (version > CURRENT_VERSION)
+                {
+                    LogUtils.DoWarnLog($"Invalid version for {GetType()}: {version}");
+                    return;
+                }
+                reader.Read(out int3 defaultValue);
                 this.defaultValue = (Vector3Xml)defaultValue;
                 reader.Read(out formulae);
             }

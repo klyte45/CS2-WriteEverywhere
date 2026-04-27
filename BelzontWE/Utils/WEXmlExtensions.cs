@@ -137,8 +137,8 @@ namespace BelzontWE.Utils
                 mustDraw = value.MustDrawFn.ToXml(),
                 useFormulaeToCheckIfDraw = value.useFormulaeToCheckIfDraw,
                 arrayAxisOrder = value.arrayAxisGrowthOrder,
-                arrayInstances = (Vector3Xml)(float3)value.ArrayInstancing,
-                arraySpacing = (Vector3Xml)value.arrayInstancingGapMeters,
+                arrayInstancesData = value.arrayInstancingCount.ToXml(),
+                arraySpacingData = value.arrayInstancingGapMeters.ToXml(),
                 alignment = value.alignment,
                 instanceCount = value.InstanceCountFn.ToXml(),
                 pivotZ = value.pivotZ,
@@ -154,8 +154,8 @@ namespace BelzontWE.Utils
                 pivot = value.pivot,
                 MustDrawFn = value.mustDraw.ToComponent(),
                 useFormulaeToCheckIfDraw = value.useFormulaeToCheckIfDraw,
-                ArrayInstancing = (uint3)(float3)value.arrayInstances,
-                arrayInstancingGapMeters = value.arraySpacing,
+                arrayInstancingCount = value.arrayInstancesData.ToComponent(),
+                arrayInstancingGapMeters = value.arraySpacingData.ToComponent(),
                 arrayAxisGrowthOrder = value.arrayAxisOrder,
                 alignment = value.alignment,
                 InstanceCountFn = value.instanceCount.ToComponent(),
@@ -278,6 +278,11 @@ namespace BelzontWE.Utils
             defaultValue = (Vector3Xml)value.defaultValue,
             formulae = value.Formulae
         };
+        public static WETextDataXml.FormulaeInt3Xml ToXml(this WETextDataValueInt3 value) => new()
+        {
+            defaultValue = (Vector3Xml)value.defaultValue,
+            formulae = value.Formulae
+        };
         public static WETextDataXml.FormulaeIntXml ToXml(this WETextDataValueInt value) => new()
         {
             defaultValue = value.defaultValue,
@@ -305,6 +310,11 @@ namespace BelzontWE.Utils
             Formulae = value.formulae
         };
         public static WETextDataValueFloat3 ToComponent(this WETextDataXml.FormulaeFloat3Xml value) => value is null ? default : new()
+        {
+            defaultValue = value.defaultValue,
+            Formulae = value.formulae
+        };
+        public static WETextDataValueInt3 ToComponent(this WETextDataXml.FormulaeInt3Xml value) => value is null ? default : new()
         {
             defaultValue = value.defaultValue,
             Formulae = value.formulae

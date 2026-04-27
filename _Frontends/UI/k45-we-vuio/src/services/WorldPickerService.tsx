@@ -25,7 +25,7 @@ export type IndexedComponentListing = {
 
 
 
-type ConstructorReturnType<P> = P extends new (name: string) => MultiUIValueBinding<infer R> ? MultiUIValueBinding<R> : never
+type ConstructorReturnType<P> = P extends new (name: string) => MultiUIValueBinding<infer R> ? MultiUIValueBinding<R> : never | P extends new (name: string) => MultiUIValueReadOnlyBinding<infer S> ? MultiUIValueReadOnlyBinding<S> : never
 type ConstructorObjectToInstancesObject<P> = Omit<{ [key in keyof P]: ConstructorReturnType<P[key]> }, `_${string}`>
 type alpha = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
 type BindingClassObj = {
@@ -75,8 +75,6 @@ const WETextDataTransformController = {
     MustDrawFnFormulaeStr: MultiUIValueBinding<string>,
     MustDrawFnFormulaeCompileResult: MultiUIValueBinding<number>,
     MustDrawFnFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
-    ArrayInstancing: MultiUIValueBinding<number3>,
-    ArrayInstancingGapMeters: MultiUIValueBinding<number3>,
     ArrayAxisGrowthOrder: MultiUIValueBinding<ArrayInstancingAxisOrder>,
     PivotZ: MultiUIValueBinding<WEZPlacementPivot>,
     AlignmentX: MultiUIValueBinding<WEPlacementAlignment>,
@@ -86,6 +84,14 @@ const WETextDataTransformController = {
     InstanceCountFormulaeStr: MultiUIValueBinding<string>,
     InstanceCountFormulaeCompileResult: MultiUIValueBinding<number>,
     InstanceCountFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
+    ArrayInstancing: MultiUIValueBinding<number3>,
+    ArrayInstancingFormulaeStr: MultiUIValueBinding<string>,
+    ArrayInstancingFormulaeCompileResult: MultiUIValueBinding<number>,
+    ArrayInstancingFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
+    ArrayInstancingGapMeters: MultiUIValueBinding<number3>,
+    ArrayInstancingGapMetersFormulaeStr: MultiUIValueBinding<string>,
+    ArrayInstancingGapMetersFormulaeCompileResult: MultiUIValueBinding<number>,
+    ArrayInstancingGapMetersFormulaeCompileResultErrorArgs: MultiUIValueBinding<string[]>,
 }
 const WETextDataMeshController = {
     _prefix: "k45::we.dataMesh",

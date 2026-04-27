@@ -58,62 +58,67 @@ namespace BelzontWE
             ZXY,
             ZYX
         }
-        private uint3 arrayInstancingCount;
-        public uint3 ArrayInstancing { readonly get => arrayInstancingCount; set => arrayInstancingCount = math.clamp(value, new(1, 1, 1), new(100, 100, 100)); }
-        public float3 arrayInstancingGapMeters;
+        public WETextDataValueInt3 arrayInstancingCount;
+        public readonly int3 ArrayInstancing => math.clamp(arrayInstancingCount.EffectiveValue, new(1, 1, 1), new(100, 100, 100));
+        public WETextDataValueFloat3 arrayInstancingGapMeters;
         public ArrayInstancingAxisOrder arrayAxisGrowthOrder;
         internal readonly float3[] SpacingByAxisOrder
+        {
+            get
+            {
+                var spacing = arrayInstancingGapMeters.EffectiveValue;
+                return arrayAxisGrowthOrder switch
+                {
+                    ArrayInstancingAxisOrder.XYZ => new float3[]
+                        {
+                        new(spacing.x, 0, 0),
+                        new(0, spacing.y, 0),
+                        new(0, 0, spacing.z),
+                        },
+                    ArrayInstancingAxisOrder.XZY => new float3[]
+                        {
+                        new(spacing.x, 0, 0),
+                        new(0, 0, spacing.z),
+                        new(0, spacing.y, 0),
+                        },
+                    ArrayInstancingAxisOrder.YXZ => new float3[]
+                        {
+                        new(0, spacing.y, 0),
+                        new(spacing.x, 0, 0),
+                        new(0, 0, spacing.z),
+                        },
+                    ArrayInstancingAxisOrder.YZX => new float3[]
+                        {
+                        new(0, spacing.y, 0),
+                        new(0, 0, spacing.z),
+                        new(spacing.x, 0, 0),
+                        },
+                    ArrayInstancingAxisOrder.ZXY => new float3[]
+                        {
+                        new(0, 0, spacing.z),
+                        new(spacing.x, 0, 0),
+                        new(0, spacing.y, 0),
+                        },
+                    ArrayInstancingAxisOrder.ZYX => new float3[]
+                        {
+                        new(0, 0, spacing.z),
+                        new(0, spacing.y, 0),
+                        new(spacing.x, 0, 0),
+                        },
+                    _ => null,
+                };
+            }
+        }
+
+        internal readonly int3 InstanceCountByAxisOrder
             => arrayAxisGrowthOrder switch
             {
-                ArrayInstancingAxisOrder.XYZ => new float3[]
-                    {
-                        new(arrayInstancingGapMeters.x, 0, 0),
-                        new(0, arrayInstancingGapMeters.y, 0),
-                        new(0, 0, arrayInstancingGapMeters.z),
-                    },
-                ArrayInstancingAxisOrder.XZY => new float3[]
-                    {
-                        new(arrayInstancingGapMeters.x, 0, 0),
-                        new(0, 0, arrayInstancingGapMeters.z),
-                        new(0, arrayInstancingGapMeters.y, 0),
-                    },
-                ArrayInstancingAxisOrder.YXZ => new float3[]
-                    {
-                        new(0, arrayInstancingGapMeters.y, 0),
-                        new(arrayInstancingGapMeters.x, 0, 0),
-                        new(0, 0, arrayInstancingGapMeters.z),
-                    },
-                ArrayInstancingAxisOrder.YZX => new float3[]
-                    {
-                        new(0, arrayInstancingGapMeters.y, 0),
-                        new(0, 0, arrayInstancingGapMeters.z),
-                        new(arrayInstancingGapMeters.x, 0, 0),
-                    },
-                ArrayInstancingAxisOrder.ZXY => new float3[]
-                    {
-                        new(0, 0, arrayInstancingGapMeters.z),
-                        new(arrayInstancingGapMeters.x, 0, 0),
-                        new(0, arrayInstancingGapMeters.y, 0),
-                    },
-                ArrayInstancingAxisOrder.ZYX => new float3[]
-                    {
-                        new(0, 0, arrayInstancingGapMeters.z),
-                        new(0, arrayInstancingGapMeters.y, 0),
-                        new(arrayInstancingGapMeters.x, 0, 0),
-                    },
-                _ => null,
-            };
-
-
-        internal readonly uint3 InstanceCountByAxisOrder
-            => arrayAxisGrowthOrder switch
-            {
-                ArrayInstancingAxisOrder.XYZ => arrayInstancingCount,
-                ArrayInstancingAxisOrder.XZY => arrayInstancingCount.xzy,
-                ArrayInstancingAxisOrder.YXZ => arrayInstancingCount.yxz,
-                ArrayInstancingAxisOrder.YZX => arrayInstancingCount.yzx,
-                ArrayInstancingAxisOrder.ZXY => arrayInstancingCount.zxy,
-                ArrayInstancingAxisOrder.ZYX => arrayInstancingCount.zyx,
+                ArrayInstancingAxisOrder.XYZ => ArrayInstancing,
+                ArrayInstancingAxisOrder.XZY => ArrayInstancing.xzy,
+                ArrayInstancingAxisOrder.YXZ => ArrayInstancing.yxz,
+                ArrayInstancingAxisOrder.YZX => ArrayInstancing.yzx,
+                ArrayInstancingAxisOrder.ZXY => ArrayInstancing.zxy,
+                ArrayInstancingAxisOrder.ZYX => ArrayInstancing.zyx,
                 _ => default,
             };
         internal (WEPlacementAlignment m, WEPlacementAlignment n, WEPlacementAlignment o) AlignmentByAxisOrder
@@ -128,24 +133,11 @@ namespace BelzontWE
                 _ => default,
             };
 
-        public uint3 AxisOrderToXYZ(uint3 axisOrder)
-        {
-            return arrayAxisGrowthOrder switch
-            {
-                ArrayInstancingAxisOrder.XYZ => arrayInstancingCount,
-                ArrayInstancingAxisOrder.XZY => arrayInstancingCount.xzy,
-                ArrayInstancingAxisOrder.YXZ => arrayInstancingCount.yxz,
-                ArrayInstancingAxisOrder.YZX => arrayInstancingCount.zxy,
-                ArrayInstancingAxisOrder.ZXY => arrayInstancingCount.yzx,
-                ArrayInstancingAxisOrder.ZYX => arrayInstancingCount.zyx,
-                _ => default,
-            };
-        }
-
-
 
         public int SetFormulaeMustDraw(string value, out string[] cmpErr) => mustDrawFn.SetFormulae(value, out cmpErr);
         public int SetFormulaeInstanceCount(string value, out string[] cmpErr) => instanceCount.SetFormulae(value, out cmpErr);
+        public int SetFormulaeArrayInstancingCount(string value, out string[] cmpErr) => arrayInstancingCount.SetFormulae(value, out cmpErr);
+        public int SetFormulaeArrayInstancingGapMeters(string value, out string[] cmpErr) => arrayInstancingGapMeters.SetFormulae(value, out cmpErr);
 
         public bool UpdateFormulae(EntityManager em, Entity geometryEntity, Dictionary<string, string> vars, bool updateCounter)
         {
@@ -154,7 +146,7 @@ namespace BelzontWE
             changed |= useFormulaeToCheckIfDraw && mustDrawFn.UpdateEffectiveValue(em, geometryEntity, vars);
             if (updateCounter)
             {
-                changed |= instanceCount.UpdateEffectiveValue(em, geometryEntity, vars);
+                changed |= instanceCount.UpdateEffectiveValue(em, geometryEntity, vars) | arrayInstancingGapMeters.UpdateEffectiveValue(em, geometryEntity, vars) | arrayInstancingCount.UpdateEffectiveValue(em, geometryEntity, vars);
             }
             return changed;
         }
@@ -176,7 +168,10 @@ namespace BelzontWE
                 {
                     defaultValue = 1
                 },
-                arrayInstancingCount = new(1, 1, 1),
+                arrayInstancingCount = new()
+                {
+                    defaultValue = new int3(1, 1, 1)
+                },
                 instanceCount = new()
                 {
                     defaultValue = -1

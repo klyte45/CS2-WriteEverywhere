@@ -219,7 +219,7 @@ namespace BelzontWE
                     math.ceil(targetSize / new float3(1,
                         weTransform.InstanceCountByAxisOrder[0],
                         weTransform.InstanceCountByAxisOrder[0] * weTransform.InstanceCountByAxisOrder[1])));
-                var totalArea = (weTransform.ArrayInstancing - 1) * weTransform.arrayInstancingGapMeters;
+                var totalArea = (weTransform.ArrayInstancing - 1) * weTransform.arrayInstancingGapMeters.EffectiveValue;
                 var effectivePivot = weTransform.PivotAsFloat3 - (math.sign(totalArea.xyz) / 2) - .5f;
                 var pivotOffset = effectivePivot * math.abs(totalArea);
                 var alignmentByAxisOrder = weTransform.AlignmentByAxisOrder;
@@ -266,7 +266,7 @@ namespace BelzontWE
             }
 
             private void SpawnAllInstances(Entity entity, Entity nativeOwnerEntity, bool hasNativeOwnerBuffer, Entity prefabEntity, ObjectData prefabObjectData, int targetSize,
-                uint3 instancingCount, uint3 originalCount,
+                uint3 instancingCount, int3 originalCount,
                 float3[] spacingOffsets, float3 pivotOffset,
                 (WEPlacementAlignment m, WEPlacementAlignment n, WEPlacementAlignment o) alignmentByAxisOrder,
                 WETextDataTransform weTransform, float4x4 geomMtx, quaternion baseRot,
@@ -303,7 +303,7 @@ namespace BelzontWE
             }
 
             private void RepositionInstances(DynamicBuffer<WESubObject> existingBuf, int count, uint3 instancingCount,
-                uint3 originalInstancingCount, float3[] spacingOffsets, float3 pivotOffset,
+                int3 originalInstancingCount, float3[] spacingOffsets, float3 pivotOffset,
                 (WEPlacementAlignment m, WEPlacementAlignment n, WEPlacementAlignment o) alignmentByAxisOrder,
                 WETextDataTransform weTransform, float4x4 geomMtx, quaternion baseRot,
                 int totalTarget, bool hasGeom, int unfilteredChunkIndex, EntityCommandBuffer.ParallelWriter cmd)

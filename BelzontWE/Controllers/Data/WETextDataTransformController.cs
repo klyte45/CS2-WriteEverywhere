@@ -25,8 +25,6 @@ namespace BelzontWE
         public MultiUIValueBinding<int> MustDrawFnFormulaeCompileResult { get; private set; }
         public MultiUIValueBinding<string[]> MustDrawFnFormulaeCompileResultErrorArgs { get; private set; }
 
-        public MultiUIValueBinding<uint3, uint[]> ArrayInstancing { get; private set; }
-        public MultiUIValueBinding<float3, float[]> ArrayInstancingGapMeters { get; private set; }
         public MultiUIValueBinding<ArrayInstancingAxisOrder, int> ArrayAxisGrowthOrder { get; private set; }
 
         public MultiUIValueBinding<WEZPlacementPivot, int> PivotZ { get; private set; }
@@ -38,6 +36,19 @@ namespace BelzontWE
         public MultiUIValueBinding<string> InstanceCountFormulaeStr { get; private set; }
         public MultiUIValueBinding<int> InstanceCountFormulaeCompileResult { get; private set; }
         public MultiUIValueBinding<string[]> InstanceCountFormulaeCompileResultErrorArgs { get; private set; }
+
+
+
+        public MultiUIValueBinding<int3, int[]> ArrayInstancing { get; private set; }
+        public MultiUIValueBinding<string> ArrayInstancingFormulaeStr { get; private set; }
+        public MultiUIValueBinding<int> ArrayInstancingFormulaeCompileResult { get; private set; }
+        public MultiUIValueBinding<string[]> ArrayInstancingFormulaeCompileResultErrorArgs { get; private set; }
+
+
+        public MultiUIValueBinding<float3, float[]> ArrayInstancingGapMeters { get; private set; }
+        public MultiUIValueBinding<string> ArrayInstancingGapMetersFormulaeStr { get; private set; }
+        public MultiUIValueBinding<int> ArrayInstancingGapMetersFormulaeCompileResult { get; private set; }
+        public MultiUIValueBinding<string[]> ArrayInstancingGapMetersFormulaeCompileResultErrorArgs { get; private set; }
 
         protected override void DoInitValueBindings(Action<string, object[]> EventCaller, Action<string, Delegate> CallBinder)
         {
@@ -66,9 +77,18 @@ namespace BelzontWE
             InstanceCountFormulaeCompileResult = new(default, $"{PREFIX}{nameof(InstanceCountFormulaeCompileResult)}", EventCaller, CallBinder);
             InstanceCountFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(InstanceCountFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
 
+            ArrayInstancing = new(default, $"{PREFIX}{nameof(ArrayInstancing)}", EventCaller, CallBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new int3(x[0], x[1], x[2]));
+            ArrayInstancingFormulaeStr = new(default, $"{PREFIX}{nameof(ArrayInstancingFormulaeStr)}", EventCaller, CallBinder);
+            ArrayInstancingFormulaeCompileResult = new(default, $"{PREFIX}{nameof(ArrayInstancingFormulaeCompileResult)}", EventCaller, CallBinder);
+            ArrayInstancingFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(ArrayInstancingFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
 
-            ArrayInstancing = new(default, $"{PREFIX}{nameof(ArrayInstancing)}", EventCaller, CallBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new uint3(x[0], x[1], x[2]));
+
             ArrayInstancingGapMeters = new(default, $"{PREFIX}{nameof(ArrayInstancingGapMeters)}", EventCaller, CallBinder, (x, _) => new[] { x.x, x.y, x.z }, (x, _) => new float3(x[0], x[1], x[2]));
+            ArrayInstancingGapMetersFormulaeStr = new(default, $"{PREFIX}{nameof(ArrayInstancingGapMetersFormulaeStr)}", EventCaller, CallBinder);
+            ArrayInstancingGapMetersFormulaeCompileResult = new(default, $"{PREFIX}{nameof(ArrayInstancingGapMetersFormulaeCompileResult)}", EventCaller, CallBinder);
+            ArrayInstancingGapMetersFormulaeCompileResultErrorArgs = new(default, $"{PREFIX}{nameof(ArrayInstancingGapMetersFormulaeCompileResultErrorArgs)}", EventCaller, CallBinder);
+
+
             ArrayAxisGrowthOrder = new(default, $"{PREFIX}{nameof(ArrayAxisGrowthOrder)}", EventCaller, CallBinder, (x, _) => (int)x, (x, _) => (ArrayInstancingAxisOrder)x);
 
 
@@ -86,11 +106,18 @@ namespace BelzontWE
             AlignmentZ.OnScreenValueChanged += (x) => PickerController.EnqueueModification<WEPlacementAlignment, WETextDataTransform>(x, (x, currentItem) => { currentItem.alignment = WEPlacementAligmentUtility.Encode(currentItem.alignment.GetX(), currentItem.alignment.GetY(), x); if (EntityManager.HasEnabledComponent<WEIsPlaceholder>(m_pickerController.CurrentSubEntity.Value)) EntityManager.SafeSetComponentEnabled<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value); return currentItem; });
 
             InstanceCount.OnScreenValueChanged += (x) => PickerController.EnqueueModification<int, WETextDataTransform>(x, (x, currentItem) => { currentItem.DefaultInstanceCount = x; return currentItem; });
+            ArrayInstancing.OnScreenValueChanged += (x) => PickerController.EnqueueModification<int3, WETextDataTransform>(x, (x, currentItem) => { currentItem.arrayInstancingCount.defaultValue = x; EntityManager.SafeSetComponentEnabled<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value); ; return currentItem; });
+            ArrayInstancingGapMeters.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float3, WETextDataTransform>(x, (x, currentItem) => { currentItem.arrayInstancingGapMeters.defaultValue = x; EntityManager.SafeSetComponentEnabled<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value); return currentItem; });
+
             SetupOnFormulaeChangedAction(PickerController, (ref WETextDataTransform data, string newFormulae, out string[] errorArgs) => data.SetFormulaeInstanceCount(newFormulae, out errorArgs), InstanceCountFormulaeStr, InstanceCountFormulaeCompileResult, InstanceCountFormulaeCompileResultErrorArgs);
 
 
-            ArrayInstancing.OnScreenValueChanged += (x) => PickerController.EnqueueModification<uint3, WETextDataTransform>(x, (x, currentItem) => { currentItem.ArrayInstancing = x; EntityManager.SafeSetComponentEnabled<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value); ; return currentItem; });
-            ArrayInstancingGapMeters.OnScreenValueChanged += (x) => PickerController.EnqueueModification<float3, WETextDataTransform>(x, (x, currentItem) => { currentItem.arrayInstancingGapMeters = x; EntityManager.SafeSetComponentEnabled<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value); return currentItem; });
+            SetupOnFormulaeChangedAction(PickerController, (ref WETextDataTransform data, string newFormulae, out string[] errorArgs) => data.SetFormulaeArrayInstancingCount(newFormulae, out errorArgs), ArrayInstancingFormulaeStr, ArrayInstancingFormulaeCompileResult, ArrayInstancingFormulaeCompileResultErrorArgs);
+
+
+            SetupOnFormulaeChangedAction(PickerController, (ref WETextDataTransform data, string newFormulae, out string[] errorArgs) => data.SetFormulaeArrayInstancingGapMeters(newFormulae, out errorArgs), ArrayInstancingGapMetersFormulaeStr, ArrayInstancingGapMetersFormulaeCompileResult, ArrayInstancingGapMetersFormulaeCompileResultErrorArgs);
+
+
             ArrayAxisGrowthOrder.OnScreenValueChanged += (x) => PickerController.EnqueueModification<ArrayInstancingAxisOrder, WETextDataTransform>(x, (x, currentItem) => { currentItem.arrayAxisGrowthOrder = x; EntityManager.SafeSetComponentEnabled<WETemplateDirtyInstancing>(m_pickerController.CurrentSubEntity.Value); return currentItem; });
 
         }
@@ -108,14 +135,17 @@ namespace BelzontWE
             ResetScreenFormulaeValue(transform.MustDrawFormulae, MustDrawFnFormulaeStr, MustDrawFnFormulaeCompileResult, MustDrawFnFormulaeCompileResultErrorArgs);
 
             ArrayInstancing.Value = transform.ArrayInstancing;
-            ArrayInstancingGapMeters.Value = transform.arrayInstancingGapMeters;
             ArrayAxisGrowthOrder.Value = transform.arrayAxisGrowthOrder;
             PivotZ.Value = transform.pivotZ;
             AlignmentX.Value = transform.alignment.GetX();
             AlignmentY.Value = transform.alignment.GetY();
             AlignmentZ.Value = transform.alignment.GetZ();
             ResetScreenFormulaeValue(transform.InstanceCountFn.Formulae, InstanceCountFormulaeStr, InstanceCountFormulaeCompileResult, InstanceCountFormulaeCompileResultErrorArgs);
+            ResetScreenFormulaeValue(transform.arrayInstancingCount.Formulae, ArrayInstancingFormulaeStr, ArrayInstancingFormulaeCompileResult, ArrayInstancingFormulaeCompileResultErrorArgs);
+            ResetScreenFormulaeValue(transform.arrayInstancingGapMeters.Formulae, ArrayInstancingGapMetersFormulaeStr, ArrayInstancingGapMetersFormulaeCompileResult, ArrayInstancingGapMetersFormulaeCompileResultErrorArgs);
             InstanceCount.Value = transform.DefaultInstanceCount;
+            ArrayInstancing.Value = transform.arrayInstancingCount.defaultValue;
+            ArrayInstancingGapMeters.Value = transform.arrayInstancingCount.defaultValue;
         }
     }
 }

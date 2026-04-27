@@ -357,13 +357,13 @@ namespace BelzontWE
                     {
                         var targetKey = variableBuffer[i].Key;
                         var optional = false;
-                        if (variableBuffer[i].Key[0] == '?')
+                        if (targetKey[0] == '?')
                         {
                             optional = true;
                             targetKey = targetKey.Substring(1);
                         }
 
-                        if (optional)
+                        if (optional && inheritableVars.Length > 0)
                         {
                             FixedString64Bytes keyToSearch;
                             FixedString64Bytes keyToSearch2;
@@ -377,12 +377,12 @@ namespace BelzontWE
 
                         if (targetKey[0] != '!')
                         {
-                            inheritableVars.Append(variableBuffer[i].Key);
+                            inheritableVars.Append(targetKey);
                             inheritableVars.Append(WEConstants.VARIABLE_KV_SEPARATOR);
                             inheritableVars.Append(variableBuffer[i].Value);
                             inheritableVars.Append(WEConstants.VARIABLE_ITEM_SEPARATOR);
                         }
-                        localVars.Append(variableBuffer[i].Key);
+                        localVars.Append(targetKey);
                         localVars.Append(WEConstants.VARIABLE_KV_SEPARATOR);
                         localVars.Append(variableBuffer[i].Value);
                         localVars.Append(WEConstants.VARIABLE_ITEM_SEPARATOR);

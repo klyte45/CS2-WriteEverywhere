@@ -116,7 +116,7 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
     useEffect(() => { if (usingFormulae) WorldPickerService.instance.setCurrentEditingFormulaeParam("mesh", "") }, [usingFormulae])
 
     useEffect(() => {
-        if (picker.IsMoveableGeometry) {
+        if (picker.IsMoveableGeometry.value) {
             setAllowedItemType([0, 1, 2, 4, 5, 6]);
         } else {
             setAllowedItemType([0, 1, 2, 4, 5, 6, 7]);

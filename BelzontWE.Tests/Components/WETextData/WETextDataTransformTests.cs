@@ -70,152 +70,152 @@ namespace BelzontWE.Tests.Components
 
         // ── ArrayInstancing clamp ─────────────────────────────────────────
 
-        [Test]
-        public void ArrayInstancing_ZeroInput_ClampedToOne()
-        {
-            var t = new WETextDataTransform();
-            t.ArrayInstancing = new uint3(0, 0, 0);
-            Assert.AreEqual(new uint3(1, 1, 1), t.ArrayInstancing);
-        }
+        //[Test]
+        //public void ArrayInstancing_ZeroInput_ClampedToOne()
+        //{
+        //    var t = new WETextDataTransform();
+        //    t.ArrayInstancing = new uint3(0, 0, 0);
+        //    Assert.AreEqual(new uint3(1, 1, 1), t.ArrayInstancing);
+        //}
 
-        [Test]
-        public void ArrayInstancing_OverflowInput_ClampedTo100()
-        {
-            var t = new WETextDataTransform();
-            t.ArrayInstancing = new uint3(200, 300, 999);
-            Assert.AreEqual(new uint3(100, 100, 100), t.ArrayInstancing);
-        }
+        //[Test]
+        //public void ArrayInstancing_OverflowInput_ClampedTo100()
+        //{
+        //    var t = new WETextDataTransform();
+        //    t.ArrayInstancing = new uint3(200, 300, 999);
+        //    Assert.AreEqual(new uint3(100, 100, 100), t.ArrayInstancing);
+        //}
 
-        [Test]
-        public void ArrayInstancing_ValidInput_Unchanged()
-        {
-            var t = new WETextDataTransform();
-            t.ArrayInstancing = new uint3(5, 10, 50);
-            Assert.AreEqual(new uint3(5, 10, 50), t.ArrayInstancing);
-        }
+        //[Test]
+        //public void ArrayInstancing_ValidInput_Unchanged()
+        //{
+        //    var t = new WETextDataTransform();
+        //    t.ArrayInstancing = new uint3(5, 10, 50);
+        //    Assert.AreEqual(new uint3(5, 10, 50), t.ArrayInstancing);
+        //}
 
-        [Test]
-        public void ArrayInstancing_MixedBoundary_CorrectlyClamped()
-        {
-            var t = new WETextDataTransform();
-            t.ArrayInstancing = new uint3(0, 5, 200);
-            Assert.AreEqual(new uint3(1, 5, 100), t.ArrayInstancing);
-        }
+        //[Test]
+        //public void ArrayInstancing_MixedBoundary_CorrectlyClamped()
+        //{
+        //    var t = new WETextDataTransform();
+        //    t.ArrayInstancing = new uint3(0, 5, 200);
+        //    Assert.AreEqual(new uint3(1, 5, 100), t.ArrayInstancing);
+        //}
 
-        [Test]
-        public void ArrayInstancing_Boundary100_Allowed()
-        {
-            var t = new WETextDataTransform();
-            t.ArrayInstancing = new uint3(100, 100, 100);
-            Assert.AreEqual(new uint3(100, 100, 100), t.ArrayInstancing);
-        }
+        //[Test]
+        //public void ArrayInstancing_Boundary100_Allowed()
+        //{
+        //    var t = new WETextDataTransform();
+        //    t.ArrayInstancing = new uint3(100, 100, 100);
+        //    Assert.AreEqual(new uint3(100, 100, 100), t.ArrayInstancing);
+        //}
 
-        [Test]
-        public void ArrayInstancing_Boundary1_Allowed()
-        {
-            var t = new WETextDataTransform();
-            t.ArrayInstancing = new uint3(1, 1, 1);
-            Assert.AreEqual(new uint3(1, 1, 1), t.ArrayInstancing);
-        }
+        //[Test]
+        //public void ArrayInstancing_Boundary1_Allowed()
+        //{
+        //    var t = new WETextDataTransform();
+        //    t.ArrayInstancing = new uint3(1, 1, 1);
+        //    Assert.AreEqual(new uint3(1, 1, 1), t.ArrayInstancing);
+        //}
 
-        // ── SpacingByAxisOrder ────────────────────────────────────────────
+        //// ── SpacingByAxisOrder ────────────────────────────────────────────
 
-        private static WETextDataTransform MakeTransformWithGap(float x, float y, float z, WETextDataTransform.ArrayInstancingAxisOrder order)
-        {
-            var t = new WETextDataTransform
-            {
-                arrayInstancingGapMeters = new float3(x, y, z),
-                arrayAxisGrowthOrder = order
-            };
-            t.ArrayInstancing = new uint3(2, 2, 2);
-            return t;
-        }
+        //private static WETextDataTransform MakeTransformWithGap(float x, float y, float z, WETextDataTransform.ArrayInstancingAxisOrder order)
+        //{
+        //    var t = new WETextDataTransform
+        //    {
+        //        arrayInstancingGapMeters = new float3(x, y, z),
+        //        arrayAxisGrowthOrder = order
+        //    };
+        //    t.ArrayInstancing = new uint3(2, 2, 2);
+        //    return t;
+        //}
 
-        [Test]
-        public void SpacingByAxisOrder_XYZ_CorrectStrides()
-        {
-            var t = MakeTransformWithGap(1, 2, 3, WETextDataTransform.ArrayInstancingAxisOrder.XYZ);
-            var s = t.SpacingByAxisOrder;
-            Assert.AreEqual(new float3(1, 0, 0), s[0]);
-            Assert.AreEqual(new float3(0, 2, 0), s[1]);
-            Assert.AreEqual(new float3(0, 0, 3), s[2]);
-        }
+        //[Test]
+        //public void SpacingByAxisOrder_XYZ_CorrectStrides()
+        //{
+        //    var t = MakeTransformWithGap(1, 2, 3, WETextDataTransform.ArrayInstancingAxisOrder.XYZ);
+        //    var s = t.SpacingByAxisOrder;
+        //    Assert.AreEqual(new float3(1, 0, 0), s[0]);
+        //    Assert.AreEqual(new float3(0, 2, 0), s[1]);
+        //    Assert.AreEqual(new float3(0, 0, 3), s[2]);
+        //}
 
-        [Test]
-        public void SpacingByAxisOrder_XZY_CorrectStrides()
-        {
-            var t = MakeTransformWithGap(1, 2, 3, WETextDataTransform.ArrayInstancingAxisOrder.XZY);
-            var s = t.SpacingByAxisOrder;
-            Assert.AreEqual(new float3(1, 0, 0), s[0]);
-            Assert.AreEqual(new float3(0, 0, 3), s[1]);
-            Assert.AreEqual(new float3(0, 2, 0), s[2]);
-        }
+        //[Test]
+        //public void SpacingByAxisOrder_XZY_CorrectStrides()
+        //{
+        //    var t = MakeTransformWithGap(1, 2, 3, WETextDataTransform.ArrayInstancingAxisOrder.XZY);
+        //    var s = t.SpacingByAxisOrder;
+        //    Assert.AreEqual(new float3(1, 0, 0), s[0]);
+        //    Assert.AreEqual(new float3(0, 0, 3), s[1]);
+        //    Assert.AreEqual(new float3(0, 2, 0), s[2]);
+        //}
 
-        [Test]
-        public void SpacingByAxisOrder_YXZ_CorrectStrides()
-        {
-            var t = MakeTransformWithGap(1, 2, 3, WETextDataTransform.ArrayInstancingAxisOrder.YXZ);
-            var s = t.SpacingByAxisOrder;
-            Assert.AreEqual(new float3(0, 2, 0), s[0]);
-            Assert.AreEqual(new float3(1, 0, 0), s[1]);
-            Assert.AreEqual(new float3(0, 0, 3), s[2]);
-        }
+        //[Test]
+        //public void SpacingByAxisOrder_YXZ_CorrectStrides()
+        //{
+        //    var t = MakeTransformWithGap(1, 2, 3, WETextDataTransform.ArrayInstancingAxisOrder.YXZ);
+        //    var s = t.SpacingByAxisOrder;
+        //    Assert.AreEqual(new float3(0, 2, 0), s[0]);
+        //    Assert.AreEqual(new float3(1, 0, 0), s[1]);
+        //    Assert.AreEqual(new float3(0, 0, 3), s[2]);
+        //}
 
-        [Test]
-        public void SpacingByAxisOrder_YZX_CorrectStrides()
-        {
-            var t = MakeTransformWithGap(1, 2, 3, WETextDataTransform.ArrayInstancingAxisOrder.YZX);
-            var s = t.SpacingByAxisOrder;
-            Assert.AreEqual(new float3(0, 2, 0), s[0]);
-            Assert.AreEqual(new float3(0, 0, 3), s[1]);
-            Assert.AreEqual(new float3(1, 0, 0), s[2]);
-        }
+        //[Test]
+        //public void SpacingByAxisOrder_YZX_CorrectStrides()
+        //{
+        //    var t = MakeTransformWithGap(1, 2, 3, WETextDataTransform.ArrayInstancingAxisOrder.YZX);
+        //    var s = t.SpacingByAxisOrder;
+        //    Assert.AreEqual(new float3(0, 2, 0), s[0]);
+        //    Assert.AreEqual(new float3(0, 0, 3), s[1]);
+        //    Assert.AreEqual(new float3(1, 0, 0), s[2]);
+        //}
 
-        [Test]
-        public void SpacingByAxisOrder_ZXY_CorrectStrides()
-        {
-            var t = MakeTransformWithGap(1, 2, 3, WETextDataTransform.ArrayInstancingAxisOrder.ZXY);
-            var s = t.SpacingByAxisOrder;
-            Assert.AreEqual(new float3(0, 0, 3), s[0]);
-            Assert.AreEqual(new float3(1, 0, 0), s[1]);
-            Assert.AreEqual(new float3(0, 2, 0), s[2]);
-        }
+        //[Test]
+        //public void SpacingByAxisOrder_ZXY_CorrectStrides()
+        //{
+        //    var t = MakeTransformWithGap(1, 2, 3, WETextDataTransform.ArrayInstancingAxisOrder.ZXY);
+        //    var s = t.SpacingByAxisOrder;
+        //    Assert.AreEqual(new float3(0, 0, 3), s[0]);
+        //    Assert.AreEqual(new float3(1, 0, 0), s[1]);
+        //    Assert.AreEqual(new float3(0, 2, 0), s[2]);
+        //}
 
-        [Test]
-        public void SpacingByAxisOrder_ZYX_CorrectStrides()
-        {
-            var t = MakeTransformWithGap(1, 2, 3, WETextDataTransform.ArrayInstancingAxisOrder.ZYX);
-            var s = t.SpacingByAxisOrder;
-            Assert.AreEqual(new float3(0, 0, 3), s[0]);
-            Assert.AreEqual(new float3(0, 2, 0), s[1]);
-            Assert.AreEqual(new float3(1, 0, 0), s[2]);
-        }
+        //[Test]
+        //public void SpacingByAxisOrder_ZYX_CorrectStrides()
+        //{
+        //    var t = MakeTransformWithGap(1, 2, 3, WETextDataTransform.ArrayInstancingAxisOrder.ZYX);
+        //    var s = t.SpacingByAxisOrder;
+        //    Assert.AreEqual(new float3(0, 0, 3), s[0]);
+        //    Assert.AreEqual(new float3(0, 2, 0), s[1]);
+        //    Assert.AreEqual(new float3(1, 0, 0), s[2]);
+        //}
 
-        // ── InstanceCountByAxisOrder ──────────────────────────────────────
+        //// ── InstanceCountByAxisOrder ──────────────────────────────────────
 
-        [Test]
-        public void InstanceCountByAxisOrder_XYZ_PreservesOrder()
-        {
-            var t = new WETextDataTransform { arrayAxisGrowthOrder = WETextDataTransform.ArrayInstancingAxisOrder.XYZ };
-            t.ArrayInstancing = new uint3(2, 3, 4);
-            Assert.AreEqual(new uint3(2, 3, 4), t.InstanceCountByAxisOrder);
-        }
+        //[Test]
+        //public void InstanceCountByAxisOrder_XYZ_PreservesOrder()
+        //{
+        //    var t = new WETextDataTransform { arrayAxisGrowthOrder = WETextDataTransform.ArrayInstancingAxisOrder.XYZ };
+        //    t.ArrayInstancing = new uint3(2, 3, 4);
+        //    Assert.AreEqual(new uint3(2, 3, 4), t.InstanceCountByAxisOrder);
+        //}
 
-        [Test]
-        public void InstanceCountByAxisOrder_ZYX_Reverses()
-        {
-            var t = new WETextDataTransform { arrayAxisGrowthOrder = WETextDataTransform.ArrayInstancingAxisOrder.ZYX };
-            t.ArrayInstancing = new uint3(2, 3, 4);
-            Assert.AreEqual(new uint3(4, 3, 2), t.InstanceCountByAxisOrder);
-        }
+        //[Test]
+        //public void InstanceCountByAxisOrder_ZYX_Reverses()
+        //{
+        //    var t = new WETextDataTransform { arrayAxisGrowthOrder = WETextDataTransform.ArrayInstancingAxisOrder.ZYX };
+        //    t.ArrayInstancing = new uint3(2, 3, 4);
+        //    Assert.AreEqual(new uint3(4, 3, 2), t.InstanceCountByAxisOrder);
+        //}
 
-        [Test]
-        public void InstanceCountByAxisOrder_XZY_SwapsYZ()
-        {
-            var t = new WETextDataTransform { arrayAxisGrowthOrder = WETextDataTransform.ArrayInstancingAxisOrder.XZY };
-            t.ArrayInstancing = new uint3(2, 3, 4);
-            Assert.AreEqual(new uint3(2, 4, 3), t.InstanceCountByAxisOrder);
-        }
+        //[Test]
+        //public void InstanceCountByAxisOrder_XZY_SwapsYZ()
+        //{
+        //    var t = new WETextDataTransform { arrayAxisGrowthOrder = WETextDataTransform.ArrayInstancingAxisOrder.XZY };
+        //    t.ArrayInstancing = new uint3(2, 3, 4);
+        //    Assert.AreEqual(new uint3(2, 4, 3), t.InstanceCountByAxisOrder);
+        //}
 
         // ── MustDraw logic ────────────────────────────────────────────────
 

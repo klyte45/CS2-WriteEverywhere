@@ -138,6 +138,7 @@ namespace BelzontWE
                     {
                         value = part[1..]
                     });
+                    currentType = typeof(string);
                 }
                 else if (part.StartsWith("&"))
                 {

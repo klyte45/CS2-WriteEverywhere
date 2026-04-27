@@ -447,7 +447,7 @@ namespace BelzontWE
                                 int iN = (int)(iIdx / instCounts[0] % instCounts[1]);
                                 int iO = (int)(iIdx / ((long)instCounts[0] * instCounts[1]));
                                 // Mirror EntityProcessing pivotOffset formula exactly
-                                var totalArea = (camTransform.ArrayInstancing - 1) * camTransform.arrayInstancingGapMeters;
+                                var totalArea = (camTransform.ArrayInstancing - 1) * camTransform.arrayInstancingGapMeters.EffectiveValue;
                                 var effectivePivot = camTransform.PivotAsFloat3 - (math.sign(totalArea.xyz) / 2) - new float3(.5f, .5f, .5f);
                                 var pivotOffset = effectivePivot * math.abs(totalArea);
                                 var localOffset = pivotOffset + (float3)(iM * spacings[0] + iN * spacings[1] + iO * spacings[2]);

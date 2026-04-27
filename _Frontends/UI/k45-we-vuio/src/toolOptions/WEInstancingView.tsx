@@ -75,6 +75,8 @@ export const WEInstancingView = (props: { initialPosition?: { x: number, y: numb
     const DropdownFieldAxisOrder = VanillaWidgets.instance.DropdownField<ArrayInstancingAxisOrder>();
     const DropdownFieldPivotZ = VanillaWidgets.instance.DropdownField<WEZPlacementPivot>();
     const DropdownFieldAlignment = VanillaWidgets.instance.DropdownField<WEPlacementAlignment>();
+    const FloatInputStandalone = VanillaWidgets.instance.FloatInputStandalone;
+    const IntInputStandalone = VanillaWidgets.instance.IntInputStandalone;
     const wps = WorldPickerService.instance.bindingList;
 
     useEffect(() => {
@@ -106,17 +108,18 @@ export const WEInstancingView = (props: { initialPosition?: { x: number, y: numb
                         onChange={(x) => { wps.transform.InstanceCount.set(x) }}
                     />}
                 />
-                <VanillaComponentResolver.instance.Int3Input
-                    label={T_arrayInstances}
-                    value={arrayToXYZ(wps.transform.ArrayInstancing.value)}
-                    min={arrayToXYZ([1, 1, 1])}
-                    max={arrayToXYZ([100, 100, 100])}
-                    onChange={(v) => wps.transform.ArrayInstancing.set(xyzToArray(v))}
+                <FormulaeEditRow
+                    formulaeModule="transform" formulaeField="ArrayInstancing" label={T_arrayInstances} defaultInputField={<FocusDisabled>
+                        <IntInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorModule.input} min={1} max={999} value={wps.transform.ArrayInstancing.value[0]} onChange={(x) => wps.transform.ArrayInstancing.set([x, wps.transform.ArrayInstancing.value[1], wps.transform.ArrayInstancing.value[2]])} />
+                        <IntInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorModule.input} min={1} max={999} value={wps.transform.ArrayInstancing.value[1]} onChange={(x) => wps.transform.ArrayInstancing.set([wps.transform.ArrayInstancing.value[0], x, wps.transform.ArrayInstancing.value[2]])} />
+                        <IntInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorModule.input} min={1} max={999} value={wps.transform.ArrayInstancing.value[2]} onChange={(x) => wps.transform.ArrayInstancing.set([wps.transform.ArrayInstancing.value[0], wps.transform.ArrayInstancing.value[1], x])} />
+                    </FocusDisabled>}
                 />
-                <VanillaComponentResolver.instance.Float3Input
-                    label={T_arrayDistanceCm}
-                    value={arrayToXYZ(wps.transform.ArrayInstancingGapMeters.value.map(x => x * 100))}
-                    onChange={(v) => wps.transform.ArrayInstancingGapMeters.set(xyzToArray(v).map(x => x / 100) as any)}
+                <FormulaeEditRow formulaeModule="transform" formulaeField="ArrayInstancingGapMeters" label={T_arrayDistanceCm} defaultInputField={<FocusDisabled>
+                    <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorModule.input} min={1} max={999} value={wps.transform.ArrayInstancingGapMeters.value[0]} onChange={(x) => wps.transform.ArrayInstancingGapMeters.set([x, wps.transform.ArrayInstancingGapMeters.value[1], wps.transform.ArrayInstancingGapMeters.value[2]])} />
+                    <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorModule.input} min={1} max={999} value={wps.transform.ArrayInstancingGapMeters.value[1]} onChange={(x) => wps.transform.ArrayInstancingGapMeters.set([wps.transform.ArrayInstancingGapMeters.value[0], x, wps.transform.ArrayInstancingGapMeters.value[2]])} />
+                    <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorModule.input} min={1} max={999} value={wps.transform.ArrayInstancingGapMeters.value[2]} onChange={(x) => wps.transform.ArrayInstancingGapMeters.set([wps.transform.ArrayInstancingGapMeters.value[0], wps.transform.ArrayInstancingGapMeters.value[1], x])} />
+                </FocusDisabled>}
                 />
                 <EditorItemRow label={T_arrayGrowthOrder}>
                     <DropdownFieldAxisOrder

@@ -87,11 +87,11 @@ namespace BelzontWE
                     var registeredGuid = targetTemplate.Guid;
                     targetTemplate = targetTemplate.Clone();
 
-                    var targetSize = transformData.InstanceCountFn.EffectiveValue < 0 ? math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 256) : math.min(256, (uint)transformData.InstanceCountFn.EffectiveValue);
+                    var targetSize = transformData.InstanceCountFn.EffectiveValue < 0 ? math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 256) : math.min(256, transformData.InstanceCountFn.EffectiveValue);
                     if (targetSize == 0) goto end;
                     var instancingCount = (uint3)math.min(transformData.InstanceCountByAxisOrder, math.ceil(targetSize / new float3(1, transformData.InstanceCountByAxisOrder[0], transformData.InstanceCountByAxisOrder[0] * transformData.InstanceCountByAxisOrder[1])));
                     var spacingOffsets = transformData.SpacingByAxisOrder;
-                    var totalArea = (transformData.ArrayInstancing - 1) * transformData.arrayInstancingGapMeters;
+                    var totalArea = (transformData.ArrayInstancing - 1) * transformData.arrayInstancingGapMeters.EffectiveValue;
 
                     var effectivePivot = transformData.PivotAsFloat3 - (math.sign(totalArea.xyz) / 2) - .5f;
 
@@ -137,7 +137,7 @@ namespace BelzontWE
         /// Calculates spacing and offset for array instancing based on alignment settings.
         /// Used for justified, centered, and right-aligned layout patterns.
         /// </summary>
-        internal static void GetSpacingAndOffset(uint totalSlotsRow, uint originalTotalSlots, WEPlacementAlignment axisAlignment, ref float3 spacing, out float3 offset)
+        internal static void GetSpacingAndOffset(uint totalSlotsRow, int originalTotalSlots, WEPlacementAlignment axisAlignment, ref float3 spacing, out float3 offset)
         {
             offset = float3.zero;
             if (totalSlotsRow <= originalTotalSlots && axisAlignment != WEPlacementAlignment.Left)
