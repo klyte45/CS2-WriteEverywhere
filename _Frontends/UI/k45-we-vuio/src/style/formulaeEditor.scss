@@ -1,4 +1,3 @@
-
 @import "@klyte45/vuio-commons/src/styles/buttonsStyles";
 
 @mixin icon-based-innerline {
@@ -50,12 +49,14 @@
     --iconBwCoUI: url("coui://uil/Standard/GearOnSheet.svg");
     --iconBwSystem: url("coui://uil/Standard/Gear.svg");
     --iconBwUnity: url("assetdb://gameui/Media/Toolchain/Unity.svg");
+    --iconBwBuiltinFormulae: url("coui://we.k45/UI/images/Function.svg");
 
     --colorMod: #8a6b0f;
     --colorCoUI: #5c9900;
     --colorSystem: #5500ff;
     --colorUnity: #cc33bf;
     --colorGame: #0099ff;
+    --colorBuiltinFormulae: #3b555c;
 }
 
 .k45_we_formulaeEditor {
@@ -512,6 +513,13 @@
         ---selfColor: var(--colorUnity);
         background-image: var(--iconBwUnity);
     }
+
+    .k45_we_formulaeDialog_btn_BuiltinFormulae {
+        ---selfColor: var(--colorBuiltinFormulae);
+        background-image: var(--iconBwBuiltinFormulae);
+        width: 100%;
+        background-color: #426d79;
+    }
 }
 
 
@@ -619,6 +627,11 @@
     .k45_we_formulaeDialog_tabRow_navigationPathPart_package {
         ---selfColor: var(--colorPackage);
         background-image: var(--iconBwPackage);
+    }
+
+    .k45_we_formulaeDialog_tabRow_navigationPathPart_BuiltinFormulae {
+        ---selfColor: var(--colorBuiltinFormulae);
+        background-image: var(--iconBwBuiltinFormulae);
     }
 
 }

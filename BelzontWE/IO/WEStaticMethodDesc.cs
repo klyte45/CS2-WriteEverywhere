@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using Colossal.Reflection;
+using System.Reflection;
 
 namespace BelzontWE
 {
@@ -11,6 +12,8 @@ namespace BelzontWE
         public WEMemberSource source;
         public string modUrl;
         public string modName;
+        public string weCategory;
+        public string weTooltip;
         public string returnTypeDll;
         public string returnType;
         public bool supportsMathOp;
@@ -18,7 +21,24 @@ namespace BelzontWE
 
         public static WEStaticMethodDesc From(MethodInfo mi)
         {
-            var source = WEMemberSourceExtensions.GetSource(mi.DeclaringType.Assembly, out var modUrl, out var modName, out var dllName);
+            string modUrl = null;
+            string modName = null;
+            string dllName;
+            string weCategory = null;
+            string weTooltip = null;
+            WEMemberSource source;
+            if (mi.TryGetAttribute<WEFormulaAttribute>(out var attr) && mi.DeclaringType.TryGetAttribute<WEBuiltinFunctionAttribute>(out var attrBtn))
+            {
+                source = WEMemberSource.BuiltinFormulae;
+                weTooltip = attr.Description;
+                weCategory = attrBtn.Category;
+                dllName = mi.DeclaringType.Assembly.GetName().Name;
+            }
+            else
+            {
+                source = WEMemberSourceExtensions.GetSource(mi.DeclaringType.Assembly, out modUrl, out modName, out dllName);
+            }
+
             var className = mi.DeclaringType.FullName;
             var methodName = mi.Name;
             var returnType = mi.ReturnType.FullName;
@@ -32,6 +52,8 @@ namespace BelzontWE
                 source = source,
                 modUrl = modUrl,
                 modName = modName,
+                weTooltip = weTooltip,
+                weCategory = weCategory,
                 supportsMathOp = mi.ReturnType.IsIntegerType() || mi.ReturnType.IsDecimalType()
             };
         }

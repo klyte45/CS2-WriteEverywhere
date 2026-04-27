@@ -1,5 +1,6 @@
 import { LocElementType, replaceArgs, VanillaComponentResolver, VanillaWidgets } from "@klyte45/vuio-commons";
 import classNames from "classnames";
+import { Engine } from "cohtml/cohtml";
 import { FocusDisabled } from "cs2/input";
 import { ObjectTyped } from "object-typed";
 import { useEffect, useState } from "react";
@@ -7,7 +8,9 @@ import { FormulaeService } from "services/FormulaeService";
 import { EnforceType, getClassNameFrom, getDllNameFrom, WEArrayIndexingDesc, WEComponentTypeDesc, WEDescType, WEFormulaeElement, WEFormulaeMathOperation, WEMathOperationDesc, WEMemberType, WEStringDesc } from "services/WEFormulaeElement";
 import { IndexedComponentListing, IndexedStaticMethodsListing } from "services/WorldPickerService";
 import { breakIntoFlexComponents } from "utils/breakIntoFlexComponents";
-import { translate } from "utils/translate";
+import { translate, translate_formulaCategory } from "utils/translate";
+
+const engine = (window as any).engine as Engine;
 
 type Props = {
     callback: (appendResult?: WEFormulaeElement | WEArrayIndexingDesc | WEMathOperationDesc | WEStringDesc) => any,
@@ -16,7 +19,7 @@ type Props = {
 }
 
 enum WEDescTypeUI {
-    CURRENT_COMPONENT = "CURRENT_COMPONENT"
+    CURRENT_COMPONENT = "CURRENT_COMPONENT",
 }
 
 
@@ -103,7 +106,6 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
         buttons={<div className="k45_dialogBtns">
             {(optionsMembers || optionsStaticMethods || optionsComponentGetter) && <button className="positiveBtn"
                 onClick={() => callback(getCurrentSelectionObject())} disabled={!isValidSelection()}>Select</button>}
-            <button className="negativeBtn" onClick={() => callback()}>Back</button>
         </div>}
     >
         {!ready
@@ -124,7 +126,7 @@ export const WEAddFormulaeStageDialog = ({ callback, referenceElement, formulaeS
                         <button className="k45_we_formulaeDialog_tabRow_resetNavigation" onClick={() => setSelectedPath([])} />
                         {selectedPath.map((x, i, a) => <>
                             <div className="k45_we_formulaeDialog_tabRow_navSeparator" />
-                            <button className={"k45_we_formulaeDialog_tabRow_navigationPathPart_" + selectClassname(i, x, selectedTab == WEDescType.COMPONENT)} onClick={() => setSelectedPath(a.slice(0, i + 1) as any)} >{i == 0 ? translate("formulaeEditor.addDialog.WEMemberSource_" + x) : x}</button>
+                            <button className={"k45_we_formulaeDialog_tabRow_navigationPathPart_" + selectClassname(i, x, selectedTab == WEDescType.COMPONENT)} onClick={() => setSelectedPath(a.slice(0, i + 1) as any)} >{getLabel("" + x, i, selectedPath)}</button>
                         </>)}
                     </div>}
                     <EditorScrollable className={classNames("k45_we_formulaeDialog_content", selectedElement && "anySelected")}>
@@ -296,8 +298,21 @@ const selectClassname = (level: number, value: number | string, isPackage: boole
             case "2": return "CoUI"
             case "3": return "System"
             case "4": return "Mod"
+            case "5": return "BuiltinFormulae"
+            case "-1": return "Unknown"
         }
     }
+}
+
+function getLabel(key: string, level: number, currentNavigation: (string | number)[]) {
+    if (level == 0) return translate("formulaeEditor.addDialog.WEMemberSource_" + key);
+    if (currentNavigation[0] == "5") {
+        switch (level) {
+            case 1: return translate_formulaCategory(key, undefined, key);
+            case 2: return translate_formulaCategory("" + currentNavigation[1], key, key);
+        }
+    }
+    return key;
 }
 const WEPaginateOverResultObj = ({ source, currentNavigation, selectedElement, setNavigation, setElement, lastLevelIsPackage }: PaginateOverResultProps) => {
     let targetList: RecursiveFormulaeElementPage | WEFormulaeElement[] = source;
@@ -310,10 +325,18 @@ const WEPaginateOverResultObj = ({ source, currentNavigation, selectedElement, s
     if (!targetList) return <></>;
     if (Array.isArray(targetList)) return <>{printWithTooltip(targetList, selectedElement, setElement)}</>;
 
-    return <>{Object.keys(targetList).map(x => <WEFormulaeItemBtn item={x}
+
+    const keys = Object.keys(targetList).map(x => ({ id: x, label: getLabel(x, level, currentNavigation) })).sort((a, b) => {
+        if (level == 0) {
+            if (a.id == "5") return -1;
+            if (b.id == "5") return 1;
+        }
+        return a.label.localeCompare(b.label);
+    });
+    return <>{keys.map(x => <WEFormulaeItemBtn item={x.id}
         isSelected={false}
         onSelect={(x) => setNavigation(currentNavigation.concat([x]))}
-        displayName={level == 0 ? translate("formulaeEditor.addDialog.WEMemberSource_" + x) : x}
-        stringClassName={selectClassname(level, x, lastLevelIsPackage)}
+        displayName={x.label}
+        stringClassName={selectClassname(level, x.id, lastLevelIsPackage)}
     />)}</>
 }

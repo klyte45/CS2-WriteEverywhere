@@ -5,7 +5,6 @@ import { TextureAtlasService } from "services/TextureAtlasService";
 import { WESimulationTextType } from "services/WEFormulaeElement";
 import { WorldPickerService } from "services/WorldPickerService";
 import { translate } from "utils/translate";
-import i_formulae from "../images/Function.svg";
 import "../style/floatingPanels.scss";
 import { FormulaeEditorRowFloat, FormulaeEditRow } from "../common/FormulaeEditRow";
 import { ObjectTyped } from "object-typed";
@@ -56,7 +55,6 @@ export const WETextValueSettings = (props: { initialPosition?: { x: number, y: n
             CustomMeshService.listAvailableLibraries()
         ]).then(([libs, mods, customMeshList]) => {
             setAtlases([...Object.keys(libs ?? {}), ...mods.flatMap(x => x.Atlases).sort((a, b) => a.localeCompare(b))])
-            console.log(customMeshList)
             setMeshes([{ displayName: { __Type: LocElementType.String, value: T_defaultPlane }, value: "" }].concat(Object.entries(customMeshList ?? {})
                 .map(([k, v]) => ({
                     displayName: { __Type: LocElementType.String, value: k },

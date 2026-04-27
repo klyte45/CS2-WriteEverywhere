@@ -1,4 +1,3 @@
-using Belzont.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,11 +33,11 @@ namespace BelzontWE
                 .ToDictionary(
                     srcGrouping => (int)srcGrouping.Key, srcGrouping => srcGrouping
                     .OrderBy(x => x.dllName)
-                    .GroupBy(y => y.dllName)
+                    .GroupBy(x => x.dllName)
                     .ToDictionary(
                         dllGrouping => dllGrouping.Key, dllGrouping => dllGrouping
-                        .OrderBy(x => x.className)
-                        .GroupBy(z => z.className)
+                        .OrderBy(x => x.source == WEMemberSource.BuiltinFormulae ? x.weCategory : x.className)
+                        .GroupBy(x => x.source == WEMemberSource.BuiltinFormulae ? x.weCategory : x.className)
                         .ToDictionary(classGrouping => classGrouping.Key, classGrouping => classGrouping.OrderBy(x => x.methodName).ToArray())
                     )
                 );
