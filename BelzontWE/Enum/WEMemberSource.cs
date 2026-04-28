@@ -11,7 +11,7 @@ namespace BelzontWE
         CoUI,
         System,
         Mod,
-        BuiltinFormulae,
+        Formulae,
         Unknown = ~0
     }
     public static class WEMemberSourceExtensions

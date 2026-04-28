@@ -383,8 +383,6 @@ const WEWorldPickerToolPanel = () => {
 }
 
 const WEKeysHelpWindow = ({ onClose }: { onClose: () => void }) => {
-    const T_keysHelp = translate("toolOption.keysHelp.tooltip");
-    const T_keysHelpMove = translate("toolOption.keysHelp.move");
 
     const PanelBackdrop = VanillaComponentResolver.instance.PanelBackdrop;
 

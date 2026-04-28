@@ -29,10 +29,16 @@ namespace BelzontWE
             WEMemberSource source;
             if (mi.TryGetAttribute<WEFormulaAttribute>(out var attr) && mi.DeclaringType.TryGetAttribute<WEBuiltinFunctionAttribute>(out var attrBtn))
             {
-                source = WEMemberSource.BuiltinFormulae;
+                source = WEMemberSource.Formulae;
                 weTooltip = attr.Description;
                 weCategory = attrBtn.Category;
                 dllName = mi.DeclaringType.Assembly.GetName().Name;
+            }
+            else if (mi.DeclaringType.Namespace.EndsWith(".Formulas") || mi.DeclaringType.Namespace.EndsWith(".Formulaes"))
+            {
+                source = WEMemberSource.Formulae;
+                dllName = mi.DeclaringType.Assembly.GetName().Name;
+                weCategory = mi.DeclaringType.Name;
             }
             else
             {

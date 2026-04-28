@@ -36,8 +36,8 @@ namespace BelzontWE
                     .GroupBy(x => x.dllName)
                     .ToDictionary(
                         dllGrouping => dllGrouping.Key, dllGrouping => dllGrouping
-                        .OrderBy(x => x.source == WEMemberSource.BuiltinFormulae ? x.weCategory : x.className)
-                        .GroupBy(x => x.source == WEMemberSource.BuiltinFormulae ? x.weCategory : x.className)
+                        .OrderBy(x => x.source == WEMemberSource.Formulae ? x.weCategory : x.className)
+                        .GroupBy(x => x.source == WEMemberSource.Formulae ? x.weCategory : x.className)
                         .ToDictionary(classGrouping => classGrouping.Key, classGrouping => classGrouping.OrderBy(x => x.methodName).ToArray())
                     )
                 );

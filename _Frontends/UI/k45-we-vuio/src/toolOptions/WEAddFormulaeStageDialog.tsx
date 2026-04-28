@@ -310,9 +310,19 @@ function getLabel(key: string, level: number, currentNavigation: (string | numbe
         switch (level) {
             case 1: return translate_formulaCategory(key, undefined, key);
             case 2: return translate_formulaCategory("" + currentNavigation[1], key, key);
+            case 3: return translate_formulaCategory("" + currentNavigation[1], currentNavigation[2] + "." + key, key);
         }
     }
     return key;
+}
+function getTooltip(key: string, level: number, currentNavigation: (string | number)[]) {
+    if (currentNavigation[0] == "5") {
+        switch (level) {
+            case 2: return translate_formulaCategory("" + currentNavigation[0], key + "_tooltip", key);
+            case 3: return translate_formulaCategory("" + currentNavigation[1], currentNavigation[2] + "." + key + "_tooltip", "");
+        }
+    }
+    return "";
 }
 const WEPaginateOverResultObj = ({ source, currentNavigation, selectedElement, setNavigation, setElement, lastLevelIsPackage }: PaginateOverResultProps) => {
     let targetList: RecursiveFormulaeElementPage | WEFormulaeElement[] = source;
@@ -333,10 +343,16 @@ const WEPaginateOverResultObj = ({ source, currentNavigation, selectedElement, s
         }
         return a.label.localeCompare(b.label);
     });
-    return <>{keys.map(x => <WEFormulaeItemBtn item={x.id}
-        isSelected={false}
-        onSelect={(x) => setNavigation(currentNavigation.concat([x]))}
-        displayName={x.label}
-        stringClassName={selectClassname(level, x.id, lastLevelIsPackage)}
-    />)}</>
+    return <>{keys.map(x => {
+        const tooltip = getTooltip(x.id, level, currentNavigation);
+        const btn = <WEFormulaeItemBtn item={x.id}
+            isSelected={false}
+            onSelect={(x) => setNavigation(currentNavigation.concat([x]))}
+            displayName={x.label}
+            stringClassName={selectClassname(level, x.id, lastLevelIsPackage)} />;
+        if (tooltip) {
+            return <VanillaComponentResolver.instance.Tooltip tooltip={tooltip}>{btn}</VanillaComponentResolver.instance.Tooltip>
+        }
+        return btn;
+    })}</>
 }

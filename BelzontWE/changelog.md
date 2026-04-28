@@ -1,4 +1,4 @@
-# v2.0.0r1 (29-APR-26)
+# v2.0.0r2 (29-APR-26)
 - **GameProp layout type**: a new "GameProp" content type lets WE nodes spawn real in-game props directly;
   - The editor provides a searchable, localized prop-picker dropdown (filter by prefab name or display name), formula support in the prefab name field, and a park-bench icon in the hierarchy tree
   - Spawned props follow their parent entity's transforms, support array instancing across X/Y/Z axes, and automatically inherit non-local parent WE variables so formula-driven prop appearances work without duplicate variable definitions
@@ -9,11 +9,21 @@
   - Unchanged atlases are detected by checksum and reload instantly without reprocessing
   - Optional virtual-texture (VT) streaming is supported for further GPU memory savings (enabled by default, recommended); a new setting controls whether virtual-texture streaming is used for image atlases
   - Maximum single-image size raised to **2046 × 2046 px**; maximum atlas size raised to **8196 × 8196 px**
-- **Formula authoring**: 
+- **Formulas**:   
+  - Added **$ct** variable auto generated along with the existing **$idx** for array instances (placeholders and game props only)
+  - Now instancing spacing and counting settings can be driven by formulas, allowing to dynamically changing the disposition of instances
+  - New **Formulas** category in the formula item addition popup, making all classes under namespaces ending with `.Formulas` or `.Formulaes` available for selection; It supports a display name for the DLL itself and the classes and also a description for each method (shown in a tooltip) by using the i18n patterns:
+    - `K45::WE.formulaCategory[<DLLName>]` for the DLL display name
+    - `K45::WE.formulaCategory[<DLLName>.<ClassName>]` for the class display name
+    - `K45::WE.formulaCategory[<DLLName>.<ClassName>_tooltip]` for the class description
+    - `K45::WE.formulaCategory[<DLLName>.<ClassName>.<MethodName>]` for the method display name
+    - `K45::WE.formulaCategory[<DLLName>.<ClassName>.<MethodName>_tooltip]` for the method description
+  - Added localization formulas
   - Module-check expressions now support logical operators (`&&` / `||`)
   - Module fonts can be referenced directly by name at dropdown
   - Train-like vehicles expose a raw car-number formula
   - Added **Initial Text** formula type that can be used to set the initial value of a formula instead of using the selected Entity (useful for i18n getters)
+- Added a new information button in the Tool Panel that display a quick reference of the key shortcuts from the mod while editing a layout
 - FIXED: WE layouts no longer attempt to load before the game's Virtual Texturing system is ready, preventing blank or missing image atlases introduced by certain game updates
 - FIXED: Atlas image rendering when an emissive, control, or normal map texture is absent now falls back to the main image instead of showing a broken-texture result
 - FIXED: Child layout node references were not cleaned up when the parent entity was deleted
