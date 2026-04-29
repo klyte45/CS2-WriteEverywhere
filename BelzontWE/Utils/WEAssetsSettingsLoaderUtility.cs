@@ -24,7 +24,6 @@ namespace BelzontWE.Utils
 
         public static bool ReloadAssetsSettings()
         {
-            if (GameManager.instance.isGameLoading || !WriteEverywhereCS2Mod.IsInitializationComplete) return false;
             if (Cooldown-- > 0)
             {
                 return false;

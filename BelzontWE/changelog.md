@@ -1,6 +1,7 @@
-# v2.0.0r4 (29-APR-26)
+# v2.0.0r5 (29-APR-26)
 
 - Deferring the atlases load to after vanilla VT loading to reduce workload when lauching the game.
+- Fixed asset layouts not being loaded on first time.
 
 ## FROM v2.0.0r2 (29-APR-26)
 - **GameProp layout type**: a new "GameProp" content type lets WE nodes spawn real in-game props directly;

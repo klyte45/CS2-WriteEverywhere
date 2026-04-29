@@ -1,3 +1,4 @@
+using BelzontWE.Utils;
 using Game.SceneFlow;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -15,7 +16,7 @@ namespace BelzontWE
         /// Checks if the game is in a loading or initializing state
         /// </summary>
         internal bool IsGameLoadingOrInitializing =>
-            GameManager.instance.isGameLoading || !WriteEverywhereCS2Mod.IsInitializationComplete;
+            GameManager.instance.isGameLoading || !WriteEverywhereCS2Mod.IsInitializationComplete || !WEAssetsSettingsLoaderUtility.RanAtLeastOnce;
 
         /// <summary>
         /// Flag indicating templates have changed and entities need updating
