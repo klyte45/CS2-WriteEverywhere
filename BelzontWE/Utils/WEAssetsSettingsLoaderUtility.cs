@@ -1,6 +1,7 @@
 ﻿using Belzont.Utils;
 using BelzontWE.Sprites;
 using Colossal.IO.AssetDatabase;
+using Game.SceneFlow;
 using Game.UI.Localization;
 using System.Collections.Generic;
 using System.IO;
@@ -20,13 +21,15 @@ namespace BelzontWE.Utils
         private static int Cooldown = 0;
         public static bool RanAtLeastOnce { get; private set; } = false;
 
+
         public static bool ReloadAssetsSettings()
         {
+            if (GameManager.instance.isGameLoading || !WriteEverywhereCS2Mod.IsInitializationComplete) return false;
             if (Cooldown-- > 0)
             {
                 return false;
             }
-            var itemsWithLayouts = AssetDatabase.global.GetAssets<PrefabAsset>().GroupBy(x => x.path).Where(x=>!loadedAssets.Contains(x.Key)).Select(x => x.First()).Where(x =>
+            var itemsWithLayouts = AssetDatabase.global.GetAssets<PrefabAsset>().GroupBy(x => x.path).Where(x => !loadedAssets.Contains(x.Key)).Select(x => x.First()).Where(x =>
             {
                 if (!(x.uri.Contains("://user/") || x.uri.Contains("://paradoxmods/"))) return false;
                 var weRootFolder = Path.Combine(Path.GetDirectoryName(x.path), WE_FOLDER_ROOT);

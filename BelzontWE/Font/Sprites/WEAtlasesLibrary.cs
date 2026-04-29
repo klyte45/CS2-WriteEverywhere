@@ -3,6 +3,7 @@ using Belzont.Utils;
 using BelzontWE.Commons.Utils.AssetPipeline;
 using BelzontWE.Font;
 using BelzontWE.Layout;
+using Colossal.Core;
 using Colossal.IO.AssetDatabase;
 using Colossal.IO.AssetDatabase.VirtualTexturing;
 using Colossal.OdinSerializer.Utilities;
@@ -57,7 +58,12 @@ namespace BelzontWE.Sprites
             KFileUtils.EnsureFolderCreation(CACHED_VT_TILES_FOLDER);
             KFileUtils.EnsureFolderCreation(CACHED_VT_TILES_CITY_FOLDER);
             WEAtlasVTUtils.CleanCityVTTileFileDirectory();
-            actionQueue.Enqueue(() => LoadImagesFromLocalFolders());
+            MainThreadDispatcher.RegisterUpdater(() =>
+            {
+                if (GameManager.instance.isGameLoading || !WriteEverywhereCS2Mod.IsInitializationComplete) return false;
+                actionQueue.Enqueue(() => LoadImagesFromLocalFolders());
+                return true;
+            });
             m_atlasUsageQuery = GetEntityQuery(new EntityQueryDesc[]
               {
                     new ()

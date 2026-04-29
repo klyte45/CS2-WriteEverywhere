@@ -1,4 +1,8 @@
-# v2.0.0r2 (29-APR-26)
+# v2.0.0r4 (29-APR-26)
+
+- Deferring the atlases load to after vanilla VT loading to reduce workload when lauching the game.
+
+## FROM v2.0.0r2 (29-APR-26)
 - **GameProp layout type**: a new "GameProp" content type lets WE nodes spawn real in-game props directly;
   - The editor provides a searchable, localized prop-picker dropdown (filter by prefab name or display name), formula support in the prefab name field, and a park-bench icon in the hierarchy tree
   - Spawned props follow their parent entity's transforms, support array instancing across X/Y/Z axes, and automatically inherit non-local parent WE variables so formula-driven prop appearances work without duplicate variable definitions
