@@ -116,9 +116,9 @@ export const WEInstancingView = (props: { initialPosition?: { x: number, y: numb
                     </FocusDisabled>}
                 />
                 <FormulaeEditRow formulaeModule="transform" formulaeField="ArrayInstancingGapMeters" label={T_arrayDistanceCm} defaultInputField={<FocusDisabled>
-                    <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorModule.input} min={1} max={999} value={wps.transform.ArrayInstancingGapMeters.value[0]} onChange={(x) => wps.transform.ArrayInstancingGapMeters.set([x, wps.transform.ArrayInstancingGapMeters.value[1], wps.transform.ArrayInstancingGapMeters.value[2]])} />
-                    <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorModule.input} min={1} max={999} value={wps.transform.ArrayInstancingGapMeters.value[1]} onChange={(x) => wps.transform.ArrayInstancingGapMeters.set([wps.transform.ArrayInstancingGapMeters.value[0], x, wps.transform.ArrayInstancingGapMeters.value[2]])} />
-                    <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorModule.input} min={1} max={999} value={wps.transform.ArrayInstancingGapMeters.value[2]} onChange={(x) => wps.transform.ArrayInstancingGapMeters.set([wps.transform.ArrayInstancingGapMeters.value[0], wps.transform.ArrayInstancingGapMeters.value[1], x])} />
+                    <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorModule.input} min={0} max={999} value={wps.transform.ArrayInstancingGapMeters.value[0]} onChange={(x) => wps.transform.ArrayInstancingGapMeters.set([x, wps.transform.ArrayInstancingGapMeters.value[1], wps.transform.ArrayInstancingGapMeters.value[2]])} />
+                    <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorModule.input} min={0} max={999} value={wps.transform.ArrayInstancingGapMeters.value[1]} onChange={(x) => wps.transform.ArrayInstancingGapMeters.set([wps.transform.ArrayInstancingGapMeters.value[0], x, wps.transform.ArrayInstancingGapMeters.value[2]])} />
+                    <FloatInputStandalone style={{ flexGrow: 1, flexShrink: 1 }} className={editorModule.input} min={0} max={999} value={wps.transform.ArrayInstancingGapMeters.value[2]} onChange={(x) => wps.transform.ArrayInstancingGapMeters.set([wps.transform.ArrayInstancingGapMeters.value[0], wps.transform.ArrayInstancingGapMeters.value[1], x])} />
                 </FocusDisabled>}
                 />
                 <EditorItemRow label={T_arrayGrowthOrder}>

@@ -145,7 +145,7 @@ namespace BelzontWE
             ResetScreenFormulaeValue(transform.arrayInstancingGapMeters.Formulae, ArrayInstancingGapMetersFormulaeStr, ArrayInstancingGapMetersFormulaeCompileResult, ArrayInstancingGapMetersFormulaeCompileResultErrorArgs);
             InstanceCount.Value = transform.DefaultInstanceCount;
             ArrayInstancing.Value = transform.arrayInstancingCount.defaultValue;
-            ArrayInstancingGapMeters.Value = transform.arrayInstancingCount.defaultValue;
+            ArrayInstancingGapMeters.Value = transform.arrayInstancingGapMeters.defaultValue;
         }
     }
 }
