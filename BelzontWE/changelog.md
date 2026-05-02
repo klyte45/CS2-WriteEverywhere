@@ -1,7 +1,8 @@
-# v2.0.0r8 (02-MAY-26)
+# v2.0.0r9 (02-MAY-26)
 
 - Fixed issue that prevented indexes to be passed to children context.
 - Fixed wrong field set when editing instancing gap meter values.
+- Fixed serialization for instances count
 
 ## FROM v2.0.0r6 (29-APR-26)
 

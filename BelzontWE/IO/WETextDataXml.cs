@@ -160,7 +160,7 @@ namespace BelzontWE
 
         public class TransformXml : ISerializable
         {
-            private const int CURRENT_VERSION = 5;
+            private const int CURRENT_VERSION = 6;
             public Vector3Xml offsetPosition = new();
             public Vector3Xml offsetRotation = new();
             public Vector3Xml scale = (Vector3Xml)Vector3.one;
@@ -222,7 +222,7 @@ namespace BelzontWE
                 writer.Write(pivot);
                 writer.Write(useFormulaeToCheckIfDraw);
                 writer.WriteNullCheck(mustDraw);
-                writer.Write((Vector3)arrayInstances);
+                writer.WriteNullCheck(arrayInstancesData);
                 writer.WriteNullCheck(arraySpacingData);
                 writer.Write(arrayAxisOrder);
                 writer.WriteNullCheck(instanceCount);
@@ -265,7 +265,14 @@ namespace BelzontWE
 
 
                     reader.Read(out float3 arrayInstances);
-                    this.arrayInstances = (Vector3Xml)(Vector3)arrayInstances;
+                    if (version <= 5)
+                    {
+                        this.arrayInstances = (Vector3Xml)(Vector3)arrayInstances;
+                    }
+                    else
+                    {
+                        reader.ReadNullCheck(out arrayInstancesData);
+                    }
                     if (version <= 4)
                     {
                         reader.Read(out float3 arraySpacing);
