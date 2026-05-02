@@ -528,6 +528,7 @@ namespace BelzontWE
                                     var layoutVars = new FixedString512Bytes(inheritableVars);
                                     layoutVars.Append(counterStartString);
                                     layoutVars.Append(updaterBuff.Length);
+                                    layoutVars.Append(WEConstants.VARIABLE_ITEM_SEPARATOR);
                                     layoutVars.Append(indexStartString);
                                     layoutVars.Append(i);
                                     layoutVars.Append(WEConstants.VARIABLE_ITEM_SEPARATOR);

@@ -1,4 +1,8 @@
-# v2.0.0r6 (29-APR-26)
+# v2.0.0r7 (02-MAY-26)
+
+- Fixed issue that prevented indexes to be passed to children context.
+
+## FROM v2.0.0r6 (29-APR-26)
 
 - Deferring the atlases load to after vanilla VT loading to reduce workload when lauching the game.
 - Fixed asset layouts not being loaded on first time.
