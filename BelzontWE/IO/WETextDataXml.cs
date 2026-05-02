@@ -264,9 +264,9 @@ namespace BelzontWE
                     reader.ReadNullCheck(out mustDraw);
 
 
-                    reader.Read(out float3 arrayInstances);
                     if (version <= 5)
                     {
+                        reader.Read(out float3 arrayInstances);
                         this.arrayInstances = (Vector3Xml)(Vector3)arrayInstances;
                     }
                     else
