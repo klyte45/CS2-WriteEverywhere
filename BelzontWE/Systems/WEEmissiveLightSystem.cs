@@ -1,10 +1,12 @@
 using Belzont.Interfaces;
 using Colossal.Entities;
+using Game.Rendering;
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
+using LightUnit = UnityEngine.Rendering.HighDefinition.LightUnit;
 
 namespace BelzontWE
 {
@@ -84,25 +86,34 @@ namespace BelzontWE
                     entry = CreateLightEntry(item.textDataEntity, mesh.TextType);
                 }
 
+                var baseMatrix = item.transformMatrix;
+                if (EntityManager.HasComponent<InterpolatedTransform>(item.geometryEntity))
+                {
+                    var transformInterpolated = EntityManager.GetComponentData<InterpolatedTransform>(item.geometryEntity);
+                    var interpolatedMatrix = Matrix4x4.TRS(transformInterpolated.m_Position, transformInterpolated.m_Rotation, Vector3.one);
+                    baseMatrix = interpolatedMatrix * item.transformMatrix;
+                }
+
+
                 // Update world position and rotation from the pre-culled transform matrix.
-                var col = item.transformMatrix.GetColumn(3);
+                var col = baseMatrix.GetColumn(3);
                 entry.go.transform.SetPositionAndRotation(
                     new Vector3(col.x, col.y, col.z),
-                    item.transformMatrix.rotation);
+                    baseMatrix.rotation);
 
                 // Compute world-space dimensions: mesh bounds × matrix scale.
                 // WhiteCube stores a flat default in Bounds.z; use known unit-cube extents instead.
                 var matScale = new Vector3(
-                    item.transformMatrix.GetColumn(0).magnitude,
-                    item.transformMatrix.GetColumn(1).magnitude,
-                    item.transformMatrix.GetColumn(2).magnitude);
+                    baseMatrix.GetColumn(0).magnitude,
+                    baseMatrix.GetColumn(1).magnitude,
+                    baseMatrix.GetColumn(2).magnitude);
                 bool isWhiteCube = mesh.TextType == WESimulationTextType.WhiteCube;
                 float width = (mesh.Bounds.max.x - mesh.Bounds.min.x) * matScale.x;
                 float height = (mesh.Bounds.max.y - mesh.Bounds.min.y) * matScale.y;
                 float depth = (mesh.Bounds.max.z - mesh.Bounds.min.z) * matScale.z;
 
                 entry.hdLight.shapeWidth = math.abs(width);
-                entry.hdLight.shapeHeight = math.abs(height);                
+                entry.hdLight.shapeHeight = math.abs(height);
 
                 // Sync color – use emissive color so the light tint matches the surface glow.
                 var emissiveColor = materialData.EmissiveColorEffective;
@@ -116,7 +127,7 @@ namespace BelzontWE
                 if (isWhiteCube)
                     entry.light.range = Mathf.Max(depth, 0.01f);
                 else
-                    entry.light.range = new Vector2(width, height).magnitude * 3f;
+                    entry.light.range = new Vector2(width, height).magnitude / math.max(materialData.EmissiveExposureWeight, 0.0001f);
 
                 if (!entry.go.activeSelf) entry.go.SetActive(true);
             }

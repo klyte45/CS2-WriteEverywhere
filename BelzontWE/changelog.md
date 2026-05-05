@@ -1,4 +1,8 @@
-# v2.0.0r11 (02-MAY-26)
+# v2.0.0r12 (05-MAY-26)
+
+- Fixed global lights not working on moveable objects.
+
+## FROM v2.0.0r11 (02-MAY-26)
 
 - Fixed issue that prevented indexes to be passed to children context.
 - Fixed wrong field set when editing instancing gap meter values.
