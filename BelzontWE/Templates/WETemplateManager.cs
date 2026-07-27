@@ -39,7 +39,9 @@ namespace BelzontWE
         private EntityQuery m_prefabsToMarkDirty;
         private EntityQuery m_prefabsDataToSerialize;
         private Dictionary<long, WETextDataXmlTree> PrefabTemplates;
+        private const int kMaxSavedLayoutRootItemsPerFrame = 96;
         private readonly Queue<Action<EntityCommandBuffer>> m_executionQueue = new();
+        private readonly Queue<SavedLayoutRestoreTask> m_savedLayoutRestoreQueue = new();
         private bool m_templatesDirty;
         public Entity PrefabUpdateSource { get; private set; } = Entity.Null;
 
@@ -93,13 +95,7 @@ namespace BelzontWE
                 {
                     if (dataTree?.children?.Length > 0)
                     {
-                        var children = dataTree.children;
-                        m_executionQueue.Enqueue((cmd) =>
-                        {
-                            ComponentLookup<WETextDataMain> tdLookup = GetComponentLookup<WETextDataMain>();
-                            BufferLookup<WESubTextRef> subTextLookup = GetBufferLookup<WESubTextRef>();
-                            WELayoutUtility.DoCreateLayoutItemArray(false, null, children, key, key, ref tdLookup, ref subTextLookup, cmd);
-                        });
+                        m_savedLayoutRestoreQueue.Enqueue(new SavedLayoutRestoreTask(key, dataTree.children));
                     }
                 }
                 catch (Exception e)
@@ -257,23 +253,71 @@ namespace BelzontWE
 
         protected override void OnUpdate()
         {
-            if (GameManager.instance.isGameLoading || IsLoadingLayouts || !WriteEverywhereCS2Mod.IsInitializationComplete) return;
+            if (!WriteEverywhereCS2Mod.IsInitializationComplete) return;
+
+            ProcessSavedLayoutRestoreQueue();
+
+            if (GameManager.instance.isGameLoading) return;
 
             // Process execution queue for UI actions
             if (m_executionQueue.Count > 0)
             {
                 var cmdBuffer = m_endFrameBarrier.CreateCommandBuffer();
-                while (m_executionQueue.TryDequeue(out var nextAction))
+                if (m_executionQueue.TryDequeue(out var nextAction))
                 {
                     nextAction?.Invoke(cmdBuffer);
                 }
             }
 
             // Update prefab index dictionary (file I/O)
-            UpdatePrefabIndexDictionary();
+            if (!IsLoadingLayouts) UpdatePrefabIndexDictionary();
 
             // Note: Entity processing has been moved to WETemplateUpdateSystem
             Dependency.Complete();
+        }
+
+        private void ProcessSavedLayoutRestoreQueue()
+        {
+            if (m_savedLayoutRestoreQueue.Count == 0) return;
+
+            var cmdBuffer = m_endFrameBarrier.CreateCommandBuffer();
+            var tdLookup = GetComponentLookup<WETextDataMain>();
+            var subTextLookup = GetBufferLookup<WESubTextRef>();
+            var remainingItems = kMaxSavedLayoutRootItemsPerFrame;
+
+            while (remainingItems > 0 && m_savedLayoutRestoreQueue.TryDequeue(out var task))
+            {
+                if (task.TargetEntity == Entity.Null || !EntityManager.Exists(task.TargetEntity))
+                {
+                    continue;
+                }
+
+                if (task.Children is not { Length: > 0 } || task.NextChildIndex >= task.Children.Length)
+                {
+                    continue;
+                }
+                var restoredItems = WELayoutUtility.DoCreateLayoutItemArrayRange(false, null, task.Children, task.NextChildIndex, remainingItems, task.TargetEntity, task.TargetEntity, ref tdLookup, ref subTextLookup, cmdBuffer);
+                task.NextChildIndex += restoredItems;
+                remainingItems -= restoredItems;
+
+                if (task.NextChildIndex < task.Children.Length)
+                {
+                    m_savedLayoutRestoreQueue.Enqueue(task);
+                }
+            }
+        }
+
+        private sealed class SavedLayoutRestoreTask
+        {
+            public SavedLayoutRestoreTask(Entity targetEntity, WETextDataXmlTree[] children)
+            {
+                TargetEntity = targetEntity;
+                Children = children;
+            }
+
+            public Entity TargetEntity { get; }
+            public WETextDataXmlTree[] Children { get; }
+            public int NextChildIndex { get; set; }
         }
 
         public void SetDefaults(Context context)

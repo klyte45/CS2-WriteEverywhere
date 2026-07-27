@@ -10,6 +10,7 @@ namespace BelzontWE
     public partial class WETemplateManager
     {
         #region Entity Processing
+        private const int kMaxLayoutArrayInstancesPerFrame = 32;
         // Methods for processing entities in the main thread
 
 
@@ -59,8 +60,8 @@ namespace BelzontWE
         }
 
         /// <summary>
-        /// Updates placeholder layouts by instantiating template children
-        /// Handles array instancing with proper spacing and alignment.
+        /// Updates placeholder layouts by instantiating template children.
+        /// Handles array instancing incrementally so large saves do not flood EndFrameBarrier playback.
         /// </summary>
         internal void UpdateLayouts(NativeArray<Entity> entities)
         {
@@ -68,68 +69,132 @@ namespace BelzontWE
             var m_DataTransformLkp = GetComponentLookup<WETextDataTransform>();
             var m_subRefLkp = GetBufferLookup<WESubTextRef>();
             EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
-            for (int i = 0; i < entities.Length; i++)
+            var remainingFrameInstances = kMaxLayoutArrayInstancesPerFrame;
+
+            for (int i = 0; i < entities.Length && remainingFrameInstances > 0; i++)
             {
                 var e = entities[i];
                 if (e == Entity.Null) continue;
-                var buff = cmd.SetBuffer<WETemplateUpdater>(e);
+
                 var dataToBeProcessed = EntityManager.GetComponentData<WEPlaceholderToBeProcessedInMain>(e);
                 m_DataTransformLkp.TryGetComponent(e, out var transformData);
                 bool hasTemplate = TryGetTargetTemplate(dataToBeProcessed.layoutName, out WETextDataXmlTree targetTemplate);
-
-                for (int j = 0; j < buff.Length; j++)
+                if (!hasTemplate)
                 {
-                    cmd.DestroyEntity(buff[j].childEntity);
+                    ClearTemplateUpdaterBuffer(e, cmd);
+                    cmd.RemoveComponent<WEPlaceholderToBeProcessedInMain>(e);
+                    continue;
                 }
-                buff.Clear();
-                if (hasTemplate)
+
+                var registeredGuid = targetTemplate.Guid;
+                var targetSize = transformData.InstanceCountFn.EffectiveValue < 0
+                    ? math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 256)
+                    : math.clamp(transformData.InstanceCountFn.EffectiveValue, 0, 256);
+
+                if (targetSize == 0)
                 {
-                    var registeredGuid = targetTemplate.Guid;
-                    targetTemplate = targetTemplate.Clone();
+                    ClearTemplateUpdaterBuffer(e, cmd);
+                    cmd.RemoveComponent<WEPlaceholderToBeProcessedInMain>(e);
+                    continue;
+                }
 
-                    var targetSize = transformData.InstanceCountFn.EffectiveValue < 0 ? math.clamp(transformData.ArrayInstancing.x * transformData.ArrayInstancing.y * transformData.ArrayInstancing.z, 1, 256) : math.min(256, transformData.InstanceCountFn.EffectiveValue);
-                    if (targetSize == 0) goto end;
-                    var instancingCount = (uint3)math.min(transformData.InstanceCountByAxisOrder, math.ceil(targetSize / new float3(1, transformData.InstanceCountByAxisOrder[0], transformData.InstanceCountByAxisOrder[0] * transformData.InstanceCountByAxisOrder[1])));
-                    var spacingOffsets = transformData.SpacingByAxisOrder;
-                    var totalArea = (transformData.ArrayInstancing - 1) * transformData.arrayInstancingGapMeters.EffectiveValue;
+                var hasExistingBuffer = EntityManager.HasBuffer<WETemplateUpdater>(e);
+                var existingBuffer = hasExistingBuffer ? EntityManager.GetBuffer<WETemplateUpdater>(e, true) : default;
+                var existingCount = hasExistingBuffer ? existingBuffer.Length : 0;
+                var resetExisting = !hasExistingBuffer || existingCount > targetSize;
+                for (int j = 0; !resetExisting && j < existingCount; j++)
+                {
+                    var item = existingBuffer[j];
+                    resetExisting = item.templateEntity != registeredGuid || item.childEntity == Entity.Null || !EntityManager.Exists(item.childEntity);
+                }
 
-                    var effectivePivot = transformData.PivotAsFloat3 - (math.sign(totalArea.xyz) / 2) - .5f;
-
-                    var pivotOffset = effectivePivot * math.abs(totalArea);
-                    var alignmentByAxisOrder = transformData.AlignmentByAxisOrder;
-
-                    var spacingO = spacingOffsets[2];
-                    GetSpacingAndOffset(instancingCount.z, transformData.InstanceCountByAxisOrder.z, alignmentByAxisOrder.o, ref spacingO, out float3 offsetO);
-                    for (int o = 0; o < instancingCount.z; o++)
+                DynamicBuffer<WETemplateUpdater> buff;
+                if (resetExisting)
+                {
+                    buff = hasExistingBuffer ? cmd.SetBuffer<WETemplateUpdater>(e) : cmd.AddBuffer<WETemplateUpdater>(e);
+                    for (int j = 0; hasExistingBuffer && j < existingCount; j++)
                     {
-                        var spacingN = spacingOffsets[1];
-                        var effectiveCountN = (uint)math.min(math.ceil((targetSize - buff.Length) / (float)instancingCount.x), instancingCount.y);
-                        GetSpacingAndOffset(effectiveCountN, transformData.InstanceCountByAxisOrder.y, alignmentByAxisOrder.n, ref spacingN, out float3 offsetN);
-                        for (int n = 0; n < effectiveCountN; n++)
+                        var childEntity = existingBuffer[j].childEntity;
+                        if (childEntity != Entity.Null && EntityManager.Exists(childEntity)) cmd.DestroyEntity(childEntity);
+                    }
+                    existingCount = 0;
+                }
+                else
+                {
+                    if (existingCount >= targetSize)
+                    {
+                        cmd.RemoveComponent<WEPlaceholderToBeProcessedInMain>(e);
+                        continue;
+                    }
+                    buff = cmd.SetBuffer<WETemplateUpdater>(e);
+                    for (int j = 0; j < existingCount; j++) buff.Add(existingBuffer[j]);
+                }
+
+                targetTemplate = targetTemplate.Clone();
+                var instancingCount = (uint3)math.min(transformData.InstanceCountByAxisOrder, math.ceil(targetSize / new float3(1, transformData.InstanceCountByAxisOrder[0], transformData.InstanceCountByAxisOrder[0] * transformData.InstanceCountByAxisOrder[1])));
+                var spacingOffsets = transformData.SpacingByAxisOrder;
+                var totalArea = (transformData.ArrayInstancing - 1) * transformData.arrayInstancingGapMeters.EffectiveValue;
+                var effectivePivot = transformData.PivotAsFloat3 - (math.sign(totalArea.xyz) / 2) - .5f;
+                var pivotOffset = effectivePivot * math.abs(totalArea);
+                var alignmentByAxisOrder = transformData.AlignmentByAxisOrder;
+
+                var spacingO = spacingOffsets[2];
+                GetSpacingAndOffset(instancingCount.z, transformData.InstanceCountByAxisOrder.z, alignmentByAxisOrder.o, ref spacingO, out float3 offsetO);
+                var currentIndex = 0;
+
+                for (int o = 0; o < instancingCount.z && buff.Length < targetSize && remainingFrameInstances > 0; o++)
+                {
+                    var spacingN = spacingOffsets[1];
+                    var remainingInLayer = math.max(0, targetSize - (o * transformData.InstanceCountByAxisOrder.x * transformData.InstanceCountByAxisOrder.y));
+                    var effectiveCountN = (uint)math.min(math.ceil(remainingInLayer / (float)instancingCount.x), instancingCount.y);
+                    GetSpacingAndOffset(effectiveCountN, transformData.InstanceCountByAxisOrder.y, alignmentByAxisOrder.n, ref spacingN, out float3 offsetN);
+
+                    for (int n = 0; n < effectiveCountN && buff.Length < targetSize && remainingFrameInstances > 0; n++)
+                    {
+                        var spacingM = spacingOffsets[0];
+                        var rowStartIndex = (o * transformData.InstanceCountByAxisOrder.x * transformData.InstanceCountByAxisOrder.y) + (n * transformData.InstanceCountByAxisOrder.x);
+                        var effectiveCountM = (uint)math.min(targetSize - rowStartIndex, instancingCount.x);
+                        GetSpacingAndOffset(effectiveCountM, transformData.InstanceCountByAxisOrder.x, alignmentByAxisOrder.m, ref spacingM, out float3 offsetM);
+                        var totalOffset = pivotOffset + offsetM + offsetN + offsetO;
+
+                        for (int m = 0; m < effectiveCountM && buff.Length < targetSize && remainingFrameInstances > 0; m++)
                         {
-                            var spacingM = spacingOffsets[0];
-                            var effectiveCountM = (uint)math.min(targetSize - buff.Length, instancingCount.x);
-                            GetSpacingAndOffset(effectiveCountM, transformData.InstanceCountByAxisOrder.x, alignmentByAxisOrder.m, ref spacingM, out float3 offsetM);
-                            var totalOffset = pivotOffset + offsetM + offsetN + offsetO;
-                            for (int m = 0; m < effectiveCountM; m++)
+                            currentIndex = rowStartIndex + m;
+                            if (currentIndex < existingCount) continue;
+
+                            targetTemplate.self.transform.offsetPosition = (Vector3Xml)(Vector3)(totalOffset + (m * spacingM) + (n * spacingN) + (o * spacingO));
+                            targetTemplate.self.transform.pivot = transformData.pivot;
+
+                            var updater = new WETemplateUpdater()
                             {
-                                targetTemplate.self.transform.offsetPosition = (Vector3Xml)(Vector3)(totalOffset + (m * spacingM) + (n * spacingN) + (o * spacingO));
-                                targetTemplate.self.transform.pivot = transformData.pivot;
+                                templateEntity = registeredGuid,
+                                childEntity = WELayoutUtility.DoCreateLayoutItemCmdBuffer(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_MainDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
+                            };
 
-                                var updater = new WETemplateUpdater()
-                                {
-                                    templateEntity = registeredGuid,
-                                    childEntity = WELayoutUtility.DoCreateLayoutItemCmdBuffer(true, targetTemplate.ModSource, targetTemplate, e, Entity.Null, ref m_MainDataLkp, ref m_subRefLkp, cmd, WELayoutUtility.ParentEntityMode.TARGET_IS_SELF_PARENT_HAS_TARGET)
-                                };
-
-                                buff.Add(updater);
-                                if (buff.Length >= targetSize) goto end;
-                            }
+                            buff.Add(updater);
+                            remainingFrameInstances--;
                         }
                     }
                 }
-            end:
-                cmd.RemoveComponent<WEPlaceholderToBeProcessedInMain>(e);
+
+                if (buff.Length >= targetSize)
+                {
+                    cmd.RemoveComponent<WEPlaceholderToBeProcessedInMain>(e);
+                }
+            }
+        }
+
+        private void ClearTemplateUpdaterBuffer(Entity e, EntityCommandBuffer cmd)
+        {
+            if (EntityManager.HasBuffer<WETemplateUpdater>(e))
+            {
+                var existingBuffer = EntityManager.GetBuffer<WETemplateUpdater>(e, true);
+                for (int j = 0; j < existingBuffer.Length; j++)
+                {
+                    var childEntity = existingBuffer[j].childEntity;
+                    if (childEntity != Entity.Null && EntityManager.Exists(childEntity)) cmd.DestroyEntity(childEntity);
+                }
+                cmd.SetBuffer<WETemplateUpdater>(e).Clear();
             }
         }
 
