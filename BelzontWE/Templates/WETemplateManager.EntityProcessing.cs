@@ -68,6 +68,7 @@ namespace BelzontWE
             var m_DataTransformLkp = GetComponentLookup<WETextDataTransform>();
             var m_subRefLkp = GetBufferLookup<WESubTextRef>();
             EntityCommandBuffer cmd = m_endFrameBarrier.CreateCommandBuffer();
+            var totalInstances = 0;
             for (int i = 0; i < entities.Length; i++)
             {
                 var e = entities[i];
@@ -123,6 +124,7 @@ namespace BelzontWE
                                 };
 
                                 buff.Add(updater);
+                                totalInstances++;
                                 if (buff.Length >= targetSize) goto end;
                             }
                         }
@@ -130,6 +132,7 @@ namespace BelzontWE
                 }
             end:
                 cmd.RemoveComponent<WEPlaceholderToBeProcessedInMain>(e);
+                if (totalInstances > ItemsPerFrame) break;
             }
         }
 

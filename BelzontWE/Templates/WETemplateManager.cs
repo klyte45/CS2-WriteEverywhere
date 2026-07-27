@@ -255,6 +255,19 @@ namespace BelzontWE
         {
         }
 
+
+
+        public static int ItemsPerFrame2n
+        {
+            get => itemsPerFrame2n; set
+            {
+                itemsPerFrame2n = value;
+            }
+        }
+        private static int itemsPerFrame2n = 6;
+
+        private static int ItemsPerFrame =>  1 << itemsPerFrame2n;
+
         protected override void OnUpdate()
         {
             if (GameManager.instance.isGameLoading || IsLoadingLayouts || !WriteEverywhereCS2Mod.IsInitializationComplete) return;
@@ -262,10 +275,13 @@ namespace BelzontWE
             // Process execution queue for UI actions
             if (m_executionQueue.Count > 0)
             {
+                var counter = 0;
                 var cmdBuffer = m_endFrameBarrier.CreateCommandBuffer();
+                var maxItems = ItemsPerFrame;
                 while (m_executionQueue.TryDequeue(out var nextAction))
                 {
                     nextAction?.Invoke(cmdBuffer);
+                    if(++counter >= maxItems) break;
                 }
             }
 

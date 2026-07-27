@@ -1,64 +1,6 @@
-# v2.0.0r12 (05-MAY-26)
+# v2.0.0r13 (27-JUL-26)
 
-- Fixed global lights not working on moveable objects.
+- Added option to limit the quantity of layouts processed by frame (defaults to 128)
+- Fixed issue that some text layouts refuses to load when loading a savegame.
 
-## FROM v2.0.0r11 (02-MAY-26)
-
-- Fixed issue that prevented indexes to be passed to children context.
-- Fixed wrong field set when editing instancing gap meter values.
-- Fixed serialization for instances count
-
-## FROM v2.0.0r6 (29-APR-26)
-
-- Deferring the atlases load to after vanilla VT loading to reduce workload when lauching the game.
-- Fixed asset layouts not being loaded on first time.
-- Fixed stack overflow crash due DoLog
-
-## FROM v2.0.0r2 (29-APR-26)
-- **GameProp layout type**: a new "GameProp" content type lets WE nodes spawn real in-game props directly;
-  - The editor provides a searchable, localized prop-picker dropdown (filter by prefab name or display name), formula support in the prefab name field, and a park-bench icon in the hierarchy tree
-  - Spawned props follow their parent entity's transforms, support array instancing across X/Y/Z axes, and automatically inherit non-local parent WE variables so formula-driven prop appearances work without duplicate variable definitions
-  - Appearance and Shader panels are automatically hidden for GameProp nodes
-  - Entities spawned by a GameProp node are invisible to the WE world-picker so they cannot be accidentally selected or edited as regular layout targets  
-- **Image atlas pipeline overhaul**:
-  - Atlases now generate and cache BC7-compressed data on disk, reducing VRAM usage and city save-file size
-  - Unchanged atlases are detected by checksum and reload instantly without reprocessing
-  - Optional virtual-texture (VT) streaming is supported for further GPU memory savings (enabled by default, recommended); a new setting controls whether virtual-texture streaming is used for image atlases
-  - Maximum single-image size raised to **2046 × 2046 px**; maximum atlas size raised to **8196 × 8196 px**
-- **Formulas**:   
-  - Added **$ct** variable auto generated along with the existing **$idx** for array instances (placeholders and game props only)
-  - Now instancing spacing and counting settings can be driven by formulas, allowing to dynamically changing the disposition of instances
-  - New **Formulas** category in the formula item addition popup, making all classes under namespaces ending with `.Formulas` or `.Formulaes` available for selection; It supports a display name for the DLL itself and the classes and also a description for each method (shown in a tooltip) by using the i18n patterns:
-    - `K45::WE.formulaCategory[<DLLName>]` for the DLL display name
-    - `K45::WE.formulaCategory[<DLLName>.<ClassName>]` for the class display name
-    - `K45::WE.formulaCategory[<DLLName>.<ClassName>_tooltip]` for the class description
-    - `K45::WE.formulaCategory[<DLLName>.<ClassName>.<MethodName>]` for the method display name
-    - `K45::WE.formulaCategory[<DLLName>.<ClassName>.<MethodName>_tooltip]` for the method description
-  - Added localization formulas
-  - Module-check expressions now support logical operators (`&&` / `||`)
-  - Module fonts can be referenced directly by name at dropdown
-  - Train-like vehicles expose a raw car-number formula
-  - Added **Initial Text** formula type that can be used to set the initial value of a formula instead of using the selected Entity (useful for i18n getters)
-- Added a new information button in the Tool Panel that display a quick reference of the key shortcuts from the mod while editing a layout
-- FIXED: WE layouts no longer attempt to load before the game's Virtual Texturing system is ready, preventing blank or missing image atlases introduced by certain game updates
-- FIXED: Atlas image rendering when an emissive, control, or normal map texture is absent now falls back to the main image instead of showing a broken-texture result
-- FIXED: Child layout node references were not cleaned up when the parent entity was deleted
-- FIXED: Decal layout nodes had incorrect initial rotation immediately after creation
-- FIXED: Default route destination name returned by the destination formula was wrong in some edge cases
-- FIXED: Camera could jump far outside the playable area when a layout node was scaled to zero on all axes
-- FIXED: Formulas using parameterized generic methods caused runtime errors; such references are now rejected at parse time
-
-## FROM v1.2.0r0 (08-APR-26)
-- XZ plane camera view corrected: the top of the screen now corresponds to positive Z direction
-- Emissive light effects are now rectangle or cube-shaped based on the geometry of the layout item, instead of using point light emission
-- Reduced overall slowdown when loading a city with many active layouts (1000+)
-- **Array instance navigation**: when editing a layout with array instancing enabled, keyboard shortcuts (← → for X axis, ↑ ↓ for Y axis, Numpad +/- for Z axis) and ± buttons in the tool options panel let you cycle through instances; camera follows the selected instance; controls are hidden when all axes are set to 1
-- **Keyboard tree navigation**: Page Up / Page Down moves between visible items; Space toggles fold; Home collapses all; End expands all; Delete key triggers the confirmation dialog before removing an item
-- FIXED: Camera clamps to terrain when editing a layout
-- FIXED: Pasting a layout as sibling always pasted in the second level instead of the same level as the target item
-- FIXED: Font text generation stalling under heavy load (1000+ active layouts)
-- FIXED: Template usage counter was always showing zero in the WE window
-- FIXED: Changing font quality or initial texture size settings did not re-render existing text, leaving garbled glyphs
-- FIXED: Pasting or cloning a layout item did not auto-select the newly created item
-- FIXED: Text cache entries not cleared when the font atlas version changed
-- FIXED: Crash when using WE alongside other mods that also patch the game's debug system
+Special thanks to **baipin** for helping with the issue investigation!

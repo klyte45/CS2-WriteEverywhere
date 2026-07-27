@@ -96,6 +96,7 @@ namespace BelzontWE
 
         private static readonly int[] m_qualityArray = new[] { 50, 75, 100, 125, 150, 200, 400, 800 };
         private static readonly int[] m_framesUpdate = new[] { 0x4, 0x8, 0xf, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff };
+        private static readonly int[] m_templatesQueueItemsPerFrame = new[] { 8,16,32,64,128,256,512,1024,2048,4096 };
 
         public static WEModData InstanceWE => Instance as WEModData;
         public WEModData(IMod mod) : base(mod)
@@ -145,6 +146,18 @@ namespace BelzontWE
             }
         }
         private DropdownItem<int>[] FontQualityValues() => m_qualityArray.Select((x, i) => new DropdownItem<int> { value = i, displayName = $"{x:0}%{(x >= 200 ? $" ({new string('!', x / 200)})" : "")}" }).ToArray();
+
+        
+        [SettingsUIDropdown(typeof(WEModData), nameof(ItemsPerFrameValues))]
+        [SettingsUISection(kSourcesTab, kLayoutDefaultSection)]
+        public int TemplateItemsPerFrame
+        {
+            get => WETemplateManager.ItemsPerFrame2n - 3; set
+            {
+                WETemplateManager.ItemsPerFrame2n = value + 3;
+            }
+        }
+        private DropdownItem<int>[] ItemsPerFrameValues() => m_templatesQueueItemsPerFrame.Select((x, i) => new DropdownItem<int> { value = i, displayName = $"{x:0}" }).ToArray();
 
         [SettingsUIDropdown(typeof(WEModData), nameof(FramesCheckUpdateValues))]
         [SettingsUISection(kSourcesTab, kFontsSection)]
