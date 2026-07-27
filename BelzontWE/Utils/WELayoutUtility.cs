@@ -1,4 +1,4 @@
-﻿using BelzontWE.Utils;
+using BelzontWE.Utils;
 using Colossal.Entities;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -43,6 +43,11 @@ namespace BelzontWE
             em.AddComponentData(newEntity, material);
             em.AddComponentData(newEntity, transform);
             em.AddComponent<WETextComponentValid>(newEntity);
+            em.AddComponent<WEWaitingRendering>(newEntity);
+            em.SetComponentEnabled<WEWaitingRendering>(newEntity, false);
+            em.AddComponentData(newEntity, new WETextDataDirtyFormulae());
+            em.SetComponentEnabled<WETextDataDirtyFormulae>(newEntity, false);
+            em.AddComponentData(newEntity, new WEInheritedVarsCache());
             if (childTargetMode == ParentEntityMode.TARGET_IS_TARGET)
             {
                 if (!GetReader(em).TryGetBuffer<WESubTextRef>(parentEntity, true, out var subRefBuff)) subRefBuff = em.AddBuffer<WESubTextRef>(parentEntity);
@@ -77,6 +82,20 @@ namespace BelzontWE
                 DoCreateLayoutItemCommandBuffer(fromTemplate, modSource, toCopy, parentEntity, targetEntity, ref tdLookup, ref subTextLookup, cmd, ref buff, childTargetMode);
             }
         }
+        public static int DoCreateLayoutItemArrayRange(bool fromTemplate, string modSource, WETextDataXmlTree[] toCopyArray, int startIndex, int maxItems, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextDataMain> tdLookup,
+                   ref BufferLookup<WESubTextRef> subTextLookup, EntityCommandBuffer cmd,
+                   ParentEntityMode childTargetMode = ParentEntityMode.TARGET_IS_TARGET)
+        {
+            if (toCopyArray == null || startIndex >= toCopyArray.Length || maxItems <= 0) return 0;
+
+            if (!subTextLookup.TryGetBuffer(parentEntity, out var buff)) buff = childTargetMode == ParentEntityMode.TARGET_IS_TARGET ? cmd.AddBuffer<WESubTextRef>(parentEntity) : default;
+            var endIndex = math.min(toCopyArray.Length, startIndex + maxItems);
+            for (var i = startIndex; i < endIndex; i++)
+            {
+                DoCreateLayoutItemCommandBuffer(fromTemplate, modSource, toCopyArray[i], parentEntity, targetEntity, ref tdLookup, ref subTextLookup, cmd, ref buff, childTargetMode);
+            }
+            return endIndex - startIndex;
+        }
 
         private static Entity DoCreateLayoutItemCommandBuffer(bool fromTemplate, string modSource, WETextDataXmlTree toCopy, Entity parentEntity, Entity targetEntity, ref ComponentLookup<WETextDataMain> tdLookup,
         ref BufferLookup<WESubTextRef> subTextLookup, EntityCommandBuffer cmd,
@@ -89,6 +108,11 @@ namespace BelzontWE
             cmd.AddComponent(newEntity, material);
             cmd.AddComponent(newEntity, transform);
             cmd.AddComponent<WETextComponentValid>(newEntity);
+            cmd.AddComponent<WEWaitingRendering>(newEntity);
+            cmd.SetComponentEnabled<WEWaitingRendering>(newEntity, false);
+            cmd.AddComponent(newEntity, new WETextDataDirtyFormulae());
+            cmd.SetComponentEnabled<WETextDataDirtyFormulae>(newEntity, false);
+            cmd.AddComponent(newEntity, new WEInheritedVarsCache());
             var buffVars = cmd.AddBuffer<WETextDataVariable>(newEntity);
             if (toCopy.variables?.Length > 0)
             {

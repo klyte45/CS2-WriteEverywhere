@@ -1,4 +1,4 @@
-﻿using Colossal.Entities;
+using Colossal.Entities;
 using Colossal.Mathematics;
 using Game.Prefabs;
 using Game.Rendering;
@@ -218,51 +218,45 @@ namespace BelzontWE
                 var isDependent = (cullInfo.m_Mask & Game.Common.BoundsMask.NormalLayers) == 0 && (!m_meshesLkp.TryGetBuffer(entity, out var buff) || buff.IsEmpty);
                 if (isDependent)
                 {
-                    if (m_dependentsLkp.HasBuffer(entity))
-                    {
-                        m_CommandBuffer.RemoveComponent<WEDependantRendering>(index, entity);
-                    }
                     return;
                 }
-                else
-                {
-                    if (!m_dependentsLkp.HasBuffer(entity))
-                    {
-                        CatalogSubObjects(index, entity);
-                    }
-
-                }
-
                 var passed = (cullingAction.m_Flags & PreCullingFlags.PassedCulling) != 0;
+                var hasAnyWeLayout = false;
 
-                AssertPass(index, passed, entity);
-
-                if (m_dependentsLkp.TryGetBuffer(entity, out var deps))
+                if (HasWeLayout(entity))
                 {
-                    for (int i = 0; i < deps.Length; i++)
-                    {
-                        AssertPass(index, passed, deps[i].dependentEntity);
-                    }
+                    hasAnyWeLayout = true;
+                    AssertPass(index, passed, entity);
                 }
-            }
 
-            private void CatalogSubObjects(int index, Entity entity)
-            {
                 if (m_subObjectsLkp.TryGetBuffer(entity, out var subObjects) && !subObjects.IsEmpty)
                 {
-                    DynamicBuffer<WEDependantRendering> dependentsBuff = m_CommandBuffer.AddBuffer<WEDependantRendering>(index, entity);
-                    dependentsBuff.Clear();
                     for (int i = 0; i < subObjects.Length; i++)
                     {
-                        var subObj = subObjects[i].m_SubObject;
-                        var shallBeDep = m_CullInfoLkp.TryGetComponent(subObj, out var cullInfo) && (cullInfo.m_Mask & Game.Common.BoundsMask.NormalLayers) == 0 && (!m_meshesLkp.TryGetBuffer(subObj, out var buffSub) || buffSub.IsEmpty);
-                        if (shallBeDep)
+                        var subObject = subObjects[i].m_SubObject;
+                        var shallBeDependent =
+                            m_CullInfoLkp.TryGetComponent(subObject, out var subCullInfo)
+                            && (subCullInfo.m_Mask & Game.Common.BoundsMask.NormalLayers) == 0
+                            && (!m_meshesLkp.TryGetBuffer(subObject, out var subMeshes) || subMeshes.IsEmpty);
+
+                        if (shallBeDependent && HasWeLayout(subObject))
                         {
-                            dependentsBuff.Add(new WEDependantRendering { dependentEntity = subObj });
+                            hasAnyWeLayout = true;
+                            AssertPass(index, passed, subObject);
                         }
                     }
                 }
+
+                if (!hasAnyWeLayout) return;
             }
+
+            private bool HasWeLayout(Entity entity)
+            {
+                return (m_weTemplateForPrefabLookup.TryGetComponent(entity, out var prefabWeLayout) && prefabWeLayout.childEntity != Entity.Null)
+                    || (m_weSubRefLookup.TryGetBuffer(entity, out var subLayout) && subLayout.Length > 0);
+            }
+
+            private void CatalogSubObjects(int index, Entity entity) { }
 
             private void AssertPass(int index, bool passed, Entity entity)
             {
@@ -280,17 +274,6 @@ namespace BelzontWE
             {
                 if ((!m_weTemplateForPrefabLookup.TryGetComponent(entity, out var prefabWeLayout) || prefabWeLayout.childEntity == Entity.Null) & (!m_weSubRefLookup.TryGetBuffer(entity, out var subLayout) || subLayout.Length == 0)) return;
 
-                if (!m_WEDrawingLookup.HasEnabledComponent(entity))
-                {
-                    if (m_WEDrawingLookup.HasComponent(entity))
-                    {
-                        m_CommandBuffer.SetComponentEnabled<WEDrawing>(index, entity, true);
-                    }
-                    else
-                    {
-                        m_CommandBuffer.AddComponent<WEDrawing>(index, entity);
-                    }
-                }
 
                 if (m_geomEntitiesLastFrame.Contains(entity) && (entity.Index & WEConstants.RENDERER_FRAME_CHECK_MASK) != (frameCount & WEConstants.RENDERER_FRAME_CHECK_MASK) && (!isAtWeEditor || entity != m_selectedEntity))
                 {
@@ -339,13 +322,7 @@ namespace BelzontWE
                 }
             }
 
-            private void FailedCulling(Entity entity, int index)
-            {
-                if (m_WEDrawingLookup.HasEnabledComponent(entity))
-                {
-                    m_CommandBuffer.SetComponentEnabled<WEDrawing>(index, entity, false);
-                }
-            }
+            private void FailedCulling(Entity entity, int index) { }
 
             private unsafe void PopulateVars(Entity entity, ref FixedString512Bytes inheritableVars, out FixedString512Bytes localVars)
             {
@@ -396,30 +373,10 @@ namespace BelzontWE
                 {
                     case WESimulationTextType.Text:
                     case WESimulationTextType.Image:
-                        if (mesh.IsDirty() && !m_weWaitingRenderingLookup.HasEnabledComponent(nextEntity))
-                        {
-                            if (!m_weWaitingRenderingLookup.HasComponent(nextEntity))
-                            {
-                                m_CommandBuffer.AddComponent<WEWaitingRendering>(index, nextEntity);
-                            }
-                            else
-                            {
-                                m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(index, nextEntity, true);
-                            }
-                        }
+                        if (mesh.IsDirty() && m_weWaitingRenderingLookup.HasComponent(nextEntity) && !m_weWaitingRenderingLookup.HasEnabledComponent(nextEntity)) { m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(index, nextEntity, true); }
                         break;
                     case WESimulationTextType.Placeholder:
-                        if (mesh.IsTemplateDirty() && !m_weWaitingRenderingLookup.HasEnabledComponent(nextEntity))
-                        {
-                            if (!m_weWaitingRenderingLookup.HasComponent(nextEntity))
-                            {
-                                m_CommandBuffer.AddComponent<WEWaitingRendering>(index, nextEntity);
-                            }
-                            else
-                            {
-                                m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(index, nextEntity, true);
-                            }
-                        }
+                        if (mesh.IsTemplateDirty() && m_weWaitingRenderingLookup.HasComponent(nextEntity) && !m_weWaitingRenderingLookup.HasEnabledComponent(nextEntity)) { m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(index, nextEntity, true); }
                         return;
                 }
             }
@@ -429,22 +386,11 @@ namespace BelzontWE
                 if (nthCall >= 16) return;
                 if (!m_weMeshLookup.TryGetComponent(nextEntity, out var mesh))
                 {
-                    DestroyRecursive(ref this, nextEntity, unfilteredChunkIndex);
+                    return;
                     return;
                 }
                 var transform = m_weTransformLookup[nextEntity];
-                if (!m_weDirtyFormulae.HasComponent(nextEntity))
-                {
-                    // Need to make a copy here since we're modifying it
-                    var mutableVars = variables;
-                    PopulateVars(nextEntity, ref mutableVars, out FixedString512Bytes lclVars);
-                    m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, new WETextDataDirtyFormulae
-                    {
-                        geometry = geometryEntity,
-                        vars = lclVars,
-                    });
-                    return;
-                }
+                if (!m_weDirtyFormulae.HasComponent(nextEntity)) return;
                 CheckMesh(ref mesh, nextEntity, unfilteredChunkIndex);
 
                 if (transform.useFormulaeToCheckIfDraw && !transform.MustDraw)
@@ -485,15 +431,7 @@ namespace BelzontWE
                         {
                             if (!m_weTemplateUpdaterLookup.TryGetBuffer(nextEntity, out var updaterBuff))
                             {
-                                if (m_weWaitingRenderingLookup.HasComponent(nextEntity))
-                                {
-
-                                    m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, nextEntity, true);
-                                }
-                                else
-                                {
-                                    m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
-                                }
+                                if (m_weWaitingRenderingLookup.HasComponent(nextEntity)) { m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, nextEntity, true); }
                                 return;
                             }
 
@@ -621,38 +559,14 @@ namespace BelzontWE
                             var forceEditorRefresh = isAtWeEditor && nextEntity == m_selectedSubEntity;
                             if (forceEditorRefresh || CheckForUpdates(geometryEntity, nextEntity, unfilteredChunkIndex, in currentVars, 2000))
                             {
-                                var dirtyFormulae = new WETextDataDirtyFormulae { geometry = geometryEntity, vars = currentVars };
-                                if (m_weDirtyFormulae.HasComponent(nextEntity))
-                                {
-                                    m_CommandBuffer.SetComponent(unfilteredChunkIndex, nextEntity, dirtyFormulae);
-                                }
-                                else
-                                {
-                                    m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, dirtyFormulae);
-                                }
-                                m_CommandBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(unfilteredChunkIndex, nextEntity, true);
-                                var inheritedCache = new WEInheritedVarsCache { vars = inheritableVars };
-                                if (m_weInheritedVarsCacheLkp.HasComponent(nextEntity))
-                                {
-                                    m_CommandBuffer.SetComponent(unfilteredChunkIndex, nextEntity, inheritedCache);
-                                }
-                                else
-                                {
-                                    m_CommandBuffer.AddComponent(unfilteredChunkIndex, nextEntity, inheritedCache);
-                                }
+                                var dirtyFormulae = new WETextDataDirtyFormulae { geometry = geometryEntity, vars = currentVars }; if (!m_weDirtyFormulae.HasComponent(nextEntity)) return; m_CommandBuffer.SetComponent(unfilteredChunkIndex, nextEntity, dirtyFormulae); m_CommandBuffer.SetComponentEnabled<WETextDataDirtyFormulae>(unfilteredChunkIndex, nextEntity, true);
+                                var inheritedCache = new WEInheritedVarsCache { vars = inheritableVars }; if (m_weInheritedVarsCacheLkp.HasComponent(nextEntity)) { m_CommandBuffer.SetComponent(unfilteredChunkIndex, nextEntity, inheritedCache); }
                                 if (m_weSubObjectsLkp.TryGetBuffer(nextEntity, out var subObjBuf))
                                 {
                                     for (int si = 0; si < subObjBuf.Length; si++)
                                     {
                                         var subObjEntity = subObjBuf[si].m_SubObject;
-                                        if (m_weInheritedVarsCacheLkp.HasComponent(subObjEntity))
-                                        {
-                                            m_CommandBuffer.SetComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars });
-                                        }
-                                        else
-                                        {
-                                            m_CommandBuffer.AddComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars });
-                                        }
+                                        if (m_weInheritedVarsCacheLkp.HasComponent(subObjEntity)) { m_CommandBuffer.SetComponent(unfilteredChunkIndex, subObjEntity, new WEInheritedVarsCache { vars = inheritableVars }); }
                                     }
                                 }
                                 if (forceEditorRefresh)
@@ -673,15 +587,7 @@ namespace BelzontWE
                         {
                             if (m_weTemplateUpdaterLookup.HasBuffer(nextEntity))
                             {
-                                if (m_weWaitingRenderingLookup.HasComponent(nextEntity))
-                                {
-
-                                    m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, nextEntity, true);
-                                }
-                                else
-                                {
-                                    m_CommandBuffer.AddComponent<WEWaitingRendering>(unfilteredChunkIndex, nextEntity);
-                                }
+                                if (m_weWaitingRenderingLookup.HasComponent(nextEntity)) { m_CommandBuffer.SetComponentEnabled<WEWaitingRendering>(unfilteredChunkIndex, nextEntity, true); }
                                 return;
                             }
                             var scale = transform.scale;
@@ -773,6 +679,7 @@ namespace BelzontWE
             private bool CheckForUpdates(Entity geometryEntity, Entity nextEntity, int unfilteredChunkIndex, in FixedString512Bytes variables, int currentLod)
             {
                 if (minLodUpdateSetting > currentLod) return false;
+                if (!m_weDirtyFormulae.HasComponent(nextEntity)) return false;
                 if (m_weDirtyFormulae.HasEnabledComponent(nextEntity)) return false;
                 if (m_weMainLookup[nextEntity].nextUpdateFrame < frameCount)
                 {
@@ -834,32 +741,7 @@ namespace BelzontWE
                 return meshData.LastLod;
             }
 
-            private void DestroyRecursive(ref WERenderingJob job, Entity nextEntity, int unfilteredChunkIndex, Entity initialDelete = default)
-            {
-                if (nextEntity != initialDelete)
-                {
-                    if (initialDelete == default) initialDelete = nextEntity;
-                    if (job.m_weTemplateForPrefabLookup.TryGetComponent(nextEntity, out var data))
-                    {
-                        DestroyRecursive(ref job, data.childEntity, unfilteredChunkIndex, initialDelete);
-                    }
-                    if (job.m_weTemplateUpdaterLookup.TryGetBuffer(nextEntity, out var updater))
-                    {
-                        for (int j = 0; j < updater.Length; j++)
-                        {
-                            DestroyRecursive(ref job, updater[j].childEntity, unfilteredChunkIndex, initialDelete);
-                        }
-                    }
-                    if (job.m_weSubRefLookup.TryGetBuffer(nextEntity, out var subLayout))
-                    {
-                        for (int j = 0; j < subLayout.Length; j++)
-                        {
-                            DestroyRecursive(ref job, subLayout[j].m_weTextData, unfilteredChunkIndex, initialDelete);
-                        }
-                    }
-                }
-                job.m_CommandBuffer.AddComponent<Game.Common.Deleted>(unfilteredChunkIndex, nextEntity);
-            }
+            private void DestroyRecursive(ref WERenderingJob job, Entity nextEntity, int unfilteredChunkIndex, Entity initialDelete = default) { }
         }
 
 #if BURST
